@@ -1195,11 +1195,8 @@ void CommandLineParser::processArgs()
 		if (m_args.count(g_strMLIRTarget))
 		{
 			std::string val = m_args[g_strMLIRTarget].as<std::string>();
-			if (val == "evm")
-				m_options.mlirGenJob.tgt = mlirgen::Target::EVM;
-			else if (val == "eravm")
-				m_options.mlirGenJob.tgt = mlirgen::Target::EraVM;
-			else
+			m_options.mlirGenJob.tgt = mlirgen::strToTarget(val);
+			if (m_options.mlirGenJob.tgt == mlirgen::Target::Undefined)
 				solThrow(CommandLineValidationError, "Invalid target");
 		}
 		if (!m_args[g_strMLIROpt].defaulted())

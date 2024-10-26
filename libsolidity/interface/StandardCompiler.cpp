@@ -24,8 +24,6 @@
 #include <libsolidity/interface/StandardCompiler.h>
 #include <libsolidity/interface/ImportRemapper.h>
 
-#include <libsolidity/codegen/mlir/Interface.h>
-
 #include <libsolidity/ast/ASTJsonExporter.h>
 #include <libyul/YulStack.h>
 #include <libyul/Exceptions.h>
@@ -435,7 +433,7 @@ std::optional<Json> checkAuxiliaryInputKeys(Json const& _input)
 
 std::optional<Json> checkSettingsKeys(Json const& _input)
 {
-	static std::set<std::string> keys{"debug", "evmVersion", "eofVersion", "libraries", "metadata", "modelChecker", "optimizer", "outputSelection", "remappings", "stopAfter", "viaIR", "viaMLIR"};
+	static std::set<std::string> keys{"debug", "evmVersion", "eofVersion", "libraries", "metadata", "modelChecker", "optimizer", "outputSelection", "remappings", "stopAfter", "viaIR", "mlir"};
 	return checkKeys(_input, keys, "settings");
 }
 
@@ -455,6 +453,32 @@ std::optional<Json> checkOptimizerDetailsKeys(Json const& _input)
 {
 	static std::set<std::string> keys{"peephole", "inliner", "jumpdestRemover", "orderLiterals", "deduplicate", "cse", "constantOptimizer", "yul", "yulDetails", "simpleCounterForLoopUncheckedIncrement"};
 	return checkKeys(_input, keys, "settings.optimizer.details");
+}
+
+std::optional<Json> checkMlirSettingsKeys(Json const& _input, mlirgen::JobSpec& jobSpec)
+{
+	if (auto result = checkKeys(_input, {"target", "optLevel"}, "settings.mlir"))
+		return *result;
+
+	if (_input.contains("target"))
+	{
+		if (!_input["target"].is_string())
+			return formatFatalError(Error::Type::JSONError, "\"settings.mlir.target\" must be a string");
+		jobSpec.tgt = mlirgen::strToTarget(_input["target"].get<std::string>());
+	}
+	else
+		return formatFatalError(Error::Type::JSONError, "\"settings.mlir.target\" is required");
+
+	if (_input.contains("optLevel"))
+	{
+		if (!_input["optLevel"].is_string())
+			return formatFatalError(Error::Type::JSONError, "\"settings.mlir.optLevel\" must be a string");
+		jobSpec.optLevel = _input["optLevel"].get<std::string>().c_str()[0];
+	}
+	else
+		return formatFatalError(Error::Type::JSONError, "\"settings.mlir.optLevel\" is required");
+
+	return std::nullopt;
 }
 
 std::optional<Json> checkOptimizerDetail(Json const& _details, std::string const& _name, bool& _setting)
@@ -826,11 +850,12 @@ std::variant<StandardCompiler::InputsAndSettings, Json> StandardCompiler::parseI
 		ret.viaIR = settings["viaIR"].get<bool>();
 	}
 
-	if (settings.contains("viaMLIR"))
+	if (settings.contains("mlir"))
 	{
-		if (!settings["viaMLIR"].is_boolean())
-			return formatFatalError(Error::Type::JSONError, "\"settings.viaMLIR\" must be a Boolean.");
-		ret.viaMLIR = settings["viaMLIR"].get<bool>();
+		// FIXME: We should check if the bytecode was requested.
+		ret.mlirJobSpec.action = mlirgen::Action::GenObj;
+		if (auto result = checkMlirSettingsKeys(settings["mlir"], ret.mlirJobSpec))
+			return *result;
 	}
 
 	if (settings.contains("evmVersion"))
@@ -1338,8 +1363,8 @@ Json StandardCompiler::compileSolidity(StandardCompiler::InputsAndSettings _inpu
 	compilerStack.setModelCheckerSettings(_inputsAndSettings.modelCheckerSettings);
 
 	// FIXME: We should have settings for the target, optimization level etc.
-	if (_inputsAndSettings.viaMLIR)
-		compilerStack.setMLIRGenJobSpec({mlirgen::Action::GenObj, mlirgen::Target::EraVM, '3'});
+	if (_inputsAndSettings.mlirJobSpec.action != mlirgen::Action::Undefined)
+		compilerStack.setMLIRGenJobSpec(_inputsAndSettings.mlirJobSpec);
 
 	Json errors = std::move(_inputsAndSettings.errors);
 
@@ -1560,13 +1585,13 @@ Json StandardCompiler::compileSolidity(StandardCompiler::InputsAndSettings _inpu
 				); }
 			);
 
-		if (_inputsAndSettings.viaMLIR)
+		if (_inputsAndSettings.mlirJobSpec.action == mlirgen::Action::GenObj)
 		{
 			// Overwrite object fields with the bytecode from the mlir pipeline.
 			if (evmData.contains("bytecode") && evmData["bytecode"].contains("object"))
-				evmData["bytecode"]["object"] = compilerStack.bytecodeFromMlirPipeline(contractName);
+				evmData["bytecode"]["object"] = compilerStack.creationBytecodeFromMlirPipeline(contractName);
 			if (evmData.contains("deployedBytecode") && evmData["deployedBytecode"].contains("object"))
-				evmData["deployedBytecode"]["object"] = compilerStack.bytecodeFromMlirPipeline(contractName);
+				evmData["deployedBytecode"]["object"] = compilerStack.runtimeBytecodeFromMlirPipeline(contractName);
 		}
 
 		if (!evmData.empty())

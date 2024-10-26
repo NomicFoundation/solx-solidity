@@ -8,7 +8,10 @@
     }
   },
   "settings": {
-    "viaMLIR": true,
+    "mlir": {
+      "target": "eravm",
+      "optLevel": "3"
+    },
     "outputSelection": {
       "*": {
         "*": [

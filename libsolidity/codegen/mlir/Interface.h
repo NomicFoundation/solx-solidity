@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include <string>
 #include <vector>
 
 namespace solidity::langutil {
@@ -59,11 +60,19 @@ enum class Target {
   Undefined,
 };
 
+/// Return the enum Target from the string (case insensitive).
+Target strToTarget(std::string const &str);
+
 struct JobSpec {
   // TODO: Add other codegen info like debug info, output file?
   Action action = Action::Undefined;
   Target tgt = Target::Undefined;
   char optLevel = '0';
+};
+
+struct Output {
+  std::string creationBytecode;
+  std::string runtimeBytecode;
 };
 
 /// Registers required command line options in the MLIR framework

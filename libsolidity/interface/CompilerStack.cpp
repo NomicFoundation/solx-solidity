@@ -1032,12 +1032,20 @@ evmasm::LinkerObject const& CompilerStack::runtimeObject(std::string const& _con
 	return contract(_contractName).runtimeObject;
 }
 
-std::string const& CompilerStack::bytecodeFromMlirPipeline(std::string const& _contractName) const
+std::string const& CompilerStack::creationBytecodeFromMlirPipeline(std::string const& _contractName) const
 {
 	if (m_stackState != CompilationSuccessful)
 		solThrow(CompilerError, "Compilation was not successful.");
 
-	return contract(_contractName).mlirPipeline.bytecode;
+	return contract(_contractName).mlirPipeline.creationBytecode;
+}
+
+std::string const& CompilerStack::runtimeBytecodeFromMlirPipeline(std::string const& _contractName) const
+{
+	if (m_stackState != CompilationSuccessful)
+		solThrow(CompilerError, "Compilation was not successful.");
+
+	return contract(_contractName).mlirPipeline.runtimeBytecode;
 }
 
 /// TODO: cache this string

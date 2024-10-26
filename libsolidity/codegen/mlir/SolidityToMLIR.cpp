@@ -950,9 +950,8 @@ bool CompilerStack::runMlirPipeline() {
         }
 
         // TODO: Support lowering multiple contracts.
-        return doJob(
-            m_mlirGenJob, mod,
-            m_contracts.at(contr->fullyQualifiedName()).mlirPipeline.bytecode);
+        return doJob(m_mlirGenJob, mod,
+                     m_contracts.at(contr->fullyQualifiedName()).mlirPipeline);
       }
     }
 
@@ -967,13 +966,15 @@ bool CompilerStack::runMlirPipeline() {
         return false;
       }
 
-      std::string bytecode;
-      return doJob(m_mlirGenJob, mod, bytecode);
+      solidity::mlirgen::Output out;
+      return doJob(m_mlirGenJob, mod, out);
     }
   }
 
   return false;
 }
+
+// TODO: Move the following functions somewhere else.
 
 void solidity::mlirgen::registerMLIRCLOpts() {
   mlir::registerAsmPrinterCLOptions();
@@ -988,4 +989,17 @@ bool solidity::mlirgen::parseMLIROpts(std::vector<const char *> &argv) {
 
   return llvm::cl::ParseCommandLineOptions(fooArgv.size(), fooArgv.data(),
                                            "Generic MLIR flags\n");
+}
+
+solidity::mlirgen::Target
+solidity::mlirgen::strToTarget(std::string const &str) {
+  std::string inLowerCase = str;
+  std::transform(inLowerCase.begin(), inLowerCase.end(), inLowerCase.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+
+  if (inLowerCase == "evm")
+    return Target::EVM;
+  if (inLowerCase == "eravm")
+    return Target::EraVM;
+  return Target::Undefined;
 }

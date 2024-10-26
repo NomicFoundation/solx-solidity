@@ -26,6 +26,8 @@
 #include <libsolidity/interface/CompilerStack.h>
 #include <libsolutil/JSON.h>
 
+#include <libsolidity/codegen/mlir/Interface.h>
+
 #include <liblangutil/DebugInfoSelection.h>
 
 #include <optional>
@@ -89,7 +91,7 @@ private:
 		Json outputSelection;
 		ModelCheckerSettings modelCheckerSettings = ModelCheckerSettings{};
 		bool viaIR = false;
-		bool viaMLIR = false;
+		mlirgen::JobSpec mlirJobSpec;
 	};
 
 	/// Parses the input json (and potentially invokes the read callback) and either returns

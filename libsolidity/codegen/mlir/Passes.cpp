@@ -188,8 +188,57 @@ genLLVMIR(mlir::ModuleOp mod, solidity::mlirgen::Target tgt, char optLevel,
   return llvmMod;
 }
 
+static void printAsm(llvm::Module &llvmMod, llvm::TargetMachine &tgtMach) {
+  llvm::legacy::PassManager llvmPassMgr;
+  tgtMach.addPassesToEmitFile(llvmPassMgr, llvm::outs(),
+                              /*DwoOut=*/nullptr,
+                              llvm::CodeGenFileType::CGFT_AssemblyFile);
+  llvmPassMgr.run(llvmMod);
+}
+
+static mlir::ModuleOp extractRuntimeModule(mlir::ModuleOp creationMod) {
+  for (mlir::Operation &op : *creationMod.getBody()) {
+    if (mlir::isa<mlir::ModuleOp>(op)) {
+      mlir::ModuleOp runtimeMod;
+      runtimeMod = mlir::cast<mlir::ModuleOp>(op);
+      // Remove the runtime module from the creation module.
+      runtimeMod->remove();
+      return runtimeMod;
+    }
+  }
+  return {};
+}
+
+static void genEraVMBytecode(llvm::Module &llvmMod,
+                             llvm::TargetMachine &tgtMach,
+                             solidity::mlirgen::Output &out) {
+  llvm::legacy::PassManager llvmPassMgr;
+  llvm::SmallString<0> outStreamData;
+  llvm::raw_svector_ostream outStream(outStreamData);
+  tgtMach.addPassesToEmitFile(llvmPassMgr, outStream,
+                              /*DwoOut=*/nullptr,
+                              llvm::CodeGenFileType::CGFT_ObjectFile);
+  llvmPassMgr.run(llvmMod);
+
+  LLVMMemoryBufferRef obj = LLVMCreateMemoryBufferWithMemoryRange(
+      outStream.str().data(), outStream.str().size(), "Input",
+      /*RequiresNullTerminator=*/0);
+  LLVMMemoryBufferRef bytecode = nullptr;
+  char *errMsg = nullptr;
+  if (LLVMLinkEraVM(obj, &bytecode, /*linkerSymbolNames=*/nullptr,
+                    /*linkerSymbolValues=*/nullptr, /*numLinkerSymbols=*/0,
+                    &errMsg))
+    llvm_unreachable(errMsg);
+
+  out.creationBytecode = llvm::toHex(llvm::unwrap(bytecode)->getBuffer(),
+                                     /*LowerCase=*/true);
+  out.runtimeBytecode = out.creationBytecode;
+
+  LLVMDisposeMemoryBuffer(bytecode);
+}
+
 bool solidity::mlirgen::doJob(JobSpec const &job, mlir::ModuleOp mod,
-                              std::string &bytecodeInHex) {
+                              mlirgen::Output &out) {
   mlir::PassManager passMgr(mod.getContext());
   llvm::LLVMContext llvmCtx;
 
@@ -218,15 +267,8 @@ bool solidity::mlirgen::doJob(JobSpec const &job, mlir::ModuleOp mod,
     switch (job.tgt) {
     case Target::EVM: {
       auto creationMod = mod;
-      mlir::ModuleOp runtimeMod;
-      for (mlir::Operation &op : *creationMod.getBody()) {
-        if (mlir::isa<mlir::ModuleOp>(op)) {
-          runtimeMod = mlir::cast<mlir::ModuleOp>(op);
-          // Remove the runtime module from the creation module.
-          runtimeMod->remove();
-          break;
-        }
-      }
+      mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
+      assert(runtimeMod);
 
       // TODO: Run in parallel?
       std::unique_ptr<llvm::Module> creationLlvmMod =
@@ -253,8 +295,6 @@ bool solidity::mlirgen::doJob(JobSpec const &job, mlir::ModuleOp mod,
   }
   case Action::PrintAsm:
   case Action::GenObj: {
-    assert(job.tgt == Target::EraVM && "NYI");
-
     // Convert the module's ir to llvm dialect.
     addConversionPasses(passMgr, job.tgt);
     if (mlir::failed(passMgr.run(mod)))
@@ -263,39 +303,38 @@ bool solidity::mlirgen::doJob(JobSpec const &job, mlir::ModuleOp mod,
     // Create TargetMachine and generate llvm-ir.
     std::unique_ptr<llvm::TargetMachine> tgtMach = createTargetMachine(job.tgt);
     setTgtMachOpt(tgtMach.get(), job.optLevel);
-    std::unique_ptr<llvm::Module> llvmMod =
-        genLLVMIR(mod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
-
-    // Set up and run the asm printer.
-    llvm::legacy::PassManager llvmPassMgr;
-    llvm::SmallString<0> outStreamData;
-    llvm::raw_svector_ostream outStream(outStreamData);
-    tgtMach->addPassesToEmitFile(llvmPassMgr, outStream,
-                                 /*DwoOut=*/nullptr,
-                                 job.action == Action::PrintAsm
-                                     ? llvm::CodeGenFileType::CGFT_AssemblyFile
-                                     : llvm::CodeGenFileType::CGFT_ObjectFile);
-    llvmPassMgr.run(*llvmMod);
 
     if (job.action == Action::PrintAsm) {
-      llvm::outs() << outStream.str();
+      switch (job.tgt) {
+      case Target::EVM: {
+        auto creationMod = mod;
+        mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
+        assert(runtimeMod);
 
-      // Return the bytecode in hex.
+        // TODO: Run in parallel?
+        std::unique_ptr<llvm::Module> creationLlvmMod =
+            genLLVMIR(creationMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
+        std::unique_ptr<llvm::Module> runtimeLlvmMod =
+            genLLVMIR(runtimeMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
+        printAsm(*creationLlvmMod, *tgtMach);
+        printAsm(*runtimeLlvmMod, *tgtMach);
+        break;
+      }
+      case Target::EraVM: {
+        std::unique_ptr<llvm::Module> llvmMod =
+            genLLVMIR(mod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
+        printAsm(*llvmMod, *tgtMach);
+        break;
+      }
+      default:
+        llvm_unreachable("Invalid target");
+      };
+
     } else {
-      LLVMMemoryBufferRef obj = LLVMCreateMemoryBufferWithMemoryRange(
-          outStream.str().data(), outStream.str().size(), "Input",
-          /*RequiresNullTerminator=*/0);
-      LLVMMemoryBufferRef bytecode = nullptr;
-      char *errMsg = nullptr;
-      if (LLVMLinkEraVM(obj, &bytecode, /*linkerSymbolNames=*/nullptr,
-                        /*linkerSymbolValues=*/nullptr, /*numLinkerSymbols=*/0,
-                        &errMsg))
-        llvm_unreachable(errMsg);
-
-      bytecodeInHex = llvm::toHex(llvm::unwrap(bytecode)->getBuffer(),
-                                  /*LowerCase=*/true);
-
-      LLVMDisposeMemoryBuffer(bytecode);
+      assert(job.tgt == Target::EraVM && "NYI");
+      std::unique_ptr<llvm::Module> llvmMod =
+          genLLVMIR(mod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
+      genEraVMBytecode(*llvmMod, *tgtMach, out);
     }
 
     break;
