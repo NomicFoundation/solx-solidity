@@ -4,6 +4,7 @@ object "Test" {
   code {
     mstore(0, memoryguard(1))
     mstore(0, mload(1))
+    mcopy(0, 10, 5)
   }
 }
 
@@ -20,6 +21,12 @@ object "Test" {
 // CHECK-NEXT:     %2 = llvm.load %1 {alignment = 1 : i64} : !llvm.ptr<1> -> i256 loc(#loc6)
 // CHECK-NEXT:     %3 = llvm.inttoptr %c0_i256_0 : i256 to !llvm.ptr<1> loc(#loc7)
 // CHECK-NEXT:     llvm.store %2, %3 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc7)
+// CHECK-NEXT:     %c0_i256_2 = arith.constant 0 : i256 loc(#loc8)
+// CHECK-NEXT:     %c10_i256 = arith.constant 10 : i256 loc(#loc9)
+// CHECK-NEXT:     %c5_i256 = arith.constant 5 : i256 loc(#loc10)
+// CHECK-NEXT:     %4 = llvm.inttoptr %c0_i256_2 : i256 to !llvm.ptr<1> loc(#loc11)
+// CHECK-NEXT:     %5 = llvm.inttoptr %c10_i256 : i256 to !llvm.ptr<1> loc(#loc11)
+// CHECK-NEXT:     "llvm.intr.memmove"(%4, %5, %c5_i256) <{isVolatile = false}> : (!llvm.ptr<1>, !llvm.ptr<1>, i256) -> () loc(#loc11)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)
@@ -31,4 +38,8 @@ object "Test" {
 // CHECK-NEXT: #loc5 = loc({{.*}}:5:20)
 // CHECK-NEXT: #loc6 = loc({{.*}}:5:14)
 // CHECK-NEXT: #loc7 = loc({{.*}}:5:4)
+// CHECK-NEXT: #loc8 = loc({{.*}}:6:10)
+// CHECK-NEXT: #loc9 = loc({{.*}}:6:13)
+// CHECK-NEXT: #loc10 = loc({{.*}}:6:17)
+// CHECK-NEXT: #loc11 = loc({{.*}}:6:4)
 // CHECK-EMPTY:

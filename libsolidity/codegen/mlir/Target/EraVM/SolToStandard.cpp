@@ -373,16 +373,14 @@ struct MCopyOpLowering : public OpRewritePattern<sol::MCopyOp> {
                                 PatternRewriter &r) const override {
     // TODO? Check m_evmVersion.hasMcopy() and legalize here?
 
-    Location loc = op->getLoc();
-    eravm::Builder eraB(r, loc);
+    eravm::Builder eraB(r, op->getLoc());
 
     // Generate the memmove.
     // FIXME: Add align 1 param attribute.
-    r.create<LLVM::MemmoveOp>(loc, eraB.genHeapPtr(op.getDst()),
-                              eraB.genHeapPtr(op.getSrc()), op.getSize(),
-                              /*isVolatile=*/false);
-
-    r.eraseOp(op);
+    r.replaceOpWithNewOp<LLVM::MemmoveOp>(op, eraB.genHeapPtr(op.getDst()),
+                                          eraB.genHeapPtr(op.getSrc()),
+                                          op.getSize(),
+                                          /*isVolatile=*/false);
     return success();
   }
 };

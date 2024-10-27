@@ -261,6 +261,25 @@ struct MStoreOpLowering : public OpRewritePattern<sol::MStoreOp> {
   }
 };
 
+struct MCopyOpLowering : public OpRewritePattern<sol::MCopyOp> {
+  using OpRewritePattern<sol::MCopyOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::MCopyOp op,
+                                PatternRewriter &r) const override {
+    // TODO? Check m_evmVersion.hasMcopy() and legalize here?
+
+    evm::Builder evmB(r, op->getLoc());
+
+    // Generate the memmove.
+    // FIXME: Add align 1 param attribute.
+    r.replaceOpWithNewOp<LLVM::MemmoveOp>(op, evmB.genHeapPtr(op.getDst()),
+                                          evmB.genHeapPtr(op.getSrc()),
+                                          op.getSize(),
+                                          /*isVolatile=*/false);
+    return success();
+  }
+};
+
 struct MemGuardOpLowering : public OpRewritePattern<sol::MemGuardOp> {
   using OpRewritePattern<sol::MemGuardOp>::OpRewritePattern;
 
@@ -374,6 +393,6 @@ void evm::populateYulPats(RewritePatternSet &pats) {
            CallDataCopyOpLowering, SLoadOpLowering, SStoreOpLowering,
            DataOffsetOpLowering, DataSizeOpLowering, CodeSizeOpLowering,
            CodeCopyOpLowering, MLoadOpLowering, MStoreOpLowering,
-           MemGuardOpLowering, RevertOpLowering, BuiltinRetOpLowering,
-           ObjectOpLowering>(pats.getContext());
+           MCopyOpLowering, MemGuardOpLowering, RevertOpLowering,
+           BuiltinRetOpLowering, ObjectOpLowering>(pats.getContext());
 }
