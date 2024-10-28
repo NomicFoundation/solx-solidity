@@ -212,7 +212,43 @@ static mlir::ModuleOp extractRuntimeModule(mlir::ModuleOp creationMod) {
 static void genEvmBytecode(llvm::Module &creationMod, llvm::Module &runtimeMod,
                            llvm::TargetMachine &tgtMach,
                            solidity::mlirgen::Output &out) {
-  llvm_unreachable("NYI");
+  // Schedule the pass to generate the object.
+  llvm::legacy::PassManager llvmPassMgr;
+  llvm::SmallString<0> outStreamData;
+  llvm::raw_svector_ostream outStream(outStreamData);
+  tgtMach.addPassesToEmitFile(llvmPassMgr, outStream,
+                              /*DwoOut=*/nullptr,
+                              llvm::CodeGenFileType::CGFT_ObjectFile);
+
+  LLVMMemoryBufferRef objs[2];
+  const char *objIds[2];
+
+  // Generate creation obj.
+  llvmPassMgr.run(creationMod);
+  objs[0] = LLVMCreateMemoryBufferWithMemoryRange(
+      outStream.str().data(), outStream.str().size(), "Input",
+      /*RequiresNullTerminator=*/0);
+  objIds[0] = "Test"; // FIXME
+
+  // Generate runtime obj.
+  outStreamData.clear();
+  llvmPassMgr.run(runtimeMod);
+  objs[1] = LLVMCreateMemoryBufferWithMemoryRange(
+      outStream.str().data(), outStream.str().size(), "Input",
+      /*RequiresNullTerminator=*/0);
+  objIds[1] = "Test_deployed"; // FIXME
+
+  LLVMMemoryBufferRef bytecodes[2];
+  char *errMsg = nullptr;
+  if (LLVMLinkEVM(objs, objIds, /*numInBuffers=*/2, bytecodes, &errMsg))
+    llvm_unreachable(errMsg);
+  out.creationBytecode = llvm::toHex(llvm::unwrap(bytecodes[0])->getBuffer(),
+                                     /*LowerCase=*/true);
+  out.runtimeBytecode = llvm::toHex(llvm::unwrap(bytecodes[1])->getBuffer(),
+                                    /*LowerCase=*/true);
+
+  LLVMDisposeMemoryBuffer(objs[0]);
+  LLVMDisposeMemoryBuffer(objs[1]);
 }
 
 static void genEraVMBytecode(llvm::Module &llvmMod,
