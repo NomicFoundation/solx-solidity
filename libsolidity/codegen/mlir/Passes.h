@@ -64,6 +64,6 @@ void setTgtSpecificInfoInModule(Target tgt, llvm::Module &llvmMod,
 
 // FIXME: We don't always generate the bytecode here. Refactor this mess!
 /// Performs the JobSpec
-bool doJob(JobSpec const &, mlir::ModuleOp, mlirgen::Output &out);
+bool doJob(JobSpec const &, mlir::ModuleOp, mlirgen::Output &);
 
 } // namespace solidity::mlirgen

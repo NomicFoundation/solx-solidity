@@ -209,6 +209,12 @@ static mlir::ModuleOp extractRuntimeModule(mlir::ModuleOp creationMod) {
   return {};
 }
 
+static void genEvmBytecode(llvm::Module &creationMod, llvm::Module &runtimeMod,
+                           llvm::TargetMachine &tgtMach,
+                           solidity::mlirgen::Output &out) {
+  llvm_unreachable("NYI");
+}
+
 static void genEraVMBytecode(llvm::Module &llvmMod,
                              llvm::TargetMachine &tgtMach,
                              solidity::mlirgen::Output &out) {
@@ -234,11 +240,12 @@ static void genEraVMBytecode(llvm::Module &llvmMod,
                                      /*LowerCase=*/true);
   out.runtimeBytecode = out.creationBytecode;
 
+  LLVMDisposeMemoryBuffer(obj);
   LLVMDisposeMemoryBuffer(bytecode);
 }
 
 bool solidity::mlirgen::doJob(JobSpec const &job, mlir::ModuleOp mod,
-                              mlirgen::Output &out) {
+                              mlirgen::Output &bytecodeOut) {
   mlir::PassManager passMgr(mod.getContext());
   llvm::LLVMContext llvmCtx;
 
@@ -331,10 +338,30 @@ bool solidity::mlirgen::doJob(JobSpec const &job, mlir::ModuleOp mod,
       };
 
     } else {
-      assert(job.tgt == Target::EraVM && "NYI");
-      std::unique_ptr<llvm::Module> llvmMod =
-          genLLVMIR(mod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
-      genEraVMBytecode(*llvmMod, *tgtMach, out);
+      switch (job.tgt) {
+      case Target::EVM: {
+        auto creationMod = mod;
+        mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
+        assert(runtimeMod);
+
+        // TODO: Run in parallel?
+        std::unique_ptr<llvm::Module> creationLlvmMod =
+            genLLVMIR(creationMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
+        std::unique_ptr<llvm::Module> runtimeLlvmMod =
+            genLLVMIR(runtimeMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
+        genEvmBytecode(*creationLlvmMod, *runtimeLlvmMod, *tgtMach,
+                       bytecodeOut);
+        break;
+      }
+      case Target::EraVM: {
+        std::unique_ptr<llvm::Module> llvmMod =
+            genLLVMIR(mod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
+        genEraVMBytecode(*llvmMod, *tgtMach, bytecodeOut);
+        break;
+      }
+      default:
+        llvm_unreachable("Invalid target");
+      };
     }
 
     break;
