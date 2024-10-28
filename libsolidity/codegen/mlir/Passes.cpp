@@ -209,37 +209,31 @@ static mlir::ModuleOp extractRuntimeModule(mlir::ModuleOp creationMod) {
   return {};
 }
 
+DEFINE_SIMPLE_CONVERSION_FUNCTIONS(llvm::TargetMachine, LLVMTargetMachineRef)
+
 static void genEvmBytecode(llvm::Module &creationMod, llvm::Module &runtimeMod,
                            llvm::TargetMachine &tgtMach,
                            solidity::mlirgen::Output &out) {
-  // Schedule the pass to generate the object.
-  llvm::legacy::PassManager llvmPassMgr;
-  llvm::SmallString<0> outStreamData;
-  llvm::raw_svector_ostream outStream(outStreamData);
-  tgtMach.addPassesToEmitFile(llvmPassMgr, outStream,
-                              /*DwoOut=*/nullptr,
-                              llvm::CodeGenFileType::CGFT_ObjectFile);
-
+  LLVMTargetMachineRef tgtMachWrapped = wrap(&tgtMach);
   LLVMMemoryBufferRef objs[2];
   const char *objIds[2];
+  char *errMsg = nullptr;
 
   // Generate creation obj.
-  llvmPassMgr.run(creationMod);
-  objs[0] = LLVMCreateMemoryBufferWithMemoryRange(
-      outStream.str().data(), outStream.str().size(), "Input",
-      /*RequiresNullTerminator=*/0);
-  objIds[0] = "Test"; // FIXME
+  LLVMModuleRef creationModWrapped = wrap(&creationMod);
+  if (LLVMTargetMachineEmitToMemoryBuffer(tgtMachWrapped, creationModWrapped,
+                                          LLVMObjectFile, &errMsg, &objs[0]))
+    llvm_unreachable(errMsg);
+  objIds[0] = "C_9"; // FIXME
 
   // Generate runtime obj.
-  outStreamData.clear();
-  llvmPassMgr.run(runtimeMod);
-  objs[1] = LLVMCreateMemoryBufferWithMemoryRange(
-      outStream.str().data(), outStream.str().size(), "Input",
-      /*RequiresNullTerminator=*/0);
-  objIds[1] = "Test_deployed"; // FIXME
+  LLVMModuleRef runtimeModWrapped = wrap(&runtimeMod);
+  if (LLVMTargetMachineEmitToMemoryBuffer(tgtMachWrapped, runtimeModWrapped,
+                                          LLVMObjectFile, &errMsg, &objs[1]))
+    llvm_unreachable(errMsg);
+  objIds[1] = "C_9_deployed"; // FIXME
 
   LLVMMemoryBufferRef bytecodes[2];
-  char *errMsg = nullptr;
   if (LLVMLinkEVM(objs, objIds, /*numInBuffers=*/2, bytecodes, &errMsg))
     llvm_unreachable(errMsg);
   out.creationBytecode = llvm::toHex(llvm::unwrap(bytecodes[0])->getBuffer(),
