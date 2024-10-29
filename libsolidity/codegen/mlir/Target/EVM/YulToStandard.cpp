@@ -377,6 +377,7 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
     } else {
       auto creationMod = obj->getParentOfType<ModuleOp>();
       assert(creationMod);
+      creationMod.setName(objName);
       moveObjToMod(obj, creationMod, r);
     }
 

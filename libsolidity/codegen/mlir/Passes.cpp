@@ -212,6 +212,8 @@ static mlir::ModuleOp extractRuntimeModule(mlir::ModuleOp creationMod) {
 DEFINE_SIMPLE_CONVERSION_FUNCTIONS(llvm::TargetMachine, LLVMTargetMachineRef)
 
 static void genEvmBytecode(llvm::Module &creationMod, llvm::Module &runtimeMod,
+                           llvm::StringRef creationObjName,
+                           llvm::StringRef runtimeObjName,
                            llvm::TargetMachine &tgtMach,
                            solidity::mlirgen::Output &out) {
   LLVMTargetMachineRef tgtMachWrapped = wrap(&tgtMach);
@@ -224,14 +226,14 @@ static void genEvmBytecode(llvm::Module &creationMod, llvm::Module &runtimeMod,
   if (LLVMTargetMachineEmitToMemoryBuffer(tgtMachWrapped, creationModWrapped,
                                           LLVMObjectFile, &errMsg, &objs[0]))
     llvm_unreachable(errMsg);
-  objIds[0] = "C_9"; // FIXME
+  objIds[0] = creationObjName.data();
 
   // Generate runtime obj.
   LLVMModuleRef runtimeModWrapped = wrap(&runtimeMod);
   if (LLVMTargetMachineEmitToMemoryBuffer(tgtMachWrapped, runtimeModWrapped,
                                           LLVMObjectFile, &errMsg, &objs[1]))
     llvm_unreachable(errMsg);
-  objIds[1] = "C_9_deployed"; // FIXME
+  objIds[1] = runtimeObjName.data();
 
   LLVMMemoryBufferRef bytecodes[2];
   if (LLVMLinkEVM(objs, objIds, /*numInBuffers=*/2, bytecodes, &errMsg))
@@ -337,7 +339,6 @@ bool solidity::mlirgen::doJob(JobSpec const &job, mlir::ModuleOp mod,
     if (mlir::failed(passMgr.run(mod)))
       llvm_unreachable("Conversion to llvm dialect failed");
 
-    // Create TargetMachine and generate llvm-ir.
     std::unique_ptr<llvm::TargetMachine> tgtMach = createTargetMachine(job.tgt);
     setTgtMachOpt(tgtMach.get(), job.optLevel);
 
@@ -379,7 +380,10 @@ bool solidity::mlirgen::doJob(JobSpec const &job, mlir::ModuleOp mod,
             genLLVMIR(creationMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
         std::unique_ptr<llvm::Module> runtimeLlvmMod =
             genLLVMIR(runtimeMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
-        genEvmBytecode(*creationLlvmMod, *runtimeLlvmMod, *tgtMach,
+
+        assert(creationMod.getName() && runtimeMod.getName());
+        genEvmBytecode(*creationLlvmMod, *runtimeLlvmMod,
+                       *creationMod.getName(), *runtimeMod.getName(), *tgtMach,
                        bytecodeOut);
         break;
       }
