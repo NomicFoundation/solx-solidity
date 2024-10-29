@@ -1068,10 +1068,10 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     evm::Builder evmB(r, loc);
 
     // Generate the creation and runtime ObjectOp.
-    auto creationObj = r.create<sol::ObjectOp>(loc, op.getSymName());
+    auto creationObj = r.create<sol::ObjectOp>(loc, op.getName());
     r.setInsertionPointToStart(creationObj.getBody());
-    auto runtimeObj = r.create<sol::ObjectOp>(
-        loc, std::string(op.getSymName()) + "_deployed");
+    auto runtimeObj =
+        r.create<sol::ObjectOp>(loc, std::string(op.getName()) + "_deployed");
 
     // Copy contained function to creation and runtime ObjectOp.
     std::vector<sol::FuncOp> funcs;

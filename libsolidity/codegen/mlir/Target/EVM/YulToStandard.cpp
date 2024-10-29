@@ -366,7 +366,7 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
                                 PatternRewriter &r) const override {
     Location loc = obj.getLoc();
 
-    StringRef objName = obj.getSymName();
+    StringRef objName = obj.getName();
 
     // Is this a runtime object?
     // FIXME: Is there a better way to check this?

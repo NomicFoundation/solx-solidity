@@ -458,7 +458,7 @@ def Sol_ReturnOp : Sol_Op<"return", [Pure, HasParent<"FuncOp">,
 //
 
 def Sol_ObjectOp : Sol_Op<"object", [Symbol, SymbolTable, SingleBlock,
-                          NoTerminator]> {
+                                     NoTerminator]> {
   let arguments = (ins SymbolNameAttr:$sym_name);
   let regions = (region SizedRegion<1>:$bodyRegion);
 

@@ -65,7 +65,7 @@ static bool inRuntimeContext(Operation *op) {
   // If there's no parent FuncOp, check the parent ObjectOp
   auto parentObj = op->getParentOfType<sol::ObjectOp>();
   if (parentObj) {
-    return parentObj.getSymName().endswith("_deployed");
+    return parentObj.getName().endswith("_deployed");
   }
 
   llvm_unreachable("op has no parent FuncOp or ObjectOp");
@@ -614,7 +614,7 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
 
     // Is this a runtime object?
     // FIXME: Is there a better way to check this?
-    if (objOp.getSymName().endswith("_deployed")) {
+    if (objOp.getName().endswith("_deployed")) {
       // Move the runtime object region under the __runtime function
       sol::FuncOp runtimeFunc = eraB.getOrInsertRuntimeFuncOp(
           "__runtime", r.getFunctionType({}, {}), mod);
@@ -749,7 +749,7 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
     // Move the runtime object getter under the ObjectOp public API
     for (auto const &op : *objOp.getBody()) {
       if (auto runtimeObj = dyn_cast<sol::ObjectOp>(&op)) {
-        assert(runtimeObj.getSymName().endswith("_deployed"));
+        assert(runtimeObj.getName().endswith("_deployed"));
         assert(runtimeFuncRegion.empty());
         r.inlineRegionBefore(runtimeObj.getRegion(), runtimeFuncRegion,
                              runtimeFuncRegion.begin());

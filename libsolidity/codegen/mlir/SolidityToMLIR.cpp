@@ -300,7 +300,7 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Identifier const *id) {
                                         mlir::sol::DataLocation::Storage);
       // TODO: Should we use the state variable's location here?
       return b.create<mlir::sol::AddrOfOp>(stateVarOp.getLoc(), addrTy,
-                                           stateVarOp.getSymName());
+                                           stateVarOp.getName());
     }
 
     // Local variable.
