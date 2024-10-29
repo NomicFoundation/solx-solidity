@@ -433,7 +433,8 @@ std::optional<Json> checkAuxiliaryInputKeys(Json const& _input)
 
 std::optional<Json> checkSettingsKeys(Json const& _input)
 {
-	static std::set<std::string> keys{"debug", "evmVersion", "eofVersion", "libraries", "metadata", "modelChecker", "optimizer", "outputSelection", "remappings", "stopAfter", "viaIR", "mlir"};
+	static std::set<std::string> keys{"debug", "evmVersion", "eofVersion", "libraries", "metadata", "modelChecker", "optimizer", "outputSelection", "remappings", "stopAfter", "viaIR"};
+	keys.insert({"codegen", "target"});
 	return checkKeys(_input, keys, "settings");
 }
 
@@ -445,7 +446,7 @@ std::optional<Json> checkModelCheckerSettingsKeys(Json const& _input)
 
 std::optional<Json> checkOptimizerKeys(Json const& _input)
 {
-	static std::set<std::string> keys{"details", "enabled", "runs"};
+	static std::set<std::string> keys{"details", "enabled", "runs", "mode"};
 	return checkKeys(_input, keys, "settings.optimizer");
 }
 
@@ -453,32 +454,6 @@ std::optional<Json> checkOptimizerDetailsKeys(Json const& _input)
 {
 	static std::set<std::string> keys{"peephole", "inliner", "jumpdestRemover", "orderLiterals", "deduplicate", "cse", "constantOptimizer", "yul", "yulDetails", "simpleCounterForLoopUncheckedIncrement"};
 	return checkKeys(_input, keys, "settings.optimizer.details");
-}
-
-std::optional<Json> checkMlirSettingsKeys(Json const& _input, mlirgen::JobSpec& jobSpec)
-{
-	if (auto result = checkKeys(_input, {"target", "optLevel"}, "settings.mlir"))
-		return *result;
-
-	if (_input.contains("target"))
-	{
-		if (!_input["target"].is_string())
-			return formatFatalError(Error::Type::JSONError, "\"settings.mlir.target\" must be a string");
-		jobSpec.tgt = mlirgen::strToTarget(_input["target"].get<std::string>());
-	}
-	else
-		return formatFatalError(Error::Type::JSONError, "\"settings.mlir.target\" is required");
-
-	if (_input.contains("optLevel"))
-	{
-		if (!_input["optLevel"].is_string())
-			return formatFatalError(Error::Type::JSONError, "\"settings.mlir.optLevel\" must be a string");
-		jobSpec.optLevel = _input["optLevel"].get<std::string>().c_str()[0];
-	}
-	else
-		return formatFatalError(Error::Type::JSONError, "\"settings.mlir.optLevel\" is required");
-
-	return std::nullopt;
 }
 
 std::optional<Json> checkOptimizerDetail(Json const& _details, std::string const& _name, bool& _setting)
@@ -594,7 +569,7 @@ std::optional<Json> checkOutputSelection(Json const& _outputSelection)
 
 /// Validates the optimizer settings and returns them in a parsed object.
 /// On error returns the json-formatted error message.
-std::variant<OptimiserSettings, Json> parseOptimizerSettings(Json const& _jsonInput)
+std::variant<OptimiserSettings, Json> parseOptimizerSettings(Json const& _jsonInput, mlirgen::JobSpec& mlirJobSpec)
 {
 	if (auto result = checkOptimizerKeys(_jsonInput))
 		return *result;
@@ -661,9 +636,17 @@ std::variant<OptimiserSettings, Json> parseOptimizerSettings(Json const& _jsonIn
 				return *error;
 		}
 	}
+
+	if (_jsonInput.contains("mode"))
+	{
+		if (!_jsonInput["mode"].is_string())
+			return formatFatalError(Error::Type::JSONError, "The \"mode\" setting must be a string.");
+
+		mlirJobSpec.optLevel = _jsonInput["mode"].get<std::string>().c_str()[0];
+	}
+
 	return {std::move(settings)};
 }
-
 }
 
 std::variant<StandardCompiler::InputsAndSettings, Json> StandardCompiler::parseInput(Json const& _input)
@@ -850,13 +833,27 @@ std::variant<StandardCompiler::InputsAndSettings, Json> StandardCompiler::parseI
 		ret.viaIR = settings["viaIR"].get<bool>();
 	}
 
-	if (settings.contains("mlir"))
+	if (settings.contains("codegen"))
 	{
+		if (!settings["codegen"].is_string())
+			return formatFatalError(Error::Type::JSONError, "\"settings.codegen\" must be a string.");
+		solAssert(settings["codegen"].get<std::string>() == "mlir", "");
+
 		// FIXME: We should check if the bytecode was requested.
 		ret.mlirJobSpec.action = mlirgen::Action::GenObj;
-		if (auto result = checkMlirSettingsKeys(settings["mlir"], ret.mlirJobSpec))
-			return *result;
 	}
+
+	if (settings.contains("target"))
+	{
+		if (!settings["target"].is_string())
+			return formatFatalError(Error::Type::JSONError, "\"settings.target\" must be a string.");
+		ret.mlirJobSpec.tgt = mlirgen::strToTarget(settings["target"].get<std::string>());
+	}
+
+	if ((settings.contains("codegen") && !settings.contains("target"))
+		|| (!settings.contains("codegen") && settings.contains("target")))
+		return formatFatalError(
+			Error::Type::JSONError, "\"settings.codegen\" and \"settings.target\" depend on each other.");
 
 	if (settings.contains("evmVersion"))
 	{
@@ -945,11 +942,15 @@ std::variant<StandardCompiler::InputsAndSettings, Json> StandardCompiler::parseI
 
 	if (settings.contains("optimizer"))
 	{
-		auto optimiserSettings = parseOptimizerSettings(settings["optimizer"]);
+		auto optimiserSettings = parseOptimizerSettings(settings["optimizer"], ret.mlirJobSpec);
 		if (std::holds_alternative<Json>(optimiserSettings))
 			return std::get<Json>(std::move(optimiserSettings)); // was an error
 		else
+		{
+			if (settings["optimizer"].contains("mode") && !settings.contains("codegen"))
+				return formatFatalError(Error::Type::JSONError, "\"settings.codegen\" is required.");
 			ret.optimiserSettings = std::get<OptimiserSettings>(std::move(optimiserSettings));
+		}
 	}
 
 	Json const& jsonLibraries = settings.value("libraries", Json::object());

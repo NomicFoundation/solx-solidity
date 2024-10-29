@@ -8,9 +8,10 @@
     }
   },
   "settings": {
-    "mlir": {
-      "target": "evm",
-      "optLevel": "3"
+    "codegen": "mlir",
+    "target": "evm",
+    "optimizer": {
+      "mode": "3"
     },
     "outputSelection": {
       "*": {
