@@ -179,6 +179,7 @@ genLLVMIR(mlir::ModuleOp mod, solidity::mlirgen::Target tgt, char optLevel,
   mlir::registerBuiltinDialectTranslation(*mod.getContext());
   std::unique_ptr<llvm::Module> llvmMod =
       mlir::translateModuleToLLVMIR(mod, llvmCtx);
+  assert(llvmMod);
 
   // Set target specfic info in the llvm module.
   setTgtSpecificInfoInModule(tgt, *llvmMod, tgtMach);
@@ -285,6 +286,7 @@ bool solidity::mlirgen::doJob(JobSpec const &job, mlir::ModuleOp mod,
   case Action::PrintInitStg:
     mod.print(llvm::outs());
     break;
+
   case Action::PrintStandardMLIR:
     assert(job.tgt != Target::Undefined);
     passMgr.addPass(mlir::sol::createConvertSolToStandardPass(job.tgt));
@@ -292,6 +294,7 @@ bool solidity::mlirgen::doJob(JobSpec const &job, mlir::ModuleOp mod,
       llvm_unreachable("Conversion to standard dialects failed");
     mod.print(llvm::outs());
     break;
+
   case Action::PrintLLVMIR: {
     assert(job.tgt != Target::Undefined);
 
@@ -332,7 +335,44 @@ bool solidity::mlirgen::doJob(JobSpec const &job, mlir::ModuleOp mod,
 
     break;
   }
-  case Action::PrintAsm:
+
+  case Action::PrintAsm: {
+    // Convert the module's ir to llvm dialect.
+    addConversionPasses(passMgr, job.tgt);
+    if (mlir::failed(passMgr.run(mod)))
+      llvm_unreachable("Conversion to llvm dialect failed");
+
+    std::unique_ptr<llvm::TargetMachine> tgtMach = createTargetMachine(job.tgt);
+    setTgtMachOpt(tgtMach.get(), job.optLevel);
+
+    switch (job.tgt) {
+    case Target::EVM: {
+      auto creationMod = mod;
+      mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
+      assert(runtimeMod);
+
+      // TODO: Run in parallel?
+      std::unique_ptr<llvm::Module> creationLlvmMod =
+          genLLVMIR(creationMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
+      std::unique_ptr<llvm::Module> runtimeLlvmMod =
+          genLLVMIR(runtimeMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
+
+      printAsm(*creationLlvmMod, *tgtMach);
+      printAsm(*runtimeLlvmMod, *tgtMach);
+      break;
+    }
+    case Target::EraVM: {
+      std::unique_ptr<llvm::Module> llvmMod =
+          genLLVMIR(mod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
+      printAsm(*llvmMod, *tgtMach);
+      break;
+    }
+    default:
+      llvm_unreachable("Invalid target");
+    };
+    break;
+  }
+
   case Action::GenObj: {
     // Convert the module's ir to llvm dialect.
     addConversionPasses(passMgr, job.tgt);
@@ -342,64 +382,36 @@ bool solidity::mlirgen::doJob(JobSpec const &job, mlir::ModuleOp mod,
     std::unique_ptr<llvm::TargetMachine> tgtMach = createTargetMachine(job.tgt);
     setTgtMachOpt(tgtMach.get(), job.optLevel);
 
-    if (job.action == Action::PrintAsm) {
-      switch (job.tgt) {
-      case Target::EVM: {
-        auto creationMod = mod;
-        mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
-        assert(runtimeMod);
+    switch (job.tgt) {
+    case Target::EVM: {
+      auto creationMod = mod;
+      mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
+      assert(runtimeMod);
 
-        // TODO: Run in parallel?
-        std::unique_ptr<llvm::Module> creationLlvmMod =
-            genLLVMIR(creationMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
-        std::unique_ptr<llvm::Module> runtimeLlvmMod =
-            genLLVMIR(runtimeMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
-        printAsm(*creationLlvmMod, *tgtMach);
-        printAsm(*runtimeLlvmMod, *tgtMach);
-        break;
-      }
-      case Target::EraVM: {
-        std::unique_ptr<llvm::Module> llvmMod =
-            genLLVMIR(mod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
-        printAsm(*llvmMod, *tgtMach);
-        break;
-      }
-      default:
-        llvm_unreachable("Invalid target");
-      };
+      // TODO: Run in parallel?
+      std::unique_ptr<llvm::Module> creationLlvmMod =
+          genLLVMIR(creationMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
+      std::unique_ptr<llvm::Module> runtimeLlvmMod =
+          genLLVMIR(runtimeMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
 
-    } else {
-      switch (job.tgt) {
-      case Target::EVM: {
-        auto creationMod = mod;
-        mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
-        assert(runtimeMod);
-
-        // TODO: Run in parallel?
-        std::unique_ptr<llvm::Module> creationLlvmMod =
-            genLLVMIR(creationMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
-        std::unique_ptr<llvm::Module> runtimeLlvmMod =
-            genLLVMIR(runtimeMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
-
-        assert(creationMod.getName() && runtimeMod.getName());
-        genEvmBytecode(*creationLlvmMod, *runtimeLlvmMod,
-                       *creationMod.getName(), *runtimeMod.getName(), *tgtMach,
-                       bytecodeOut);
-        break;
-      }
-      case Target::EraVM: {
-        std::unique_ptr<llvm::Module> llvmMod =
-            genLLVMIR(mod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
-        genEraVMBytecode(*llvmMod, *tgtMach, bytecodeOut);
-        break;
-      }
-      default:
-        llvm_unreachable("Invalid target");
-      };
+      assert(creationMod.getName() && runtimeMod.getName());
+      genEvmBytecode(*creationLlvmMod, *runtimeLlvmMod, *creationMod.getName(),
+                     *runtimeMod.getName(), *tgtMach, bytecodeOut);
+      break;
     }
+    case Target::EraVM: {
+      std::unique_ptr<llvm::Module> llvmMod =
+          genLLVMIR(mod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
+      genEraVMBytecode(*llvmMod, *tgtMach, bytecodeOut);
+      break;
+    }
+    default:
+      llvm_unreachable("Invalid target");
+    };
 
     break;
   }
+
   case Action::Undefined:
     llvm_unreachable("Undefined action");
   }
