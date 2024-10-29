@@ -1,4 +1,4 @@
-// RUN: solc --mlir-action=print-std-mlir --mlir-target=eravm --mmlir --mlir-print-debuginfo %s | FileCheck %s
+// RUN: solc --mlir-action=print-std-mlir --mlir-target=evm --mmlir --mlir-print-debuginfo %s | FileCheck %s
 
 function f_ui(uint256 a) {}
 function f_si(int256 a) {}
@@ -47,24 +47,22 @@ function chk_si(int256 a, int256 b) {
 // CHECK: #NonPayable = #sol<StateMutability NonPayable>
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: module {
-// CHECK-NEXT:   func.func private @".unreachable"() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} {
+// CHECK-NEXT:   func.func private @".unreachable"() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)
-// CHECK-NEXT:   func.func private @__revert(i256, i256, i256) attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
-// CHECK-NEXT:   func.func private @__personality() -> i32 attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
-// CHECK-NEXT:   func.func @f_ui_6(%arg0: i256 loc(unknown)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @f_ui_6(%arg0: i256 loc(unknown)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc3)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr<i256> loc(#loc3)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc3)
 // CHECK-NEXT:     return loc(#loc2)
 // CHECK-NEXT:   } loc(#loc2)
-// CHECK-NEXT:   func.func @f_si_12(%arg0: i256 loc(unknown)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @f_si_12(%arg0: i256 loc(unknown)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc5)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr<i256> loc(#loc5)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc5)
 // CHECK-NEXT:     return loc(#loc4)
 // CHECK-NEXT:   } loc(#loc4)
-// CHECK-NEXT:   func.func @unchk_ui_51(%arg0: i256 loc(unknown), %arg1: i256 loc(unknown)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @unchk_ui_51(%arg0: i256 loc(unknown), %arg1: i256 loc(unknown)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc7)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr<i256> loc(#loc7)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc7)
@@ -97,7 +95,7 @@ function chk_si(int256 a, int256 b) {
 // CHECK-NEXT:     call @f_ui_6(%19) : (i256) -> () loc(#loc23)
 // CHECK-NEXT:     return loc(#loc6)
 // CHECK-NEXT:   } loc(#loc6)
-// CHECK-NEXT:   func.func @unchk_si_90(%arg0: i256 loc(unknown), %arg1: i256 loc(unknown)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @unchk_si_90(%arg0: i256 loc(unknown), %arg1: i256 loc(unknown)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc25)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr<i256> loc(#loc25)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc25)
@@ -130,7 +128,7 @@ function chk_si(int256 a, int256 b) {
 // CHECK-NEXT:     call @f_si_12(%19) : (i256) -> () loc(#loc41)
 // CHECK-NEXT:     return loc(#loc24)
 // CHECK-NEXT:   } loc(#loc24)
-// CHECK-NEXT:   func.func @chk_ui_118(%arg0: i256 loc(unknown), %arg1: i256 loc(unknown)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @chk_ui_118(%arg0: i256 loc(unknown), %arg1: i256 loc(unknown)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc43)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr<i256> loc(#loc43)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc43)
@@ -152,8 +150,8 @@ function chk_si(int256 a, int256 b) {
 // CHECK-NEXT:       llvm.store %c17_i256, %19 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:       %c0_i256_1 = arith.constant 0 : i256 loc(#loc1)
 // CHECK-NEXT:       %c24_i256 = arith.constant 24 : i256 loc(#loc1)
-// CHECK-NEXT:       %c2_i256 = arith.constant 2 : i256 loc(#loc1)
-// CHECK-NEXT:       func.call @__revert(%c0_i256_1, %c24_i256, %c2_i256) : (i256, i256, i256) -> () loc(#loc1)
+// CHECK-NEXT:       %20 = llvm.inttoptr %c0_i256_1 : i256 to !llvm.ptr<1> loc(#loc1)
+// CHECK-NEXT:       "llvm.intrcall"(%20, %c24_i256) <{id = 3253 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     llvm.store %4, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc1)
@@ -172,8 +170,8 @@ function chk_si(int256 a, int256 b) {
 // CHECK-NEXT:       llvm.store %c17_i256, %19 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc47)
 // CHECK-NEXT:       %c0_i256_1 = arith.constant 0 : i256 loc(#loc47)
 // CHECK-NEXT:       %c24_i256 = arith.constant 24 : i256 loc(#loc47)
-// CHECK-NEXT:       %c2_i256 = arith.constant 2 : i256 loc(#loc47)
-// CHECK-NEXT:       func.call @__revert(%c0_i256_1, %c24_i256, %c2_i256) : (i256, i256, i256) -> () loc(#loc47)
+// CHECK-NEXT:       %20 = llvm.inttoptr %c0_i256_1 : i256 to !llvm.ptr<1> loc(#loc47)
+// CHECK-NEXT:       "llvm.intrcall"(%20, %c24_i256) <{id = 3253 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc47)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc47)
 // CHECK-NEXT:     } loc(#loc47)
 // CHECK-NEXT:     llvm.store %8, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc47)
@@ -192,8 +190,8 @@ function chk_si(int256 a, int256 b) {
 // CHECK-NEXT:       llvm.store %c17_i256, %19 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc48)
 // CHECK-NEXT:       %c0_i256_1 = arith.constant 0 : i256 loc(#loc48)
 // CHECK-NEXT:       %c24_i256 = arith.constant 24 : i256 loc(#loc48)
-// CHECK-NEXT:       %c2_i256 = arith.constant 2 : i256 loc(#loc48)
-// CHECK-NEXT:       func.call @__revert(%c0_i256_1, %c24_i256, %c2_i256) : (i256, i256, i256) -> () loc(#loc48)
+// CHECK-NEXT:       %20 = llvm.inttoptr %c0_i256_1 : i256 to !llvm.ptr<1> loc(#loc48)
+// CHECK-NEXT:       "llvm.intrcall"(%20, %c24_i256) <{id = 3253 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc48)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc48)
 // CHECK-NEXT:     } loc(#loc48)
 // CHECK-NEXT:     call @f_ui_6(%12) : (i256) -> () loc(#loc50)
@@ -212,14 +210,14 @@ function chk_si(int256 a, int256 b) {
 // CHECK-NEXT:       llvm.store %c17_i256, %19 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc51)
 // CHECK-NEXT:       %c0_i256_1 = arith.constant 0 : i256 loc(#loc51)
 // CHECK-NEXT:       %c24_i256 = arith.constant 24 : i256 loc(#loc51)
-// CHECK-NEXT:       %c2_i256 = arith.constant 2 : i256 loc(#loc51)
-// CHECK-NEXT:       func.call @__revert(%c0_i256_1, %c24_i256, %c2_i256) : (i256, i256, i256) -> () loc(#loc51)
+// CHECK-NEXT:       %20 = llvm.inttoptr %c0_i256_1 : i256 to !llvm.ptr<1> loc(#loc51)
+// CHECK-NEXT:       "llvm.intrcall"(%20, %c24_i256) <{id = 3253 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc51)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc51)
 // CHECK-NEXT:     } loc(#loc51)
 // CHECK-NEXT:     call @f_ui_6(%16) : (i256) -> () loc(#loc53)
 // CHECK-NEXT:     return loc(#loc42)
 // CHECK-NEXT:   } loc(#loc42)
-// CHECK-NEXT:   func.func @chk_si_146(%arg0: i256 loc(unknown), %arg1: i256 loc(unknown)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @chk_si_146(%arg0: i256 loc(unknown), %arg1: i256 loc(unknown)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc55)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr<i256> loc(#loc55)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc55)
@@ -248,8 +246,8 @@ function chk_si(int256 a, int256 b) {
 // CHECK-NEXT:       llvm.store %c17_i256, %43 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc58)
 // CHECK-NEXT:       %c0_i256_5 = arith.constant 0 : i256 loc(#loc58)
 // CHECK-NEXT:       %c24_i256 = arith.constant 24 : i256 loc(#loc58)
-// CHECK-NEXT:       %c2_i256 = arith.constant 2 : i256 loc(#loc58)
-// CHECK-NEXT:       func.call @__revert(%c0_i256_5, %c24_i256, %c2_i256) : (i256, i256, i256) -> () loc(#loc58)
+// CHECK-NEXT:       %44 = llvm.inttoptr %c0_i256_5 : i256 to !llvm.ptr<1> loc(#loc58)
+// CHECK-NEXT:       "llvm.intrcall"(%44, %c24_i256) <{id = 3253 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc58)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc58)
 // CHECK-NEXT:     } loc(#loc58)
 // CHECK-NEXT:     llvm.store %4, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc58)
@@ -275,8 +273,8 @@ function chk_si(int256 a, int256 b) {
 // CHECK-NEXT:       llvm.store %c17_i256, %43 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc60)
 // CHECK-NEXT:       %c0_i256_5 = arith.constant 0 : i256 loc(#loc60)
 // CHECK-NEXT:       %c24_i256 = arith.constant 24 : i256 loc(#loc60)
-// CHECK-NEXT:       %c2_i256 = arith.constant 2 : i256 loc(#loc60)
-// CHECK-NEXT:       func.call @__revert(%c0_i256_5, %c24_i256, %c2_i256) : (i256, i256, i256) -> () loc(#loc60)
+// CHECK-NEXT:       %44 = llvm.inttoptr %c0_i256_5 : i256 to !llvm.ptr<1> loc(#loc60)
+// CHECK-NEXT:       "llvm.intrcall"(%44, %c24_i256) <{id = 3253 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc60)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc60)
 // CHECK-NEXT:     } loc(#loc60)
 // CHECK-NEXT:     llvm.store %14, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc60)
@@ -302,8 +300,8 @@ function chk_si(int256 a, int256 b) {
 // CHECK-NEXT:       llvm.store %c17_i256, %43 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc61)
 // CHECK-NEXT:       %c0_i256_5 = arith.constant 0 : i256 loc(#loc61)
 // CHECK-NEXT:       %c24_i256 = arith.constant 24 : i256 loc(#loc61)
-// CHECK-NEXT:       %c2_i256 = arith.constant 2 : i256 loc(#loc61)
-// CHECK-NEXT:       func.call @__revert(%c0_i256_5, %c24_i256, %c2_i256) : (i256, i256, i256) -> () loc(#loc61)
+// CHECK-NEXT:       %44 = llvm.inttoptr %c0_i256_5 : i256 to !llvm.ptr<1> loc(#loc61)
+// CHECK-NEXT:       "llvm.intrcall"(%44, %c24_i256) <{id = 3253 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc61)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc61)
 // CHECK-NEXT:     } loc(#loc61)
 // CHECK-NEXT:     call @f_si_12(%24) : (i256) -> () loc(#loc63)
@@ -329,8 +327,8 @@ function chk_si(int256 a, int256 b) {
 // CHECK-NEXT:       llvm.store %c17_i256, %43 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc64)
 // CHECK-NEXT:       %c0_i256_5 = arith.constant 0 : i256 loc(#loc64)
 // CHECK-NEXT:       %c24_i256 = arith.constant 24 : i256 loc(#loc64)
-// CHECK-NEXT:       %c2_i256 = arith.constant 2 : i256 loc(#loc64)
-// CHECK-NEXT:       func.call @__revert(%c0_i256_5, %c24_i256, %c2_i256) : (i256, i256, i256) -> () loc(#loc64)
+// CHECK-NEXT:       %44 = llvm.inttoptr %c0_i256_5 : i256 to !llvm.ptr<1> loc(#loc64)
+// CHECK-NEXT:       "llvm.intrcall"(%44, %c24_i256) <{id = 3253 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc64)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc64)
 // CHECK-NEXT:     } loc(#loc64)
 // CHECK-NEXT:     call @f_si_12(%34) : (i256) -> () loc(#loc66)
