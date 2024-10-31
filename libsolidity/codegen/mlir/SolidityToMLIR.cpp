@@ -25,7 +25,6 @@
 #include "liblangutil/SourceLocation.h"
 #include "libsolidity/ast/AST.h"
 #include "libsolidity/ast/ASTEnums.h"
-#include "libsolidity/ast/ASTVisitor.h"
 #include "libsolidity/ast/Types.h"
 #include "libsolidity/codegen/mlir/Interface.h"
 #include "libsolidity/codegen/mlir/Passes.h"
@@ -52,10 +51,7 @@ using namespace solidity::frontend;
 
 namespace solidity::frontend {
 
-// FIXME: ASTConstVisitor + the ast accept() api is becoming a pain point in the
-// design here. We should either rewrite the usage here or completely remove the
-// dependence.
-class SolidityToMLIRPass : public ASTConstVisitor {
+class SolidityToMLIRPass {
 public:
   explicit SolidityToMLIRPass(mlir::MLIRContext &ctx, CharStream const &stream)
       : b(&ctx), stream(stream) {}
@@ -181,11 +177,25 @@ private:
   mlir::Value genRValExpr(Expression const *expr,
                           std::optional<mlir::Type> resTy = std::nullopt);
 
-  bool visit(ExpressionStatement const &) override;
-  bool visit(VariableDeclarationStatement const &) override;
-  bool visit(EmitStatement const &) override;
-  bool visit(Return const &) override;
-  bool visit(Block const &) override;
+  /// Lowers the expression statement.
+  void lower(ExpressionStatement const &);
+
+  /// Lowers the emit statement.
+  void lower(EmitStatement const &);
+
+  /// Lowers the return statement.
+  void lower(Return const &);
+
+  /// Lowers the variable declaration statement.
+  void lower(VariableDeclarationStatement const &);
+
+  /// Lower the statement.
+  void lower(Statement const &);
+
+  /// Lowers the block.
+  void lower(Block const &);
+
+  /// Lowers the function definition.
   void lower(FunctionDefinition const &);
 };
 
@@ -751,12 +761,11 @@ mlir::Value SolidityToMLIRPass::genRValExpr(Expression const *expr,
   return val;
 }
 
-bool SolidityToMLIRPass::visit(ExpressionStatement const &exprStmt) {
+void SolidityToMLIRPass::lower(ExpressionStatement const &exprStmt) {
   genLValExpr(&exprStmt.expression());
-  return true;
 }
 
-bool SolidityToMLIRPass::visit(
+void SolidityToMLIRPass::lower(
     VariableDeclarationStatement const &varDeclStmt) {
   assert(varDeclStmt.declarations().size() == 1 && "NYI");
   VariableDeclaration const *varDecl = varDeclStmt.declarations()[0].get();
@@ -775,22 +784,19 @@ bool SolidityToMLIRPass::visit(
   } else {
     genZeroedVal(addr);
   }
-
-  return true;
 }
 
-bool SolidityToMLIRPass::visit(EmitStatement const &emit) {
+void SolidityToMLIRPass::lower(EmitStatement const &emit) {
   genExpr(&emit.eventCall());
-  return true;
 }
 
-bool SolidityToMLIRPass::visit(Return const &ret) {
+void SolidityToMLIRPass::lower(Return const &ret) {
   auto currFuncResTys =
       currFunc->functionType(/*FIXME*/ true)->returnParameterTypes();
 
   // The function generator emits `ReturnOp` for empty result
   if (currFuncResTys.empty())
-    return true;
+    return;
 
   assert(currFuncResTys.size() == 1 && "NYI: Multivalued return");
 
@@ -802,13 +808,29 @@ bool SolidityToMLIRPass::visit(Return const &ret) {
   } else {
     llvm_unreachable("NYI: Empty return");
   }
-
-  return true;
 }
 
-bool SolidityToMLIRPass::visit(Block const &blk) {
+void SolidityToMLIRPass::lower(Statement const &stmt) {
+  if (auto *exprStmt = dynamic_cast<ExpressionStatement const *>(&stmt))
+    lower(*exprStmt);
+  else if (auto *varDeclStmt =
+               dynamic_cast<VariableDeclarationStatement const *>(&stmt))
+    lower(*varDeclStmt);
+  else if (auto *emitStmt = dynamic_cast<EmitStatement const *>(&stmt))
+    lower(*emitStmt);
+  else if (auto *retStmt = dynamic_cast<Return const *>(&stmt))
+    lower(*retStmt);
+  else if (auto *blk = dynamic_cast<Block const *>(&stmt))
+    lower(*blk);
+  else
+    llvm_unreachable("NYI");
+}
+
+void SolidityToMLIRPass::lower(Block const &blk) {
   currBlk = &blk;
-  return true;
+  for (const ASTPointer<Statement> &stmt : blk.statements()) {
+    lower(*stmt);
+  }
 }
 
 /// Returns the mlir::sol::StateMutability of the function
@@ -869,7 +891,7 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &func) {
     b.create<mlir::sol::StoreOp>(inpLoc, arg, addr);
   }
 
-  func.accept(*this);
+  lower(func.body());
 
   // Generate empty return
   if (outTys.empty())
