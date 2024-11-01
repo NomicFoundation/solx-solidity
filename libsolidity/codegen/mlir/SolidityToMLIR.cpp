@@ -190,7 +190,7 @@ private:
   /// Lowers the variable declaration statement.
   void lower(VariableDeclarationStatement const &);
 
-  /// Lowers the if statement.
+  /// Lowers the if-then-else statement.
   void lower(IfStatement const &);
 
   /// Lower the statement.
@@ -830,19 +830,31 @@ void SolidityToMLIRPass::lower(IfStatement const &ifStmt) {
 }
 
 void SolidityToMLIRPass::lower(Statement const &stmt) {
+  // Expression
   if (auto *exprStmt = dynamic_cast<ExpressionStatement const *>(&stmt))
     lower(*exprStmt);
+
+  // Variable declaration
   else if (auto *varDeclStmt =
                dynamic_cast<VariableDeclarationStatement const *>(&stmt))
     lower(*varDeclStmt);
+
+  // Emit
   else if (auto *emitStmt = dynamic_cast<EmitStatement const *>(&stmt))
     lower(*emitStmt);
+
+  // Return
   else if (auto *retStmt = dynamic_cast<Return const *>(&stmt))
     lower(*retStmt);
+
+  // If-then-else
   else if (auto *ifStmt = dynamic_cast<IfStatement const *>(&stmt))
     lower(*ifStmt);
+
+  // Block
   else if (auto *blk = dynamic_cast<Block const *>(&stmt))
     lower(*blk);
+
   else
     llvm_unreachable("NYI");
 }
