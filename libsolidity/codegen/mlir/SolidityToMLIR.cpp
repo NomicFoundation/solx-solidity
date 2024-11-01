@@ -31,6 +31,7 @@
 #include "libsolidity/codegen/mlir/Util.h"
 #include "libsolidity/interface/CompilerStack.h"
 #include "libsolutil/CommonIO.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/AsmState.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
@@ -191,6 +192,9 @@ private:
 
   /// Lower the statement.
   void lower(Statement const &);
+
+  /// Lowers the if statement.
+  void lower(IfStatement const &);
 
   /// Lowers the block.
   void lower(Block const &);
@@ -820,10 +824,27 @@ void SolidityToMLIRPass::lower(Statement const &stmt) {
     lower(*emitStmt);
   else if (auto *retStmt = dynamic_cast<Return const *>(&stmt))
     lower(*retStmt);
+  else if (auto *ifStmt = dynamic_cast<IfStatement const *>(&stmt))
+    lower(*ifStmt);
   else if (auto *blk = dynamic_cast<Block const *>(&stmt))
     lower(*blk);
   else
     llvm_unreachable("NYI");
+}
+
+void SolidityToMLIRPass::lower(IfStatement const &ifStmt) {
+  mlir::Value cond = genRValExpr(&ifStmt.condition());
+  bool withElse = ifStmt.falseStatement() ? true : false;
+  auto ifOp =
+      b.create<mlir::scf::IfOp>(getLoc(ifStmt.location()), cond, withElse);
+
+  mlir::OpBuilder::InsertionGuard insertGuard(b);
+  b.setInsertionPointToStart(ifOp.thenBlock());
+  lower(ifStmt.trueStatement());
+  if (withElse) {
+    b.setInsertionPointToStart(ifOp.elseBlock());
+    lower(*ifStmt.falseStatement());
+  }
 }
 
 void SolidityToMLIRPass::lower(Block const &blk) {
@@ -831,6 +852,7 @@ void SolidityToMLIRPass::lower(Block const &blk) {
   for (const ASTPointer<Statement> &stmt : blk.statements()) {
     lower(*stmt);
   }
+  // FIXME: Set currBlk back to parent block.
 }
 
 /// Returns the mlir::sol::StateMutability of the function
@@ -951,6 +973,8 @@ bool CompilerStack::runMlirPipeline() {
 
   mlir::MLIRContext ctx;
   ctx.getOrLoadDialect<mlir::sol::SolDialect>();
+  ctx.getOrLoadDialect<mlir::scf::SCFDialect>();
+
   for (Source const *src : m_sourceOrder) {
     SolidityToMLIRPass gen(ctx, *src->charStream);
 
