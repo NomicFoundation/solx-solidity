@@ -190,11 +190,11 @@ private:
   /// Lowers the variable declaration statement.
   void lower(VariableDeclarationStatement const &);
 
-  /// Lower the statement.
-  void lower(Statement const &);
-
   /// Lowers the if statement.
   void lower(IfStatement const &);
+
+  /// Lower the statement.
+  void lower(Statement const &);
 
   /// Lowers the block.
   void lower(Block const &);
@@ -814,6 +814,21 @@ void SolidityToMLIRPass::lower(Return const &ret) {
   }
 }
 
+void SolidityToMLIRPass::lower(IfStatement const &ifStmt) {
+  mlir::Value cond = genRValExpr(&ifStmt.condition());
+  bool withElse = ifStmt.falseStatement() ? true : false;
+  auto ifOp =
+      b.create<mlir::scf::IfOp>(getLoc(ifStmt.location()), cond, withElse);
+
+  mlir::OpBuilder::InsertionGuard insertGuard(b);
+  b.setInsertionPointToStart(ifOp.thenBlock());
+  lower(ifStmt.trueStatement());
+  if (withElse) {
+    b.setInsertionPointToStart(ifOp.elseBlock());
+    lower(*ifStmt.falseStatement());
+  }
+}
+
 void SolidityToMLIRPass::lower(Statement const &stmt) {
   if (auto *exprStmt = dynamic_cast<ExpressionStatement const *>(&stmt))
     lower(*exprStmt);
@@ -832,27 +847,13 @@ void SolidityToMLIRPass::lower(Statement const &stmt) {
     llvm_unreachable("NYI");
 }
 
-void SolidityToMLIRPass::lower(IfStatement const &ifStmt) {
-  mlir::Value cond = genRValExpr(&ifStmt.condition());
-  bool withElse = ifStmt.falseStatement() ? true : false;
-  auto ifOp =
-      b.create<mlir::scf::IfOp>(getLoc(ifStmt.location()), cond, withElse);
-
-  mlir::OpBuilder::InsertionGuard insertGuard(b);
-  b.setInsertionPointToStart(ifOp.thenBlock());
-  lower(ifStmt.trueStatement());
-  if (withElse) {
-    b.setInsertionPointToStart(ifOp.elseBlock());
-    lower(*ifStmt.falseStatement());
-  }
-}
-
 void SolidityToMLIRPass::lower(Block const &blk) {
+  Block const *parentBlk = currBlk;
   currBlk = &blk;
   for (const ASTPointer<Statement> &stmt : blk.statements()) {
     lower(*stmt);
   }
-  // FIXME: Set currBlk back to parent block.
+  currBlk = parentBlk;
 }
 
 /// Returns the mlir::sol::StateMutability of the function
