@@ -23,6 +23,7 @@
 #define MLIR_SOL_SOLOPS_TD
 
 include "SolBase.td"
+include "SolInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 include "mlir/IR/BuiltinAttributeInterfaces.td"
@@ -253,6 +254,76 @@ def Sol_RequireOp : Sol_Op<"require"> {
   let arguments = (ins I1:$cond, DefaultValuedStrAttr<StrAttr, "">:$msg);
 
   let assemblyFormat = "$cond `,` $msg attr-dict";
+}
+
+// TODO: Implement verifiers for sol.break and sol.continue that checks if it
+// has an ancestor loop op.
+
+def Sol_BreakOp : Sol_Op<"break", [Terminator]> {
+  let assemblyFormat = "attr-dict";
+}
+
+def Sol_ContinueOp : Sol_Op<"continue", [Terminator]> {
+  let assemblyFormat = "attr-dict";
+}
+
+def Sol_ConditionOp : Sol_Op<"condition", [
+  Terminator,
+  DeclareOpInterfaceMethods<RegionBranchTerminatorOpInterface,
+                            ["getSuccessorRegions"]>
+]> {
+  let arguments = (ins I1:$condition);
+
+  let assemblyFormat = "$condition attr-dict";
+}
+
+def Sol_YieldOp : Sol_Op<"yield", [ReturnLike, Terminator,
+    ParentOneOf<["WhileOp", "DoWhileOp"]>]> {
+  let arguments = (ins Variadic<AnyType>:$ins);
+
+  let builders = [
+    OpBuilder<(ins), [{ /* nothing to do */ }]>,
+  ];
+
+  let assemblyFormat = "($ins^ `:` type($ins))? attr-dict";
+}
+
+class Sol_WhileOpBase<string mnemonic> : Sol_Op<mnemonic, [
+  LoopOpInterface,
+  NoRegionArguments,
+]> {
+  defvar isWhile = !eq(mnemonic, "while");
+  let builders = [
+    OpBuilder<(ins "function_ref<void(OpBuilder &, Location)>":$condBuilder,
+                   "function_ref<void(OpBuilder &, Location)>":$bodyBuilder), [{
+        OpBuilder::InsertionGuard guard($_builder);
+        $_builder.createBlock($_state.addRegion());
+      }] # !if(isWhile, [{
+        condBuilder($_builder, $_state.location);
+        $_builder.createBlock($_state.addRegion());
+        bodyBuilder($_builder, $_state.location);
+      }], [{
+        bodyBuilder($_builder, $_state.location);
+        $_builder.createBlock($_state.addRegion());
+        condBuilder($_builder, $_state.location);
+      }])>
+  ];
+}
+
+def Sol_WhileOp : Sol_WhileOpBase<"while"> {
+  let regions = (region SizedRegion<1>:$cond, MinSizedRegion<1>:$body);
+
+  let assemblyFormat = "$cond `do` $body attr-dict";
+}
+
+def Sol_DoWhileOp : Sol_WhileOpBase<"do"> {
+  let regions = (region MinSizedRegion<1>:$body, SizedRegion<1>:$cond);
+
+  let assemblyFormat = " $body `while` $cond attr-dict";
+
+  let extraClassDeclaration = [{
+    Region &getEntry() { return getBody(); }
+  }];
 }
 
 def Sol_ContractOp : Sol_Op<"contract", [Symbol, SymbolTable, SingleBlock,

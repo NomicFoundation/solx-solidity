@@ -25,6 +25,7 @@
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/mlir/Target/EraVM/SolToStandard.h"
 #include "libsolidity/codegen/mlir/Target/EraVM/Util.h"
+#include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -80,8 +81,8 @@ struct ConvertSolToStandard
       : PassWrapper(other) {}
 
   void getDependentDialects(DialectRegistry &reg) const override {
-    reg.insert<func::FuncDialect, scf::SCFDialect, arith::ArithDialect,
-               LLVM::LLVMDialect>();
+    reg.insert<func::FuncDialect, scf::SCFDialect, cf::ControlFlowDialect,
+               arith::ArithDialect, LLVM::LLVMDialect>();
   }
 
   // TODO: Generalize this comment.
@@ -119,13 +120,14 @@ struct ConvertSolToStandard
     ConversionTarget convTgt(getContext());
     convTgt.addLegalOp<ModuleOp>();
     convTgt.addLegalDialect<sol::SolDialect, func::FuncDialect, scf::SCFDialect,
-                            arith::ArithDialect, LLVM::LLVMDialect>();
-    convTgt.addIllegalOp<sol::ConstantOp, sol::ExtOp, sol::TruncOp, sol::AddOp,
-                         sol::SubOp, sol::MulOp, sol::CmpOp, sol::CAddOp,
-                         sol::CSubOp, sol::AllocaOp, sol::MallocOp,
-                         sol::AddrOfOp, sol::GepOp, sol::MapOp, sol::CopyOp,
-                         sol::DataLocCastOp, sol::LoadOp, sol::StoreOp,
-                         sol::EmitOp, sol::RequireOp, sol::ConvCastOp>();
+                            cf::ControlFlowDialect, arith::ArithDialect,
+                            LLVM::LLVMDialect>();
+    convTgt.addIllegalOp<
+        sol::ConstantOp, sol::ExtOp, sol::TruncOp, sol::AddOp, sol::SubOp,
+        sol::MulOp, sol::CmpOp, sol::CAddOp, sol::CSubOp, sol::AllocaOp,
+        sol::MallocOp, sol::AddrOfOp, sol::GepOp, sol::MapOp, sol::CopyOp,
+        sol::DataLocCastOp, sol::LoadOp, sol::StoreOp, sol::EmitOp,
+        sol::RequireOp, sol::ConvCastOp, sol::WhileOp, sol::DoWhileOp>();
     convTgt.addDynamicallyLegalOp<sol::FuncOp>([&](sol::FuncOp op) {
       return tyConv.isSignatureLegal(op.getFunctionType());
     });

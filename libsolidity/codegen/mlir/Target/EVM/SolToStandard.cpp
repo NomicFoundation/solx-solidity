@@ -22,6 +22,7 @@
 #include "libsolidity/codegen/mlir/Target/EVM/YulToStandard.h"
 #include "libsolidity/codegen/mlir/Util.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/Types.h"
@@ -842,6 +843,104 @@ struct EmitOpLowering : public OpConversionPattern<sol::EmitOp> {
   }
 };
 
+// (Copied and modified from clangir).
+struct LoopOpInterfaceLowering
+    : public OpInterfaceRewritePattern<sol::LoopOpInterface> {
+  using OpInterfaceRewritePattern<
+      sol::LoopOpInterface>::OpInterfaceRewritePattern;
+
+  /// Walks a region while skipping operations of type `Ops`. This ensures the
+  /// callback is not applied to said operations and its children.
+  template <typename... Ops>
+  void
+  walkRegionSkipping(Region &region,
+                     function_ref<WalkResult(Operation *)> callback) const {
+    region.walk<WalkOrder::PreOrder>([&](Operation *op) {
+      if (isa<Ops...>(op))
+        return WalkResult::skip();
+      return callback(op);
+    });
+  }
+
+  /// Lowers operations with the terminator trait that have a single successor.
+  void lowerTerminator(Operation *op, Block *dest, PatternRewriter &r) const {
+    assert(op->hasTrait<OpTrait::IsTerminator>() && "not a terminator");
+    OpBuilder::InsertionGuard guard(r);
+    r.setInsertionPoint(op);
+    r.replaceOpWithNewOp<cf::BranchOp>(op, dest);
+  }
+
+  void lowerConditionOp(sol::ConditionOp op, Block *body, Block *exit,
+                        PatternRewriter &r) const {
+    OpBuilder::InsertionGuard guard(r);
+    r.setInsertionPoint(op);
+    r.replaceOpWithNewOp<cf::CondBranchOp>(op, op.getCondition(), body, exit);
+  }
+
+  LogicalResult matchAndRewrite(sol::LoopOpInterface op,
+                                PatternRewriter &r) const override {
+    // Setup CFG blocks.
+    Block *entry = r.getInsertionBlock();
+    Block *exit = r.splitBlock(entry, r.getInsertionPoint());
+    Block *cond = &op.getCond().front();
+    Block *body = &op.getBody().front();
+    Block *step = (op.maybeGetStep() ? &op.maybeGetStep()->front() : nullptr);
+
+    // Setup loop entry branch.
+    r.setInsertionPointToEnd(entry);
+    r.create<cf::BranchOp>(op.getLoc(), &op.getEntry().front());
+
+    // Branch from condition region to body or exit.
+    auto conditionOp = cast<sol::ConditionOp>(cond->getTerminator());
+    lowerConditionOp(conditionOp, body, exit, r);
+
+    // TODO: Remove the walks below. It visits operations unnecessarily,
+    // however, to solve this we would likely need a custom DialectConversion
+    // driver to customize the order that operations are visited.
+
+    // Lower continue statements.
+    Block *dest = (step ? step : cond);
+    op.walkBodySkippingNestedLoops([&](Operation *op) {
+      if (!isa<sol::ContinueOp>(op))
+        return WalkResult::advance();
+
+      lowerTerminator(op, dest, r);
+      return WalkResult::skip();
+    });
+
+    // Lower break statements.
+    // FIXME: Skip sol.switch once we implement it.
+    walkRegionSkipping<sol::LoopOpInterface /* TODO:, sol::SwitchOp */>(
+        op.getBody(), [&](Operation *op) {
+          if (!isa<sol::BreakOp>(op))
+            return WalkResult::advance();
+
+          lowerTerminator(op, exit, r);
+          return mlir::WalkResult::skip();
+        });
+
+    // Lower optional body region yield.
+    for (Block &blk : op.getBody().getBlocks()) {
+      auto bodyYield = dyn_cast<sol::YieldOp>(blk.getTerminator());
+      if (bodyYield)
+        lowerTerminator(bodyYield, (step ? step : cond), r);
+    }
+
+    // Lower mandatory step region yield.
+    if (step)
+      lowerTerminator(cast<sol::YieldOp>(step->getTerminator()), cond, r);
+
+    // Move region contents out of the loop op.
+    r.inlineRegionBefore(op.getCond(), exit);
+    r.inlineRegionBefore(op.getBody(), exit);
+    if (step)
+      r.inlineRegionBefore(*op.maybeGetStep(), exit);
+
+    r.eraseOp(op);
+    return success();
+  }
+};
+
 struct CallOpLowering : public OpConversionPattern<sol::CallOp> {
   using OpConversionPattern<sol::CallOp>::OpConversionPattern;
 
@@ -1204,6 +1303,10 @@ void evm::populateMemPats(RewritePatternSet &pats, TypeConverter &tyConv) {
   pats.add<AddrOfOpLowering>(pats.getContext());
 }
 
+void evm::populateControlFlowPats(RewritePatternSet &pats) {
+  pats.add<LoopOpInterfaceLowering>(pats.getContext());
+}
+
 void evm::populateFuncPats(RewritePatternSet &pats, TypeConverter &tyConv) {
   pats.add<CallOpLowering, ReturnOpLowering, FuncOpLowering>(tyConv,
                                                              pats.getContext());
@@ -1217,7 +1320,7 @@ void evm::populateRequirePat(RewritePatternSet &pats) {
   pats.add<RequireOpLowering>(pats.getContext());
 }
 
-void evm::populateContrPat(RewritePatternSet &pats) {
+void evm::populateContractPat(RewritePatternSet &pats) {
   pats.add<ContractOpLowering>(pats.getContext());
 }
 
@@ -1227,9 +1330,10 @@ void evm::populateStage1Pats(RewritePatternSet &pats, TypeConverter &tyConv) {
   populateMemPats(pats, tyConv);
   populateEmitPat(pats, tyConv);
   populateRequirePat(pats);
+  populateControlFlowPats(pats);
 }
 
 void evm::populateStage2Pats(RewritePatternSet &pats) {
-  populateContrPat(pats);
+  populateContractPat(pats);
   populateYulPats(pats);
 }

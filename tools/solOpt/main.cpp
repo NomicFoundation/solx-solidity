@@ -35,8 +35,7 @@ using namespace mlir;
 
 int main(int argc, char **argv) {
   DialectRegistry registry;
-  registry.insert<BuiltinDialect, sol::SolDialect, func::FuncDialect,
-                  arith::ArithDialect, LLVM::LLVMDialect>();
+  registry.insert<BuiltinDialect, sol::SolDialect>();
 
   registerPass([](void) -> std::unique_ptr<Pass> {
     return sol::createConvertSolToStandardPass();

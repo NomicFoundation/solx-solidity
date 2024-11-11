@@ -56,12 +56,15 @@ void populateEmitPat(mlir::RewritePatternSet &pats,
 /// Adds the conversion pattern of sol.require.
 void populateRequirePat(mlir::RewritePatternSet &pats);
 
+/// Adds the conversion patterns of control flow ops in the sol dialect.
+void populateControlFlowPats(mlir::RewritePatternSet &pats);
+
 /// Adds the conversion patterns of func and related ops in the sol dialect.
 void populateFuncPats(mlir::RewritePatternSet &pats,
                       mlir::TypeConverter &tyConv);
 
 /// Adds the conversion pattern of sol.contract.
-void populateContrPat(mlir::RewritePatternSet &pats);
+void populateContractPat(mlir::RewritePatternSet &pats);
 
 void populateStage1Pats(mlir::RewritePatternSet &pats,
                         mlir::TypeConverter &tyConv);

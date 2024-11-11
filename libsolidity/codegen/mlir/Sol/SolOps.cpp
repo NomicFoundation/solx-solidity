@@ -16,6 +16,7 @@
 // SPDX-License-Identifier: GPL-3.0
 
 #include "SolOps.h"
+#include "Sol/SolInterfaces.cpp.inc"
 #include "Sol/SolOpsDialect.cpp.inc"
 #include "Sol/SolOpsEnums.cpp.inc"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -318,6 +319,73 @@ Type PointerType::parse(AsmParser &parser) {
 void PointerType::print(AsmPrinter &printer) const {
   printer << "<" << getPointeeType() << ", "
           << stringifyDataLocation(getDataLocation()) << ">";
+}
+
+//===----------------------------------------------------------------------===//
+// ConditionOp
+//===----------------------------------------------------------------------===//
+
+MutableOperandRange
+ConditionOp::getMutableSuccessorOperands(std::optional<unsigned> index) {
+  // No values are yielded to the successor region.
+  return MutableOperandRange(getOperation(), 0, 0);
+}
+
+//===----------------------------------------------------------------------===//
+// LoopOpInterface
+//===----------------------------------------------------------------------===//
+
+void LoopOpInterface::getLoopOpSuccessorRegions(
+    LoopOpInterface op, std::optional<unsigned> index,
+    SmallVectorImpl<RegionSuccessor> &regions) {
+  auto getRegionOrNull = [&](std::optional<unsigned> index,
+                             Operation *op) -> Region * {
+    if (!index)
+      return nullptr;
+    return &op->getRegion(*index);
+  };
+
+  // Branching to first region: go to condition or body (do-while).
+  if (!index) {
+    regions.emplace_back(&op.getEntry(), op.getEntry().getArguments());
+  }
+  // Branching from condition: go to body or exit.
+  else if (&op.getCond() == getRegionOrNull(index, op)) {
+    regions.emplace_back(RegionSuccessor(op->getResults()));
+    regions.emplace_back(&op.getBody(), op.getBody().getArguments());
+  }
+  // Branching from body: go to step (for) or condition.
+  else if (&op.getBody() == getRegionOrNull(index, op)) {
+    // FIXME: Should we consider break/continue statements here?
+    auto *afterBody = (op.maybeGetStep() ? op.maybeGetStep() : &op.getCond());
+    regions.emplace_back(afterBody, afterBody->getArguments());
+  }
+  // Branching from step: go to condition.
+  else if (op.maybeGetStep() == getRegionOrNull(index, op)) {
+    regions.emplace_back(&op.getCond(), op.getCond().getArguments());
+  } else {
+    llvm_unreachable("unexpected branch origin");
+  }
+}
+
+//===----------------------------------------------------------------------===//
+// WhileOp
+//===----------------------------------------------------------------------===//
+
+void WhileOp::getSuccessorRegions(std::optional<unsigned> index,
+                                  ArrayRef<Attribute> operands,
+                                  SmallVectorImpl<RegionSuccessor> &regions) {
+  LoopOpInterface::getLoopOpSuccessorRegions(*this, index, regions);
+}
+
+//===----------------------------------------------------------------------===//
+// DoWhileOp
+//===----------------------------------------------------------------------===//
+
+void DoWhileOp::getSuccessorRegions(std::optional<unsigned> index,
+                                    ArrayRef<Attribute> operands,
+                                    SmallVectorImpl<RegionSuccessor> &regions) {
+  LoopOpInterface::getLoopOpSuccessorRegions(*this, index, regions);
 }
 
 //===----------------------------------------------------------------------===//

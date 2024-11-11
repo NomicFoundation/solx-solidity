@@ -31,6 +31,7 @@
 #include "mlir/Interfaces/InferTypeOpInterface.h"
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 
+#include "Sol/SolInterfaces.h.inc"
 #include "Sol/SolOpsDialect.h.inc"
 #include "Sol/SolOpsEnums.h.inc"
 

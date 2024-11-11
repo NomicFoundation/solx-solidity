@@ -807,7 +807,7 @@ void eravm::populateStage1Pats(RewritePatternSet &pats, TypeConverter &tyConv) {
 }
 
 void eravm::populateStage2Pats(RewritePatternSet &pats) {
-  evm::populateContrPat(pats);
+  evm::populateContractPat(pats);
   pats.add<ObjectOpLowering, BuiltinRetOpLowering, RevertOpLowering,
            MLoadOpLowering, MStoreOpLowering, MCopyOpLowering,
            DataOffsetOpLowering, DataSizeOpLowering, CodeSizeOpLowering,
