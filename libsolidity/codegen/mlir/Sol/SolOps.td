@@ -278,7 +278,7 @@ def Sol_ConditionOp : Sol_Op<"condition", [
 }
 
 def Sol_YieldOp : Sol_Op<"yield", [ReturnLike, Terminator,
-    ParentOneOf<["WhileOp", "DoWhileOp"]>]> {
+    ParentOneOf<["IfOp", "WhileOp", "DoWhileOp"]>]> {
   let arguments = (ins Variadic<AnyType>:$ins);
 
   let builders = [
@@ -286,6 +286,24 @@ def Sol_YieldOp : Sol_Op<"yield", [ReturnLike, Terminator,
   ];
 
   let assemblyFormat = "($ins^ `:` type($ins))? attr-dict";
+}
+
+def Sol_IfOp : Sol_Op<"if",
+      [DeclareOpInterfaceMethods<RegionBranchOpInterface>,
+       AutomaticAllocationScope, NoRegionArguments]> {
+  let arguments = (ins I1:$cond);
+  let regions = (region AnyRegion:$thenRegion, AnyRegion:$elseRegion);
+
+  let builders = [
+    OpBuilder<(ins "mlir::Value":$cond, "bool":$withElseRegion,
+      CArg<"llvm::function_ref<void(mlir::OpBuilder &, mlir::Location)>",
+           "buildTerminatedBody">:$thenBuilder,
+      CArg<"llvm::function_ref<void(mlir::OpBuilder &, mlir::Location)>",
+           "nullptr">:$elseBuilder)>
+  ];
+  let skipDefaultBuilders = 1;
+
+  let assemblyFormat = "$cond $thenRegion `else` $elseRegion attr-dict";
 }
 
 class Sol_WhileOpBase<string mnemonic> : Sol_Op<mnemonic, [

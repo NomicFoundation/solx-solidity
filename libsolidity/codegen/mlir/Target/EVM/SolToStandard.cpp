@@ -844,6 +844,67 @@ struct EmitOpLowering : public OpConversionPattern<sol::EmitOp> {
 };
 
 // (Copied and modified from clangir).
+struct IfOpLowering : public OpRewritePattern<sol::IfOp> {
+  using OpRewritePattern<sol::IfOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::IfOp ifOp,
+                                PatternRewriter &r) const override {
+    Location loc = ifOp.getLoc();
+
+    bool emptyElse = ifOp.getElseRegion().empty();
+    Block *currentBlock = r.getInsertionBlock();
+    Block *remainingOpsBlock =
+        r.splitBlock(currentBlock, r.getInsertionPoint());
+    Block *continueBlock;
+    if (ifOp->getResults().empty())
+      continueBlock = remainingOpsBlock;
+    else
+      llvm_unreachable("NYI");
+
+    // Inline then region.
+    Block *thenBeforeBody = &ifOp.getThenRegion().front();
+    Block *thenAfterBody = &ifOp.getThenRegion().back();
+    r.inlineRegionBefore(ifOp.getThenRegion(), continueBlock);
+
+    r.setInsertionPointToEnd(thenAfterBody);
+    if (auto thenYieldOp =
+            dyn_cast<sol::YieldOp>(thenAfterBody->getTerminator())) {
+      r.replaceOpWithNewOp<cf::BranchOp>(thenYieldOp, thenYieldOp.getIns(),
+                                         continueBlock);
+    }
+
+    r.setInsertionPointToEnd(continueBlock);
+
+    // Has else region: inline it.
+    Block *elseBeforeBody = nullptr;
+    Block *elseAfterBody = nullptr;
+    if (!emptyElse) {
+      elseBeforeBody = &ifOp.getElseRegion().front();
+      elseAfterBody = &ifOp.getElseRegion().back();
+      r.inlineRegionBefore(ifOp.getElseRegion(), thenAfterBody);
+    } else {
+      elseBeforeBody = elseAfterBody = continueBlock;
+    }
+
+    r.setInsertionPointToEnd(currentBlock);
+    r.create<cf::CondBranchOp>(loc, ifOp.getCond(), thenBeforeBody,
+                               elseBeforeBody);
+
+    if (!emptyElse) {
+      r.setInsertionPointToEnd(elseAfterBody);
+      if (auto elseYieldOp =
+              dyn_cast<sol::YieldOp>(elseAfterBody->getTerminator())) {
+        r.replaceOpWithNewOp<cf::BranchOp>(elseYieldOp, elseYieldOp.getIns(),
+                                           continueBlock);
+      }
+    }
+
+    r.replaceOp(ifOp, continueBlock->getArguments());
+    return success();
+  }
+};
+
+// (Copied and modified from clangir).
 struct LoopOpInterfaceLowering
     : public OpInterfaceRewritePattern<sol::LoopOpInterface> {
   using OpInterfaceRewritePattern<
@@ -1304,6 +1365,7 @@ void evm::populateMemPats(RewritePatternSet &pats, TypeConverter &tyConv) {
 }
 
 void evm::populateControlFlowPats(RewritePatternSet &pats) {
+  pats.add<IfOpLowering>(pats.getContext());
   pats.add<LoopOpInterfaceLowering>(pats.getContext());
 }
 

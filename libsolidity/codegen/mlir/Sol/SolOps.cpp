@@ -322,6 +322,71 @@ void PointerType::print(AsmPrinter &printer) const {
 }
 
 //===----------------------------------------------------------------------===//
+// IfOp
+//===----------------------------------------------------------------------===//
+
+void buildTerminatedBody(OpBuilder &b, Location loc) { b.create<YieldOp>(loc); }
+
+void IfOp::build(OpBuilder &b, OperationState &res, Value cond,
+                 bool withElseRegion,
+                 function_ref<void(OpBuilder &, Location)> thenB,
+                 function_ref<void(OpBuilder &, Location)> elseB) {
+  assert(thenB && "the builder callback for 'then' must be present");
+
+  res.addOperands(cond);
+
+  OpBuilder::InsertionGuard guard(b);
+  Region *thenRegion = res.addRegion();
+  b.createBlock(thenRegion);
+  thenB(b, res.location);
+
+  Region *elseRegion = res.addRegion();
+  if (!withElseRegion)
+    return;
+
+  b.createBlock(elseRegion);
+  elseB(b, res.location);
+}
+
+/// Given the region at `index`, or the parent operation if `index` is None,
+/// return the successor regions. These are the regions that may be selected
+/// during the flow of control. `operands` is a set of optional attributes that
+/// correspond to a constant value for each operand, or null if that operand is
+/// not a constant.
+void IfOp::getSuccessorRegions(std::optional<unsigned> index,
+                               ArrayRef<Attribute> operands,
+                               SmallVectorImpl<RegionSuccessor> &regions) {
+  // The `then` and the `else` region branch back to the parent operation.
+  if (index) {
+    regions.push_back(RegionSuccessor());
+    return;
+  }
+
+  // Don't consider the else region if it is empty.
+  Region *elseRegion = &this->getElseRegion();
+  if (elseRegion->empty())
+    elseRegion = nullptr;
+
+  // Otherwise, the successor is dependent on the condition.
+  // bool condition;
+  // if (auto condAttr = operands.front().dyn_cast_or_null<IntegerAttr>()) {
+  //   assert(0 && "not implemented");
+  // condition = condAttr.getValue().isOneValue();
+  // Add the successor regions using the condition.
+  // regions.push_back(RegionSuccessor(condition ? &thenRegion() :
+  // elseRegion));
+  // return;
+  // }
+
+  // If the condition isn't constant, both regions may be executed.
+  regions.push_back(RegionSuccessor(&getThenRegion()));
+  // If the else region does not exist, it is not a viable successor.
+  if (elseRegion)
+    regions.push_back(RegionSuccessor(elseRegion));
+  return;
+}
+
+//===----------------------------------------------------------------------===//
 // ConditionOp
 //===----------------------------------------------------------------------===//
 

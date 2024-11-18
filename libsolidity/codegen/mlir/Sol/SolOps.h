@@ -35,15 +35,6 @@
 #include "Sol/SolOpsDialect.h.inc"
 #include "Sol/SolOpsEnums.h.inc"
 
-#define GET_ATTRDEF_CLASSES
-#include "Sol/SolOpsAttributes.h.inc"
-
-#define GET_TYPEDEF_CLASSES
-#include "Sol/SolOpsTypes.h.inc"
-
-#define GET_OP_CLASSES
-#include "Sol/SolOps.h.inc"
-
 namespace mlir {
 namespace sol {
 
@@ -71,5 +62,17 @@ bool isNonPtrRefType(Type ty);
 /// Returns the element type of a non mapping reference type.
 Type getEltType(Type ty, Index structTyIdx = 0);
 
+/// Default callback for IfOp builders.
+void buildTerminatedBody(OpBuilder &builder, Location loc);
+
 } // namespace sol
 } // namespace mlir
+
+#define GET_ATTRDEF_CLASSES
+#include "Sol/SolOpsAttributes.h.inc"
+
+#define GET_TYPEDEF_CLASSES
+#include "Sol/SolOpsTypes.h.inc"
+
+#define GET_OP_CLASSES
+#include "Sol/SolOps.h.inc"
