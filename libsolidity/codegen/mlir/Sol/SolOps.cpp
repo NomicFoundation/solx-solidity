@@ -325,27 +325,20 @@ void PointerType::print(AsmPrinter &printer) const {
 // IfOp
 //===----------------------------------------------------------------------===//
 
-void buildTerminatedBody(OpBuilder &b, Location loc) { b.create<YieldOp>(loc); }
-
 void IfOp::build(OpBuilder &b, OperationState &res, Value cond,
-                 bool withElseRegion,
-                 function_ref<void(OpBuilder &, Location)> thenB,
-                 function_ref<void(OpBuilder &, Location)> elseB) {
-  assert(thenB && "the builder callback for 'then' must be present");
-
+                 bool withElseBlk) {
   res.addOperands(cond);
 
   OpBuilder::InsertionGuard guard(b);
   Region *thenRegion = res.addRegion();
   b.createBlock(thenRegion);
-  thenB(b, res.location);
+  b.create<YieldOp>(res.location);
 
   Region *elseRegion = res.addRegion();
-  if (!withElseRegion)
+  if (!withElseBlk)
     return;
-
   b.createBlock(elseRegion);
-  elseB(b, res.location);
+  b.create<YieldOp>(res.location);
 }
 
 /// Given the region at `index`, or the parent operation if `index` is None,

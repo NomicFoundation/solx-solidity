@@ -804,6 +804,7 @@ void eravm::populateStage1Pats(RewritePatternSet &pats, TypeConverter &tyConv) {
   evm::populateMemPats(pats, tyConv);
   evm::populateEmitPat(pats, tyConv);
   evm::populateRequirePat(pats);
+  evm::populateControlFlowPats(pats);
 }
 
 void eravm::populateStage2Pats(RewritePatternSet &pats) {

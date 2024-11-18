@@ -294,13 +294,7 @@ def Sol_IfOp : Sol_Op<"if",
   let arguments = (ins I1:$cond);
   let regions = (region AnyRegion:$thenRegion, AnyRegion:$elseRegion);
 
-  let builders = [
-    OpBuilder<(ins "mlir::Value":$cond, "bool":$withElseRegion,
-      CArg<"llvm::function_ref<void(mlir::OpBuilder &, mlir::Location)>",
-           "buildTerminatedBody">:$thenBuilder,
-      CArg<"llvm::function_ref<void(mlir::OpBuilder &, mlir::Location)>",
-           "nullptr">:$elseBuilder)>
-  ];
+  let builders = [OpBuilder<(ins "Value":$cond, "bool":$withElseBlk)>];
   let skipDefaultBuilders = 1;
 
   let assemblyFormat = "$cond $thenRegion `else` $elseRegion attr-dict";

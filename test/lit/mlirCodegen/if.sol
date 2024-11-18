@@ -24,12 +24,14 @@ function f(uint a, uint b) {
 // CHECK-NEXT:     %3 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc5)
 // CHECK-NEXT:     %4 = sol.load %1 : !sol.ptr<ui256, Stack>, ui256 loc(#loc6)
 // CHECK-NEXT:     %5 = sol.cmp eq, %3, %4 : ui256 loc(#loc5)
-// CHECK-NEXT:     scf.if %5 {
+// CHECK-NEXT:     sol.if %5 {
 // CHECK-NEXT:       %6 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc8)
 // CHECK-NEXT:       sol.store %6, %2 : ui256, !sol.ptr<ui256, Stack> loc(#loc9)
+// CHECK-NEXT:       sol.yield loc(#loc7)
 // CHECK-NEXT:     } else {
 // CHECK-NEXT:       %6 = sol.load %1 : !sol.ptr<ui256, Stack>, ui256 loc(#loc10)
 // CHECK-NEXT:       sol.store %6, %2 : ui256, !sol.ptr<ui256, Stack> loc(#loc11)
+// CHECK-NEXT:       sol.yield loc(#loc7)
 // CHECK-NEXT:     } loc(#loc7)
 // CHECK-NEXT:     sol.return loc(#loc1)
 // CHECK-NEXT:   } loc(#loc1)

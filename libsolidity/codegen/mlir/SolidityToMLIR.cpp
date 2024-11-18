@@ -818,13 +818,13 @@ void SolidityToMLIRPass::lower(IfStatement const &ifStmt) {
   mlir::Value cond = genRValExpr(&ifStmt.condition());
   bool withElse = ifStmt.falseStatement() ? true : false;
   auto ifOp =
-      b.create<mlir::scf::IfOp>(getLoc(ifStmt.location()), cond, withElse);
+      b.create<mlir::sol::IfOp>(getLoc(ifStmt.location()), cond, withElse);
 
   mlir::OpBuilder::InsertionGuard insertGuard(b);
-  b.setInsertionPointToStart(ifOp.thenBlock());
+  b.setInsertionPointToStart(&ifOp.getThenRegion().front());
   lower(ifStmt.trueStatement());
   if (withElse) {
-    b.setInsertionPointToStart(ifOp.elseBlock());
+    b.setInsertionPointToStart(&ifOp.getElseRegion().front());
     lower(*ifStmt.falseStatement());
   }
 }

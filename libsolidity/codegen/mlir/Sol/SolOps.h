@@ -62,9 +62,6 @@ bool isNonPtrRefType(Type ty);
 /// Returns the element type of a non mapping reference type.
 Type getEltType(Type ty, Index structTyIdx = 0);
 
-/// Default callback for IfOp builders.
-void buildTerminatedBody(OpBuilder &builder, Location loc);
-
 } // namespace sol
 } // namespace mlir
 

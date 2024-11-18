@@ -26,13 +26,16 @@ function f(uint a, uint b) {
 // CHECK-NEXT:     %3 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc5)
 // CHECK-NEXT:     %4 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc6)
 // CHECK-NEXT:     %5 = arith.cmpi eq, %3, %4 : i256 loc(#loc5)
-// CHECK-NEXT:     scf.if %5 {
-// CHECK-NEXT:       %6 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc8)
-// CHECK-NEXT:       llvm.store %6, %2 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc9)
-// CHECK-NEXT:     } else {
-// CHECK-NEXT:       %6 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc10)
-// CHECK-NEXT:       llvm.store %6, %2 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc11)
-// CHECK-NEXT:     } loc(#loc7)
+// CHECK-NEXT:     cf.cond_br %5, ^bb2, ^bb1 loc(#loc7)
+// CHECK-NEXT:   ^bb1:  // pred: ^bb0
+// CHECK-NEXT:     %6 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc8)
+// CHECK-NEXT:     llvm.store %6, %2 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc9)
+// CHECK-NEXT:     cf.br ^bb3 loc(#loc7)
+// CHECK-NEXT:   ^bb2:  // pred: ^bb0
+// CHECK-NEXT:     %7 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc10)
+// CHECK-NEXT:     llvm.store %7, %2 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc11)
+// CHECK-NEXT:     cf.br ^bb3 loc(#loc7)
+// CHECK-NEXT:   ^bb3:  // 2 preds: ^bb1, ^bb2
 // CHECK-NEXT:     return loc(#loc1)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
@@ -43,8 +46,8 @@ function f(uint a, uint b) {
 // CHECK-NEXT: #loc5 = loc({{.*}}:4:6)
 // CHECK-NEXT: #loc6 = loc({{.*}}:4:11)
 // CHECK-NEXT: #loc7 = loc({{.*}}:4:2)
-// CHECK-NEXT: #loc8 = loc({{.*}}:5:8)
-// CHECK-NEXT: #loc9 = loc({{.*}}:5:4)
-// CHECK-NEXT: #loc10 = loc({{.*}}:7:8)
-// CHECK-NEXT: #loc11 = loc({{.*}}:7:4)
+// CHECK-NEXT: #loc8 = loc({{.*}}:7:8)
+// CHECK-NEXT: #loc9 = loc({{.*}}:7:4)
+// CHECK-NEXT: #loc10 = loc({{.*}}:5:8)
+// CHECK-NEXT: #loc11 = loc({{.*}}:5:4)
 // CHECK-EMPTY:
