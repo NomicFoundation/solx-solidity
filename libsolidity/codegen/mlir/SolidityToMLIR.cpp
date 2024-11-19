@@ -188,6 +188,12 @@ private:
   /// Lowers the emit statement.
   void lower(EmitStatement const &);
 
+  /// Lowers the break statement.
+  void lower(Break const &);
+
+  /// Lowers the continue statement.
+  void lower(Continue const &);
+
   /// Lowers the return statement.
   void lower(Return const &);
 
@@ -801,6 +807,16 @@ void SolidityToMLIRPass::lower(EmitStatement const &emit) {
   genExpr(&emit.eventCall());
 }
 
+void SolidityToMLIRPass::lower(Break const &brkStmt) {
+  b.create<mlir::sol::BreakOp>(getLoc(brkStmt.location()));
+  b.getBlock()->splitBlock(b.getInsertionPoint());
+}
+
+void SolidityToMLIRPass::lower(Continue const &contStmt) {
+  b.create<mlir::sol::ContinueOp>(getLoc(contStmt.location()));
+  b.getBlock()->splitBlock(b.getInsertionPoint());
+}
+
 void SolidityToMLIRPass::lower(Return const &ret) {
   auto currFuncResTys =
       currFunc->functionType(/*FIXME*/ true)->returnParameterTypes();
@@ -870,6 +886,14 @@ void SolidityToMLIRPass::lower(Statement const &stmt) {
   // Return
   else if (auto *retStmt = dynamic_cast<Return const *>(&stmt))
     lower(*retStmt);
+
+  // Break
+  else if (auto *brkStmt = dynamic_cast<Break const *>(&stmt))
+    lower(*brkStmt);
+
+  // Continue
+  else if (auto *contStmt = dynamic_cast<Continue const *>(&stmt))
+    lower(*contStmt);
 
   // If-then-else
   else if (auto *ifStmt = dynamic_cast<IfStatement const *>(&stmt))
