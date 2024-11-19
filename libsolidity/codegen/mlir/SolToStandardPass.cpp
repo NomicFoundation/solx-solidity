@@ -175,7 +175,8 @@ struct ConvertSolToStandard
     ConversionTarget convTgt(getContext());
     convTgt.addLegalOp<ModuleOp>();
     convTgt.addLegalDialect<sol::SolDialect, func::FuncDialect, scf::SCFDialect,
-                            arith::ArithDialect, LLVM::LLVMDialect>();
+                            cf::ControlFlowDialect, arith::ArithDialect,
+                            LLVM::LLVMDialect>();
     convTgt.addIllegalDialect<sol::SolDialect>();
     convTgt
         .addLegalOp<sol::FuncOp, sol::CallOp, sol::ReturnOp, sol::ConvCastOp>();
@@ -202,7 +203,8 @@ struct ConvertSolToStandard
     ConversionTarget convTgt(getContext());
     convTgt.addLegalOp<ModuleOp>();
     convTgt.addLegalDialect<sol::SolDialect, func::FuncDialect, scf::SCFDialect,
-                            arith::ArithDialect, LLVM::LLVMDialect>();
+                            cf::ControlFlowDialect, arith::ArithDialect,
+                            LLVM::LLVMDialect>();
     convTgt.addIllegalDialect<sol::SolDialect>();
 
     RewritePatternSet pats(&getContext());

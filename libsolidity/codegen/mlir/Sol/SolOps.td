@@ -294,7 +294,7 @@ def Sol_IfOp : Sol_Op<"if",
   let arguments = (ins I1:$cond);
   let regions = (region AnyRegion:$thenRegion, AnyRegion:$elseRegion);
 
-  let builders = [OpBuilder<(ins "Value":$cond, "bool":$withElseBlk)>];
+  let builders = [OpBuilder<(ins "Value":$cond, "bool":$hasElse)>];
   let skipDefaultBuilders = 1;
 
   let assemblyFormat = "$cond $thenRegion `else` $elseRegion attr-dict";
@@ -304,21 +304,11 @@ class Sol_WhileOpBase<string mnemonic> : Sol_Op<mnemonic, [
   LoopOpInterface,
   NoRegionArguments,
 ]> {
-  defvar isWhile = !eq(mnemonic, "while");
   let builders = [
-    OpBuilder<(ins "function_ref<void(OpBuilder &, Location)>":$condBuilder,
-                   "function_ref<void(OpBuilder &, Location)>":$bodyBuilder), [{
-        OpBuilder::InsertionGuard guard($_builder);
-        $_builder.createBlock($_state.addRegion());
-      }] # !if(isWhile, [{
-        condBuilder($_builder, $_state.location);
-        $_builder.createBlock($_state.addRegion());
-        bodyBuilder($_builder, $_state.location);
-      }], [{
-        bodyBuilder($_builder, $_state.location);
-        $_builder.createBlock($_state.addRegion());
-        condBuilder($_builder, $_state.location);
-      }])>
+    OpBuilder<(ins), [{
+      $_state.addRegion()->emplaceBlock();
+      $_state.addRegion()->emplaceBlock();
+    }]>
   ];
 }
 

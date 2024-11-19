@@ -97,7 +97,11 @@ private:
 
   /// Returns the mlir location for the solidity source location `loc`
   mlir::Location getLoc(SourceLocation const &loc) {
-    // FIXME: Track loc.end as well
+    // TODO: Cache the translatePositionToLineColumn results. (Ideally, the
+    // lexer + parser should record this instead-of/along-with the existing
+    // linear offset)
+    //
+    // FIXME: Track loc.end as well.
     LineColumn lineCol = stream.translatePositionToLineColumn(loc.start);
     return mlir::FileLineColLoc::get(b.getStringAttr(stream.name()),
                                      lineCol.line, lineCol.column);
@@ -192,6 +196,9 @@ private:
 
   /// Lowers the if-then-else statement.
   void lower(IfStatement const &);
+
+  /// Lowers the while/do-while statement.
+  void lower(WhileStatement const &);
 
   /// Lower the statement.
   void lower(Statement const &);
@@ -829,6 +836,23 @@ void SolidityToMLIRPass::lower(IfStatement const &ifStmt) {
   }
 }
 
+void SolidityToMLIRPass::lower(WhileStatement const &whileStmt) {
+  mlir::OpBuilder::InsertionGuard insertGuard(b);
+
+  mlir::sol::LoopOpInterface whileOp;
+  if (whileStmt.isDoWhile())
+    whileOp = b.create<mlir::sol::DoWhileOp>(getLoc(whileStmt.location()));
+  else
+    whileOp = b.create<mlir::sol::WhileOp>(getLoc(whileStmt.location()));
+  b.setInsertionPointToStart(&whileOp.getCond().front());
+  mlir::Value cond = genRValExpr(&whileStmt.condition());
+  b.create<mlir::sol::ConditionOp>(getLoc(whileStmt.condition().location()),
+                                   cond);
+  b.setInsertionPointToStart(&whileOp.getBody().front());
+  lower(whileStmt.body());
+  b.create<mlir::sol::YieldOp>(whileOp.getLoc());
+}
+
 void SolidityToMLIRPass::lower(Statement const &stmt) {
   // Expression
   if (auto *exprStmt = dynamic_cast<ExpressionStatement const *>(&stmt))
@@ -850,6 +874,10 @@ void SolidityToMLIRPass::lower(Statement const &stmt) {
   // If-then-else
   else if (auto *ifStmt = dynamic_cast<IfStatement const *>(&stmt))
     lower(*ifStmt);
+
+  // While and do-while
+  else if (auto *whileStmt = dynamic_cast<WhileStatement const *>(&stmt))
+    lower(*whileStmt);
 
   // Block
   else if (auto *blk = dynamic_cast<Block const *>(&stmt))

@@ -325,8 +325,7 @@ void PointerType::print(AsmPrinter &printer) const {
 // IfOp
 //===----------------------------------------------------------------------===//
 
-void IfOp::build(OpBuilder &b, OperationState &res, Value cond,
-                 bool withElseBlk) {
+void IfOp::build(OpBuilder &b, OperationState &res, Value cond, bool hasElse) {
   res.addOperands(cond);
 
   OpBuilder::InsertionGuard guard(b);
@@ -335,7 +334,7 @@ void IfOp::build(OpBuilder &b, OperationState &res, Value cond,
   b.create<YieldOp>(res.location);
 
   Region *elseRegion = res.addRegion();
-  if (!withElseBlk)
+  if (!hasElse)
     return;
   b.createBlock(elseRegion);
   b.create<YieldOp>(res.location);
