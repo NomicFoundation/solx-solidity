@@ -278,7 +278,7 @@ def Sol_ConditionOp : Sol_Op<"condition", [
 }
 
 def Sol_YieldOp : Sol_Op<"yield", [ReturnLike, Terminator,
-    ParentOneOf<["IfOp", "WhileOp", "DoWhileOp"]>]> {
+    ParentOneOf<["IfOp", "WhileOp", "DoWhileOp", "ForOp"]>]> {
   let arguments = (ins Variadic<AnyType>:$ins);
 
   let builders = [
@@ -321,10 +321,34 @@ def Sol_WhileOp : Sol_WhileOpBase<"while"> {
 def Sol_DoWhileOp : Sol_WhileOpBase<"do"> {
   let regions = (region MinSizedRegion<1>:$body, SizedRegion<1>:$cond);
 
-  let assemblyFormat = " $body `while` $cond attr-dict";
+  let assemblyFormat = "$body `while` $cond attr-dict";
 
   let extraClassDeclaration = [{
     Region &getEntry() { return getBody(); }
+  }];
+}
+
+def Sol_ForOp : Sol_Op<"for", [LoopOpInterface, NoRegionArguments]> {
+  let regions = (region SizedRegion<1>:$cond, MinSizedRegion<1>:$body,
+                        SizedRegion<1>:$step);
+
+  let builders = [
+    OpBuilder<(ins), [{
+      $_state.addRegion()->emplaceBlock();
+      $_state.addRegion()->emplaceBlock();
+      $_state.addRegion()->emplaceBlock();
+    }]>
+  ];
+
+  let assemblyFormat = [{
+    `cond` $cond
+    `body` $body
+    `step` $step
+    attr-dict
+  }];
+
+  let extraClassDeclaration = [{
+    mlir::Region *maybeGetStep() { return &getStep(); }
   }];
 }
 

@@ -77,6 +77,7 @@ private:
   CharStream const &stream;
   mlir::ModuleOp mod;
 
+  // TODO: Remove this?
   /// The block being lowered.
   Block const *currBlk;
 
@@ -89,10 +90,15 @@ private:
   /// Maps a local variable to its address.
   std::map<VariableDeclaration const *, mlir::Value> localVarAddrMap;
 
+  /// Force generate unchecked arithmetic.
+  bool forceUncheckedArith = false;
+
+  // FIXME: Change this to check for the "arithmetic mode" without depending on
+  // the current block.
   /// Returns true if the current block is unchecked.
   bool inUncheckedBlk() {
     assert(currBlk);
-    return currBlk->unchecked();
+    return forceUncheckedArith ? true : currBlk->unchecked();
   }
 
   /// Returns the mlir location for the solidity source location `loc`
@@ -205,6 +211,9 @@ private:
 
   /// Lowers the while/do-while statement.
   void lower(WhileStatement const &);
+
+  /// Lowers the for statement.
+  void lower(ForStatement const &);
 
   /// Lower the statement.
   void lower(Statement const &);
@@ -721,8 +730,10 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const *expr) {
       mlir::Value lhsAsRVal = genRValExpr(&asgnStmt->leftHandSide());
       Token binOp =
           TokenTraits::AssignmentToBinaryOp(asgnStmt->assignmentOperator());
-      b.create<mlir::sol::StoreOp>(loc, genBinExpr(binOp, lhsAsRVal, rhs, loc),
-                                   lhs);
+      b.create<mlir::sol::StoreOp>(
+          loc,
+          genBinExpr(binOp, lhsAsRVal, genCast(rhs, lhsAsRVal.getType()), loc),
+          lhs);
     }
 
     return {};
@@ -869,6 +880,32 @@ void SolidityToMLIRPass::lower(WhileStatement const &whileStmt) {
   b.create<mlir::sol::YieldOp>(whileOp.getLoc());
 }
 
+void SolidityToMLIRPass::lower(ForStatement const &forStmt) {
+  mlir::OpBuilder::InsertionGuard insertGuard(b);
+  mlirgen::BuilderExt bExt(b);
+
+  if (forStmt.initializationExpression())
+    lower(*forStmt.initializationExpression());
+
+  auto forOp = b.create<mlir::sol::ForOp>(getLoc(forStmt.location()));
+  b.setInsertionPointToStart(&forOp.getCond().front());
+  mlir::Value cond = forStmt.condition() ? genRValExpr(forStmt.condition())
+                                         : bExt.genBool(true, forOp.getLoc());
+  b.create<mlir::sol::ConditionOp>(cond.getLoc(), cond);
+
+  b.setInsertionPointToStart(&forOp.getBody().front());
+  lower(forStmt.body());
+  b.create<mlir::sol::YieldOp>(forOp.getLoc());
+
+  if (forStmt.loopExpression()) {
+    b.setInsertionPointToStart(&forOp.getStep().front());
+    forceUncheckedArith = true;
+    lower(*forStmt.loopExpression());
+    forceUncheckedArith = false;
+    b.create<mlir::sol::YieldOp>(forOp.getLoc());
+  }
+}
+
 void SolidityToMLIRPass::lower(Statement const &stmt) {
   // Expression
   if (auto *exprStmt = dynamic_cast<ExpressionStatement const *>(&stmt))
@@ -902,6 +939,10 @@ void SolidityToMLIRPass::lower(Statement const &stmt) {
   // While and do-while
   else if (auto *whileStmt = dynamic_cast<WhileStatement const *>(&stmt))
     lower(*whileStmt);
+
+  // For
+  else if (auto *forStmt = dynamic_cast<ForStatement const *>(&stmt))
+    lower(*forStmt);
 
   // Block
   else if (auto *blk = dynamic_cast<Block const *>(&stmt))

@@ -128,7 +128,7 @@ struct ConvertSolToStandard
                          sol::AddrOfOp, sol::GepOp, sol::MapOp, sol::CopyOp,
                          sol::DataLocCastOp, sol::LoadOp, sol::StoreOp,
                          sol::EmitOp, sol::RequireOp, sol::ConvCastOp,
-                         sol::IfOp, sol::WhileOp, sol::DoWhileOp>();
+                         sol::IfOp, sol::WhileOp, sol::DoWhileOp, sol::ForOp>();
     convTgt.addDynamicallyLegalOp<sol::FuncOp>([&](sol::FuncOp op) {
       return tyConv.isSignatureLegal(op.getFunctionType());
     });

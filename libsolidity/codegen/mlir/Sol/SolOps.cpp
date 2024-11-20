@@ -446,6 +446,16 @@ void DoWhileOp::getSuccessorRegions(std::optional<unsigned> index,
 }
 
 //===----------------------------------------------------------------------===//
+// ForOp
+//===----------------------------------------------------------------------===//
+
+void ForOp::getSuccessorRegions(std::optional<unsigned> index,
+                                ArrayRef<Attribute> operands,
+                                SmallVectorImpl<RegionSuccessor> &regions) {
+  LoopOpInterface::getLoopOpSuccessorRegions(*this, index, regions);
+}
+
+//===----------------------------------------------------------------------===//
 // ObjectOp
 //===----------------------------------------------------------------------===//
 
