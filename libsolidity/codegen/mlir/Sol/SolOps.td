@@ -379,7 +379,7 @@ def Sol_ContractOp : Sol_Op<"contract", [Symbol, SymbolTable, SingleBlock,
 
 def Sol_FuncOp : Sol_Op<"func", [AutomaticAllocationScope, CallableOpInterface,
                                  FunctionOpInterface, IsolatedFromAbove,
-                                 Symbol, SingleBlock]> {
+                                 Symbol]> {
   let summary = "FuncOp with solidity specific semantics";
   let description = [{
     This is similar to a `func.func` but it tracks solidity specific attributes.
