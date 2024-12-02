@@ -371,6 +371,61 @@ def Sol_ContractOp : Sol_Op<"contract", [Symbol, SymbolTable, SingleBlock,
   let assemblyFormat = "$sym_name $bodyRegion attr-dict";
 }
 
+// TODO: Modifiers doesn't return anything and it can't be external. Should we
+// replace the FunctionOpInterface here with something more appropriate?
+def Sol_ModifierOp : Sol_Op<"modifier",
+                            [AutomaticAllocationScope, FunctionOpInterface,
+                             CallableOpInterface, IsolatedFromAbove, Symbol]> {
+  let arguments = (ins SymbolNameAttr:$sym_name,
+                       TypeAttrOf<FunctionType>:$function_type,
+                       OptionalAttr<DictArrayAttr>:$arg_attrs,
+                       OptionalAttr<DictArrayAttr>:$res_attrs);
+  let regions = (region AnyRegion:$body);
+
+  let extraClassDeclaration = [{
+    //===------------------------------------------------------------------===//
+    // CallableOpInterface
+    //===------------------------------------------------------------------===//
+
+    Region *getCallableRegion() { return &getBody(); }
+
+    ArrayRef<Type> getCallableResults() {
+      return getFunctionType().getResults();
+    }
+    ArrayAttr getCallableArgAttrs() {
+      return getArgAttrs().value_or(nullptr);
+    }
+    ArrayAttr getCallableResAttrs() {
+      return getResAttrs().value_or(nullptr);
+    }
+
+    //===------------------------------------------------------------------===//
+    // FunctionOpInterface
+    //===------------------------------------------------------------------===//
+
+    ArrayRef<Type> getArgumentTypes() { return getFunctionType().getInputs(); }
+
+    ArrayRef<Type> getResultTypes() { return getFunctionType().getResults(); }
+  }];
+
+  let hasCustomAssemblyFormat = 1;
+}
+
+def Sol_ModifierCallBlkOp : Sol_Op<"modifier_call_blk",
+                                   [SingleBlock, NoTerminator]> {
+  let regions = (region SizedRegion<1>:$bodyRegion);
+
+  let builders = [
+    OpBuilder<(ins), [{ $_state.addRegion()->emplaceBlock(); }]>
+  ];
+
+  let assemblyFormat = "$bodyRegion attr-dict";
+}
+
+def Sol_PlaceholderOp : Sol_Op<"placeholder", [HasParent<"ModifierOp">]> {
+  let assemblyFormat = "attr-dict";
+}
+
 //
 // FIXME: What's wrong with using func.func and related ops? We could schedule a
 // custom conversion to do solidity specific things before the func dialect
@@ -410,6 +465,8 @@ def Sol_FuncOp : Sol_Op<"func", [AutomaticAllocationScope, CallableOpInterface,
       CArg<"ArrayRef<NamedAttribute>", "{}">:$attrs,
       CArg<"ArrayRef<DictionaryAttr>", "{}">:$argAttrs)>
   ];
+  // FIXME: Skip default builders!
+
 
   let extraClassDeclaration = [{
     // Copied from func.func.
@@ -524,9 +581,10 @@ def CallOp : Sol_Op<"call", [CallOpInterface,
   }];
 }
 
-def Sol_ReturnOp : Sol_Op<"return", [Pure, HasParent<"FuncOp">,
+def Sol_ReturnOp : Sol_Op<"return", [Pure,
+                                     ParentOneOf<["FuncOp", "ModifierOp"]>,
                                      ReturnLike, Terminator]> {
-  let summary = "ReturnOp for sol.func";
+  let summary = "ReturnOp for sol.func and sol.modifier";
   let description = [{
     This is similar to a `func.return` but is expected have sol.func as the
     parent op.

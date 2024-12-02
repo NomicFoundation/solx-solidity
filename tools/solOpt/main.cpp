@@ -39,6 +39,7 @@ int main(int argc, char **argv) {
 
   registerPass([](void) -> std::unique_ptr<Pass> {
     return sol::createConvertSolToStandardPass();
+    // return sol::createModifierOpLoweringPass();
   });
 
   registerTransformsPasses();

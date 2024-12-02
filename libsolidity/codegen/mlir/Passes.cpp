@@ -43,6 +43,7 @@
 
 void solidity::mlirgen::addConversionPasses(mlir::PassManager &passMgr,
                                             Target tgt) {
+  passMgr.addPass(mlir::sol::createModifierOpLoweringPass());
   passMgr.addPass(mlir::sol::createConvertSolToStandardPass(tgt));
 
   // FIXME: Adding individual conversion passes for each dialects causes
@@ -289,6 +290,7 @@ bool solidity::mlirgen::doJob(JobSpec const &job, mlir::ModuleOp mod,
 
   case Action::PrintStandardMLIR:
     assert(job.tgt != Target::Undefined);
+    passMgr.addPass(mlir::sol::createModifierOpLoweringPass());
     passMgr.addPass(mlir::sol::createConvertSolToStandardPass(job.tgt));
     if (mlir::failed(passMgr.run(mod)))
       llvm_unreachable("Conversion to standard dialects failed");
