@@ -382,6 +382,17 @@ def Sol_ModifierOp : Sol_Op<"modifier",
                        OptionalAttr<DictArrayAttr>:$res_attrs);
   let regions = (region AnyRegion:$body);
 
+  let builders = [
+    OpBuilder<(ins "StringRef":$name, "FunctionType":$type), [{
+      $_state.addRegion();
+      $_state.addAttribute(getFunctionTypeAttrName($_state.name),
+                           TypeAttr::get(type));
+      $_state.addAttribute(SymbolTable::getSymbolAttrName(),
+                           $_builder.getStringAttr(name));
+    }]>
+  ];
+  let skipDefaultBuilders = 1;
+
   let extraClassDeclaration = [{
     //===------------------------------------------------------------------===//
     // CallableOpInterface

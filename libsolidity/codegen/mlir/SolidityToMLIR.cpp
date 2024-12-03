@@ -40,6 +40,7 @@
 #include "mlir/IR/Location.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OperationSupport.h"
+#include "mlir/IR/TypeRange.h"
 #include "mlir/IR/Verifier.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Support/LLVM.h"
@@ -200,6 +201,9 @@ private:
   /// Lowers the continue statement.
   void lower(Continue const &);
 
+  /// Lowers the placeholder statement.
+  void lower(PlaceholderStatement const &);
+
   /// Lowers the return statement.
   void lower(Return const &);
 
@@ -220,6 +224,9 @@ private:
 
   /// Lowers the block.
   void lower(Block const &);
+
+  /// Lowers the modifier definition.
+  void lower(ModifierDefinition const &);
 
   /// Lowers the function definition.
   void lower(FunctionDefinition const &);
@@ -828,6 +835,10 @@ void SolidityToMLIRPass::lower(Continue const &contStmt) {
   b.getBlock()->splitBlock(b.getInsertionPoint());
 }
 
+void SolidityToMLIRPass::lower(PlaceholderStatement const &placeholder) {
+  b.create<mlir::sol::PlaceholderOp>(getLoc(placeholder.location()));
+}
+
 void SolidityToMLIRPass::lower(Return const &ret) {
   auto currFuncResTys =
       currFunc->functionType(/*FIXME*/ true)->returnParameterTypes();
@@ -920,6 +931,11 @@ void SolidityToMLIRPass::lower(Statement const &stmt) {
   else if (auto *emitStmt = dynamic_cast<EmitStatement const *>(&stmt))
     lower(*emitStmt);
 
+  // Placeholder
+  else if (auto *placeholderStmt =
+               dynamic_cast<PlaceholderStatement const *>(&stmt))
+    lower(*placeholderStmt);
+
   // Return
   else if (auto *retStmt = dynamic_cast<Return const *>(&stmt))
     lower(*retStmt);
@@ -976,6 +992,36 @@ getStateMutability(FunctionDefinition const &fn) {
   }
 }
 
+void SolidityToMLIRPass::lower(ModifierDefinition const &modifier) {
+  std::vector<mlir::Type> inpTys;
+  std::vector<mlir::Location> inpLocs;
+
+  for (auto const &param : modifier.parameters()) {
+    inpTys.push_back(getType(param->annotation().type));
+    inpLocs.push_back(getLoc(param->location()));
+  }
+  auto funcType = b.getFunctionType(inpTys, {});
+  auto op = b.create<mlir::sol::ModifierOp>(getLoc(modifier.location()),
+                                            getMangledName(modifier), funcType);
+
+  mlir::Block *entryBlk = b.createBlock(&op.getRegion());
+  b.setInsertionPointToStart(entryBlk);
+  for (auto &&[inpTy, inpLoc, param] :
+       ranges::views::zip(inpTys, inpLocs, modifier.parameters())) {
+    mlir::Value arg = entryBlk->addArgument(inpTy, inpLoc);
+    auto addr = b.create<mlir::sol::AllocaOp>(
+        inpLoc, mlir::sol::PointerType::get(b.getContext(), inpTy,
+                                            mlir::sol::DataLocation::Stack));
+    trackLocalVarAddr(param.get(), addr);
+    b.create<mlir::sol::StoreOp>(inpLoc, arg, addr);
+  }
+
+  lower(modifier.body());
+  b.create<mlir::sol::ReturnOp>(getLoc(modifier.location()));
+
+  b.setInsertionPointAfter(op);
+}
+
 void SolidityToMLIRPass::lower(FunctionDefinition const &func) {
   currFunc = &func;
   std::vector<mlir::Type> inpTys, outTys;
@@ -1011,12 +1057,37 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &func) {
   for (auto &&[inpTy, inpLoc, param] :
        ranges::views::zip(inpTys, inpLocs, func.parameters())) {
     mlir::Value arg = entryBlk->addArgument(inpTy, inpLoc);
-    // TODO: Support non-scalars.
     auto addr = b.create<mlir::sol::AllocaOp>(
         inpLoc, mlir::sol::PointerType::get(b.getContext(), inpTy,
                                             mlir::sol::DataLocation::Stack));
     trackLocalVarAddr(param.get(), addr);
     b.create<mlir::sol::StoreOp>(inpLoc, arg, addr);
+  }
+
+  for (const ASTPointer<ModifierInvocation> &modifier : func.modifiers()) {
+    mlir::Location loc = getLoc(modifier->location());
+    auto modifierCallBlk = b.create<mlir::sol::ModifierCallBlkOp>(loc);
+
+    mlir::OpBuilder::InsertionGuard insertGuard(b);
+    b.setInsertionPointToStart(modifierCallBlk.getBody());
+
+    ModifierDefinition const *modifierDef =
+        dynamic_cast<ModifierDefinition const *>(
+            modifier->name().annotation().referencedDeclaration);
+    assert(modifierDef);
+    // FIXME: Handle lookup!
+
+    std::vector<mlir::Value> loweredArgs;
+    if (modifier->arguments()) {
+      loweredArgs.reserve(modifier->arguments()->size());
+      unsigned i = 0;
+      for (const ASTPointer<Expression> &arg : *modifier->arguments()) {
+        mlir::Type reqTy = getType(modifierDef->parameters()[i++]->type());
+        loweredArgs.push_back(genRValExpr(arg.get(), reqTy));
+      }
+    }
+    b.create<mlir::sol::CallOp>(loc, getMangledName(*modifierDef),
+                                /*results=*/mlir::TypeRange{}, loweredArgs);
   }
 
   lower(func.body());
@@ -1064,6 +1135,12 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
   for (auto *f : cont.definedFunctions()) {
     lower(*f);
   }
+
+  // Lower modifiers.
+  for (auto *modifier : cont.functionModifiers()) {
+    lower(*modifier);
+  }
+
   b.setInsertionPointAfter(op);
 }
 
