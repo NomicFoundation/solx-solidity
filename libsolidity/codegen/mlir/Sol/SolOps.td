@@ -350,7 +350,8 @@ def Sol_ForOp : Sol_Op<"for", [LoopOpInterface, NoRegionArguments]> {
   }];
 }
 
-def Sol_PlaceholderOp : Sol_Op<"placeholder", [HasParent<"ModifierOp">]> {
+// TODO: We need a trait like "HasAncestor<ModifierOp>".
+def Sol_PlaceholderOp : Sol_Op<"placeholder"> {
   let assemblyFormat = "attr-dict";
 }
 
