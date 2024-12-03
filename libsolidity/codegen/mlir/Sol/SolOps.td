@@ -223,10 +223,9 @@ def Sol_EmitOp : Sol_Op<"emit"> {
       $_state.addAttribute(getIndexedArgsCountAttrName($_state.name),
                            indexedArgsCountAttr);
 
-      if (signature) {
+      if (signature)
         $_state.addAttribute(getSignatureAttrName($_state.name),
                              $_builder.getStringAttr(*signature));
-      }
     }]>
   ];
   let skipDefaultBuilders = 1;
@@ -236,7 +235,6 @@ def Sol_EmitOp : Sol_Op<"emit"> {
       return OperandRange(getOperands().begin(), getOperands().begin() +
                           getIndexedArgsCount());
     }
-
     OperandRange getNonIndexedArgs() {
       return OperandRange(getOperands().begin() + getIndexedArgsCount(),
                           getOperands().end());
@@ -352,23 +350,19 @@ def Sol_ForOp : Sol_Op<"for", [LoopOpInterface, NoRegionArguments]> {
   }];
 }
 
-def Sol_ContractOp : Sol_Op<"contract", [Symbol, SymbolTable, SingleBlock,
-                                         NoTerminator]> {
-  // TODO: Represent the following for the lowering:
-  // - IRGenerationContext::memoryUnsafeInlineAssemblySeen
-  // - IRGenerationContext::reservedMemory
-  let arguments = (ins SymbolNameAttr:$sym_name, Sol_ContractKindAttr:$kind,
-                   ArrayAttr:$interface_fns,
-                   // FIXME: This is a hack until sol.contract lowering happens
-                   // during the legalization by SolTypeConverter. Also, if this
-                   // is fixed, maybe we could track interface function
-                   // attributes in sol.func intead?
-                   OptionalAttr<TypeAttrOf<FunctionType>>:$ctorFnType,
-                   OptionalAttr<FlatSymbolRefAttr>:$fallbackFn,
-                   OptionalAttr<FlatSymbolRefAttr>:$receiveFn);
+def Sol_PlaceholderOp : Sol_Op<"placeholder", [HasParent<"ModifierOp">]> {
+  let assemblyFormat = "attr-dict";
+}
+
+def Sol_ModifierCallBlkOp : Sol_Op<"modifier_call_blk",
+                                   [SingleBlock, NoTerminator]> {
   let regions = (region SizedRegion<1>:$bodyRegion);
 
-  let assemblyFormat = "$sym_name $bodyRegion attr-dict";
+  let builders = [
+    OpBuilder<(ins), [{ $_state.addRegion()->emplaceBlock(); }]>
+  ];
+
+  let assemblyFormat = "$bodyRegion attr-dict";
 }
 
 // TODO: Modifiers doesn't return anything and it can't be external. Should we
@@ -403,12 +397,9 @@ def Sol_ModifierOp : Sol_Op<"modifier",
     ArrayRef<Type> getCallableResults() {
       return getFunctionType().getResults();
     }
-    ArrayAttr getCallableArgAttrs() {
-      return getArgAttrs().value_or(nullptr);
-    }
-    ArrayAttr getCallableResAttrs() {
-      return getResAttrs().value_or(nullptr);
-    }
+    ArrayAttr getCallableArgAttrs() { return getArgAttrs().value_or(nullptr); }
+
+    ArrayAttr getCallableResAttrs() { return getResAttrs().value_or(nullptr); }
 
     //===------------------------------------------------------------------===//
     // FunctionOpInterface
@@ -422,41 +413,79 @@ def Sol_ModifierOp : Sol_Op<"modifier",
   let hasCustomAssemblyFormat = 1;
 }
 
-def Sol_ModifierCallBlkOp : Sol_Op<"modifier_call_blk",
-                                   [SingleBlock, NoTerminator]> {
-  let regions = (region SizedRegion<1>:$bodyRegion);
-
-  let builders = [
-    OpBuilder<(ins), [{ $_state.addRegion()->emplaceBlock(); }]>
-  ];
-
-  let assemblyFormat = "$bodyRegion attr-dict";
-}
-
-def Sol_PlaceholderOp : Sol_Op<"placeholder", [HasParent<"ModifierOp">]> {
-  let assemblyFormat = "attr-dict";
-}
-
 //
 // FIXME: What's wrong with using func.func and related ops? We could schedule a
 // custom conversion to do solidity specific things before the func dialect
 // conversion.
 //
 
-def Sol_FuncOp : Sol_Op<"func", [AutomaticAllocationScope, CallableOpInterface,
-                                 FunctionOpInterface, IsolatedFromAbove,
-                                 Symbol]> {
-  let summary = "FuncOp with solidity specific semantics";
-  let description = [{
-    This is similar to a `func.func` but it tracks solidity specific attributes.
+def CallOp : Sol_Op<"call", [CallOpInterface,
+                             DeclareOpInterfaceMethods<SymbolUserOpInterface>]
+                   >{
+  let arguments = (ins FlatSymbolRefAttr:$callee, Variadic<AnyType>:$operands);
+  let results = (outs Variadic<AnyType>);
 
-    Example:
+  let builders = [
+    OpBuilder<(ins "FuncOp":$callee, CArg<"ValueRange", "{}">:$operands), [{
+      $_state.addOperands(operands);
+      $_state.addAttribute("callee", SymbolRefAttr::get(callee));
+      $_state.addTypes(callee.getFunctionType().getResults());
+    }]>,
+    OpBuilder<(ins "SymbolRefAttr":$callee, "TypeRange":$results,
+      CArg<"ValueRange", "{}">:$operands), [{
+      $_state.addOperands(operands);
+      $_state.addAttribute("callee", callee);
+      $_state.addTypes(results);
+    }]>,
+    OpBuilder<(ins "StringAttr":$callee, "TypeRange":$results,
+      CArg<"ValueRange", "{}">:$operands), [{
+      build($_builder, $_state, SymbolRefAttr::get(callee), results, operands);
+    }]>,
+    OpBuilder<(ins "StringRef":$callee, "TypeRange":$results,
+      CArg<"ValueRange", "{}">:$operands), [{
+      build($_builder, $_state, StringAttr::get($_builder.getContext(), callee),
+            results, operands);
+    }]>];
 
-    sol.func @f() -> () {
-      ...
+  let extraClassDeclaration = [{
+    operand_range getArgOperands() {
+      return {arg_operand_begin(), arg_operand_end()};
+    }
+    operand_iterator arg_operand_begin() { return operand_begin(); }
+    operand_iterator arg_operand_end() { return operand_end(); }
+
+    FunctionType getCalleeType() {
+      return FunctionType::get(getContext(), getOperandTypes(),
+                               getResultTypes());
+    }
+    CallInterfaceCallable getCallableForCallee() {
+      return (*this)->getAttrOfType<SymbolRefAttr>("callee");
+    }
+    void setCalleeFromCallable(CallInterfaceCallable callee) {
+      (*this)->setAttr("callee", callee.get<SymbolRefAttr>());
     }
   }];
 
+  let assemblyFormat = [{
+    $callee `(` $operands `)` attr-dict `:` functional-type($operands, results)
+  }];
+}
+
+def Sol_ReturnOp : Sol_Op<"return", [Pure,
+                                     ParentOneOf<["FuncOp", "ModifierOp"]>,
+                                     ReturnLike, Terminator]> {
+  let arguments = (ins Variadic<AnyType>:$operands);
+
+  let builders = [OpBuilder<(ins), [{
+    build($_builder, $_state, std::nullopt);
+  }]>];
+
+  let assemblyFormat = "attr-dict ($operands^ `:` type($operands))?";
+}
+
+def Sol_FuncOp : Sol_Op<"func", [AutomaticAllocationScope, CallableOpInterface,
+                                 FunctionOpInterface, IsolatedFromAbove,
+                                 Symbol]> {
   let arguments = (ins SymbolNameAttr:$sym_name,
                        TypeAttrOf<FunctionType>:$function_type,
                        OptionalAttr<DictArrayAttr>:$arg_attrs,
@@ -489,134 +518,44 @@ def Sol_FuncOp : Sol_Op<"func", [AutomaticAllocationScope, CallableOpInterface,
     // CallableOpInterface
     //===------------------------------------------------------------------===//
 
-    /// Returns the region on the current operation that is callable. This may
-    /// return null in the case of an external callable object, e.g. an external
-    /// function.
-    ::mlir::Region *getCallableRegion() { return isExternal() ? nullptr : &getBody(); }
+    Region *getCallableRegion() { return isExternal() ? nullptr : &getBody(); }
 
-    /// Returns the results types that the callable region produces when
-    /// executed.
-    ArrayRef<Type> getCallableResults() { return getFunctionType().getResults(); }
-
-    /// Returns the argument attributes for all callable region arguments or
-    /// null if there are none.
-    ::mlir::ArrayAttr getCallableArgAttrs() {
-      return getArgAttrs().value_or(nullptr);
+    ArrayRef<Type> getCallableResults() {
+      return getFunctionType().getResults();
     }
+    ArrayAttr getCallableArgAttrs() { return getArgAttrs().value_or(nullptr); }
 
-    /// Returns the result attributes for all callable region results or
-    /// null if there are none.
-    ::mlir::ArrayAttr getCallableResAttrs() {
-      return getResAttrs().value_or(nullptr);
-    }
+    ArrayAttr getCallableResAttrs() { return getResAttrs().value_or(nullptr); }
 
     //===------------------------------------------------------------------===//
-    // FunctionOpInterface Methods
+    // FunctionOpInterface
     //===------------------------------------------------------------------===//
 
-    /// Returns the argument types of this function.
     ArrayRef<Type> getArgumentTypes() { return getFunctionType().getInputs(); }
 
-    /// Returns the result types of this function.
     ArrayRef<Type> getResultTypes() { return getFunctionType().getResults(); }
   }];
 
   let hasCustomAssemblyFormat = 1;
 }
 
-def CallOp : Sol_Op<"call", [CallOpInterface,
-                             DeclareOpInterfaceMethods<SymbolUserOpInterface>]
-                   >{
-  let summary = "call operation";
-  let description = [{
-    This is similar to a `func.call` but the callee is expected to be a
-    `sol.func`.
+def Sol_ContractOp : Sol_Op<"contract", [Symbol, SymbolTable, SingleBlock,
+                                         NoTerminator]> {
+  // TODO: Represent the following for the lowering:
+  // - IRGenerationContext::memoryUnsafeInlineAssemblySeen
+  // - IRGenerationContext::reservedMemory
+  let arguments = (ins SymbolNameAttr:$sym_name, Sol_ContractKindAttr:$kind,
+                   ArrayAttr:$interface_fns,
+                   // FIXME: This is a hack until sol.contract lowering happens
+                   // during the legalization by SolTypeConverter. Also, if this
+                   // is fixed, maybe we could track interface function
+                   // attributes in sol.func intead?
+                   OptionalAttr<TypeAttrOf<FunctionType>>:$ctorFnType,
+                   OptionalAttr<FlatSymbolRefAttr>:$fallbackFn,
+                   OptionalAttr<FlatSymbolRefAttr>:$receiveFn);
+  let regions = (region SizedRegion<1>:$bodyRegion);
 
-    Example:
-
-    ```mlir
-    %2 = func.call @my_add(%0, %1) : (i32, i32) -> i32
-    ```
-  }];
-
-  let arguments = (ins FlatSymbolRefAttr:$callee, Variadic<AnyType>:$operands);
-  let results = (outs Variadic<AnyType>);
-
-  let builders = [
-    OpBuilder<(ins "FuncOp":$callee, CArg<"ValueRange", "{}">:$operands), [{
-      $_state.addOperands(operands);
-      $_state.addAttribute("callee", SymbolRefAttr::get(callee));
-      $_state.addTypes(callee.getFunctionType().getResults());
-    }]>,
-    OpBuilder<(ins "SymbolRefAttr":$callee, "TypeRange":$results,
-      CArg<"ValueRange", "{}">:$operands), [{
-      $_state.addOperands(operands);
-      $_state.addAttribute("callee", callee);
-      $_state.addTypes(results);
-    }]>,
-    OpBuilder<(ins "StringAttr":$callee, "TypeRange":$results,
-      CArg<"ValueRange", "{}">:$operands), [{
-      build($_builder, $_state, SymbolRefAttr::get(callee), results, operands);
-    }]>,
-    OpBuilder<(ins "StringRef":$callee, "TypeRange":$results,
-      CArg<"ValueRange", "{}">:$operands), [{
-      build($_builder, $_state, StringAttr::get($_builder.getContext(), callee),
-            results, operands);
-    }]>];
-
-  let extraClassDeclaration = [{
-    FunctionType getCalleeType() {
-      return FunctionType::get(getContext(), getOperandTypes(),
-                               getResultTypes());
-    }
-
-    operand_range getArgOperands() {
-      return {arg_operand_begin(), arg_operand_end()};
-    }
-
-    operand_iterator arg_operand_begin() { return operand_begin(); }
-    operand_iterator arg_operand_end() { return operand_end(); }
-
-    CallInterfaceCallable getCallableForCallee() {
-      return (*this)->getAttrOfType<SymbolRefAttr>("callee");
-    }
-
-    /// Set the callee for this operation.
-    void setCalleeFromCallable(CallInterfaceCallable callee) {
-      (*this)->setAttr("callee", callee.get<SymbolRefAttr>());
-    }
-  }];
-
-  let assemblyFormat = [{
-    $callee `(` $operands `)` attr-dict `:` functional-type($operands, results)
-  }];
-}
-
-def Sol_ReturnOp : Sol_Op<"return", [Pure,
-                                     ParentOneOf<["FuncOp", "ModifierOp"]>,
-                                     ReturnLike, Terminator]> {
-  let summary = "ReturnOp for sol.func and sol.modifier";
-  let description = [{
-    This is similar to a `func.return` but is expected have sol.func as the
-    parent op.
-
-    Example:
-
-    ```mlir
-    sol.func @foo() : (i32, f8) {
-      ...
-      sol.return %0, %1 : i32, f8
-    }
-    ```
-  }];
-
-  let arguments = (ins Variadic<AnyType>:$operands);
-
-  let builders = [OpBuilder<(ins), [{
-    build($_builder, $_state, std::nullopt);
-  }]>];
-
-  let assemblyFormat = "attr-dict ($operands^ `:` type($operands))?";
+  let assemblyFormat = "$sym_name $bodyRegion attr-dict";
 }
 
 //
