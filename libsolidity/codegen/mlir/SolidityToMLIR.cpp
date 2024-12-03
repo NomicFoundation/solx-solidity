@@ -861,7 +861,7 @@ void SolidityToMLIRPass::lower(Return const &ret) {
 
 void SolidityToMLIRPass::lower(IfStatement const &ifStmt) {
   mlir::Value cond = genRValExpr(&ifStmt.condition());
-  bool withElse = ifStmt.falseStatement() ? true : false;
+  bool withElse = ifStmt.falseStatement();
   auto ifOp =
       b.create<mlir::sol::IfOp>(getLoc(ifStmt.location()), cond, withElse);
 
@@ -1022,29 +1022,27 @@ void SolidityToMLIRPass::lower(ModifierDefinition const &modifier) {
   b.setInsertionPointAfter(op);
 }
 
-void SolidityToMLIRPass::lower(FunctionDefinition const &func) {
-  currFunc = &func;
+void SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
+  currFunc = &fn;
   std::vector<mlir::Type> inpTys, outTys;
   std::vector<mlir::Location> inpLocs;
 
-  for (auto const &param : func.parameters()) {
+  for (auto const &param : fn.parameters()) {
     inpTys.push_back(getType(param->annotation().type));
     inpLocs.push_back(getLoc(param->location()));
   }
 
-  for (auto const &param : func.returnParameters()) {
+  for (auto const &param : fn.returnParameters()) {
     outTys.push_back(getType(param->annotation().type));
   }
 
   assert(outTys.size() <= 1 && "NYI: Multivalued return");
 
-  // TODO: Specify visibility
-  auto funcType = b.getFunctionType(inpTys, outTys);
-  auto op =
-      b.create<mlir::sol::FuncOp>(getLoc(func.location()), getMangledName(func),
-                                  funcType, getStateMutability(func));
-  op.setCtor(func.isConstructor());
-  if (func.isConstructor()) {
+  auto fnTy = b.getFunctionType(inpTys, outTys);
+  auto op = b.create<mlir::sol::FuncOp>(
+      getLoc(fn.location()), getMangledName(fn), fnTy, getStateMutability(fn));
+  op.setCtor(fn.isConstructor());
+  if (fn.isConstructor()) {
     auto currContr =
         mlir::cast<mlir::sol::ContractOp>(b.getBlock()->getParentOp());
     assert(currContr);
@@ -1055,7 +1053,7 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &func) {
   b.setInsertionPointToStart(entryBlk);
 
   for (auto &&[inpTy, inpLoc, param] :
-       ranges::views::zip(inpTys, inpLocs, func.parameters())) {
+       ranges::views::zip(inpTys, inpLocs, fn.parameters())) {
     mlir::Value arg = entryBlk->addArgument(inpTy, inpLoc);
     auto addr = b.create<mlir::sol::AllocaOp>(
         inpLoc, mlir::sol::PointerType::get(b.getContext(), inpTy,
@@ -1064,7 +1062,7 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &func) {
     b.create<mlir::sol::StoreOp>(inpLoc, arg, addr);
   }
 
-  for (const ASTPointer<ModifierInvocation> &modifier : func.modifiers()) {
+  for (const ASTPointer<ModifierInvocation> &modifier : fn.modifiers()) {
     mlir::Location loc = getLoc(modifier->location());
     auto modifierCallBlk = b.create<mlir::sol::ModifierCallBlkOp>(loc);
 
@@ -1090,11 +1088,11 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &func) {
                                 /*results=*/mlir::TypeRange{}, loweredArgs);
   }
 
-  lower(func.body());
+  lower(fn.body());
 
-  // Generate empty return
+  // Generate empty return.
   if (outTys.empty())
-    b.create<mlir::sol::ReturnOp>(getLoc(func.location()));
+    b.create<mlir::sol::ReturnOp>(getLoc(fn.location()));
 
   b.setInsertionPointAfter(op);
 }
