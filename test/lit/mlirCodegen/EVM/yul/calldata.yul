@@ -13,7 +13,7 @@ object "Test" {
 // CHECK-NEXT:     %c0_i256_0 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:     %0 = llvm.inttoptr %c0_i256_0 : i256 to !llvm.ptr<2> loc(#loc3)
 // CHECK-NEXT:     %1 = llvm.load %0 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc3)
-// CHECK-NEXT:     %2 = "llvm.intrcall"() <{id = 3213 : i32, name = "evm.calldatasize"}> : () -> i256 loc(#loc4)
+// CHECK-NEXT:     %2 = "llvm.intrcall"() <{id = 3214 : i32, name = "evm.calldatasize"}> : () -> i256 loc(#loc4)
 // CHECK-NEXT:     %3 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc5)
 // CHECK-NEXT:     %4 = llvm.inttoptr %1 : i256 to !llvm.ptr<2> loc(#loc5)
 // CHECK-NEXT:     "llvm.intr.memcpy"(%3, %4, %2) <{isVolatile = false}> : (!llvm.ptr<1>, !llvm.ptr<2>, i256) -> () loc(#loc5)

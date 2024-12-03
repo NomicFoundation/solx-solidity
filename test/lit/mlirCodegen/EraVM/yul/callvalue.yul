@@ -15,7 +15,7 @@ object "Test" {
 // CHECK-NEXT:   func.func private @__return(i256, i256, i256) attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
 // CHECK-NEXT:   func.func private @__deploy() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} {
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc2)
-// CHECK-NEXT:     %0 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc3)
+// CHECK-NEXT:     %0 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc3)
 // CHECK-NEXT:     %c256_i256 = arith.constant 256 : i256 loc(#loc1)
 // CHECK-NEXT:     %1 = llvm.inttoptr %c256_i256 : i256 to !llvm.ptr<2> loc(#loc1)
 // CHECK-NEXT:     %c32_i256 = arith.constant 32 : i256 loc(#loc1)

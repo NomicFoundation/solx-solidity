@@ -425,7 +425,7 @@ contract ERC20 {
 // CHECK-NEXT:       %9 = arith.trunci %8 : i256 to i32 loc(#loc2)
 // CHECK-NEXT:       scf.int_switch %9 : i32
 // CHECK-NEXT:       case 117300739 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc2)
 // CHECK-NEXT:         scf.if %11 {
@@ -472,7 +472,7 @@ contract ERC20 {
 // CHECK-NEXT:         scf.yield loc(#loc2)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case 157198259 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc2)
 // CHECK-NEXT:         scf.if %11 {
@@ -521,7 +521,7 @@ contract ERC20 {
 // CHECK-NEXT:         scf.yield loc(#loc2)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case 273580543 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc2)
 // CHECK-NEXT:         scf.if %11 {
@@ -569,7 +569,7 @@ contract ERC20 {
 // CHECK-NEXT:         scf.yield loc(#loc2)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case 404098525 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc2)
 // CHECK-NEXT:         scf.if %11 {
@@ -595,7 +595,7 @@ contract ERC20 {
 // CHECK-NEXT:         scf.yield loc(#loc2)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case 599290589 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc2)
 // CHECK-NEXT:         scf.if %11 {
@@ -650,7 +650,7 @@ contract ERC20 {
 // CHECK-NEXT:         scf.yield loc(#loc2)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case 820017310 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc2)
 // CHECK-NEXT:         scf.if %11 {
@@ -698,7 +698,7 @@ contract ERC20 {
 // CHECK-NEXT:         scf.yield loc(#loc2)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case 826074471 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc2)
 // CHECK-NEXT:         scf.if %11 {
@@ -724,7 +724,7 @@ contract ERC20 {
 // CHECK-NEXT:         scf.yield loc(#loc2)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case 961581905 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc2)
 // CHECK-NEXT:         scf.if %11 {
@@ -773,7 +773,7 @@ contract ERC20 {
 // CHECK-NEXT:         scf.yield loc(#loc2)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case 1315881543 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc2)
 // CHECK-NEXT:         scf.if %11 {
@@ -815,7 +815,7 @@ contract ERC20 {
 // CHECK-NEXT:         scf.yield loc(#loc2)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case 1633807128 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc2)
 // CHECK-NEXT:         scf.if %11 {
@@ -857,7 +857,7 @@ contract ERC20 {
 // CHECK-NEXT:         scf.yield loc(#loc2)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case 1889567281 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc2)
 // CHECK-NEXT:         scf.if %11 {
@@ -899,7 +899,7 @@ contract ERC20 {
 // CHECK-NEXT:         scf.yield loc(#loc2)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case -1780966591 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc2)
 // CHECK-NEXT:         scf.if %11 {
@@ -946,7 +946,7 @@ contract ERC20 {
 // CHECK-NEXT:         scf.yield loc(#loc2)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case -1537752361 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc2)
 // CHECK-NEXT:         scf.if %11 {
@@ -995,7 +995,7 @@ contract ERC20 {
 // CHECK-NEXT:         scf.yield loc(#loc2)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case -1459249989 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc2)
 // CHECK-NEXT:         scf.if %11 {
@@ -1044,7 +1044,7 @@ contract ERC20 {
 // CHECK-NEXT:         scf.yield loc(#loc2)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case -580719298 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc2)
 // CHECK-NEXT:         scf.if %11 {
@@ -1403,7 +1403,7 @@ contract ERC20 {
 // CHECK-NEXT:       llvm.store %31, %35 : !llvm.ptr<i256> loc(#loc21)
 // CHECK-NEXT:     } loc(#loc21)
 // CHECK-NEXT:     %37 = llvm.load %35 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc21)
-// CHECK-NEXT:     %38 = "llvm.intrcall"() <{id = 3176 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc21)
+// CHECK-NEXT:     %38 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc21)
 // CHECK-NEXT:     %c4294967295_i256_15 = arith.constant 4294967295 : i256 loc(#loc21)
 // CHECK-NEXT:     %c1_i64_16 = arith.constant 1 : i64 loc(#loc21)
 // CHECK-NEXT:     %39 = llvm.alloca %c1_i64_16 x i256 {alignment = 32 : i64} : (i64) -> !llvm.ptr<i256> loc(#loc21)
@@ -1598,7 +1598,7 @@ contract ERC20 {
 // CHECK-NEXT:       llvm.store %40, %44 : !llvm.ptr<i256> loc(#loc45)
 // CHECK-NEXT:     } loc(#loc45)
 // CHECK-NEXT:     %46 = llvm.load %44 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc45)
-// CHECK-NEXT:     %47 = "llvm.intrcall"() <{id = 3176 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc45)
+// CHECK-NEXT:     %47 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc45)
 // CHECK-NEXT:     %c4294967295_i256_17 = arith.constant 4294967295 : i256 loc(#loc45)
 // CHECK-NEXT:     %c1_i64_18 = arith.constant 1 : i64 loc(#loc45)
 // CHECK-NEXT:     %48 = llvm.alloca %c1_i64_18 x i256 {alignment = 32 : i64} : (i64) -> !llvm.ptr<i256> loc(#loc45)
@@ -1748,7 +1748,7 @@ contract ERC20 {
 // CHECK-NEXT:       llvm.store %34, %38 : !llvm.ptr<i256> loc(#loc60)
 // CHECK-NEXT:     } loc(#loc60)
 // CHECK-NEXT:     %40 = llvm.load %38 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc60)
-// CHECK-NEXT:     %41 = "llvm.intrcall"() <{id = 3176 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc60)
+// CHECK-NEXT:     %41 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc60)
 // CHECK-NEXT:     %c4294967295_i256_15 = arith.constant 4294967295 : i256 loc(#loc60)
 // CHECK-NEXT:     %c1_i64_16 = arith.constant 1 : i64 loc(#loc60)
 // CHECK-NEXT:     %42 = llvm.alloca %c1_i64_16 x i256 {alignment = 32 : i64} : (i64) -> !llvm.ptr<i256> loc(#loc60)
@@ -2004,7 +2004,7 @@ contract ERC20 {
 // CHECK-NEXT:       llvm.store %55, %59 : !llvm.ptr<i256> loc(#loc87)
 // CHECK-NEXT:     } loc(#loc87)
 // CHECK-NEXT:     %61 = llvm.load %59 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc87)
-// CHECK-NEXT:     %62 = "llvm.intrcall"() <{id = 3176 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc87)
+// CHECK-NEXT:     %62 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc87)
 // CHECK-NEXT:     %c4294967295_i256_28 = arith.constant 4294967295 : i256 loc(#loc87)
 // CHECK-NEXT:     %c1_i64_29 = arith.constant 1 : i64 loc(#loc87)
 // CHECK-NEXT:     %63 = llvm.alloca %c1_i64_29 x i256 {alignment = 32 : i64} : (i64) -> !llvm.ptr<i256> loc(#loc87)
@@ -3136,7 +3136,7 @@ contract ERC20 {
 // CHECK-NEXT:       llvm.store %55, %59 : !llvm.ptr<i256> loc(#loc87)
 // CHECK-NEXT:     } loc(#loc87)
 // CHECK-NEXT:     %61 = llvm.load %59 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc87)
-// CHECK-NEXT:     %62 = "llvm.intrcall"() <{id = 3176 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc87)
+// CHECK-NEXT:     %62 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc87)
 // CHECK-NEXT:     %c4294967295_i256_28 = arith.constant 4294967295 : i256 loc(#loc87)
 // CHECK-NEXT:     %c1_i64_29 = arith.constant 1 : i64 loc(#loc87)
 // CHECK-NEXT:     %63 = llvm.alloca %c1_i64_29 x i256 {alignment = 32 : i64} : (i64) -> !llvm.ptr<i256> loc(#loc87)
@@ -3286,7 +3286,7 @@ contract ERC20 {
 // CHECK-NEXT:       llvm.store %34, %38 : !llvm.ptr<i256> loc(#loc60)
 // CHECK-NEXT:     } loc(#loc60)
 // CHECK-NEXT:     %40 = llvm.load %38 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc60)
-// CHECK-NEXT:     %41 = "llvm.intrcall"() <{id = 3176 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc60)
+// CHECK-NEXT:     %41 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc60)
 // CHECK-NEXT:     %c4294967295_i256_15 = arith.constant 4294967295 : i256 loc(#loc60)
 // CHECK-NEXT:     %c1_i64_16 = arith.constant 1 : i64 loc(#loc60)
 // CHECK-NEXT:     %42 = llvm.alloca %c1_i64_16 x i256 {alignment = 32 : i64} : (i64) -> !llvm.ptr<i256> loc(#loc60)
@@ -3481,7 +3481,7 @@ contract ERC20 {
 // CHECK-NEXT:       llvm.store %40, %44 : !llvm.ptr<i256> loc(#loc45)
 // CHECK-NEXT:     } loc(#loc45)
 // CHECK-NEXT:     %46 = llvm.load %44 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc45)
-// CHECK-NEXT:     %47 = "llvm.intrcall"() <{id = 3176 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc45)
+// CHECK-NEXT:     %47 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc45)
 // CHECK-NEXT:     %c4294967295_i256_17 = arith.constant 4294967295 : i256 loc(#loc45)
 // CHECK-NEXT:     %c1_i64_18 = arith.constant 1 : i64 loc(#loc45)
 // CHECK-NEXT:     %48 = llvm.alloca %c1_i64_18 x i256 {alignment = 32 : i64} : (i64) -> !llvm.ptr<i256> loc(#loc45)
@@ -3663,7 +3663,7 @@ contract ERC20 {
 // CHECK-NEXT:       llvm.store %31, %35 : !llvm.ptr<i256> loc(#loc21)
 // CHECK-NEXT:     } loc(#loc21)
 // CHECK-NEXT:     %37 = llvm.load %35 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc21)
-// CHECK-NEXT:     %38 = "llvm.intrcall"() <{id = 3176 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc21)
+// CHECK-NEXT:     %38 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc21)
 // CHECK-NEXT:     %c4294967295_i256_15 = arith.constant 4294967295 : i256 loc(#loc21)
 // CHECK-NEXT:     %c1_i64_16 = arith.constant 1 : i64 loc(#loc21)
 // CHECK-NEXT:     %39 = llvm.alloca %c1_i64_16 x i256 {alignment = 32 : i64} : (i64) -> !llvm.ptr<i256> loc(#loc21)

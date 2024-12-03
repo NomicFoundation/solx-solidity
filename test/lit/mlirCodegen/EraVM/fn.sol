@@ -30,7 +30,7 @@ contract C {
 // CHECK-NEXT:     %c64_i256 = arith.constant 64 : i256 loc(#loc1)
 // CHECK-NEXT:     %0 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:     llvm.store %c128_i256, %0 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:     %1 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc1)
+// CHECK-NEXT:     %1 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc1)
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc1)
 // CHECK-NEXT:     %2 = arith.cmpi ne, %1, %c0_i256 : i256 loc(#loc1)
 // CHECK-NEXT:     scf.if %2 {
@@ -88,7 +88,7 @@ contract C {
 // CHECK-NEXT:       %9 = arith.trunci %8 : i256 to i32 loc(#loc1)
 // CHECK-NEXT:       scf.int_switch %9 : i32
 // CHECK-NEXT:       case 167553359 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc1)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc1)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc1)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc1)
 // CHECK-NEXT:         scf.if %11 {
@@ -231,7 +231,7 @@ contract C {
 // CHECK-NEXT:         scf.yield loc(#loc1)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case 1090974155 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc1)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc1)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc1)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc1)
 // CHECK-NEXT:         scf.if %11 {
@@ -275,7 +275,7 @@ contract C {
 // CHECK-NEXT:         scf.yield loc(#loc1)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case -1867629089 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc1)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc1)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc1)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc1)
 // CHECK-NEXT:         scf.if %11 {
@@ -317,7 +317,7 @@ contract C {
 // CHECK-NEXT:         scf.yield loc(#loc1)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case -948490518 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc1)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc1)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc1)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc1)
 // CHECK-NEXT:         scf.if %11 {

@@ -23,7 +23,7 @@ contract C {
 // CHECK-NEXT:     %c64_i256 = arith.constant 64 : i256 loc(#loc2)
 // CHECK-NEXT:     %0 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1> loc(#loc2)
 // CHECK-NEXT:     llvm.store %c128_i256, %0 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc2)
-// CHECK-NEXT:     %1 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:     %1 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:     %2 = arith.cmpi ne, %1, %c0_i256 : i256 loc(#loc2)
 // CHECK-NEXT:     scf.if %2 {
@@ -81,7 +81,7 @@ contract C {
 // CHECK-NEXT:       %9 = arith.trunci %8 : i256 to i32 loc(#loc2)
 // CHECK-NEXT:       scf.int_switch %9 : i32
 // CHECK-NEXT:       case -1790387060 {
-// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:         %10 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:         %c0_i256_3 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:         %11 = arith.cmpi ne, %10, %c0_i256_3 : i256 loc(#loc2)
 // CHECK-NEXT:         scf.if %11 {
@@ -340,7 +340,7 @@ contract C {
 // CHECK-NEXT:       llvm.store %11, %15 : !llvm.ptr<i256> loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     %17 = llvm.load %15 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc1)
-// CHECK-NEXT:     %18 = "llvm.intrcall"() <{id = 3176 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc1)
+// CHECK-NEXT:     %18 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc1)
 // CHECK-NEXT:     %c4294967295_i256_5 = arith.constant 4294967295 : i256 loc(#loc1)
 // CHECK-NEXT:     %c1_i64_6 = arith.constant 1 : i64 loc(#loc1)
 // CHECK-NEXT:     %19 = llvm.alloca %c1_i64_6 x i256 {alignment = 32 : i64} : (i64) -> !llvm.ptr<i256> loc(#loc1)
@@ -422,7 +422,7 @@ contract C {
 // CHECK-NEXT:       llvm.store %11, %15 : !llvm.ptr<i256> loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     %17 = llvm.load %15 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc1)
-// CHECK-NEXT:     %18 = "llvm.intrcall"() <{id = 3176 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc1)
+// CHECK-NEXT:     %18 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.gasleft"}> : () -> i256 loc(#loc1)
 // CHECK-NEXT:     %c4294967295_i256_5 = arith.constant 4294967295 : i256 loc(#loc1)
 // CHECK-NEXT:     %c1_i64_6 = arith.constant 1 : i64 loc(#loc1)
 // CHECK-NEXT:     %19 = llvm.alloca %c1_i64_6 x i256 {alignment = 32 : i64} : (i64) -> !llvm.ptr<i256> loc(#loc1)

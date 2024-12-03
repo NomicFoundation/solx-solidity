@@ -267,7 +267,9 @@ static void genEraVMBytecode(llvm::Module &llvmMod,
   char *errMsg = nullptr;
   if (LLVMLinkEraVM(obj, &bytecode, /*linkerSymbolNames=*/nullptr,
                     /*linkerSymbolValues=*/nullptr, /*numLinkerSymbols=*/0,
-                    &errMsg))
+                    /*factoryDependencySymbolNames=*/nullptr,
+                    /*factoryDependencySymbolValues=*/nullptr,
+                    /*numFactoryDependencySymbols=*/0, &errMsg))
     llvm_unreachable(errMsg);
 
   out.creationBytecode = llvm::toHex(llvm::unwrap(bytecode)->getBuffer(),

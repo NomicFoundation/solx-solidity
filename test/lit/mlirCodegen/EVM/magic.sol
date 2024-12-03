@@ -12,7 +12,7 @@ function addr() returns (address) {
 // CHECK: #NonPayable = #sol<StateMutability NonPayable>
 // CHECK-NEXT: module {
 // CHECK-NEXT:   func.func @msgSender_9() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #NonPayable} {
-// CHECK-NEXT:     %0 = "llvm.intrcall"() <{id = 3214 : i32, name = "evm.caller"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:     %0 = "llvm.intrcall"() <{id = 3215 : i32, name = "evm.caller"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:     return %0 : i256 loc(#loc3)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT:   func.func @addr_20() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #NonPayable} {

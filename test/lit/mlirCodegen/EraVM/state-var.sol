@@ -30,7 +30,7 @@ contract C {
 // CHECK-NEXT:     %c64_i256 = arith.constant 64 : i256 loc(#loc2)
 // CHECK-NEXT:     %0 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1> loc(#loc2)
 // CHECK-NEXT:     llvm.store %c128_i256, %0 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc2)
-// CHECK-NEXT:     %1 = "llvm.intrcall"() <{id = 3177 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:     %1 = "llvm.intrcall"() <{id = 3178 : i32, name = "eravm.getu128"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:     %2 = arith.cmpi ne, %1, %c0_i256 : i256 loc(#loc2)
 // CHECK-NEXT:     scf.if %2 {
