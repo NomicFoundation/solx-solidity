@@ -19,11 +19,11 @@
 // Yul to MLIR pass
 //
 
-#include "Sol/SolOps.h"
 #include "liblangutil/CharStream.h"
 #include "liblangutil/Exceptions.h"
 #include "libsolidity/codegen/mlir/Interface.h"
 #include "libsolidity/codegen/mlir/Passes.h"
+#include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Util.h"
 #include "libyul/AST.h"
 #include "libyul/Dialect.h"

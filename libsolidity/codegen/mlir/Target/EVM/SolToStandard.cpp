@@ -17,7 +17,7 @@
 
 #include "libsolidity/codegen/mlir/Target/EVM/SolToStandard.h"
 #include "libsolidity/codegen/CompilerUtils.h"
-#include "libsolidity/codegen/mlir/Sol/SolOps.h"
+#include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/mlir/Target/EVM/YulToStandard.h"
 #include "libsolidity/codegen/mlir/Util.h"

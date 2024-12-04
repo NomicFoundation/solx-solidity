@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "Sol/SolOps.h"
+#include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"

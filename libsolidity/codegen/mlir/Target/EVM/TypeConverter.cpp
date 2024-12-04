@@ -19,7 +19,7 @@
 // EVM specific type converter of the sol dialect
 //
 
-#include "libsolidity/codegen/mlir/Sol/SolOps.h"
+#include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Target/EVM/SolToStandard.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 

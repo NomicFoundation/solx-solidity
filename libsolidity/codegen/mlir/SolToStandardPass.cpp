@@ -20,7 +20,7 @@
 //
 
 #include "libsolidity/codegen/mlir/Passes.h"
-#include "libsolidity/codegen/mlir/Sol/SolOps.h"
+#include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Target/EVM/SolToStandard.h"
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/mlir/Target/EraVM/SolToStandard.h"

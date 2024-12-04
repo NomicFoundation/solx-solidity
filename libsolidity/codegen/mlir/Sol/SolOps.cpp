@@ -15,14 +15,8 @@
 
 // SPDX-License-Identifier: GPL-3.0
 
-#include "SolOps.h"
-#include "Sol/SolInterfaces.cpp.inc"
-#include "Sol/SolOpsDialect.cpp.inc"
-#include "Sol/SolOpsEnums.cpp.inc"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "Sol.h"
 #include "mlir/IR/BuiltinAttributes.h"
-#include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/DialectImplementation.h"
 #include "mlir/IR/FunctionImplementation.h"
 #include "mlir/IR/FunctionInterfaces.h"
 #include "mlir/IR/IRMapping.h"
@@ -31,611 +25,58 @@
 #include "mlir/Support/LLVM.h"
 #include "llvm/ADT/MapVector.h"
 #include "llvm/ADT/STLExtras.h"
-#include "llvm/ADT/TypeSwitch.h"
 
 using namespace mlir;
 using namespace mlir::sol;
 
-namespace {
-
-struct SolOpAsmDialectInterface : public OpAsmDialectInterface {
-  using OpAsmDialectInterface::OpAsmDialectInterface;
-
-  AliasResult getAlias(Attribute attr, raw_ostream &os) const override {
-    if (auto contrKindAttr = dyn_cast<ContractKindAttr>(attr)) {
-      os << stringifyContractKind(contrKindAttr.getValue());
-      return AliasResult::OverridableAlias;
-    }
-    if (auto stateMutAttr = dyn_cast<StateMutabilityAttr>(attr)) {
-      os << stringifyStateMutability(stateMutAttr.getValue());
-      return AliasResult::OverridableAlias;
-    }
-    return AliasResult::NoAlias;
-  }
-};
-
-} // namespace
-
-void SolDialect::initialize() {
-  addTypes<
-#define GET_TYPEDEF_LIST
-#include "Sol/SolOpsTypes.cpp.inc"
-      >();
-
-  addOperations<
-#define GET_OP_LIST
-#include "Sol/SolOps.cpp.inc"
-      >();
-
-  addAttributes<
-#define GET_ATTRDEF_LIST
-#include "Sol/SolOpsAttributes.cpp.inc"
-      >();
-
-  addInterfaces<SolOpAsmDialectInterface>();
-}
-
-Type mlir::sol::getEltType(Type ty, Index structTyIdx) {
-  if (auto ptrTy = dyn_cast<sol::PointerType>(ty)) {
-    return ptrTy.getPointeeType();
-  }
-  if (auto arrTy = dyn_cast<sol::ArrayType>(ty)) {
-    return arrTy.getEltType();
-  }
-  if (auto structTy = dyn_cast<sol::StructType>(ty)) {
-    return structTy.getMemberTypes()[structTyIdx];
-  }
-  llvm_unreachable("Invalid type");
-}
-
-DataLocation mlir::sol::getDataLocation(Type ty) {
-  return TypeSwitch<Type, DataLocation>(ty)
-      .Case<PointerType>(
-          [](sol::PointerType ptrTy) { return ptrTy.getDataLocation(); })
-      .Case<ArrayType>(
-          [](sol::ArrayType arrTy) { return arrTy.getDataLocation(); })
-      .Case<StringType>(
-          [](sol::StringType strTy) { return strTy.getDataLocation(); })
-      .Case<StructType>(
-          [](sol::StructType structTy) { return structTy.getDataLocation(); })
-      .Case<MappingType>(
-          [](sol::MappingType) { return sol::DataLocation::Storage; })
-      .Default([&](Type) { return DataLocation::Stack; });
-}
-
-// TODO? Should we exclude sol.pointer from reference types?
-
-bool mlir::sol::isRefType(Type ty) {
-  return isa<ArrayType>(ty) || isa<StringType>(ty) || isa<StructType>(ty) ||
-         isa<PointerType>(ty) || isa<MappingType>(ty);
-}
-
-bool mlir::sol::isNonPtrRefType(Type ty) {
-  return isRefType(ty) && !isa<PointerType>(ty);
-}
-
-bool mlir::sol::isLeftAligned(Type ty) {
-  if (isa<IntegerType>(ty))
-    return false;
-  llvm_unreachable("NYI: isLeftAligned of other types");
-}
-
-bool mlir::sol::isDynamicallySized(Type ty) {
-  if (isa<StringType>(ty))
-    return true;
-
-  if (auto arrTy = dyn_cast<ArrayType>(ty))
-    return arrTy.isDynSized();
-
-  return false;
-}
-
-bool mlir::sol::hasDynamicallySizedElt(Type ty) {
-  if (isa<StringType>(ty))
-    return true;
-
-  if (auto arrTy = dyn_cast<ArrayType>(ty))
-    return arrTy.isDynSized() || hasDynamicallySizedElt(arrTy.getEltType());
-
-  if (auto structTy = dyn_cast<StructType>(ty))
-    return llvm::any_of(structTy.getMemberTypes(),
-                        [](Type ty) { return hasDynamicallySizedElt(ty); });
-
-  return false;
-}
-
-static ParseResult parseDataLocation(AsmParser &parser,
-                                     DataLocation &dataLocation) {
-  StringRef dataLocationTok;
-  SMLoc loc = parser.getCurrentLocation();
-  if (parser.parseKeyword(&dataLocationTok))
-    return failure();
-
-  auto parsedDataLoc = symbolizeDataLocation(dataLocationTok);
-  if (!parsedDataLoc) {
-    parser.emitError(loc, "Invalid data-location");
-    return failure();
-  }
-
-  dataLocation = *parsedDataLoc;
-  return success();
-}
-
 //===----------------------------------------------------------------------===//
-// ArrayType
+// ConstantOp
 //===----------------------------------------------------------------------===//
 
-/// Parses a sol.array type.
-///
-///   array-type ::= `<` size `x` elt-ty `,` data-location `>`
-///   size ::= fixed-size | `?`
-///
-Type ArrayType::parse(AsmParser &parser) {
-  if (parser.parseLess())
-    return {};
+void ConstantOp::getAsmResultNames(
+    function_ref<void(Value, StringRef)> setNameFn) {
+  // (Copied from arith dialect)
 
-  int64_t size = -1;
-  if (parser.parseOptionalQuestion()) {
-    if (parser.parseInteger(size))
-      return {};
-  }
+  auto type = getType();
+  if (auto intCst = dyn_cast<IntegerAttr>(getValue())) {
+    auto intType = dyn_cast<IntegerType>(type);
 
-  if (parser.parseKeyword("x"))
-    return {};
+    // Sugar i1 constants with 'true' and 'false'.
+    if (intType && intType.getWidth() == 1)
+      return setNameFn(getResult(), (intCst.getInt() ? "true" : "false"));
 
-  Type eleTy;
-  if (parser.parseType(eleTy))
-    return {};
-
-  if (parser.parseComma())
-    return {};
-
-  DataLocation dataLocation = DataLocation::Memory;
-  if (parseDataLocation(parser, dataLocation))
-    return {};
-
-  if (parser.parseGreater())
-    return {};
-
-  return get(parser.getContext(), size, eleTy, dataLocation);
-}
-
-/// Prints a sol.array type.
-void ArrayType::print(AsmPrinter &printer) const {
-  printer << "<";
-
-  if (getSize() == -1)
-    printer << "?";
-  else
-    printer << getSize();
-
-  printer << " x " << getEltType() << ", "
-          << stringifyDataLocation(getDataLocation()) << ">";
-}
-
-//===----------------------------------------------------------------------===//
-// StringType
-//===----------------------------------------------------------------------===//
-
-/// Parses a sol.string type.
-///
-///   string-type ::= `<` data-location `>`
-///
-Type StringType::parse(AsmParser &parser) {
-  if (parser.parseLess())
-    return {};
-
-  DataLocation dataLocation = DataLocation::Memory;
-  if (parseDataLocation(parser, dataLocation))
-    return {};
-
-  if (parser.parseGreater())
-    return {};
-
-  return get(parser.getContext(), dataLocation);
-}
-
-/// Prints a sol.string type.
-void StringType::print(AsmPrinter &printer) const {
-  printer << "<" << stringifyDataLocation(this->getDataLocation()) << ">";
-}
-
-//===----------------------------------------------------------------------===//
-// StructType
-//===----------------------------------------------------------------------===//
-
-/// Parses a sol.struct type.
-///
-///   struct-type ::= `<` `(` member-types `)` `,` data-location `>`
-///
-Type StructType::parse(AsmParser &parser) {
-  if (parser.parseLess())
-    return {};
-
-  if (parser.parseLParen())
-    return {};
-
-  SmallVector<Type, 4> memTys;
-  do {
-    Type memTy;
-    if (parser.parseType(memTy))
-      return {};
-    memTys.push_back(memTy);
-  } while (succeeded(parser.parseOptionalComma()));
-
-  if (parser.parseRParen())
-    return {};
-
-  if (parser.parseComma())
-    return {};
-
-  DataLocation dataLocation = DataLocation::Memory;
-  if (parseDataLocation(parser, dataLocation))
-    return {};
-
-  if (parser.parseGreater())
-    return {};
-
-  return get(parser.getContext(), memTys, dataLocation);
-}
-
-/// Prints a sol.array type.
-void StructType::print(AsmPrinter &printer) const {
-  printer << "<(";
-  llvm::interleaveComma(getMemberTypes(), printer.getStream(),
-                        [&](Type memTy) { printer << memTy; });
-  printer << "), " << stringifyDataLocation(getDataLocation()) << ">";
-}
-
-//===----------------------------------------------------------------------===//
-// PointerType
-//===----------------------------------------------------------------------===//
-
-/// Parses a sol.ptr type.
-///
-///   ptr-type ::= `<` pointee-ty, data-location `>`
-///
-Type PointerType::parse(AsmParser &parser) {
-  if (parser.parseLess())
-    return {};
-
-  Type pointeeTy;
-  if (parser.parseType(pointeeTy))
-    return {};
-
-  if (parser.parseComma())
-    return {};
-
-  DataLocation dataLocation = DataLocation::Memory;
-  if (parseDataLocation(parser, dataLocation))
-    return {};
-
-  if (parser.parseGreater())
-    return {};
-
-  return get(parser.getContext(), pointeeTy, dataLocation);
-}
-
-/// Prints a sol.ptr type.
-void PointerType::print(AsmPrinter &printer) const {
-  printer << "<" << getPointeeType() << ", "
-          << stringifyDataLocation(getDataLocation()) << ">";
-}
-
-//===----------------------------------------------------------------------===//
-// IfOp
-//===----------------------------------------------------------------------===//
-
-void IfOp::build(OpBuilder &b, OperationState &res, Value cond, bool hasElse) {
-  res.addOperands(cond);
-
-  OpBuilder::InsertionGuard guard(b);
-  Region *thenRegion = res.addRegion();
-  b.createBlock(thenRegion);
-  b.create<YieldOp>(res.location);
-
-  Region *elseRegion = res.addRegion();
-  if (!hasElse)
-    return;
-  b.createBlock(elseRegion);
-  b.create<YieldOp>(res.location);
-}
-
-/// Given the region at `index`, or the parent operation if `index` is None,
-/// return the successor regions. These are the regions that may be selected
-/// during the flow of control. `operands` is a set of optional attributes that
-/// correspond to a constant value for each operand, or null if that operand is
-/// not a constant.
-void IfOp::getSuccessorRegions(std::optional<unsigned> index,
-                               ArrayRef<Attribute> operands,
-                               SmallVectorImpl<RegionSuccessor> &regions) {
-  // The `then` and the `else` region branch back to the parent operation.
-  if (index) {
-    regions.push_back(RegionSuccessor());
-    return;
-  }
-
-  // Don't consider the else region if it is empty.
-  Region *elseRegion = &this->getElseRegion();
-  if (elseRegion->empty())
-    elseRegion = nullptr;
-
-  // Otherwise, the successor is dependent on the condition.
-  // bool condition;
-  // if (auto condAttr = operands.front().dyn_cast_or_null<IntegerAttr>()) {
-  //   assert(0 && "not implemented");
-  // condition = condAttr.getValue().isOneValue();
-  // Add the successor regions using the condition.
-  // regions.push_back(RegionSuccessor(condition ? &thenRegion() :
-  // elseRegion));
-  // return;
-  // }
-
-  // If the condition isn't constant, both regions may be executed.
-  regions.push_back(RegionSuccessor(&getThenRegion()));
-  // If the else region does not exist, it is not a viable successor.
-  if (elseRegion)
-    regions.push_back(RegionSuccessor(elseRegion));
-  return;
-}
-
-//===----------------------------------------------------------------------===//
-// ConditionOp
-//===----------------------------------------------------------------------===//
-
-MutableOperandRange
-ConditionOp::getMutableSuccessorOperands(std::optional<unsigned> index) {
-  // No values are yielded to the successor region.
-  return MutableOperandRange(getOperation(), 0, 0);
-}
-
-//===----------------------------------------------------------------------===//
-// LoopOpInterface
-//===----------------------------------------------------------------------===//
-
-void LoopOpInterface::getLoopOpSuccessorRegions(
-    LoopOpInterface op, std::optional<unsigned> index,
-    SmallVectorImpl<RegionSuccessor> &regions) {
-  auto getRegionOrNull = [&](std::optional<unsigned> index,
-                             Operation *op) -> Region * {
-    if (!index)
-      return nullptr;
-    return &op->getRegion(*index);
-  };
-
-  // Branching to first region: go to condition or body (do-while).
-  if (!index) {
-    regions.emplace_back(&op.getEntry(), op.getEntry().getArguments());
-  }
-  // Branching from condition: go to body or exit.
-  else if (&op.getCond() == getRegionOrNull(index, op)) {
-    regions.emplace_back(RegionSuccessor(op->getResults()));
-    regions.emplace_back(&op.getBody(), op.getBody().getArguments());
-  }
-  // Branching from body: go to step (for) or condition.
-  else if (&op.getBody() == getRegionOrNull(index, op)) {
-    // FIXME: Should we consider break/continue statements here?
-    auto *afterBody = (op.maybeGetStep() ? op.maybeGetStep() : &op.getCond());
-    regions.emplace_back(afterBody, afterBody->getArguments());
-  }
-  // Branching from step: go to condition.
-  else if (op.maybeGetStep() == getRegionOrNull(index, op)) {
-    regions.emplace_back(&op.getCond(), op.getCond().getArguments());
+    // Otherwise, build a complex name with the value and type.
+    SmallString<32> specialNameBuffer;
+    llvm::raw_svector_ostream specialName(specialNameBuffer);
+    specialName << 'c' << intCst.getValue();
+    if (intType)
+      specialName << '_' << type;
+    setNameFn(getResult(), specialName.str());
   } else {
-    llvm_unreachable("unexpected branch origin");
+    setNameFn(getResult(), "cst");
   }
 }
 
-//===----------------------------------------------------------------------===//
-// WhileOp
-//===----------------------------------------------------------------------===//
-
-void WhileOp::getSuccessorRegions(std::optional<unsigned> index,
-                                  ArrayRef<Attribute> operands,
-                                  SmallVectorImpl<RegionSuccessor> &regions) {
-  LoopOpInterface::getLoopOpSuccessorRegions(*this, index, regions);
-}
+OpFoldResult ConstantOp::fold(FoldAdaptor adaptor) { return getValue(); }
 
 //===----------------------------------------------------------------------===//
-// DoWhileOp
+// ExtOp
 //===----------------------------------------------------------------------===//
 
-void DoWhileOp::getSuccessorRegions(std::optional<unsigned> index,
-                                    ArrayRef<Attribute> operands,
-                                    SmallVectorImpl<RegionSuccessor> &regions) {
-  LoopOpInterface::getLoopOpSuccessorRegions(*this, index, regions);
+bool ExtOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
+  assert(inputs.size() == outputs.size() == 1);
+  return cast<IntegerType>(inputs.front()).getWidth() <
+         cast<IntegerType>(outputs.front()).getWidth();
 }
 
 //===----------------------------------------------------------------------===//
-// ForOp
+// TruncOp
 //===----------------------------------------------------------------------===//
 
-void ForOp::getSuccessorRegions(std::optional<unsigned> index,
-                                ArrayRef<Attribute> operands,
-                                SmallVectorImpl<RegionSuccessor> &regions) {
-  LoopOpInterface::getLoopOpSuccessorRegions(*this, index, regions);
-}
-
-//===----------------------------------------------------------------------===//
-// ObjectOp
-//===----------------------------------------------------------------------===//
-
-void ObjectOp::build(OpBuilder &builder, OperationState &state,
-                     StringRef name) {
-  state.addRegion()->emplaceBlock();
-  state.attributes.push_back(builder.getNamedAttr(
-      mlir::SymbolTable::getSymbolAttrName(), builder.getStringAttr(name)));
-}
-
-ParseResult ModifierOp::parse(OpAsmParser &parser, OperationState &result) {
-  auto buildFuncType =
-      [](Builder &builder, ArrayRef<Type> argTypes, ArrayRef<Type> results,
-         function_interface_impl::VariadicFlag,
-         std::string &) { return builder.getFunctionType(argTypes, results); };
-
-  return function_interface_impl::parseFunctionOp(
-      parser, result, /*allowVariadic=*/false,
-      getFunctionTypeAttrName(result.name), buildFuncType,
-      getArgAttrsAttrName(result.name), getResAttrsAttrName(result.name));
-}
-
-void ModifierOp::print(OpAsmPrinter &p) {
-  function_interface_impl::printFunctionOp(
-      p, *this, /*isVariadic=*/false, getFunctionTypeAttrName(),
-      getArgAttrsAttrName(), getResAttrsAttrName());
-}
-
-//===----------------------------------------------------------------------===//
-// FuncOp
-//===----------------------------------------------------------------------===//
-
-void FuncOp::build(OpBuilder &builder, OperationState &state, StringRef name,
-                   FunctionType type, ArrayRef<NamedAttribute> attrs,
-                   ArrayRef<DictionaryAttr> argAttrs) {
-  state.addAttribute(SymbolTable::getSymbolAttrName(),
-                     builder.getStringAttr(name));
-  state.addAttribute(getFunctionTypeAttrName(state.name), TypeAttr::get(type));
-  state.attributes.append(attrs.begin(), attrs.end());
-  state.addRegion();
-
-  if (argAttrs.empty())
-    return;
-  assert(type.getNumInputs() == argAttrs.size());
-  function_interface_impl::addArgAndResultAttrs(
-      builder, state, argAttrs,
-      /*resultAttrs=*/{}, getArgAttrsAttrName(state.name),
-      getResAttrsAttrName(state.name));
-}
-
-void FuncOp::build(OpBuilder &builder, OperationState &state, StringRef name,
-                   FunctionType type, StateMutability stateMutability,
-                   ArrayRef<NamedAttribute> attrs,
-                   ArrayRef<DictionaryAttr> argAttrs) {
-  build(builder, state, name, type, attrs, argAttrs);
-  state.addAttribute(
-      getStateMutabilityAttrName(state.name),
-      StateMutabilityAttr::get(builder.getContext(), stateMutability));
-}
-
-void FuncOp::cloneInto(FuncOp dest, IRMapping &mapper) {
-  // Add the attributes of this function to dest.
-  llvm::MapVector<StringAttr, Attribute> newAttrMap;
-  for (const auto &attr : dest->getAttrs())
-    newAttrMap.insert({attr.getName(), attr.getValue()});
-  for (const auto &attr : (*this)->getAttrs())
-    newAttrMap.insert({attr.getName(), attr.getValue()});
-
-  auto newAttrs = llvm::to_vector(llvm::map_range(
-      newAttrMap, [](std::pair<StringAttr, Attribute> attrPair) {
-        return NamedAttribute(attrPair.first, attrPair.second);
-      }));
-  dest->setAttrs(DictionaryAttr::get(getContext(), newAttrs));
-
-  // Clone the body.
-  getBody().cloneInto(&dest.getBody(), mapper);
-}
-
-FuncOp FuncOp::clone(IRMapping &mapper) {
-  // Create the new function.
-  FuncOp newFunc = cast<FuncOp>(getOperation()->cloneWithoutRegions());
-
-  // If the function has a body, then the user might be deleting arguments to
-  // the function by specifying them in the mapper. If so, we don't add the
-  // argument to the input type vector.
-  if (!isExternal()) {
-    FunctionType oldType = getFunctionType();
-
-    unsigned oldNumArgs = oldType.getNumInputs();
-    SmallVector<Type, 4> newInputs;
-    newInputs.reserve(oldNumArgs);
-    for (unsigned i = 0; i != oldNumArgs; ++i)
-      if (!mapper.contains(getArgument(i)))
-        newInputs.push_back(oldType.getInput(i));
-
-    /// If any of the arguments were dropped, update the type and drop any
-    /// necessary argument attributes.
-    if (newInputs.size() != oldNumArgs) {
-      newFunc.setType(FunctionType::get(oldType.getContext(), newInputs,
-                                        oldType.getResults()));
-
-      if (ArrayAttr argAttrs = getAllArgAttrs()) {
-        SmallVector<Attribute> newArgAttrs;
-        newArgAttrs.reserve(newInputs.size());
-        for (unsigned i = 0; i != oldNumArgs; ++i)
-          if (!mapper.contains(getArgument(i)))
-            newArgAttrs.push_back(argAttrs[i]);
-        newFunc.setAllArgAttrs(newArgAttrs);
-      }
-    }
-  }
-
-  /// Clone the current function into the new one and return it.
-  cloneInto(newFunc, mapper);
-  return newFunc;
-}
-FuncOp FuncOp::clone() {
-  IRMapping mapper;
-  return clone(mapper);
-}
-
-ParseResult FuncOp::parse(OpAsmParser &parser, OperationState &result) {
-  auto buildFuncType =
-      [](Builder &builder, ArrayRef<Type> argTypes, ArrayRef<Type> results,
-         function_interface_impl::VariadicFlag,
-         std::string &) { return builder.getFunctionType(argTypes, results); };
-
-  return function_interface_impl::parseFunctionOp(
-      parser, result, /*allowVariadic=*/false,
-      getFunctionTypeAttrName(result.name), buildFuncType,
-      getArgAttrsAttrName(result.name), getResAttrsAttrName(result.name));
-}
-
-void FuncOp::print(OpAsmPrinter &p) {
-  function_interface_impl::printFunctionOp(
-      p, *this, /*isVariadic=*/false, getFunctionTypeAttrName(),
-      getArgAttrsAttrName(), getResAttrsAttrName());
-}
-
-//===----------------------------------------------------------------------===//
-// CallOp
-//===----------------------------------------------------------------------===//
-
-LogicalResult CallOp::verifySymbolUses(SymbolTableCollection &symbolTable) {
-  // Check that the callee attribute was specified.
-  auto fnAttr = (*this)->getAttrOfType<FlatSymbolRefAttr>("callee");
-  if (!fnAttr)
-    return emitOpError("requires a 'callee' symbol reference attribute");
-  FunctionOpInterface fn =
-      symbolTable.lookupNearestSymbolFrom<FuncOp>(*this, fnAttr);
-  if (!fn)
-    fn = symbolTable.lookupNearestSymbolFrom<ModifierOp>(*this, fnAttr);
-  if (!fn)
-    return emitOpError() << "'" << fnAttr.getValue()
-                         << "' does not reference a valid function";
-
-  // Verify that the operand and result types match the callee.
-  auto fnType = cast<FunctionType>(fn.getFunctionType());
-  if (fnType.getNumInputs() != getNumOperands())
-    return emitOpError("incorrect number of operands for callee");
-
-  for (unsigned i = 0, e = fnType.getNumInputs(); i != e; ++i)
-    if (getOperand(i).getType() != fnType.getInput(i))
-      return emitOpError("operand type mismatch: expected operand type ")
-             << fnType.getInput(i) << ", but provided "
-             << getOperand(i).getType() << " for operand number " << i;
-
-  if (fnType.getNumResults() != getNumResults())
-    return emitOpError("incorrect number of results for callee");
-
-  for (unsigned i = 0, e = fnType.getNumResults(); i != e; ++i)
-    if (getResult(i).getType() != fnType.getResult(i)) {
-      auto diag = emitOpError("result type mismatch at index ") << i;
-      diag.attachNote() << "      op result types: " << getResultTypes();
-      diag.attachNote() << "function result types: " << fnType.getResults();
-      return diag;
-    }
-
-  return success();
+bool TruncOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
+  assert(inputs.size() == outputs.size() == 1);
+  return cast<IntegerType>(inputs.front()).getWidth() >
+         cast<IntegerType>(outputs.front()).getWidth();
 }
 
 //===----------------------------------------------------------------------===//
@@ -791,60 +232,321 @@ void EmitOp::print(OpAsmPrinter &p) {
 }
 
 //===----------------------------------------------------------------------===//
-// ConstantOp
+// IfOp
 //===----------------------------------------------------------------------===//
 
-void ConstantOp::getAsmResultNames(
-    function_ref<void(Value, StringRef)> setNameFn) {
-  // (Copied from arith dialect)
+void IfOp::build(OpBuilder &b, OperationState &res, Value cond, bool hasElse) {
+  res.addOperands(cond);
 
-  auto type = getType();
-  if (auto intCst = dyn_cast<IntegerAttr>(getValue())) {
-    auto intType = dyn_cast<IntegerType>(type);
+  OpBuilder::InsertionGuard guard(b);
+  Region *thenRegion = res.addRegion();
+  b.createBlock(thenRegion);
+  b.create<YieldOp>(res.location);
 
-    // Sugar i1 constants with 'true' and 'false'.
-    if (intType && intType.getWidth() == 1)
-      return setNameFn(getResult(), (intCst.getInt() ? "true" : "false"));
+  Region *elseRegion = res.addRegion();
+  if (!hasElse)
+    return;
+  b.createBlock(elseRegion);
+  b.create<YieldOp>(res.location);
+}
 
-    // Otherwise, build a complex name with the value and type.
-    SmallString<32> specialNameBuffer;
-    llvm::raw_svector_ostream specialName(specialNameBuffer);
-    specialName << 'c' << intCst.getValue();
-    if (intType)
-      specialName << '_' << type;
-    setNameFn(getResult(), specialName.str());
+/// Given the region at `index`, or the parent operation if `index` is None,
+/// return the successor regions. These are the regions that may be selected
+/// during the flow of control. `operands` is a set of optional attributes that
+/// correspond to a constant value for each operand, or null if that operand is
+/// not a constant.
+void IfOp::getSuccessorRegions(std::optional<unsigned> index,
+                               ArrayRef<Attribute> operands,
+                               SmallVectorImpl<RegionSuccessor> &regions) {
+  // The `then` and the `else` region branch back to the parent operation.
+  if (index) {
+    regions.push_back(RegionSuccessor());
+    return;
+  }
+
+  // Don't consider the else region if it is empty.
+  Region *elseRegion = &this->getElseRegion();
+  if (elseRegion->empty())
+    elseRegion = nullptr;
+
+  // Otherwise, the successor is dependent on the condition.
+  // bool condition;
+  // if (auto condAttr = operands.front().dyn_cast_or_null<IntegerAttr>()) {
+  //   assert(0 && "not implemented");
+  // condition = condAttr.getValue().isOneValue();
+  // Add the successor regions using the condition.
+  // regions.push_back(RegionSuccessor(condition ? &thenRegion() :
+  // elseRegion));
+  // return;
+  // }
+
+  // If the condition isn't constant, both regions may be executed.
+  regions.push_back(RegionSuccessor(&getThenRegion()));
+  // If the else region does not exist, it is not a viable successor.
+  if (elseRegion)
+    regions.push_back(RegionSuccessor(elseRegion));
+  return;
+}
+
+//===----------------------------------------------------------------------===//
+// ConditionOp
+//===----------------------------------------------------------------------===//
+
+MutableOperandRange
+ConditionOp::getMutableSuccessorOperands(std::optional<unsigned> index) {
+  // No values are yielded to the successor region.
+  return MutableOperandRange(getOperation(), 0, 0);
+}
+
+//===----------------------------------------------------------------------===//
+// LoopOpInterface
+//===----------------------------------------------------------------------===//
+
+void LoopOpInterface::getLoopOpSuccessorRegions(
+    LoopOpInterface op, std::optional<unsigned> index,
+    SmallVectorImpl<RegionSuccessor> &regions) {
+  auto getRegionOrNull = [&](std::optional<unsigned> index,
+                             Operation *op) -> Region * {
+    if (!index)
+      return nullptr;
+    return &op->getRegion(*index);
+  };
+
+  // Branching to first region: go to condition or body (do-while).
+  if (!index) {
+    regions.emplace_back(&op.getEntry(), op.getEntry().getArguments());
+  }
+  // Branching from condition: go to body or exit.
+  else if (&op.getCond() == getRegionOrNull(index, op)) {
+    regions.emplace_back(RegionSuccessor(op->getResults()));
+    regions.emplace_back(&op.getBody(), op.getBody().getArguments());
+  }
+  // Branching from body: go to step (for) or condition.
+  else if (&op.getBody() == getRegionOrNull(index, op)) {
+    // FIXME: Should we consider break/continue statements here?
+    auto *afterBody = (op.maybeGetStep() ? op.maybeGetStep() : &op.getCond());
+    regions.emplace_back(afterBody, afterBody->getArguments());
+  }
+  // Branching from step: go to condition.
+  else if (op.maybeGetStep() == getRegionOrNull(index, op)) {
+    regions.emplace_back(&op.getCond(), op.getCond().getArguments());
   } else {
-    setNameFn(getResult(), "cst");
+    llvm_unreachable("unexpected branch origin");
   }
 }
 
-OpFoldResult ConstantOp::fold(FoldAdaptor adaptor) { return getValue(); }
-
 //===----------------------------------------------------------------------===//
-// ExtOp
+// WhileOp
 //===----------------------------------------------------------------------===//
 
-bool ExtOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
-  assert(inputs.size() == outputs.size() == 1);
-  return cast<IntegerType>(inputs.front()).getWidth() <
-         cast<IntegerType>(outputs.front()).getWidth();
+void WhileOp::getSuccessorRegions(std::optional<unsigned> index,
+                                  ArrayRef<Attribute> operands,
+                                  SmallVectorImpl<RegionSuccessor> &regions) {
+  LoopOpInterface::getLoopOpSuccessorRegions(*this, index, regions);
 }
 
 //===----------------------------------------------------------------------===//
-// TruncOp
+// DoWhileOp
 //===----------------------------------------------------------------------===//
 
-bool TruncOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
-  assert(inputs.size() == outputs.size() == 1);
-  return cast<IntegerType>(inputs.front()).getWidth() >
-         cast<IntegerType>(outputs.front()).getWidth();
+void DoWhileOp::getSuccessorRegions(std::optional<unsigned> index,
+                                    ArrayRef<Attribute> operands,
+                                    SmallVectorImpl<RegionSuccessor> &regions) {
+  LoopOpInterface::getLoopOpSuccessorRegions(*this, index, regions);
+}
+
+//===----------------------------------------------------------------------===//
+// ForOp
+//===----------------------------------------------------------------------===//
+
+void ForOp::getSuccessorRegions(std::optional<unsigned> index,
+                                ArrayRef<Attribute> operands,
+                                SmallVectorImpl<RegionSuccessor> &regions) {
+  LoopOpInterface::getLoopOpSuccessorRegions(*this, index, regions);
+}
+
+//===----------------------------------------------------------------------===//
+// CallOp
+//===----------------------------------------------------------------------===//
+
+LogicalResult CallOp::verifySymbolUses(SymbolTableCollection &symbolTable) {
+  // Check that the callee attribute was specified.
+  auto fnAttr = (*this)->getAttrOfType<FlatSymbolRefAttr>("callee");
+  if (!fnAttr)
+    return emitOpError("requires a 'callee' symbol reference attribute");
+  FunctionOpInterface fn =
+      symbolTable.lookupNearestSymbolFrom<FuncOp>(*this, fnAttr);
+  if (!fn)
+    fn = symbolTable.lookupNearestSymbolFrom<ModifierOp>(*this, fnAttr);
+  if (!fn)
+    return emitOpError() << "'" << fnAttr.getValue()
+                         << "' does not reference a valid function";
+
+  // Verify that the operand and result types match the callee.
+  auto fnType = cast<FunctionType>(fn.getFunctionType());
+  if (fnType.getNumInputs() != getNumOperands())
+    return emitOpError("incorrect number of operands for callee");
+
+  for (unsigned i = 0, e = fnType.getNumInputs(); i != e; ++i)
+    if (getOperand(i).getType() != fnType.getInput(i))
+      return emitOpError("operand type mismatch: expected operand type ")
+             << fnType.getInput(i) << ", but provided "
+             << getOperand(i).getType() << " for operand number " << i;
+
+  if (fnType.getNumResults() != getNumResults())
+    return emitOpError("incorrect number of results for callee");
+
+  for (unsigned i = 0, e = fnType.getNumResults(); i != e; ++i)
+    if (getResult(i).getType() != fnType.getResult(i)) {
+      auto diag = emitOpError("result type mismatch at index ") << i;
+      diag.attachNote() << "      op result types: " << getResultTypes();
+      diag.attachNote() << "function result types: " << fnType.getResults();
+      return diag;
+    }
+
+  return success();
+}
+
+//===----------------------------------------------------------------------===//
+// FuncOp
+//===----------------------------------------------------------------------===//
+
+void FuncOp::build(OpBuilder &builder, OperationState &state, StringRef name,
+                   FunctionType type, ArrayRef<NamedAttribute> attrs,
+                   ArrayRef<DictionaryAttr> argAttrs) {
+  state.addAttribute(SymbolTable::getSymbolAttrName(),
+                     builder.getStringAttr(name));
+  state.addAttribute(getFunctionTypeAttrName(state.name), TypeAttr::get(type));
+  state.attributes.append(attrs.begin(), attrs.end());
+  state.addRegion();
+
+  if (argAttrs.empty())
+    return;
+  assert(type.getNumInputs() == argAttrs.size());
+  function_interface_impl::addArgAndResultAttrs(
+      builder, state, argAttrs,
+      /*resultAttrs=*/{}, getArgAttrsAttrName(state.name),
+      getResAttrsAttrName(state.name));
+}
+
+void FuncOp::build(OpBuilder &builder, OperationState &state, StringRef name,
+                   FunctionType type, StateMutability stateMutability,
+                   ArrayRef<NamedAttribute> attrs,
+                   ArrayRef<DictionaryAttr> argAttrs) {
+  build(builder, state, name, type, attrs, argAttrs);
+  state.addAttribute(
+      getStateMutabilityAttrName(state.name),
+      StateMutabilityAttr::get(builder.getContext(), stateMutability));
+}
+
+void FuncOp::cloneInto(FuncOp dest, IRMapping &mapper) {
+  // Add the attributes of this function to dest.
+  llvm::MapVector<StringAttr, Attribute> newAttrMap;
+  for (const auto &attr : dest->getAttrs())
+    newAttrMap.insert({attr.getName(), attr.getValue()});
+  for (const auto &attr : (*this)->getAttrs())
+    newAttrMap.insert({attr.getName(), attr.getValue()});
+
+  auto newAttrs = llvm::to_vector(llvm::map_range(
+      newAttrMap, [](std::pair<StringAttr, Attribute> attrPair) {
+        return NamedAttribute(attrPair.first, attrPair.second);
+      }));
+  dest->setAttrs(DictionaryAttr::get(getContext(), newAttrs));
+
+  // Clone the body.
+  getBody().cloneInto(&dest.getBody(), mapper);
+}
+
+FuncOp FuncOp::clone(IRMapping &mapper) {
+  // Create the new function.
+  FuncOp newFunc = cast<FuncOp>(getOperation()->cloneWithoutRegions());
+
+  // If the function has a body, then the user might be deleting arguments to
+  // the function by specifying them in the mapper. If so, we don't add the
+  // argument to the input type vector.
+  if (!isExternal()) {
+    FunctionType oldType = getFunctionType();
+
+    unsigned oldNumArgs = oldType.getNumInputs();
+    SmallVector<Type, 4> newInputs;
+    newInputs.reserve(oldNumArgs);
+    for (unsigned i = 0; i != oldNumArgs; ++i)
+      if (!mapper.contains(getArgument(i)))
+        newInputs.push_back(oldType.getInput(i));
+
+    /// If any of the arguments were dropped, update the type and drop any
+    /// necessary argument attributes.
+    if (newInputs.size() != oldNumArgs) {
+      newFunc.setType(FunctionType::get(oldType.getContext(), newInputs,
+                                        oldType.getResults()));
+
+      if (ArrayAttr argAttrs = getAllArgAttrs()) {
+        SmallVector<Attribute> newArgAttrs;
+        newArgAttrs.reserve(newInputs.size());
+        for (unsigned i = 0; i != oldNumArgs; ++i)
+          if (!mapper.contains(getArgument(i)))
+            newArgAttrs.push_back(argAttrs[i]);
+        newFunc.setAllArgAttrs(newArgAttrs);
+      }
+    }
+  }
+
+  /// Clone the current function into the new one and return it.
+  cloneInto(newFunc, mapper);
+  return newFunc;
+}
+
+FuncOp FuncOp::clone() {
+  IRMapping mapper;
+  return clone(mapper);
+}
+
+ParseResult FuncOp::parse(OpAsmParser &parser, OperationState &result) {
+  auto buildFuncType =
+      [](Builder &builder, ArrayRef<Type> argTypes, ArrayRef<Type> results,
+         function_interface_impl::VariadicFlag,
+         std::string &) { return builder.getFunctionType(argTypes, results); };
+
+  return function_interface_impl::parseFunctionOp(
+      parser, result, /*allowVariadic=*/false,
+      getFunctionTypeAttrName(result.name), buildFuncType,
+      getArgAttrsAttrName(result.name), getResAttrsAttrName(result.name));
+}
+
+void FuncOp::print(OpAsmPrinter &p) {
+  function_interface_impl::printFunctionOp(
+      p, *this, /*isVariadic=*/false, getFunctionTypeAttrName(),
+      getArgAttrsAttrName(), getResAttrsAttrName());
+}
+
+//===----------------------------------------------------------------------===//
+// ObjectOp
+//===----------------------------------------------------------------------===//
+
+void ObjectOp::build(OpBuilder &builder, OperationState &state,
+                     StringRef name) {
+  state.addRegion()->emplaceBlock();
+  state.attributes.push_back(builder.getNamedAttr(
+      mlir::SymbolTable::getSymbolAttrName(), builder.getStringAttr(name)));
+}
+
+ParseResult ModifierOp::parse(OpAsmParser &parser, OperationState &result) {
+  auto buildFuncType =
+      [](Builder &builder, ArrayRef<Type> argTypes, ArrayRef<Type> results,
+         function_interface_impl::VariadicFlag,
+         std::string &) { return builder.getFunctionType(argTypes, results); };
+
+  return function_interface_impl::parseFunctionOp(
+      parser, result, /*allowVariadic=*/false,
+      getFunctionTypeAttrName(result.name), buildFuncType,
+      getArgAttrsAttrName(result.name), getResAttrsAttrName(result.name));
+}
+
+void ModifierOp::print(OpAsmPrinter &p) {
+  function_interface_impl::printFunctionOp(
+      p, *this, /*isVariadic=*/false, getFunctionTypeAttrName(),
+      getArgAttrsAttrName(), getResAttrsAttrName());
 }
 
 #define GET_OP_CLASSES
 #include "Sol/SolOps.cpp.inc"
-
-#define GET_ATTRDEF_CLASSES
-#include "Sol/SolOpsAttributes.cpp.inc"
-
-#define GET_TYPEDEF_CLASSES
-#include "Sol/SolOpsTypes.cpp.inc"

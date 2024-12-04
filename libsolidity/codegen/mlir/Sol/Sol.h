@@ -16,7 +16,7 @@
 // SPDX-License-Identifier: GPL-3.0
 
 //
-// Sol operations
+// Sol dialect
 //
 
 #pragma once

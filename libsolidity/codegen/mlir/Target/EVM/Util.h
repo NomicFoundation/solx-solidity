@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "libsolidity/codegen/mlir/Sol/SolOps.h"
+#include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolutil/ErrorCodes.h"
 #include "mlir/IR/Builders.h"
 

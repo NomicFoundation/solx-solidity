@@ -235,6 +235,7 @@ set(mlir_sources
 )
 
 set(mlir_sol_dialect_sources
+	codegen/mlir/Sol/SolBase.cpp
 	codegen/mlir/Sol/SolOps.cpp
 )
 

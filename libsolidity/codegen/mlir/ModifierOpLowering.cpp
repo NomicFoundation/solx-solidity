@@ -22,7 +22,7 @@
 // TODO: This pass expects/generates non-mem2reg ir.
 
 #include "libsolidity/codegen/mlir/Passes.h"
-#include "libsolidity/codegen/mlir/Sol/SolOps.h"
+#include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/IRMapping.h"

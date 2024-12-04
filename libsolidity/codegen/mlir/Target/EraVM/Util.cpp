@@ -16,7 +16,7 @@
 // SPDX-License-Identifier: GPL-3.0
 
 #include "libsolidity/codegen/mlir/Target/EraVM/Util.h"
-#include "libsolidity/codegen/mlir/Sol/SolOps.h"
+#include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Util.h"
 #include "libsolutil/ErrorCodes.h"
 #include "libsolutil/FixedHash.h"

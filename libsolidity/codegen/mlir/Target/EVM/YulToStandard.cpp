@@ -16,7 +16,7 @@
 // SPDX-License-Identifier: GPL-3.0
 
 #include "libsolidity/codegen/mlir/Target/EVM/YulToStandard.h"
-#include "libsolidity/codegen/mlir/Sol/SolOps.h"
+#include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/mlir/Util.h"
 #include "llvm/ADT/STLExtras.h"
