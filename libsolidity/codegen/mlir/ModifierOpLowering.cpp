@@ -16,7 +16,8 @@
 // SPDX-License-Identifier: GPL-3.0
 
 //
-// A pass that lowers sol.modifier and sol.modifier_call_blk ops
+// A pass that lowers ops related to modifiers (sol.modifier, sol.placeholder
+// etc.)
 //
 
 // TODO: This pass expects/generates non-mem2reg ir.
@@ -38,6 +39,9 @@
 #include <utility>
 
 using namespace mlir;
+
+static constexpr const char *kBeforePlaceholderAttr =
+    "sol.modifier.beforePlaceholder";
 
 struct ModifierOpLowering
     : public PassWrapper<ModifierOpLowering, OperationPass<ModuleOp>> {
@@ -61,29 +65,31 @@ struct ModifierOpLowering
   // Terminologies, etc.
   //
   // - Modifier: The modifier.
+  // - Function-like modifier: A modifier that's converted to a function.
   // - Caller function: The function that calls the modifier.
   // - Modifier function: The function that contains the body of the modifier
   // (in the context of a sol.modifier_call_blk).
   //
   // The caller function and the modifier function has the same signature. We
   // generate a modifier function for each sol.modifier_call_blk even if the
-  // same modifier is called (since the call args can be different).
+  // same modifier is called (since the call args can be different). The
+  // modifier and the function-like modifier has the same signature.
 
-  /// Creates and returns a function that contains the body of the modifier in
-  /// the context of the sol.modifier_call_blk. This removes the
-  /// sol.modifier_call_blk as well.
-  sol::FuncOp createModifierFn(sol::ModifierCallBlkOp modifierCallBlk,
-                               OpBuilder b) {
-    OpBuilder::InsertionGuard guard(b);
-
+  /// Returns the function-like modifier (or null) that the
+  /// sol.modifier_call_blk calls.
+  sol::FuncOp getFnLikeModifier(sol::ModifierCallBlkOp modifierCallBlk) {
     auto modifierCall = cast<sol::CallOp>(modifierCallBlk.getBody()->back());
-    auto modifier = cast<sol::ModifierOp>(SymbolTable::lookupNearestSymbolFrom(
+    return dyn_cast<sol::FuncOp>(SymbolTable::lookupNearestSymbolFrom(
         modifierCall, modifierCall.getCalleeAttr()));
+  }
+
+  /// Returns a map that maps all the stack loads in the sol.modifier_call_blk
+  /// to the respective block arg number.
+  llvm::DenseMap<sol::LoadOp, unsigned>
+  createModifierCallBlkArgMap(sol::ModifierCallBlkOp modifierCallBlk) {
     auto callerFn = cast<sol::FuncOp>(modifierCallBlk->getParentOp());
     Block &callerFnEntry = callerFn.getBody().front();
 
-    // Record the respective block argument of all the stack loads in the
-    // sol.modifier_call_blk.
     llvm::DenseMap<sol::LoadOp, unsigned> modifierCallBlkArgMap;
     modifierCallBlk.getBody()->walk([&](sol::LoadOp ld) {
       bool foundBlkArg = false;
@@ -101,6 +107,26 @@ struct ModifierOpLowering
         assert(foundBlkArg);
       }
     });
+    return modifierCallBlkArgMap;
+  }
+
+  /// Creates and returns a function that contains the body of the modifier in
+  /// the context of the sol.modifier_call_blk. This removes the
+  /// sol.modifier_call_blk as well.
+  sol::FuncOp createModifierFn(sol::ModifierCallBlkOp modifierCallBlk,
+                               OpBuilder b) {
+    OpBuilder::InsertionGuard guard(b);
+
+    auto modifierCall = cast<sol::CallOp>(modifierCallBlk.getBody()->back());
+    auto modifier = cast<sol::ModifierOp>(SymbolTable::lookupNearestSymbolFrom(
+        modifierCall, modifierCall.getCalleeAttr()));
+    auto callerFn = cast<sol::FuncOp>(modifierCallBlk->getParentOp());
+    Block &callerFnEntry = callerFn.getBody().front();
+
+    // Record the respective block argument of all the stack loads in the
+    // sol.modifier_call_blk.
+    llvm::DenseMap<sol::LoadOp, unsigned> modifierCallBlkArgMap =
+        createModifierCallBlkArgMap(modifierCallBlk);
 
     // Create the modifier function with caller function signature.
     StringRef modifierFnName =
@@ -191,6 +217,48 @@ struct ModifierOpLowering
     }
   }
 
+  /// Tries to convert the modifier to a function and returns it if it does. The
+  /// transformed function will have the same signature of the modifier but no
+  /// placeholders.
+  ///
+  /// We can do this iff:
+  /// - All placeholder are immeditately before the return, then the placeholder
+  /// acts like a return. In this case, the callee can call this as a regular
+  /// function before its placeholder.
+  ///
+  /// - (TODO) Only one placeholder and it is at the beginning of the entry
+  /// block, then the callee can call this as a regular function after its
+  /// placeholder. TODO: 2 problems: (1) skipping stack allocas (impl mem2reg?)
+  /// (2) If we append multiple calls at the callee's placeholder, the order
+  /// gets reversed
+  ///
+  /// "Callee" here means the callee in the call-chain of modifiers that
+  /// `lowerModifierCalls` generate.
+  std::optional<sol::FuncOp> tryConvertingToFn(sol::ModifierOp modifier) {
+    // Check if the placeholders act as return.
+    auto walkRes = modifier.walk([&](sol::PlaceholderOp placeholder) {
+      assert(placeholder->getNextNode());
+      if (!isa<sol::ReturnOp>(placeholder->getNextNode()))
+        return WalkResult::interrupt();
+      return WalkResult::advance();
+    });
+    if (walkRes.wasInterrupted())
+      return std::nullopt;
+
+    modifier.walk([&](sol::PlaceholderOp placeholder) { placeholder.erase(); });
+
+    // Convert the modifier to a function.
+    OpBuilder b(modifier.getContext());
+    b.setInsertionPoint(modifier);
+    auto replFn = b.create<sol::FuncOp>(modifier.getLoc(), modifier.getName(),
+                                        modifier.getFunctionType());
+    IRMapping mapper;
+    modifier.getBody().cloneInto(&replFn.getBody(), mapper);
+    replFn->setAttr(kBeforePlaceholderAttr, b.getUnitAttr());
+    modifier.erase();
+    return replFn;
+  }
+
   /// Lowers all the modifier calls in the function.
   void lowerModifierCalls(sol::FuncOp callerFn) {
     if (callerFn.getBlocks().empty())
@@ -198,17 +266,18 @@ struct ModifierOpLowering
 
     OpBuilder b(callerFn.getContext());
 
-    // Create modifier functions from the sol.modifier_call_blks.
-    // TODO: We could .reserve here if we track the modifier count.
-    SmallVector<sol::FuncOp, 4> modifierFns;
+    // Track all the sol.modifier_call_blk's.
+    //
+    // TODO: We could .reserve/bail out faster here if we track the modifier
+    // count.
+    SmallVector<sol::ModifierCallBlkOp> modifierCallBlks;
     Block &entryBlk = callerFn.getBlocks().front();
-    for (auto &op : llvm::make_early_inc_range(entryBlk)) {
+    for (Operation &op : entryBlk) {
       auto modifierCallBlk = dyn_cast<sol::ModifierCallBlkOp>(op);
-      if (!modifierCallBlk)
-        continue;
-      modifierFns.push_back(createModifierFn(modifierCallBlk, b));
+      if (modifierCallBlk)
+        modifierCallBlks.push_back(modifierCallBlk);
     }
-    if (modifierFns.empty())
+    if (modifierCallBlks.empty())
       return;
 
     // Replace `callerFn` with a new function that calls the first modifier.
@@ -219,26 +288,58 @@ struct ModifierOpLowering
         getNearestUnusedSymFrom(callerFn, callerFn.getSymNameAttr()));
     b.setInsertionPointToStart(newCallerFn.addEntryBlock());
     // The sol.placeholder will be replaced with the first modifier. This
-    // simplifies the following placeholder replacement loop.
+    // simplifies the placeholder replacement loop.
     b.create<sol::PlaceholderOp>(b.getUnknownLoc());
     b.create<sol::ReturnOp>(b.getUnknownLoc());
 
     // Generate the chain of calls of modifiers and the caller function by
     // replacing the sol.placeholders.
-    SmallVector<sol::FuncOp, 4> callOrder{newCallerFn};
-    callOrder.reserve(modifierFns.size() + 1);
-    callOrder.append(modifierFns);
-    callOrder.push_back(callerFn);
-    for (auto *it = callOrder.begin(); it != callOrder.end(); ++it) {
-      if (it + 1 != callOrder.end())
-        replacePlaceholders(*it, *(it + 1), b);
+    SmallVector<sol::FuncOp, 4> callChain{newCallerFn};
+    for (sol::ModifierCallBlkOp modifierCallBlk : modifierCallBlks) {
+      if (sol::FuncOp fnLikeModifer = getFnLikeModifier(modifierCallBlk)) {
+        assert(fnLikeModifer->getAttr(kBeforePlaceholderAttr) && "NYI");
+
+        // For function-like modifier, we generate the call to them before/after
+        // (depending on the before/after-placeholder attribute) the
+        // placeholders of the current tail of the `callChain`. They're not part
+        // of the `callChain` as they won't have placeholders.
+
+        // Replace stack load uses with the respective block argument.
+        llvm::DenseMap<sol::LoadOp, unsigned> modifierCallBlkArgMap =
+            createModifierCallBlkArgMap(modifierCallBlk);
+        for (auto i : modifierCallBlkArgMap) {
+          sol::LoadOp allocaLd = i.first;
+          unsigned respectiveBlkArgNum = i.second;
+          allocaLd.replaceAllUsesWith(
+              callChain.back().front().getArgument(respectiveBlkArgNum));
+          allocaLd.erase();
+        }
+
+        // Insert the sol.modifier_call_blk before all the placeholders the
+        // `callChain`'s tail.
+        callChain.back().walk([&](sol::PlaceholderOp placeholder) {
+          placeholder->getBlock()->getOperations().splice(
+              placeholder->getIterator(),
+              modifierCallBlk.getBody()->getOperations());
+        });
+        modifierCallBlk.erase();
+
+      } else {
+        callChain.push_back(createModifierFn(modifierCallBlk, b));
+      }
+    }
+    callChain.push_back(callerFn);
+    for (auto *it = callChain.begin(); it != callChain.end(); ++it) {
+      if (it + 1 != callChain.end())
+        replacePlaceholders(/*modifierFn=*/*it, /*callee=*/*(it + 1), b);
     }
   }
 
   void runOnOperation() override {
+    getOperation().walk(
+        [&](sol::ModifierOp modifier) { tryConvertingToFn(modifier); });
     getOperation().walk([&](sol::FuncOp fn) { lowerModifierCalls(fn); });
     getOperation().walk([&](sol::ModifierOp modifier) { modifier.erase(); });
-    // getOperation().dump();
   }
 
   StringRef getArgument() const override { return "lower-modifier"; }
