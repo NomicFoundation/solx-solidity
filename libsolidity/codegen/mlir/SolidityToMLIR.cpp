@@ -1041,12 +1041,19 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   auto fnTy = b.getFunctionType(inpTys, outTys);
   auto op = b.create<mlir::sol::FuncOp>(
       getLoc(fn.location()), getMangledName(fn), fnTy, getStateMutability(fn));
-  op.setCtor(fn.isConstructor());
+
   if (fn.isConstructor()) {
+    op.setKind(mlir::sol::FunctionKind::Constructor);
     auto currContr =
         mlir::cast<mlir::sol::ContractOp>(b.getBlock()->getParentOp());
     assert(currContr);
     currContr.setCtorFnType(op.getFunctionType());
+
+  } else if (fn.isReceive()) {
+    op.setKind(mlir::sol::FunctionKind::Receive);
+
+  } else if (fn.isFallback()) {
+    op.setKind(mlir::sol::FunctionKind::Fallback);
   }
 
   mlir::Block *entryBlk = b.createBlock(&op.getRegion());
@@ -1112,15 +1119,11 @@ static mlir::sol::ContractKind getContractKind(ContractDefinition const &cont) {
 void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
   currContract = &cont;
 
-  // TODO: Set using ContractDefinition::receiveFunction and
-  // ContractDefinition::fallbackFunction.
-  mlir::FlatSymbolRefAttr fallbackFn, receiveFn;
-
   // Create the contract op.
   auto op = b.create<mlir::sol::ContractOp>(
       getLoc(cont.location()), cont.name() + "_" + util::toString(cont.id()),
       getContractKind(cont), getInterfaceFnsAttr(cont),
-      /*ctorFnType=*/mlir::TypeAttr{}, fallbackFn, receiveFn);
+      /*ctorFnType=*/mlir::TypeAttr{});
   b.setInsertionPointToStart(&op.getBodyRegion().emplaceBlock());
 
   for (VariableDeclaration const *stateVar : cont.stateVariables()) {

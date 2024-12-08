@@ -492,7 +492,7 @@ def Sol_FuncOp : Sol_Op<"func", [AutomaticAllocationScope, CallableOpInterface,
                        OptionalAttr<DictArrayAttr>:$arg_attrs,
                        OptionalAttr<DictArrayAttr>:$res_attrs,
                        UnitAttr:$runtime,
-                       UnitAttr:$ctor,
+                       OptionalAttr<Sol_FunctionKindAttr>:$kind,
                        OptionalAttr<Sol_StateMutabilityAttr>:$state_mutability,
                        OptionalAttr<StrAttr>:$sym_visibility);
   let regions = (region AnyRegion:$body);
@@ -551,9 +551,7 @@ def Sol_ContractOp : Sol_Op<"contract", [Symbol, SymbolTable, SingleBlock,
                    // during the legalization by SolTypeConverter. Also, if this
                    // is fixed, maybe we could track interface function
                    // attributes in sol.func intead?
-                   OptionalAttr<TypeAttrOf<FunctionType>>:$ctorFnType,
-                   OptionalAttr<FlatSymbolRefAttr>:$fallbackFn,
-                   OptionalAttr<FlatSymbolRefAttr>:$receiveFn);
+                   OptionalAttr<TypeAttrOf<FunctionType>>:$ctorFnType);
   let regions = (region SizedRegion<1>:$bodyRegion);
 
   let assemblyFormat = "$sym_name $bodyRegion attr-dict";
@@ -596,6 +594,11 @@ def Sol_RevertOp : Sol_Op<"revert"> {
   // TODO: Support revert strings.
   let arguments = (ins I256:$addr, I256:$size);
   let assemblyFormat = "$addr `,` $size attr-dict";
+}
+
+def Sol_StopOp : Sol_Op<"stop"> {
+  let summary = "Represents the `stop` call in yul";
+  let assemblyFormat = "attr-dict";
 }
 
 def Sol_MLoadOp : Sol_Op<"mload"> {

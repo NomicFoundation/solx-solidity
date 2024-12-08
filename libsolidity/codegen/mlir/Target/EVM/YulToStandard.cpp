@@ -329,6 +329,21 @@ struct BuiltinRetOpLowering : public OpRewritePattern<sol::BuiltinRetOp> {
   }
 };
 
+struct StopOpLowering : public OpRewritePattern<sol::StopOp> {
+  using OpRewritePattern<sol::StopOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::StopOp op,
+                                PatternRewriter &r) const override {
+    solidity::mlirgen::BuilderExt bExt(r, op.getLoc());
+
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_stop,
+                                           /*resTy=*/Type{},
+                                           /*ins=*/ValueRange{}, "evm.stop");
+    bExt.createCallToUnreachableWrapper(op->getParentOfType<ModuleOp>());
+    return success();
+  }
+};
+
 struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
   using OpRewritePattern<sol::ObjectOp>::OpRewritePattern;
 
@@ -395,5 +410,6 @@ void evm::populateYulPats(RewritePatternSet &pats) {
            DataOffsetOpLowering, DataSizeOpLowering, CodeSizeOpLowering,
            CodeCopyOpLowering, MLoadOpLowering, MStoreOpLowering,
            MCopyOpLowering, MemGuardOpLowering, RevertOpLowering,
-           BuiltinRetOpLowering, ObjectOpLowering>(pats.getContext());
+           BuiltinRetOpLowering, StopOpLowering, ObjectOpLowering>(
+      pats.getContext());
 }

@@ -45,6 +45,10 @@ struct SolOpAsmDialectInterface : public OpAsmDialectInterface {
       os << stringifyStateMutability(stateMutAttr.getValue());
       return AliasResult::OverridableAlias;
     }
+    if (auto fnKindAttr = dyn_cast<FunctionKindAttr>(attr)) {
+      os << stringifyFunctionKind(fnKindAttr.getValue());
+      return AliasResult::OverridableAlias;
+    }
     return AliasResult::NoAlias;
   }
 };

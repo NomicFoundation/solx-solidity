@@ -24,6 +24,7 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/Types.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -1235,24 +1236,38 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 
     // Copy contained function to creation and runtime ObjectOp.
     std::vector<sol::FuncOp> funcs;
-    sol::FuncOp ctor;
+    sol::FuncOp ctor, receiveFn, fallbackFn;
     for (Operation &i : op.getBody()->getOperations()) {
       if (auto func = dyn_cast<sol::FuncOp>(i))
         funcs.push_back(func);
       else
         llvm_unreachable("NYI: Non function entities in contract");
     }
-    for (sol::FuncOp func : funcs) {
-      if (func.getCtor()) {
-        assert(!ctor);
-        ctor = func;
-        ctor->moveBefore(creationObj.getBody(), creationObj.getBody()->begin());
+    for (sol::FuncOp fn : funcs) {
+      auto fnKind = fn.getKind();
+      if (!fnKind) {
+        // Duplicate in both the creation and runtime objects.
+        r.clone(*fn);
+        fn->moveBefore(runtimeObj.getBody(), runtimeObj.getBody()->begin());
+        fn.setRuntimeAttr(r.getUnitAttr());
         continue;
       }
-      // Duplicate non-ctor func in both the creation and runtime objects.
-      r.clone(*func);
-      func->moveBefore(runtimeObj.getBody(), runtimeObj.getBody()->begin());
-      func.setRuntimeAttr(r.getUnitAttr());
+      if (*fnKind == sol::FunctionKind::Constructor) {
+        assert(!ctor);
+        ctor = fn;
+        ctor->moveBefore(creationObj.getBody(), creationObj.getBody()->begin());
+
+      } else if (*fnKind == sol::FunctionKind::Fallback) {
+        assert(!fallbackFn);
+        fallbackFn = fn;
+        fallbackFn->moveBefore(runtimeObj.getBody(),
+                               runtimeObj.getBody()->begin());
+      } else if (*fnKind == sol::FunctionKind::Receive) {
+        assert(!receiveFn);
+        receiveFn = fn;
+        receiveFn->moveBefore(runtimeObj.getBody(),
+                              runtimeObj.getBody()->begin());
+      }
     }
 
     //
@@ -1316,14 +1331,33 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     // Generate the dispatch to interface functions.
     genDispatch(op, runtimeObj, r);
 
-    if (op.getReceiveFnAttr()) {
-      assert(false && "NYI: Receive functions");
-      // TODO: Handle ether recieve function.
+    // TODO: Handle ether recieve function.
+
+    // Generate receive function.
+    if (receiveFn) {
+      auto callDataSz = r.create<sol::CallDataSizeOp>(loc);
+      auto callDataSzIsZero = r.create<arith::CmpIOp>(
+          loc, arith::CmpIPredicate::eq, callDataSz, bExt.genI256Const(0));
+      auto ifOp =
+          r.create<scf::IfOp>(loc, callDataSzIsZero, /*withElseRegion=*/false);
+      OpBuilder::InsertionGuard insertGuard(r);
+      r.setInsertionPointToStart(&ifOp.getThenRegion().front());
+      r.create<sol::CallOp>(loc, receiveFn, /*operands=*/ValueRange{});
+      r.create<sol::StopOp>(loc);
     }
 
-    if (op.getFallbackFnAttr()) {
-      assert(false && "NYI: Fallback functions");
-      // TODO: Handle fallback function.
+    // Generate fallback function.
+    if (fallbackFn) {
+      FunctionType fallbackFnTy = fallbackFn.getFunctionType();
+      assert(fallbackFnTy.getNumInputs() == fallbackFnTy.getNumResults() &&
+             "NYI");
+      (void)fallbackFnTy;
+
+      if (fallbackFn.getStateMutability() != sol::StateMutability::Payable) {
+        genCallValChk(r, loc);
+      }
+      r.create<sol::CallOp>(loc, fallbackFn, /*operands=*/ValueRange{});
+      r.create<sol::StopOp>(loc);
 
     } else {
       // TODO: Generate error message.

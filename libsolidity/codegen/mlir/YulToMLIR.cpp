@@ -265,6 +265,10 @@ mlir::Value YulToMLIRPass::genExpr(FunctionCall const &call) {
                                     genDefTyExpr(call.arguments[1]));
       return {};
     }
+    if (builtin->name.str() == "stop") {
+      b.create<mlir::sol::StopOp>(loc);
+      return {};
+    }
     if (builtin->name.str() == "mload") {
       return b.create<mlir::sol::MLoadOp>(loc, genDefTyExpr(call.arguments[0]));
     }

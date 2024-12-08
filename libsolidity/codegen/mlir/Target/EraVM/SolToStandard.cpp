@@ -499,6 +499,18 @@ struct BuiltinRetOpLowering : public OpRewritePattern<sol::BuiltinRetOp> {
   }
 };
 
+struct StopOpLowering : public OpRewritePattern<sol::StopOp> {
+  using OpRewritePattern<sol::StopOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::StopOp op,
+                                PatternRewriter &r) const override {
+    solidity::mlirgen::BuilderExt bExt(r, op.getLoc());
+    r.replaceOpWithNewOp<sol::BuiltinRetOp>(op, bExt.genI256Const(0),
+                                            bExt.genI256Const(0));
+    return success();
+  }
+};
+
 struct FuncOpLowering : public OpConversionPattern<sol::FuncOp> {
   using OpConversionPattern<sol::FuncOp>::OpConversionPattern;
 
@@ -810,7 +822,7 @@ void eravm::populateStage1Pats(RewritePatternSet &pats, TypeConverter &tyConv) {
 void eravm::populateStage2Pats(RewritePatternSet &pats) {
   evm::populateContractPat(pats);
   pats.add<ObjectOpLowering, BuiltinRetOpLowering, RevertOpLowering,
-           MLoadOpLowering, MStoreOpLowering, MCopyOpLowering,
+           StopOpLowering, MLoadOpLowering, MStoreOpLowering, MCopyOpLowering,
            DataOffsetOpLowering, DataSizeOpLowering, CodeSizeOpLowering,
            CodeCopyOpLowering, MemGuardOpLowering, CallValOpLowering,
            CallDataLoadOpLowering, CallDataSizeOpLowering,

@@ -134,6 +134,17 @@ def Sol_StateMutability :
 def Sol_StateMutabilityAttr : EnumAttr<Sol_Dialect, Sol_StateMutability,
                                        "StateMutability">;
 
+def Sol_FunctionKind :
+    I32EnumAttr<"FunctionKind", "Represents the kind of functions",
+                 [I32EnumAttrCase<"Constructor", 0>,
+                  I32EnumAttrCase<"Fallback", 1>,
+                  I32EnumAttrCase<"Receive", 2>]> {
+  let genSpecializedAttr = 0;
+  let cppNamespace = "::mlir::sol";
+}
+def Sol_FunctionKindAttr : EnumAttr<Sol_Dialect, Sol_FunctionKind,
+                                    "FunctionKind">;
+
 def Sol_ContractKind : I32EnumAttr<"ContractKind",
                                    "Represents the solidity contract kind",
                                    [I32EnumAttrCase<"Interface", 0>,
