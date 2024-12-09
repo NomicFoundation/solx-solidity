@@ -217,6 +217,9 @@ mlir::Value YulToMLIRPass::genExpr(Identifier const &id) {
 }
 
 mlir::Value YulToMLIRPass::genExpr(FunctionCall const &call) {
+  // FIXME: We should extend BuiltinFunction for mlir and add
+  // callbacks((FunctionCall, mlir::OpBuilder, mlir::Location) -> mlir::Value))
+  // to codgen instead of the following inefficent string switch.
   BuiltinFunction const *builtin = yulDialect.builtin(call.functionName.name);
   mlir::Location loc = getLoc(call.debugData);
   mlirgen::BuilderExt bExt(b, loc);
