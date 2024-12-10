@@ -464,7 +464,7 @@ void YulToMLIRPass::operator()(If const &ifStmt) {
 
   // TODO: Should we expand here? Or is it beneficial to represent `if` with a
   // non-boolean condition in the IR?
-  auto ifOp = b.create<mlir::scf::IfOp>(
+  auto ifOp = b.create<mlir::sol::IfOp>(
       loc, convToBool(genExpr(*ifStmt.condition)), /*withElseRegion=*/false);
   mlir::OpBuilder::InsertionGuard insertGuard(b);
   b.setInsertionPointToStart(&ifOp.getThenRegion().front());

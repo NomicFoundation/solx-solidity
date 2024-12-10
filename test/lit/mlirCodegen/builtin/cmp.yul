@@ -55,10 +55,12 @@ object "Test" {
 // CHECK-NEXT:     %4 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc9)
 // CHECK-NEXT:     %5 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc10)
 // CHECK-NEXT:     %6 = arith.cmpi ult, %4, %5 : i256 loc(#loc11)
-// CHECK-NEXT:     scf.if %6 {
+// CHECK-NEXT:     sol.if %6 {
 // CHECK-NEXT:       %c0_i256_7 = arith.constant 0 : i256 loc(#loc13)
 // CHECK-NEXT:       %c0_i256_8 = arith.constant 0 : i256 loc(#loc14)
 // CHECK-NEXT:       sol.mstore %c0_i256_7, %c0_i256_8 loc(#loc15)
+// CHECK-NEXT:       sol.yield loc(#loc12)
+// CHECK-NEXT:     } else {
 // CHECK-NEXT:     } loc(#loc12)
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc16)
 // CHECK-NEXT:     %7 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc17)
@@ -69,10 +71,12 @@ object "Test" {
 // CHECK-NEXT:     %11 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc21)
 // CHECK-NEXT:     %12 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc22)
 // CHECK-NEXT:     %13 = arith.cmpi slt, %11, %12 : i256 loc(#loc23)
-// CHECK-NEXT:     scf.if %13 {
+// CHECK-NEXT:     sol.if %13 {
 // CHECK-NEXT:       %c0_i256_7 = arith.constant 0 : i256 loc(#loc25)
 // CHECK-NEXT:       %c0_i256_8 = arith.constant 0 : i256 loc(#loc26)
 // CHECK-NEXT:       sol.mstore %c0_i256_7, %c0_i256_8 loc(#loc27)
+// CHECK-NEXT:       sol.yield loc(#loc24)
+// CHECK-NEXT:     } else {
 // CHECK-NEXT:     } loc(#loc24)
 // CHECK-NEXT:     %c0_i256_1 = arith.constant 0 : i256 loc(#loc28)
 // CHECK-NEXT:     %14 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc29)
@@ -83,10 +87,12 @@ object "Test" {
 // CHECK-NEXT:     %18 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc33)
 // CHECK-NEXT:     %c0_i256_2 = arith.constant 0 : i256 loc(#loc34)
 // CHECK-NEXT:     %19 = arith.cmpi eq, %18, %c0_i256_2 : i256 loc(#loc34)
-// CHECK-NEXT:     scf.if %19 {
+// CHECK-NEXT:     sol.if %19 {
 // CHECK-NEXT:       %c1_i256_7 = arith.constant 1 : i256 loc(#loc36)
 // CHECK-NEXT:       %c0_i256_8 = arith.constant 0 : i256 loc(#loc37)
 // CHECK-NEXT:       sol.mstore %c1_i256_7, %c0_i256_8 loc(#loc38)
+// CHECK-NEXT:       sol.yield loc(#loc35)
+// CHECK-NEXT:     } else {
 // CHECK-NEXT:     } loc(#loc35)
 // CHECK-NEXT:     %c1_i256_3 = arith.constant 1 : i256 loc(#loc39)
 // CHECK-NEXT:     %20 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc40)
@@ -111,10 +117,12 @@ object "Test" {
 // CHECK-NEXT:       %27 = llvm.load %23 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc54)
 // CHECK-NEXT:       %28 = llvm.load %25 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc55)
 // CHECK-NEXT:       %29 = arith.cmpi ult, %27, %28 : i256 loc(#loc56)
-// CHECK-NEXT:       scf.if %29 {
+// CHECK-NEXT:       sol.if %29 {
 // CHECK-NEXT:         %c0_i256_18 = arith.constant 0 : i256 loc(#loc58)
 // CHECK-NEXT:         %c0_i256_19 = arith.constant 0 : i256 loc(#loc59)
 // CHECK-NEXT:         sol.mstore %c0_i256_18, %c0_i256_19 loc(#loc60)
+// CHECK-NEXT:         sol.yield loc(#loc57)
+// CHECK-NEXT:       } else {
 // CHECK-NEXT:       } loc(#loc57)
 // CHECK-NEXT:       %c0_i256_11 = arith.constant 0 : i256 loc(#loc61)
 // CHECK-NEXT:       %30 = llvm.load %23 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc62)
@@ -125,10 +133,12 @@ object "Test" {
 // CHECK-NEXT:       %34 = llvm.load %23 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc66)
 // CHECK-NEXT:       %35 = llvm.load %25 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc67)
 // CHECK-NEXT:       %36 = arith.cmpi slt, %34, %35 : i256 loc(#loc68)
-// CHECK-NEXT:       scf.if %36 {
+// CHECK-NEXT:       sol.if %36 {
 // CHECK-NEXT:         %c0_i256_18 = arith.constant 0 : i256 loc(#loc70)
 // CHECK-NEXT:         %c0_i256_19 = arith.constant 0 : i256 loc(#loc71)
 // CHECK-NEXT:         sol.mstore %c0_i256_18, %c0_i256_19 loc(#loc72)
+// CHECK-NEXT:         sol.yield loc(#loc69)
+// CHECK-NEXT:       } else {
 // CHECK-NEXT:       } loc(#loc69)
 // CHECK-NEXT:       %c0_i256_12 = arith.constant 0 : i256 loc(#loc73)
 // CHECK-NEXT:       %37 = llvm.load %23 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc74)
@@ -139,10 +149,12 @@ object "Test" {
 // CHECK-NEXT:       %41 = llvm.load %23 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc78)
 // CHECK-NEXT:       %c0_i256_13 = arith.constant 0 : i256 loc(#loc79)
 // CHECK-NEXT:       %42 = arith.cmpi eq, %41, %c0_i256_13 : i256 loc(#loc79)
-// CHECK-NEXT:       scf.if %42 {
+// CHECK-NEXT:       sol.if %42 {
 // CHECK-NEXT:         %c1_i256_18 = arith.constant 1 : i256 loc(#loc81)
 // CHECK-NEXT:         %c0_i256_19 = arith.constant 0 : i256 loc(#loc82)
 // CHECK-NEXT:         sol.mstore %c1_i256_18, %c0_i256_19 loc(#loc83)
+// CHECK-NEXT:         sol.yield loc(#loc80)
+// CHECK-NEXT:       } else {
 // CHECK-NEXT:       } loc(#loc80)
 // CHECK-NEXT:       %c1_i256_14 = arith.constant 1 : i256 loc(#loc84)
 // CHECK-NEXT:       %43 = llvm.load %23 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc85)
