@@ -159,6 +159,15 @@ private:
   /// Lowers a switch statement
   void operator()(Switch const &switchStmt) override;
 
+  /// Lowers the break statement.
+  void operator()(Break const &) override;
+
+  /// Lowers the continue statement.
+  void operator()(Continue const &) override;
+
+  /// Lowers the for statement.
+  void operator()(ForLoop const &) override;
+
   /// Lowers a function
   void operator()(FunctionDefinition const &fn) override;
 
@@ -521,6 +530,42 @@ void YulToMLIRPass::operator()(Switch const &switchStmt) {
   assert(switchOp.getCaseRegions().size() == caseASTs.size());
   for (auto [region, caseAST] : llvm::zip(switchOp.getCaseRegions(), caseASTs))
     lowerBody(region, *caseAST);
+}
+
+void YulToMLIRPass::operator()(Break const &brkStmt) {
+  b.create<mlir::sol::BreakOp>(getLoc(brkStmt.debugData));
+  b.getBlock()->splitBlock(b.getInsertionPoint());
+}
+
+void YulToMLIRPass::operator()(Continue const &contStmt) {
+  b.create<mlir::sol::ContinueOp>(getLoc(contStmt.debugData));
+  b.getBlock()->splitBlock(b.getInsertionPoint());
+}
+
+void YulToMLIRPass::operator()(ForLoop const &forStmt) {
+  mlirgen::BuilderExt bExt(b);
+
+  // Lower pre block.
+  ASTWalker::operator()(forStmt.pre);
+
+  auto forOp = b.create<mlir::sol::ForOp>(getLoc(forStmt.debugData));
+  mlir::OpBuilder::InsertionGuard insertGuard(b);
+
+  // Lower condition.
+  b.setInsertionPointToStart(&forOp.getCond().front());
+  mlir::Value cond = forStmt.condition ? convToBool(genExpr(*forStmt.condition))
+                                       : bExt.genBool(true, forOp.getLoc());
+  b.create<mlir::sol::ConditionOp>(cond.getLoc(), cond);
+
+  // Lower body.
+  b.setInsertionPointToStart(&forOp.getBody().front());
+  ASTWalker::operator()(forStmt.body);
+  b.create<mlir::sol::YieldOp>(forOp.getLoc());
+
+  // Lower post block.
+  b.setInsertionPointToStart(&forOp.getStep().front());
+  ASTWalker::operator()(forStmt.post);
+  b.create<mlir::sol::YieldOp>(forOp.getLoc());
 }
 
 void YulToMLIRPass::operator()(FunctionDefinition const &fn) {

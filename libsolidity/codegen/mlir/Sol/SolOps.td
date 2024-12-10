@@ -561,6 +561,7 @@ def Sol_ContractOp : Sol_Op<"contract", [Symbol, SymbolTable, SingleBlock,
 // TODO? Move the rest of the ops to the yul dialect?
 //
 
+// FIXME: Remove the SingleBlock trait.
 def Sol_ObjectOp : Sol_Op<"object", [Symbol, SymbolTable, SingleBlock,
                                      NoTerminator]> {
   let arguments = (ins SymbolNameAttr:$sym_name);
