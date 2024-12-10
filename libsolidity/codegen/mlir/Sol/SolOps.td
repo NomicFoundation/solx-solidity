@@ -561,16 +561,25 @@ def Sol_ContractOp : Sol_Op<"contract", [Symbol, SymbolTable, SingleBlock,
 // TODO? Move the rest of the ops to the yul dialect?
 //
 
-// FIXME: Remove the SingleBlock trait.
-def Sol_ObjectOp : Sol_Op<"object", [Symbol, SymbolTable, SingleBlock,
-                                     NoTerminator]> {
+def Sol_ObjectOp : Sol_Op<"object", [Symbol, SymbolTable, NoTerminator]> {
   let arguments = (ins SymbolNameAttr:$sym_name);
-  let regions = (region SizedRegion<1>:$bodyRegion);
+  let regions = (region AnyRegion:$body);
 
   let builders = [OpBuilder<(ins CArg<"StringRef", "{}">:$name)>];
+  let builders = [
+    OpBuilder<(ins CArg<"StringRef", "{}">:$name),[{
+      $_state.addRegion()->emplaceBlock();
+      $_state.addAttribute(getSymNameAttrName($_state.name),
+                           $_builder.getStringAttr(name));
+    }]>
+  ];
   let skipDefaultBuilders = 1;
 
-  let assemblyFormat = "$sym_name $bodyRegion attr-dict";
+  let extraClassDeclaration = [{
+    Block *getEntryBlock() { return &getBody().front(); }
+  }];
+
+  let assemblyFormat = "$sym_name $body attr-dict";
 }
 
 //

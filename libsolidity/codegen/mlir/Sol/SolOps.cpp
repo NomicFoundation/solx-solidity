@@ -541,16 +541,5 @@ void FuncOp::print(OpAsmPrinter &p) {
       getArgAttrsAttrName(), getResAttrsAttrName());
 }
 
-//===----------------------------------------------------------------------===//
-// ObjectOp
-//===----------------------------------------------------------------------===//
-
-void ObjectOp::build(OpBuilder &builder, OperationState &state,
-                     StringRef name) {
-  state.addRegion()->emplaceBlock();
-  state.attributes.push_back(builder.getNamedAttr(
-      mlir::SymbolTable::getSymbolAttrName(), builder.getStringAttr(name)));
-}
-
 #define GET_OP_CLASSES
 #include "Sol/SolOps.cpp.inc"

@@ -632,7 +632,7 @@ void YulToMLIRPass::lowerObj(Object const &obj) {
   currObj = lookupSymbol<mlir::sol::ObjectOp>(obj.name);
   assert(currObj);
 
-  b.setInsertionPointToStart(currObj.getBody());
+  b.setInsertionPointToStart(currObj.getEntryBlock());
   // TODO? Do we need a separate op for the `code` block?
   operator()(obj.code()->root());
 }
@@ -645,10 +645,11 @@ void YulToMLIRPass::lowerTopLevelObj(Object const &obj) {
   auto topLevelObj = b.create<mlir::sol::ObjectOp>(b.getUnknownLoc(), obj.name);
   {
     mlir::OpBuilder::InsertionGuard insertGuard(b);
-    b.setInsertionPointToEnd(topLevelObj.getBody());
+    b.setInsertionPointToEnd(topLevelObj.getEntryBlock());
     for (auto const &subNode : obj.subObjects) {
-      if (auto *subObj = dynamic_cast<Object const *>(subNode.get()))
+      if (auto *subObj = dynamic_cast<Object const *>(subNode.get())) {
         b.create<mlir::sol::ObjectOp>(b.getUnknownLoc(), subObj->name);
+      }
     }
   }
 

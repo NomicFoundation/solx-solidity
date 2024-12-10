@@ -19,6 +19,7 @@
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/mlir/Util.h"
+#include "mlir/IR/IRMapping.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/IntrinsicsEVM.h"
 
@@ -356,8 +357,6 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
     // Generate the entry function.
     sol::FuncOp entryFn = bExt.getOrInsertFuncOp(
         "__entry", r.getFunctionType({}, {}), LLVM::Linkage::External, mod);
-    Block *entryFnBlk = r.createBlock(&entryFn.getBody());
-
     Block *modBlk = mod.getBody();
 
     // The entry code is all ops in the object that are neither a function nor
@@ -365,16 +364,19 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
     //
     // Move the entry code to the entry function and everything else to the
     // module.
-    for (auto &op : llvm::make_early_inc_range(*obj.getBody())) {
+    for (auto &op : llvm::make_early_inc_range(*obj.getEntryBlock())) {
       if (isa<sol::FuncOp>(op) || isa<sol::ObjectOp>(op))
         op.moveBefore(modBlk, modBlk->end());
-      else
-        op.moveBefore(entryFnBlk, entryFnBlk->end());
     }
-
-    // Generate an unreachable op as a terminator in the entry function block.
-    r.setInsertionPointToEnd(entryFnBlk);
-    r.create<LLVM::UnreachableOp>(loc);
+    // Terminate all blocks without terminators using the unreachable op.
+    obj.walk([&](Block *blk) {
+      if (blk->empty() || !blk->back().hasTrait<OpTrait::IsTerminator>()) {
+        r.setInsertionPointToEnd(blk);
+        r.create<LLVM::UnreachableOp>(loc);
+      };
+    });
+    r.inlineRegionBefore(obj.getBody(), entryFn.getBody(),
+                         entryFn.getBody().begin());
   }
 
   LogicalResult matchAndRewrite(sol::ObjectOp obj,

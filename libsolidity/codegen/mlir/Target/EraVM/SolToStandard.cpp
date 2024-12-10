@@ -624,6 +624,14 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
 
     moveFuncsToModule(objOp, mod);
 
+    // Terminate all blocks without terminators using the unreachable op.
+    objOp.walk([&](Block *blk) {
+      if (blk->empty() || !blk->back().hasTrait<OpTrait::IsTerminator>()) {
+        r.setInsertionPointToEnd(blk);
+        r.create<LLVM::UnreachableOp>(loc);
+      };
+    });
+
     // Is this a runtime object?
     // FIXME: Is there a better way to check this?
     if (objOp.getName().endswith("_deployed")) {
@@ -759,15 +767,12 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
         "__runtime", r.getFunctionType({}, {}), mod);
     Region &runtimeFuncRegion = runtimeFunc.getRegion();
     // Move the runtime object getter under the ObjectOp public API
-    for (auto const &op : *objOp.getBody()) {
+    for (auto const &op : *objOp.getEntryBlock()) {
       if (auto runtimeObj = dyn_cast<sol::ObjectOp>(&op)) {
         assert(runtimeObj.getName().endswith("_deployed"));
         assert(runtimeFuncRegion.empty());
         r.inlineRegionBefore(runtimeObj.getRegion(), runtimeFuncRegion,
                              runtimeFuncRegion.begin());
-        OpBuilder::InsertionGuard insertGuard(r);
-        r.setInsertionPointToEnd(&runtimeFuncRegion.front());
-        r.create<LLVM::UnreachableOp>(runtimeObj.getLoc());
         r.eraseOp(runtimeObj);
       }
     }
@@ -779,11 +784,6 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
     assert(deployFuncRegion.empty());
     r.inlineRegionBefore(objOp.getRegion(), deployFuncRegion,
                          deployFuncRegion.begin());
-    {
-      OpBuilder::InsertionGuard insertGuard(r);
-      r.setInsertionPointToEnd(&deployFuncRegion.front());
-      r.create<LLVM::UnreachableOp>(loc);
-    }
 
     // If the deploy call flag is set, call __deploy()
     auto ifOp = r.create<scf::IfOp>(loc, isDeployCallFlag.getResult(),

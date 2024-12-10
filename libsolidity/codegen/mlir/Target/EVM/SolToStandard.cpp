@@ -1230,7 +1230,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 
     // Generate the creation and runtime ObjectOp.
     auto creationObj = r.create<sol::ObjectOp>(loc, op.getName());
-    r.setInsertionPointToStart(creationObj.getBody());
+    r.setInsertionPointToStart(&creationObj.getBody().front());
     auto runtimeObj =
         r.create<sol::ObjectOp>(loc, std::string(op.getName()) + "_deployed");
 
@@ -1248,25 +1248,27 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
       if (!fnKind) {
         // Duplicate in both the creation and runtime objects.
         r.clone(*fn);
-        fn->moveBefore(runtimeObj.getBody(), runtimeObj.getBody()->begin());
+        fn->moveBefore(runtimeObj.getEntryBlock(),
+                       runtimeObj.getEntryBlock()->begin());
         fn.setRuntimeAttr(r.getUnitAttr());
         continue;
       }
       if (*fnKind == sol::FunctionKind::Constructor) {
         assert(!ctor);
         ctor = fn;
-        ctor->moveBefore(creationObj.getBody(), creationObj.getBody()->begin());
+        ctor->moveBefore(creationObj.getEntryBlock(),
+                         creationObj.getEntryBlock()->begin());
 
       } else if (*fnKind == sol::FunctionKind::Fallback) {
         assert(!fallbackFn);
         fallbackFn = fn;
-        fallbackFn->moveBefore(runtimeObj.getBody(),
-                               runtimeObj.getBody()->begin());
+        fallbackFn->moveBefore(runtimeObj.getEntryBlock(),
+                               runtimeObj.getEntryBlock()->begin());
       } else if (*fnKind == sol::FunctionKind::Receive) {
         assert(!receiveFn);
         receiveFn = fn;
-        receiveFn->moveBefore(runtimeObj.getBody(),
-                              runtimeObj.getBody()->begin());
+        receiveFn->moveBefore(runtimeObj.getEntryBlock(),
+                              runtimeObj.getEntryBlock()->begin());
       }
     }
 
@@ -1274,7 +1276,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     // Creation context
     //
 
-    r.setInsertionPointToStart(creationObj.getBody());
+    r.setInsertionPointToStart(creationObj.getEntryBlock());
 
     genFreePtrInit(r, loc);
 
@@ -1318,7 +1320,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     // Runtime context
     //
 
-    r.setInsertionPointToStart(runtimeObj.getBody());
+    r.setInsertionPointToStart(runtimeObj.getEntryBlock());
 
     // Generate the memory init.
     // TODO: Confirm if this should be the same as in the creation context.
