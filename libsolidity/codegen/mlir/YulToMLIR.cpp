@@ -476,6 +476,7 @@ void YulToMLIRPass::operator()(If const &ifStmt) {
   auto ifOp = b.create<mlir::sol::IfOp>(
       loc, convToBool(genExpr(*ifStmt.condition)), /*withElseRegion=*/false);
   mlir::OpBuilder::InsertionGuard insertGuard(b);
+
   b.setInsertionPointToStart(&ifOp.getThenRegion().front());
   ASTWalker::operator()(ifStmt.body);
 }
@@ -514,7 +515,6 @@ void YulToMLIRPass::operator()(Switch const &switchStmt) {
   mlir::Value arg = genExpr(*switchStmt.expression);
   auto switchOp = b.create<mlir::scf::IntSwitchOp>(
       loc, /*resultTypes=*/std::nullopt, arg, caseValsAttr, caseVals.size());
-
   mlir::OpBuilder::InsertionGuard insertGuard(b);
 
   // Create blocks for all the case values and the default case; Then lower
