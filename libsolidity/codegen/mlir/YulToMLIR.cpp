@@ -38,6 +38,7 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Location.h"
+#include "mlir/IR/Value.h"
 #include "mlir/IR/Verifier.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/ADT/STLExtras.h"
@@ -572,22 +573,25 @@ void YulToMLIRPass::operator()(FunctionDefinition const &fn) {
   mlir::Location loc = getLoc(fn.debugData);
   mlirgen::BuilderExt bExt(b, loc);
 
-  // Lookup FuncOp (should be declared by the yul block lowering)
-  auto funcOp = lookupSymbol<mlir::sol::FuncOp>(fn.name.str());
-  assert(funcOp);
+  // Lookup FuncOp (should be declared by the yul block lowering).
+  auto fnOp = lookupSymbol<mlir::sol::FuncOp>(fn.name.str());
+  assert(fnOp);
 
   // Restore the insertion point after lowering the function definition.
   mlir::OpBuilder::InsertionGuard insertGuard(b);
 
-  // Add entry block and forward input args
-  mlir::Block *entryBlk = b.createBlock(&funcOp.getRegion());
-  std::vector<mlir::Location> inLocs;
+  // Generate entry block and args.
+  mlir::Block *entryBlk = b.createBlock(&fnOp.getRegion());
+  std::vector<mlir::Location> inpLocs;
+  unsigned i = 0;
   for (NameWithDebugData const &in : fn.parameters) {
-    inLocs.push_back(getLoc(in.debugData));
+    mlir::BlockArgument blkArg = entryBlk->addArgument(
+        fnOp.getFunctionType().getInput(i++), getLoc(in.debugData));
+    auto addr = b.create<mlir::LLVM::AllocaOp>(
+        blkArg.getLoc(), mlir::LLVM::LLVMPointerType::get(getDefIntTy()),
+        bExt.genI256Const(1), getDefAlign());
+    setMemRef(in.name, addr);
   }
-  assert(funcOp.getFunctionType().getNumInputs() == inLocs.size());
-  entryBlk->addArguments(funcOp.getFunctionType().getInputs(), inLocs);
-
   assert(fn.returnVariables.size() == 1 && "NYI: multivalued return");
   NameWithDebugData const &retVar = fn.returnVariables[0];
   setMemRef(retVar.name, b.create<mlir::LLVM::AllocaOp>(
@@ -595,7 +599,7 @@ void YulToMLIRPass::operator()(FunctionDefinition const &fn) {
                              mlir::LLVM::LLVMPointerType::get(getDefIntTy()),
                              bExt.genI256Const(1), getDefAlign()));
 
-  // Lower the body
+  // Lower the body.
   ASTWalker::operator()(fn.body);
 
   b.create<mlir::sol::ReturnOp>(
