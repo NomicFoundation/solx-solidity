@@ -308,6 +308,7 @@ class Sol_WhileOpBase<string mnemonic> : Sol_Op<mnemonic, [
       $_state.addRegion()->emplaceBlock();
     }]>
   ];
+  let skipDefaultBuilders = 1;
 }
 
 def Sol_WhileOp : Sol_WhileOpBase<"while"> {
@@ -337,6 +338,7 @@ def Sol_ForOp : Sol_Op<"for", [LoopOpInterface, NoRegionArguments]> {
       $_state.addRegion()->emplaceBlock();
     }]>
   ];
+  let skipDefaultBuilders = 1;
 
   let assemblyFormat = [{
     `cond` $cond
@@ -362,6 +364,7 @@ def Sol_ModifierCallBlkOp : Sol_Op<"modifier_call_blk",
   let builders = [
     OpBuilder<(ins), [{ $_state.addRegion()->emplaceBlock(); }]>
   ];
+  let skipDefaultBuilders = 1;
 
   let assemblyFormat = "$bodyRegion attr-dict";
 }
@@ -429,23 +432,24 @@ def CallOp : Sol_Op<"call", [CallOpInterface,
   let builders = [
     OpBuilder<(ins "FuncOp":$callee, CArg<"ValueRange", "{}">:$operands), [{
       $_state.addOperands(operands);
-      $_state.addAttribute("callee", SymbolRefAttr::get(callee));
+      $_state.addAttribute(getCalleeAttrName($_state.name),
+                           SymbolRefAttr::get(callee));
       $_state.addTypes(callee.getFunctionType().getResults());
     }]>,
-    OpBuilder<(ins "SymbolRefAttr":$callee, "TypeRange":$results,
+    OpBuilder<(ins "SymbolRefAttr":$callee, "TypeRange":$resTys,
       CArg<"ValueRange", "{}">:$operands), [{
       $_state.addOperands(operands);
-      $_state.addAttribute("callee", callee);
-      $_state.addTypes(results);
+      $_state.addAttribute(getCalleeAttrName($_state.name), callee);
+      $_state.addTypes(resTys);
     }]>,
-    OpBuilder<(ins "StringAttr":$callee, "TypeRange":$results,
+    OpBuilder<(ins "StringAttr":$callee, "TypeRange":$resTys,
       CArg<"ValueRange", "{}">:$operands), [{
-      build($_builder, $_state, SymbolRefAttr::get(callee), results, operands);
+      build($_builder, $_state, SymbolRefAttr::get(callee), resTys, operands);
     }]>,
-    OpBuilder<(ins "StringRef":$callee, "TypeRange":$results,
+    OpBuilder<(ins "StringRef":$callee, "TypeRange":$resTys,
       CArg<"ValueRange", "{}">:$operands), [{
       build($_builder, $_state, StringAttr::get($_builder.getContext(), callee),
-            results, operands);
+            resTys, operands);
     }]>];
 
   let extraClassDeclaration = [{
@@ -506,8 +510,7 @@ def Sol_FuncOp : Sol_Op<"func", [AutomaticAllocationScope, CallableOpInterface,
       CArg<"ArrayRef<NamedAttribute>", "{}">:$attrs,
       CArg<"ArrayRef<DictionaryAttr>", "{}">:$argAttrs)>
   ];
-  // FIXME: Skip default builders!
-
+  let skipDefaultBuilders = 1;
 
   let extraClassDeclaration = [{
     // Copied from func.func.
@@ -565,7 +568,6 @@ def Sol_ObjectOp : Sol_Op<"object", [Symbol, SymbolTable, NoTerminator]> {
   let arguments = (ins SymbolNameAttr:$sym_name);
   let regions = (region AnyRegion:$body);
 
-  let builders = [OpBuilder<(ins CArg<"StringRef", "{}">:$name)>];
   let builders = [
     OpBuilder<(ins CArg<"StringRef", "{}">:$name),[{
       $_state.addRegion()->emplaceBlock();

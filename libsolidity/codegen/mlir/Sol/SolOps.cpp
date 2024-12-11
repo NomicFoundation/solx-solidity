@@ -436,12 +436,12 @@ LogicalResult CallOp::verifySymbolUses(SymbolTableCollection &symbolTable) {
 void FuncOp::build(OpBuilder &builder, OperationState &state, StringRef name,
                    FunctionType type, ArrayRef<NamedAttribute> attrs,
                    ArrayRef<DictionaryAttr> argAttrs) {
-  state.addAttribute(SymbolTable::getSymbolAttrName(),
+  state.addRegion();
+
+  state.addAttribute(getSymNameAttrName(state.name),
                      builder.getStringAttr(name));
   state.addAttribute(getFunctionTypeAttrName(state.name), TypeAttr::get(type));
   state.attributes.append(attrs.begin(), attrs.end());
-  state.addRegion();
-
   if (argAttrs.empty())
     return;
   assert(type.getNumInputs() == argAttrs.size());
