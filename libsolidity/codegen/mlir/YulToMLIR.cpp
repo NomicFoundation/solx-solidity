@@ -80,7 +80,7 @@ public:
 
 private:
   /// Maps a yul variable name to its MemRef
-  std::map<YulName, mlir::Value> memRefMap;
+  std::map<YulName, mlir::Value> localVarAddrMap;
 
   /// Returns the IntegerAttr for `num`
   mlir::IntegerAttr getIntAttr(LiteralValue const &num);
@@ -110,11 +110,13 @@ private:
   /// of non-zero check
   mlir::Value convToBool(mlir::Value val);
 
-  /// Sets the MemRef addr of yul variable
-  void setMemRef(YulName var, mlir::Value addr) { memRefMap[var] = addr; }
+  /// Tracks the address of the local variable.
+  void trackLocalVarAddr(YulName var, mlir::Value addr) {
+    localVarAddrMap[var] = addr;
+  }
 
-  /// Returns the MemRef addr of yul variable
-  mlir::Value getMemRef(YulName var);
+  /// Returns the address of the local variable.
+  mlir::Value getLocalVarAddr(YulName var);
 
   /// Returns the symbol of type `T` in the current scope
   template <typename T>
@@ -191,9 +193,9 @@ mlir::IntegerAttr YulToMLIRPass::getIntAttr(LiteralValue const &num) {
   return b.getIntegerAttr(defTy, getAPInt(num.value().str(), defTy.getWidth()));
 }
 
-mlir::Value YulToMLIRPass::getMemRef(YulString var) {
-  auto it = memRefMap.find(var);
-  if (it == memRefMap.end())
+mlir::Value YulToMLIRPass::getLocalVarAddr(YulString var) {
+  auto it = localVarAddrMap.find(var);
+  if (it == localVarAddrMap.end())
     return {};
   return it->second;
 }
@@ -220,7 +222,7 @@ mlir::Value YulToMLIRPass::genExpr(Literal const &lit) {
 }
 
 mlir::Value YulToMLIRPass::genExpr(Identifier const &id) {
-  mlir::Value addr = getMemRef(id.name);
+  mlir::Value addr = getLocalVarAddr(id.name);
   assert(addr);
   return b.create<mlir::LLVM::LoadOp>(getLoc(id.debugData), addr,
                                       getDefAlign());
@@ -449,7 +451,7 @@ void YulToMLIRPass::operator()(ExpressionStatement const &expr) {
 void YulToMLIRPass::operator()(Assignment const &asgn) {
   assert(asgn.variableNames.size() == 1 && "NYI: Multivalued assignment");
 
-  mlir::Value addr = getMemRef(asgn.variableNames[0].name);
+  mlir::Value addr = getLocalVarAddr(asgn.variableNames[0].name);
   assert(addr);
   b.create<mlir::LLVM::StoreOp>(getLoc(asgn.debugData),
                                 genDefTyExpr(*asgn.value), addr, getDefAlign());
@@ -464,7 +466,7 @@ void YulToMLIRPass::operator()(VariableDeclaration const &decl) {
   auto addr = b.create<mlir::LLVM::AllocaOp>(
       getLoc(var.debugData), mlir::LLVM::LLVMPointerType::get(getDefIntTy()),
       bExt.genI256Const(1), getDefAlign());
-  setMemRef(var.name, addr);
+  trackLocalVarAddr(var.name, addr);
   b.create<mlir::LLVM::StoreOp>(loc, genDefTyExpr(*decl.value), addr,
                                 getDefAlign());
 }
@@ -590,22 +592,23 @@ void YulToMLIRPass::operator()(FunctionDefinition const &fn) {
     auto addr = b.create<mlir::LLVM::AllocaOp>(
         blkArg.getLoc(), mlir::LLVM::LLVMPointerType::get(getDefIntTy()),
         bExt.genI256Const(1), getDefAlign());
-    setMemRef(in.name, addr);
+    trackLocalVarAddr(in.name, addr);
   }
   assert(fn.returnVariables.size() == 1 && "NYI: multivalued return");
   NameWithDebugData const &retVar = fn.returnVariables[0];
-  setMemRef(retVar.name, b.create<mlir::LLVM::AllocaOp>(
-                             getLoc(retVar.debugData),
-                             mlir::LLVM::LLVMPointerType::get(getDefIntTy()),
-                             bExt.genI256Const(1), getDefAlign()));
+  trackLocalVarAddr(retVar.name,
+                    b.create<mlir::LLVM::AllocaOp>(
+                        getLoc(retVar.debugData),
+                        mlir::LLVM::LLVMPointerType::get(getDefIntTy()),
+                        bExt.genI256Const(1), getDefAlign()));
 
   // Lower the body.
   ASTWalker::operator()(fn.body);
 
   b.create<mlir::sol::ReturnOp>(
-      loc,
-      mlir::ValueRange{b.create<mlir::LLVM::LoadOp>(
-          getLoc(retVar.debugData), getMemRef(retVar.name), getDefAlign())});
+      loc, mlir::ValueRange{b.create<mlir::LLVM::LoadOp>(
+               getLoc(retVar.debugData), getLocalVarAddr(retVar.name),
+               getDefAlign())});
 }
 
 void YulToMLIRPass::operator()(Block const &blk) {
