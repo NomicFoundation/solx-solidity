@@ -488,7 +488,7 @@ void YulToMLIRPass::operator()(Switch const &switchStmt) {
   mlir::Location loc = getLoc(switchStmt.debugData);
 
   // Create the mlir attribute for all the case values (excluding the default
-  // case); Track the default case AST
+  // case); Track the default case AST.
   Case const *defCaseAST = nullptr;
   std::vector<llvm::APInt> caseVals;
   caseVals.reserve(switchStmt.cases.size());
@@ -503,7 +503,7 @@ void YulToMLIRPass::operator()(Switch const &switchStmt) {
                                   getDefIntTy().getWidth()));
 
     } else {
-      // There should only be one default case
+      // There should only be one default case.
       assert(!defCaseAST);
       defCaseAST = &caseAST;
     }
@@ -514,18 +514,18 @@ void YulToMLIRPass::operator()(Switch const &switchStmt) {
                                   getDefIntTy()),
       caseVals);
 
-  // Lower the switch argument and generate the switch op
+  // Lower the switch argument and generate the switch op.
   mlir::Value arg = genExpr(*switchStmt.expression);
-  auto switchOp = b.create<mlir::scf::IntSwitchOp>(
+  auto switchOp = b.create<mlir::sol::SwitchOp>(
       loc, /*resultTypes=*/std::nullopt, arg, caseValsAttr, caseVals.size());
   mlir::OpBuilder::InsertionGuard insertGuard(b);
 
-  // Create blocks for all the case values and the default case; Then lower
-  // their body
+  // Create blocks for all the case values and the default case. Then, lower
+  // their body.
   auto lowerBody = [&](mlir::Region &region, Case const &caseAST) {
     mlir::Block *blk = b.createBlock(&region);
     b.setInsertionPointToStart(blk);
-    b.create<mlir::scf::YieldOp>(loc);
+    b.create<mlir::sol::YieldOp>(loc);
     b.setInsertionPointToStart(blk);
     ASTWalker::operator()(caseAST.body);
   };

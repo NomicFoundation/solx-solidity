@@ -258,7 +258,7 @@ void IfOp::build(OpBuilder &b, OperationState &res, Value cond, bool hasElse) {
 void IfOp::getSuccessorRegions(std::optional<unsigned> index,
                                ArrayRef<Attribute> operands,
                                SmallVectorImpl<RegionSuccessor> &regions) {
-  // The `then` and the `else` region branch back to the parent operation.
+  // The "then" and the "else" region branch back to the parent operation.
   if (index) {
     regions.push_back(RegionSuccessor());
     return;
@@ -286,6 +286,92 @@ void IfOp::getSuccessorRegions(std::optional<unsigned> index,
   if (elseRegion)
     regions.push_back(RegionSuccessor(elseRegion));
   return;
+}
+
+//===----------------------------------------------------------------------===//
+// SwitchOp
+//===----------------------------------------------------------------------===//
+
+void SwitchOp::getSuccessorRegions(std::optional<unsigned> index,
+                                   ArrayRef<Attribute> operands,
+                                   SmallVectorImpl<RegionSuccessor> &regions) {
+  // All "case" regions branch back to the parent op.
+  if (index) {
+    regions.push_back(RegionSuccessor());
+    return;
+  }
+
+  llvm::copy(getRegions(), std::back_inserter(regions));
+}
+
+void SwitchOp::getRegionInvocationBounds(
+    ArrayRef<Attribute> operands, SmallVectorImpl<InvocationBounds> &bounds) {
+  auto operandValue = operands.front().dyn_cast_or_null<IntegerAttr>();
+  if (!operandValue) {
+    // All regions are invoked at most once.
+    bounds.append(getNumRegions(), InvocationBounds(/*lb=*/0, /*ub=*/1));
+    return;
+  }
+
+  unsigned liveIndex = getNumRegions() - 1;
+  const auto it = llvm::find(getCases(), operandValue.getValue());
+  if (it != getCases().end())
+    liveIndex = std::distance(getCases().begin(), it);
+  for (unsigned i = 0, e = getNumRegions(); i < e; ++i)
+    bounds.emplace_back(/*lb=*/0, /*ub=*/i == liveIndex);
+}
+
+void SwitchOp::print(OpAsmPrinter &p) {
+  p << ' ' << getArg() << " : " << getArg().getType();
+  p.printOptionalAttrDict((*this)->getAttrs(),
+                          /*elidedAttrs=*/getCasesAttrName().getValue());
+
+  for (auto [val, region] : llvm::zip(getCases(), getCaseRegions())) {
+    p.printNewline();
+    p << "case " << val << ' ';
+    p.printRegion(region, /*printEntryBlockArgs=*/false);
+  }
+
+  p.printNewline();
+  p << "default ";
+  p.printRegion(getDefaultRegion(), /*printEntryBlockArgs=*/false);
+}
+
+ParseResult SwitchOp::parse(OpAsmParser &p, OperationState &result) {
+  // Parse arg and its type.
+  OpAsmParser::UnresolvedOperand arg;
+  IntegerType argTy;
+  if (succeeded(p.parseOperand(arg))) {
+    if (p.parseColon())
+      return failure();
+    if (p.parseType(argTy))
+      return failure();
+    if (p.resolveOperand(arg, argTy, result.operands))
+      return failure();
+  }
+
+  // Parse case regions.
+  SmallVector<APInt> caseVals;
+  while (succeeded(p.parseOptionalKeyword("case"))) {
+    APInt value(argTy.getWidth(), 0);
+    Region *region = result.addRegion();
+    if (p.parseInteger(value) || p.parseRegion(*region))
+      return failure();
+    caseVals.push_back(value);
+  }
+  auto caseValsAttr = DenseIntElementsAttr::get(
+      RankedTensorType::get(static_cast<int64_t>(caseVals.size()), argTy),
+      caseVals);
+  result.addAttribute(getCasesAttrName(result.name), caseValsAttr);
+
+  // Parse default region.
+  if (p.parseKeyword("default"))
+    return failure();
+  Region *defRegion = result.addRegion();
+  if (p.parseRegion(*defRegion))
+    return failure();
+
+  return success();
 }
 
 //===----------------------------------------------------------------------===//

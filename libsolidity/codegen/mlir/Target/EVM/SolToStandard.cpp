@@ -905,6 +905,64 @@ struct IfOpLowering : public OpRewritePattern<sol::IfOp> {
   }
 };
 
+struct SwitchOpLowering : public OpRewritePattern<sol::SwitchOp> {
+  using OpRewritePattern<sol::SwitchOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::SwitchOp switchOp,
+                                PatternRewriter &r) const override {
+    // Split the block at the op.
+    Block *condBlk = r.getInsertionBlock();
+    Block *continueBlk = r.splitBlock(condBlk, Block::iterator(switchOp));
+
+    auto convertRegion = [&](Region &region) -> Block * {
+      for (Block &blk : region) {
+        auto yield = dyn_cast<sol::YieldOp>(blk.getTerminator());
+        if (!yield)
+          continue;
+        // Convert the yield terminator to a branch to the continue block.
+        r.setInsertionPoint(yield);
+        r.replaceOpWithNewOp<cf::BranchOp>(yield, continueBlk,
+                                           yield.getOperands());
+      }
+
+      // Inline the region.
+      Block *entryBlk = &region.front();
+      r.inlineRegionBefore(region, continueBlk);
+      return entryBlk;
+    };
+
+    // Convert the case regions.
+    SmallVector<Block *> caseSuccessors;
+    SmallVector<llvm::APInt> caseVals;
+    caseSuccessors.reserve(switchOp.getCases().size());
+    caseVals.reserve(switchOp.getCases().size());
+    for (auto [region, val] :
+         llvm::zip(switchOp.getCaseRegions(), switchOp.getCases())) {
+      caseSuccessors.push_back(convertRegion(region));
+      caseVals.push_back(val);
+    }
+
+    // Convert the default region.
+    Block *defaultBlk = convertRegion(switchOp.getDefaultRegion());
+
+    // Create the switch.
+    r.setInsertionPointToEnd(condBlk);
+    SmallVector<ValueRange> caseOperands(caseSuccessors.size(), {});
+
+    // Create the attribute for the case values.
+    auto caseValsAttr = DenseIntElementsAttr::get(
+        VectorType::get(static_cast<int64_t>(caseVals.size()),
+                        switchOp.getArg().getType()),
+        caseVals);
+
+    r.create<cf::SwitchOp>(switchOp.getLoc(), switchOp.getArg(), defaultBlk,
+                           ValueRange(), caseValsAttr, caseSuccessors,
+                           caseOperands);
+    r.replaceOp(switchOp, continueBlk->getArguments());
+    return success();
+  }
+};
+
 // (Copied and modified from clangir).
 struct LoopOpInterfaceLowering
     : public OpInterfaceRewritePattern<sol::LoopOpInterface> {
@@ -1401,8 +1459,8 @@ void evm::populateMemPats(RewritePatternSet &pats, TypeConverter &tyConv) {
 }
 
 void evm::populateControlFlowPats(RewritePatternSet &pats) {
-  pats.add<IfOpLowering>(pats.getContext());
-  pats.add<LoopOpInterfaceLowering>(pats.getContext());
+  pats.add<IfOpLowering, SwitchOpLowering, LoopOpInterfaceLowering>(
+      pats.getContext());
 }
 
 void evm::populateFuncPats(RewritePatternSet &pats, TypeConverter &tyConv) {

@@ -268,15 +268,16 @@ def Sol_ContinueOp : Sol_Op<"continue", [Terminator]> {
 def Sol_ConditionOp : Sol_Op<"condition", [
   Terminator,
   DeclareOpInterfaceMethods<RegionBranchTerminatorOpInterface,
-                            ["getSuccessorRegions"]>
-]> {
+                            ["getSuccessorRegions"]>]
+> {
   let arguments = (ins I1:$condition);
 
   let assemblyFormat = "$condition attr-dict";
 }
 
 def Sol_YieldOp : Sol_Op<"yield", [ReturnLike, Terminator,
-    ParentOneOf<["IfOp", "WhileOp", "DoWhileOp", "ForOp"]>]> {
+  ParentOneOf<["IfOp", "SwitchOp", "WhileOp", "DoWhileOp", "ForOp"]>]
+> {
   let arguments = (ins Variadic<AnyType>:$ins);
 
   let builders = [
@@ -287,8 +288,9 @@ def Sol_YieldOp : Sol_Op<"yield", [ReturnLike, Terminator,
 }
 
 def Sol_IfOp : Sol_Op<"if",
-      [DeclareOpInterfaceMethods<RegionBranchOpInterface>,
-       AutomaticAllocationScope, NoRegionArguments]> {
+  [DeclareOpInterfaceMethods<RegionBranchOpInterface>,
+   AutomaticAllocationScope, NoRegionArguments]
+> {
   let arguments = (ins I1:$cond);
   let regions = (region AnyRegion:$thenRegion, AnyRegion:$elseRegion);
 
@@ -296,6 +298,18 @@ def Sol_IfOp : Sol_Op<"if",
   let skipDefaultBuilders = 1;
 
   let assemblyFormat = "$cond $thenRegion `else` $elseRegion attr-dict";
+}
+
+def Sol_SwitchOp : Sol_Op<"switch", [
+  AutomaticAllocationScope, NoRegionArguments,
+  DeclareOpInterfaceMethods<RegionBranchOpInterface,
+                            ["getRegionInvocationBounds"]>
+]> {
+  let arguments = (ins AnyInteger:$arg, AnyIntElementsAttr:$cases);
+  let regions = (region MinSizedRegion<1>:$defaultRegion,
+                        VariadicRegion<MinSizedRegion<1>>:$caseRegions);
+
+  let hasCustomAssemblyFormat = 1;
 }
 
 class Sol_WhileOpBase<string mnemonic> : Sol_Op<mnemonic, [
