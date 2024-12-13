@@ -100,7 +100,8 @@ def Sol_AllocaOp : Sol_Op<"alloca"> {
                           [MemAlloc<AutomaticAllocationScopeResource>]>:$addr);
 
   let builders = [OpBuilder<(ins "Type":$allocType), [{
-    $_state.addAttribute("alloc_type", mlir::TypeAttr::get(allocType));
+    $_state.addAttribute(getAllocTypeAttrName($_state.name),
+                         mlir::TypeAttr::get(allocType));
     $_state.addTypes(allocType);
   }]>];
   let skipDefaultBuilders = 1;
@@ -313,8 +314,7 @@ def Sol_SwitchOp : Sol_Op<"switch", [
 }
 
 class Sol_WhileOpBase<string mnemonic> : Sol_Op<mnemonic, [
-  LoopOpInterface,
-  NoRegionArguments,
+  LoopOpInterface, NoRegionArguments, AutomaticAllocationScope
 ]> {
   let builders = [
     OpBuilder<(ins), [{
@@ -341,7 +341,8 @@ def Sol_DoWhileOp : Sol_WhileOpBase<"do"> {
   }];
 }
 
-def Sol_ForOp : Sol_Op<"for", [LoopOpInterface, NoRegionArguments]> {
+def Sol_ForOp : Sol_Op<"for", [LoopOpInterface, NoRegionArguments,
+                               AutomaticAllocationScope]> {
   let regions = (region SizedRegion<1>:$cond, MinSizedRegion<1>:$body,
                         SizedRegion<1>:$step);
 
