@@ -86,8 +86,8 @@ def Sol_MulOp : Sol_IntBinaryOp<"mul", [Pure, Commutative]> {
 }
 
 def Sol_CmpOp : Sol_Op<"cmp", [Pure, SameTypeOperands]> {
-  let arguments = (ins Sol_CmpPredicateAttr:$predicate, SolInt:$lhs,
-                       SolInt:$rhs);
+  let arguments = (ins Sol_CmpPredicateAttr:$predicate, Sol_Int:$lhs,
+                       Sol_Int:$rhs);
   let results = (outs I1:$result);
 
   let assemblyFormat = "$predicate `,` $lhs `,` $rhs attr-dict `:` type($lhs)";
@@ -137,7 +137,7 @@ def Sol_AddrOfOp : Sol_Op<"addr_of"> {
 }
 
 def Sol_GepOp : Sol_Op<"gep"> {
-  let arguments = (ins AnyType:$baseAddr, SolInt:$idx);
+  let arguments = (ins AnyType:$baseAddr, Sol_Int:$idx);
   let results = (outs Sol_RefType:$addr);
 
   let builders = [

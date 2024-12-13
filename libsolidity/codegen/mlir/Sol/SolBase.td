@@ -50,7 +50,7 @@ class Sol_Type<string name, string typeMnemonic, list<Trait> traits = []> :
 }
 
 def I256 : I<256>;
-def SolInt : AnyTypeOf<[I1, AnySignedInteger, AnyUnsignedInteger]>;
+def Sol_Int : AnyTypeOf<[I1, AnySignedInteger, AnyUnsignedInteger]>;
 
 def Sol_DataLocation : I32EnumAttr<"DataLocation",
                                    "Data-location in reference-types",
@@ -165,8 +165,8 @@ class Sol_Op<string mnemonic, list<Trait> traits = []> : Op<Sol_Dialect,
 
 class Sol_IntBinaryOp<string mnemonic, list<Trait> traits = []> :
     Sol_Op<mnemonic, traits # [SameOperandsAndResultType]> {
-  let arguments = (ins SolInt:$lhs, SolInt:$rhs);
-  let results = (outs SolInt:$result);
+  let arguments = (ins Sol_Int:$lhs, Sol_Int:$rhs);
+  let results = (outs Sol_Int:$result);
 
   let assemblyFormat = "$lhs `,` $rhs attr-dict `:` type($result)";
 }
@@ -174,8 +174,8 @@ class Sol_IntBinaryOp<string mnemonic, list<Trait> traits = []> :
 class Sol_IntCastOp<string mnemonic, list<Trait> traits = []> :
     Sol_Op<mnemonic, traits #
                      [Pure, DeclareOpInterfaceMethods<CastOpInterface>]> {
-  let arguments = (ins SolInt:$in);
-  let results = (outs SolInt:$out);
+  let arguments = (ins Sol_Int:$in);
+  let results = (outs Sol_Int:$out);
 
   let assemblyFormat = "$in attr-dict `:` type($in) `to` type($out)";
 }
