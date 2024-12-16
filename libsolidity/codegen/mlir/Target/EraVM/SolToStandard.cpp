@@ -150,6 +150,19 @@ struct LogOpLowering : public OpRewritePattern<sol::LogOp> {
   }
 };
 
+struct AddressOpLowering : public OpRewritePattern<sol::AddressOp> {
+  using OpRewritePattern<sol::AddressOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::AddressOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::eravm_this,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{}, "eravm.this");
+
+    return success();
+  }
+};
+
 struct CallerOpLowering : public OpRewritePattern<sol::CallerOp> {
   using OpRewritePattern<sol::CallerOp>::OpRewritePattern;
 
@@ -827,8 +840,8 @@ void eravm::populateStage2Pats(RewritePatternSet &pats) {
            CodeCopyOpLowering, MemGuardOpLowering, CallValOpLowering,
            CallDataLoadOpLowering, CallDataSizeOpLowering,
            CallDataCopyOpLowering, SLoadOpLowering, SStoreOpLowering,
-           Keccak256OpLowering, LogOpLowering, CallerOpLowering>(
-      pats.getContext());
+           Keccak256OpLowering, LogOpLowering, AddressOpLowering,
+           CallerOpLowering>(pats.getContext());
 }
 
 void eravm::populateFuncPats(RewritePatternSet &pats, TypeConverter &tyConv) {

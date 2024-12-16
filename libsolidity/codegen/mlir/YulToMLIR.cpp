@@ -402,6 +402,9 @@ mlir::Value YulToMLIRPass::genExpr(FunctionCall const &call) {
                            genDefTyExpr(call.arguments[5])});
       return {};
     }
+    if (builtin->name.str() == "address") {
+      return b.create<mlir::sol::AddressOp>(loc);
+    }
     if (builtin->name.str() == "caller") {
       return b.create<mlir::sol::CallerOp>(loc);
     }

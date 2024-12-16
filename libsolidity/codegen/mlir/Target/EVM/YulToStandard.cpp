@@ -84,6 +84,18 @@ struct LogOpLowering : public OpRewritePattern<sol::LogOp> {
   }
 };
 
+struct AddressOpLowering : public OpRewritePattern<sol::AddressOp> {
+  using OpRewritePattern<sol::AddressOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::AddressOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_address,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{}, "evm.address");
+    return success();
+  }
+};
+
 struct CallerOpLowering : public OpRewritePattern<sol::CallerOp> {
   using OpRewritePattern<sol::CallerOp>::OpRewritePattern;
 
@@ -406,12 +418,12 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
 } // namespace
 
 void evm::populateYulPats(RewritePatternSet &pats) {
-  pats.add<Keccak256OpLowering, LogOpLowering, CallerOpLowering,
-           CallValOpLowering, CallDataLoadOpLowering, CallDataSizeOpLowering,
-           CallDataCopyOpLowering, SLoadOpLowering, SStoreOpLowering,
-           DataOffsetOpLowering, DataSizeOpLowering, CodeSizeOpLowering,
-           CodeCopyOpLowering, MLoadOpLowering, MStoreOpLowering,
-           MCopyOpLowering, MemGuardOpLowering, RevertOpLowering,
-           BuiltinRetOpLowering, StopOpLowering, ObjectOpLowering>(
-      pats.getContext());
+  pats.add<Keccak256OpLowering, LogOpLowering, AddressOpLowering,
+           CallerOpLowering, CallValOpLowering, CallDataLoadOpLowering,
+           CallDataSizeOpLowering, CallDataCopyOpLowering, SLoadOpLowering,
+           SStoreOpLowering, DataOffsetOpLowering, DataSizeOpLowering,
+           CodeSizeOpLowering, CodeCopyOpLowering, MLoadOpLowering,
+           MStoreOpLowering, MCopyOpLowering, MemGuardOpLowering,
+           RevertOpLowering, BuiltinRetOpLowering, StopOpLowering,
+           ObjectOpLowering>(pats.getContext());
 }

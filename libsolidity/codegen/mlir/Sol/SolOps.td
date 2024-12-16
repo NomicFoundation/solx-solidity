@@ -610,6 +610,12 @@ def Sol_CallerOp : Sol_Op<"caller", [Pure]> {
   let assemblyFormat = "attr-dict";
 }
 
+def Sol_AddressOp : Sol_Op<"address"> {
+  let summary = "Represents the `address` call in yul";
+  let results = (outs I256:$out);
+  let assemblyFormat = "attr-dict";
+}
+
 def Sol_BuiltinRetOp : Sol_Op<"builtin_ret"> {
   let summary = "Represents the `return` call in yul";
   let arguments = (ins I256:$addr, I256:$size);
