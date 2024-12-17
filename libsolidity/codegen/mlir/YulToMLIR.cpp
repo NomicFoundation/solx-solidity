@@ -270,6 +270,13 @@ mlir::Value YulToMLIRPass::genExpr(FunctionCall const &call) {
     // evmasm::InstructionInfo and the corresponding mlir ops
     //
 
+    if (builtin->name.str() == "call") {
+      return b.create<mlir::sol::BuiltinCallOp>(
+          loc, genDefTyExpr(call.arguments[0]), genDefTyExpr(call.arguments[1]),
+          genDefTyExpr(call.arguments[2]), genDefTyExpr(call.arguments[3]),
+          genDefTyExpr(call.arguments[4]), genDefTyExpr(call.arguments[5]),
+          genDefTyExpr(call.arguments[6]));
+    }
     if (builtin->name.str() == "return") {
       b.create<mlir::sol::BuiltinRetOp>(loc, genDefTyExpr(call.arguments[0]),
                                         genDefTyExpr(call.arguments[1]));

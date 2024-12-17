@@ -323,6 +323,25 @@ struct RevertOpLowering : public OpRewritePattern<sol::RevertOp> {
   }
 };
 
+struct BuiltinCallOpLowering : public OpRewritePattern<sol::BuiltinCallOp> {
+  using OpRewritePattern<sol::BuiltinCallOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::BuiltinCallOp op,
+                                PatternRewriter &r) const override {
+    evm::Builder evmB(r, op.getLoc());
+
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(
+        op, llvm::Intrinsic::evm_call,
+        /*resTy=*/r.getIntegerType(256),
+        /*ins=*/
+        ValueRange{op.getGas(), op.getAddress(), op.getValue(),
+                   evmB.genHeapPtr(op.getInpOffset()), op.getInpSize(),
+                   evmB.genHeapPtr(op.getOutOffset()), op.getOutSize()},
+        "evm.call");
+    return success();
+  }
+};
+
 struct BuiltinRetOpLowering : public OpRewritePattern<sol::BuiltinRetOp> {
   using OpRewritePattern<sol::BuiltinRetOp>::OpRewritePattern;
 
@@ -424,6 +443,6 @@ void evm::populateYulPats(RewritePatternSet &pats) {
            SStoreOpLowering, DataOffsetOpLowering, DataSizeOpLowering,
            CodeSizeOpLowering, CodeCopyOpLowering, MLoadOpLowering,
            MStoreOpLowering, MCopyOpLowering, MemGuardOpLowering,
-           RevertOpLowering, BuiltinRetOpLowering, StopOpLowering,
-           ObjectOpLowering>(pats.getContext());
+           RevertOpLowering, BuiltinCallOpLowering, BuiltinRetOpLowering,
+           StopOpLowering, ObjectOpLowering>(pats.getContext());
 }
