@@ -1,8 +1,8 @@
-// RUN: solc --strict-assembly --mlir-action=print-init --mmlir --mlir-print-debuginfo --mlir-target=eravm %s | FileCheck %s
+// RUN: solc --strict-assembly --mlir-action=print-init --mmlir --mlir-print-debuginfo %s | FileCheck %s
 
 object "Test" {
   code {
-    return(0, caller())
+    revert(0, 1)
   }
 }
 
@@ -10,8 +10,8 @@ object "Test" {
 // CHECK: module {
 // CHECK-NEXT:   sol.object @Test {
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc1)
-// CHECK-NEXT:     %0 = sol.caller loc(#loc2)
-// CHECK-NEXT:     sol.builtin_ret %c0_i256, %0 loc(#loc3)
+// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc2)
+// CHECK-NEXT:     sol.revert %c0_i256, %c1_i256 loc(#loc3)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)

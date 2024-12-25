@@ -1,8 +1,8 @@
-// RUN: solc --strict-assembly --mlir-action=print-init --mmlir --mlir-print-debuginfo --mlir-target=eravm %s | FileCheck %s
+// RUN: solc --strict-assembly --mlir-action=print-init --mmlir --mlir-print-debuginfo %s | FileCheck %s
 
 object "Test" {
   code {
-    let r := address()
+    let r := keccak256(0, 0x40)
   }
 }
 
@@ -11,12 +11,16 @@ object "Test" {
 // CHECK-NEXT:   sol.object @Test {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc1)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc2)
-// CHECK-NEXT:     %1 = sol.address loc(#loc3)
+// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc3)
+// CHECK-NEXT:     %c64_i256 = arith.constant 64 : i256 loc(#loc4)
+// CHECK-NEXT:     %1 = sol.keccak256 %c0_i256, %c64_i256 loc(#loc5)
 // CHECK-NEXT:     llvm.store %1, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:4:4)
 // CHECK-NEXT: #loc2 = loc({{.*}}:4:8)
-// CHECK-NEXT: #loc3 = loc({{.*}}:4:13)
+// CHECK-NEXT: #loc3 = loc({{.*}}:4:23)
+// CHECK-NEXT: #loc4 = loc({{.*}}:4:26)
+// CHECK-NEXT: #loc5 = loc({{.*}}:4:13)
 // CHECK-EMPTY:
