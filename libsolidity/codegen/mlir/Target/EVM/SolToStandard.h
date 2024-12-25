@@ -56,6 +56,9 @@ void populateEmitPat(mlir::RewritePatternSet &pats,
 /// Adds the conversion pattern of sol.require.
 void populateRequirePat(mlir::RewritePatternSet &pats);
 
+/// Adds the conversion pattern of sol.this.
+void populateThisPat(mlir::RewritePatternSet &pats);
+
 /// Adds the conversion patterns of control flow ops in the sol dialect.
 void populateControlFlowPats(mlir::RewritePatternSet &pats);
 

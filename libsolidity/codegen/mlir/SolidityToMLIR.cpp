@@ -370,11 +370,9 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Identifier const *id) {
 mlir::Value SolidityToMLIRPass::genRValExpr(Identifier const *id) {
   auto addr = genLValExpr(id);
 
-  // Don't load non pointer ref types.
-  if (mlir::sol::isNonPtrRefType(addr.getType()))
-    return addr;
-
-  return b.create<mlir::sol::LoadOp>(getLoc(id->location()), addr);
+  if (mlir::isa<mlir::sol::PointerType>(addr.getType()))
+    return b.create<mlir::sol::LoadOp>(getLoc(id->location()), addr);
+  return addr;
 }
 
 mlir::ArrayAttr

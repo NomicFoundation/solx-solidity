@@ -775,6 +775,16 @@ struct CopyOpLowering : public OpConversionPattern<sol::CopyOp> {
   }
 };
 
+struct ThisOpLowering : public OpRewritePattern<sol::ThisOp> {
+  using OpRewritePattern<sol::ThisOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::ThisOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<sol::AddressOp>(op);
+    return success();
+  }
+};
+
 struct RequireOpLowering : public OpRewritePattern<sol::RequireOp> {
   using OpRewritePattern<sol::RequireOp>::OpRewritePattern;
 
@@ -1468,6 +1478,10 @@ void evm::populateFuncPats(RewritePatternSet &pats, TypeConverter &tyConv) {
                                                              pats.getContext());
 }
 
+void evm::populateThisPat(RewritePatternSet &pats) {
+  pats.add<ThisOpLowering>(pats.getContext());
+}
+
 void evm::populateEmitPat(RewritePatternSet &pats, TypeConverter &tyConv) {
   pats.add<EmitOpLowering>(tyConv, pats.getContext());
 }
@@ -1484,6 +1498,7 @@ void evm::populateStage1Pats(RewritePatternSet &pats, TypeConverter &tyConv) {
   populateArithPats(pats, tyConv);
   populateCheckedArithPats(pats, tyConv);
   populateMemPats(pats, tyConv);
+  populateThisPat(pats);
   populateEmitPat(pats, tyConv);
   populateRequirePat(pats);
   populateControlFlowPats(pats);
