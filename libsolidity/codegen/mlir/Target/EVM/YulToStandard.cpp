@@ -246,6 +246,19 @@ struct CodeCopyOpLowering : public OpRewritePattern<sol::CodeCopyOp> {
   }
 };
 
+struct ExtCodeSizeOpLowering : public OpRewritePattern<sol::ExtCodeSizeOp> {
+  using OpRewritePattern<sol::ExtCodeSizeOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::ExtCodeSizeOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_extcodesize,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/op.getAddr(),
+                                           "evm.extcodesize");
+    return success();
+  }
+};
+
 struct MLoadOpLowering : public OpRewritePattern<sol::MLoadOp> {
   using OpRewritePattern<sol::MLoadOp>::OpRewritePattern;
 
@@ -441,8 +454,9 @@ void evm::populateYulPats(RewritePatternSet &pats) {
            CallerOpLowering, CallValOpLowering, CallDataLoadOpLowering,
            CallDataSizeOpLowering, CallDataCopyOpLowering, SLoadOpLowering,
            SStoreOpLowering, DataOffsetOpLowering, DataSizeOpLowering,
-           CodeSizeOpLowering, CodeCopyOpLowering, MLoadOpLowering,
-           MStoreOpLowering, MCopyOpLowering, MemGuardOpLowering,
-           RevertOpLowering, BuiltinCallOpLowering, BuiltinRetOpLowering,
-           StopOpLowering, ObjectOpLowering>(pats.getContext());
+           CodeSizeOpLowering, CodeCopyOpLowering, ExtCodeSizeOpLowering,
+           MLoadOpLowering, MStoreOpLowering, MCopyOpLowering,
+           MemGuardOpLowering, RevertOpLowering, BuiltinCallOpLowering,
+           BuiltinRetOpLowering, StopOpLowering, ObjectOpLowering>(
+      pats.getContext());
 }

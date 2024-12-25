@@ -3,6 +3,7 @@
 object "Test" {
   code {
     codecopy(codesize(), dataoffset("Test_deployed"), datasize("Test_deployed"))
+    // TODO: extcodesize
   }
   object "Test_deployed" {
     code {

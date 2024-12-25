@@ -363,6 +363,10 @@ mlir::Value YulToMLIRPass::genExpr(FunctionCall const &call) {
       b.create<mlir::sol::CodeCopyOp>(loc, dst, offset, size);
       return {};
     }
+    if (builtin->name.str() == "extcodesize") {
+      return b.create<mlir::sol::ExtCodeSizeOp>(
+          loc, genDefTyExpr(call.arguments[0]));
+    }
     if (builtin->name.str() == "memoryguard") {
       auto *arg = std::get_if<Literal>(&call.arguments[0]);
       assert(arg);

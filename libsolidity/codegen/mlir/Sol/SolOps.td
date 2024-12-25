@@ -765,6 +765,13 @@ def Sol_CodeCopyOp : Sol_Op<"codecopy"> {
   let assemblyFormat = "$dst `,` $src `,` $size attr-dict";
 }
 
+def Sol_ExtCodeSizeOp : Sol_Op<"extcodesize", [Pure]> {
+  let summary = "Represents the `extcodesize` call in yul";
+  let arguments = (ins I256:$addr);
+  let results = (outs I256:$out);
+  let assemblyFormat = "$addr attr-dict";
+}
+
 // TODO: Is this `ConstantLike`? Adding it causes "expected ConstantLike op to
 // be foldable" assert fail (probably due to the missing let hasFolder = 1).
 def Sol_MemGuardOp : Sol_Op<"memoryguard", [Pure]> {
