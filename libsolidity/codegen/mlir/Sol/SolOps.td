@@ -32,6 +32,7 @@ include "mlir/IR/OpAsmInterface.td"
 include "mlir/IR/SymbolInterfaces.td"
 
 // TODO: Add summary and description to all the op definitions.
+// TODO: Impl SymbolUserOpInterface's.
 
 // TODO: Implement verifiers for all the ops.
 //
@@ -438,9 +439,7 @@ def Sol_ModifierOp : Sol_Op<"modifier",
 // conversion.
 //
 
-def CallOp : Sol_Op<"call", [CallOpInterface,
-                             DeclareOpInterfaceMethods<SymbolUserOpInterface>]
-                   >{
+def CallOp : Sol_Op<"call", [CallOpInterface]> {
   let arguments = (ins FlatSymbolRefAttr:$callee, Variadic<AnyType>:$operands);
   let results = (outs Variadic<AnyType>);
 
@@ -468,15 +467,11 @@ def CallOp : Sol_Op<"call", [CallOpInterface,
     }]>];
 
   let extraClassDeclaration = [{
+    //===------------------------------------------------------------------===//
+    // CallOpInterface
+    //===------------------------------------------------------------------===//
     operand_range getArgOperands() {
-      return {arg_operand_begin(), arg_operand_end()};
-    }
-    operand_iterator arg_operand_begin() { return operand_begin(); }
-    operand_iterator arg_operand_end() { return operand_end(); }
-
-    FunctionType getCalleeType() {
-      return FunctionType::get(getContext(), getOperandTypes(),
-                               getResultTypes());
+      return {operand_begin(), operand_end()};
     }
     CallInterfaceCallable getCallableForCallee() {
       return (*this)->getAttrOfType<SymbolRefAttr>("callee");
@@ -488,6 +483,38 @@ def CallOp : Sol_Op<"call", [CallOpInterface,
 
   let assemblyFormat = [{
     $callee `(` $operands `)` attr-dict `:` functional-type($operands, results)
+  }];
+}
+
+def Sol_ThisOp : Sol_Op<"this"> {
+  let results = (outs UI256:$addr);
+
+  let assemblyFormat = "attr-dict";
+}
+
+def Sol_ExtCallOp : Sol_Op<"ext_call", [CallOpInterface]> {
+  let arguments = (ins FlatSymbolRefAttr:$callee, Variadic<AnyType>:$ins,
+                       UI256:$addr, I32Attr:$selector);
+  let results = (outs Variadic<AnyType>);
+
+  let extraClassDeclaration = [{
+    //===------------------------------------------------------------------===//
+    // CallOpInterface
+    //===------------------------------------------------------------------===//
+    operand_range getArgOperands() {
+      return {operand_begin() + 1, operand_end()};
+    }
+    CallInterfaceCallable getCallableForCallee() {
+      return (*this)->getAttrOfType<SymbolRefAttr>("callee");
+    }
+    void setCalleeFromCallable(CallInterfaceCallable callee) {
+      (*this)->setAttr("callee", callee.get<SymbolRefAttr>());
+    }
+  }];
+
+  let assemblyFormat = [{
+    $callee `(` $ins `)` `at` $addr attr-dict `:`
+       functional-type($ins, results)
   }];
 }
 

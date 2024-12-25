@@ -325,6 +325,18 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
 mlir::Value SolidityToMLIRPass::genLValExpr(Identifier const *id) {
   Declaration const *decl = id->annotation().referencedDeclaration;
 
+  if (MagicVariableDeclaration const *magicVar =
+          dynamic_cast<MagicVariableDeclaration const *>(decl)) {
+    switch (magicVar->type()->category()) {
+    case Type::Category::Contract:
+      assert(id->name() == "this");
+      return b.create<mlir::sol::ThisOp>(getLoc(id->location()));
+    default:
+      break;
+    }
+    llvm_unreachable("NYI");
+  }
+
   if (auto *var = dynamic_cast<VariableDeclaration const *>(decl)) {
     // State variable.
     if (var->isStateVariable()) {
@@ -570,6 +582,10 @@ mlir::Value SolidityToMLIRPass::genLValExpr(MemberAccess const *memberAcc) {
           loc, b.getIntegerType(256, /*isSigned=*/false), callerOp);
     }
     break;
+
+  case Type::Category::Contract:
+    return {};
+
   case Type::Category::Struct: {
     const auto *structTy = dynamic_cast<StructType const *>(memberAccTy);
     auto memberIdx = genConst(structTy->index(memberAcc->memberName()), loc);
@@ -641,8 +657,43 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const *call) {
     // ValueRange.
     assert(resTys.size() <= 1);
     // Generate the call op.
-    auto callOp = b.create<mlir::sol::CallOp>(
-        getLoc(call->location()), getMangledName(*callee), resTys, args);
+    auto callOp =
+        b.create<mlir::sol::CallOp>(loc, getMangledName(*callee), resTys, args);
+    return resTys.empty() ? mlir::Value{} : callOp.getResult(0);
+  }
+
+  // External call
+  case FunctionType::Kind::External: {
+    // Generate the address.
+    auto const *memberAcc =
+        dynamic_cast<MemberAccess const *>(&call->expression());
+    assert(memberAcc);
+    assert(dynamic_cast<ContractType const *>(
+        memberAcc->expression().annotation().type));
+    mlir::Value addr =
+        genLValExpr(dynamic_cast<Identifier const *>(&memberAcc->expression()));
+
+    // Get the callee and the selector.
+    auto const *callee = dynamic_cast<FunctionDefinition const *>(
+        memberAcc->annotation().referencedDeclaration);
+    assert(callee && "NYI: State variable getters");
+    auto selector =
+        FunctionType(*callee).externalIdentifier().convert_to<uint32_t>();
+
+    // Lower the args.
+    std::vector<mlir::Value> args;
+    for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes())) {
+      args.push_back(genRValExpr(arg.get(), getType(dstTy)));
+    }
+
+    // Collect the return types.
+    std::vector<mlir::Type> resTys;
+    for (Type const *ty : calleeTy->returnParameterTypes()) {
+      resTys.push_back(getType(ty));
+    }
+
+    auto callOp = b.create<mlir::sol::ExtCallOp>(
+        loc, resTys, getMangledName(*callee), args, addr, selector);
     return resTys.empty() ? mlir::Value{} : callOp.getResult(0);
   }
 
@@ -763,7 +814,7 @@ mlir::Value SolidityToMLIRPass::genRValExpr(Expression const *expr,
     val = genExpr(binOp);
   }
 
-  // Variable access
+  // Identifier
   else if (auto *id = dynamic_cast<Identifier const *>(expr)) {
     val = genRValExpr(id);
 
