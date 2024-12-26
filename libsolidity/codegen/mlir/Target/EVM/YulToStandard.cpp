@@ -109,6 +109,18 @@ struct CallerOpLowering : public OpRewritePattern<sol::CallerOp> {
   }
 };
 
+struct GasOpLowering : public OpRewritePattern<sol::GasOp> {
+  using OpRewritePattern<sol::GasOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::GasOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_gas,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{}, "evm.gas");
+    return success();
+  }
+};
+
 struct CallValOpLowering : public OpRewritePattern<sol::CallValOp> {
   using OpRewritePattern<sol::CallValOp>::OpRewritePattern;
 
@@ -481,13 +493,13 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
 
 void evm::populateYulPats(RewritePatternSet &pats) {
   pats.add<Keccak256OpLowering, LogOpLowering, AddressOpLowering,
-           CallerOpLowering, CallValOpLowering, CallDataLoadOpLowering,
-           CallDataSizeOpLowering, CallDataCopyOpLowering,
-           ReturnDataSizeOpLowering, ReturnDataCopyOpLowering, SLoadOpLowering,
-           SStoreOpLowering, DataOffsetOpLowering, DataSizeOpLowering,
-           CodeSizeOpLowering, CodeCopyOpLowering, ExtCodeSizeOpLowering,
-           MLoadOpLowering, MStoreOpLowering, MCopyOpLowering,
-           MemGuardOpLowering, RevertOpLowering, BuiltinCallOpLowering,
-           BuiltinRetOpLowering, StopOpLowering, ObjectOpLowering>(
-      pats.getContext());
+           CallerOpLowering, GasOpLowering, CallValOpLowering,
+           CallDataLoadOpLowering, CallDataSizeOpLowering,
+           CallDataCopyOpLowering, ReturnDataSizeOpLowering,
+           ReturnDataCopyOpLowering, SLoadOpLowering, SStoreOpLowering,
+           DataOffsetOpLowering, DataSizeOpLowering, CodeSizeOpLowering,
+           CodeCopyOpLowering, ExtCodeSizeOpLowering, MLoadOpLowering,
+           MStoreOpLowering, MCopyOpLowering, MemGuardOpLowering,
+           RevertOpLowering, BuiltinCallOpLowering, BuiltinRetOpLowering,
+           StopOpLowering, ObjectOpLowering>(pats.getContext());
 }

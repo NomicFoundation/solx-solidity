@@ -637,6 +637,12 @@ def Sol_CallerOp : Sol_Op<"caller", [Pure]> {
   let assemblyFormat = "attr-dict";
 }
 
+def Sol_GasOp : Sol_Op<"gas", [Pure]> {
+  let summary = "Represents the `gas` call in yul";
+  let results = (outs I256:$out);
+  let assemblyFormat = "attr-dict";
+}
+
 def Sol_AddressOp : Sol_Op<"address", [Pure]> {
   let summary = "Represents the `address` call in yul";
   let results = (outs I256:$out);

@@ -429,6 +429,9 @@ mlir::Value YulToMLIRPass::genExpr(FunctionCall const &call) {
     if (builtin->name.str() == "caller") {
       return b.create<mlir::sol::CallerOp>(loc);
     }
+    if (builtin->name.str() == "gas") {
+      return b.create<mlir::sol::GasOp>(loc);
+    }
 
     solUnimplementedAssert(false, "NYI: builtin " + builtin->name.str());
   }
