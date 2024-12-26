@@ -325,6 +325,9 @@ mlir::Value YulToMLIRPass::genExpr(FunctionCall const &call) {
       b.create<mlir::sol::CallDataCopyOp>(loc, dst, offset, size);
       return {};
     }
+    if (builtin->name.str() == "returndatasize") {
+      return b.create<mlir::sol::ReturnDataSizeOp>(loc);
+    }
     if (builtin->name.str() == "sload") {
       return b.create<mlir::sol::SLoadOp>(loc, genDefTyExpr(call.arguments[0]));
     }

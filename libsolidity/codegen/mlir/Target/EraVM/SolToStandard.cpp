@@ -217,17 +217,14 @@ struct CallDataSizeOpLowering : public OpRewritePattern<sol::CallDataSizeOp> {
 
   LogicalResult matchAndRewrite(sol::CallDataSizeOp op,
                                 PatternRewriter &r) const override {
-    Location loc = op.getLoc();
-    auto mod = op->getParentOfType<ModuleOp>();
-
     if (inRuntimeContext(op)) {
-      eravm::Builder eraB(r, loc);
-      r.replaceOp(op, eraB.genCallDataSizeLoad(mod));
+      eravm::Builder eraB(r, op.getLoc());
+      r.replaceOp(op,
+                  eraB.genCallDataSizeLoad(op->getParentOfType<ModuleOp>()));
     } else {
       r.replaceOpWithNewOp<arith::ConstantIntOp>(op, /*value=*/0,
                                                  /*width=*/256);
     }
-
     return success();
   }
 };
@@ -250,6 +247,19 @@ struct CallDataCopyOpLowering : public OpRewritePattern<sol::CallDataCopyOp> {
                              /*isVolatile=*/false);
     r.eraseOp(op);
 
+    return success();
+  }
+};
+
+struct ReturnDataSizeOpLowering
+    : public OpRewritePattern<sol::ReturnDataSizeOp> {
+  using OpRewritePattern<sol::ReturnDataSizeOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::ReturnDataSizeOp op,
+                                PatternRewriter &r) const override {
+    eravm::Builder eraB(r, op.getLoc());
+    r.replaceOp(op,
+                eraB.genReturnDataSizeLoad(op->getParentOfType<ModuleOp>()));
     return success();
   }
 };
@@ -737,7 +747,7 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
                                 eravm::getAlignment(globAddr));
       }
     };
-    storeRetDataABIInitializer(eravm::GlobRetDataPtr);
+    storeRetDataABIInitializer(eravm::GlobReturnDataPtr);
     storeRetDataABIInitializer(eravm::GlobDecommitPtr);
     storeRetDataABIInitializer(eravm::GlobActivePtr);
 
@@ -840,9 +850,9 @@ void eravm::populateStage2Pats(RewritePatternSet &pats) {
            DataOffsetOpLowering, DataSizeOpLowering, CodeSizeOpLowering,
            CodeCopyOpLowering, MemGuardOpLowering, CallValOpLowering,
            CallDataLoadOpLowering, CallDataSizeOpLowering,
-           CallDataCopyOpLowering, SLoadOpLowering, SStoreOpLowering,
-           Keccak256OpLowering, LogOpLowering, AddressOpLowering,
-           CallerOpLowering>(pats.getContext());
+           ReturnDataSizeOpLowering, CallDataCopyOpLowering, SLoadOpLowering,
+           SStoreOpLowering, Keccak256OpLowering, LogOpLowering,
+           AddressOpLowering, CallerOpLowering>(pats.getContext());
 }
 
 void eravm::populateFuncPats(RewritePatternSet &pats, TypeConverter &tyConv) {

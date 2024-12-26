@@ -112,7 +112,7 @@ void eravm::Builder::genGlobalVarsInit(ModuleOp mod,
   // Initialize the following global ints.
   initInt(eravm::GlobHeapMemPtr);
   initInt(eravm::GlobCallDataSize);
-  initInt(eravm::GlobRetDataSize);
+  initInt(eravm::GlobReturnDataSize);
   initInt(eravm::GlobCallFlags);
 
   // Initialize the GlobExtraABIData int array.
@@ -347,4 +347,24 @@ eravm::Builder::genCallDataPtrLoad(ModuleOp mod,
   LLVM::AddressOfOp callDataPtrAddr = genCallDataPtrAddr(mod, loc);
   return b.create<LLVM::LoadOp>(loc, callDataPtrAddr,
                                 eravm::getAlignment(callDataPtrAddr));
+}
+
+LLVM::AddressOfOp
+eravm::Builder::genReturnDataSizeAddr(ModuleOp mod,
+                                      std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+  solidity::mlirgen::BuilderExt bExt(b, loc);
+
+  LLVM::GlobalOp globReturnDataSzDef = bExt.getOrInsertI256GlobalOp(
+      eravm::GlobReturnDataSize, eravm::AddrSpace_Stack, /*alignment=*/0,
+      LLVM::Linkage::Private, mod);
+  return b.create<LLVM::AddressOfOp>(loc, globReturnDataSzDef);
+}
+
+LLVM::LoadOp
+eravm::Builder::genReturnDataSizeLoad(ModuleOp mod,
+                                      std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+  LLVM::AddressOfOp addr = genReturnDataSizeAddr(mod, loc);
+  return b.create<LLVM::LoadOp>(loc, addr, eravm::getAlignment(addr));
 }
