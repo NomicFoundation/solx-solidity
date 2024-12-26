@@ -637,7 +637,7 @@ def Sol_CallerOp : Sol_Op<"caller", [Pure]> {
   let assemblyFormat = "attr-dict";
 }
 
-def Sol_AddressOp : Sol_Op<"address"> {
+def Sol_AddressOp : Sol_Op<"address", [Pure]> {
   let summary = "Represents the `address` call in yul";
   let results = (outs I256:$out);
   let assemblyFormat = "attr-dict";
@@ -716,7 +716,7 @@ def Sol_CallDataSizeOp : Sol_Op<"calldatasize", [Pure]> {
   let assemblyFormat = "attr-dict";
 }
 
-def Sol_CallDataCopyOp : Sol_Op<"calldatacopy", [Pure]> {
+def Sol_CallDataCopyOp : Sol_Op<"calldatacopy"> {
   let summary = "Represents the `calldatacopy` call in yul";
   let arguments = (ins I256:$dst, I256:$src, I256:$size);
   let assemblyFormat = "$dst `,` $src `,` $size attr-dict";
