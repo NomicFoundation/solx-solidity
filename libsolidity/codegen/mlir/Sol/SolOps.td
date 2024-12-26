@@ -728,6 +728,12 @@ def Sol_ReturnDataSizeOp : Sol_Op<"returndatasize", [Pure]> {
   let assemblyFormat = "attr-dict";
 }
 
+def Sol_ReturnDataCopyOp : Sol_Op<"returndatacopy"> {
+  let summary = "Represents the `returndatacopy` call in yul";
+  let arguments = (ins I256:$dst, I256:$src, I256:$size);
+  let assemblyFormat = "$dst `,` $src `,` $size attr-dict";
+}
+
 def Sol_SLoadOp : Sol_Op<"sload"> {
   let summary = "Represents the `sload` call in yul";
   let arguments = (ins I256:$addr);

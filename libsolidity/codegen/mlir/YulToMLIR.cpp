@@ -328,6 +328,13 @@ mlir::Value YulToMLIRPass::genExpr(FunctionCall const &call) {
     if (builtin->name.str() == "returndatasize") {
       return b.create<mlir::sol::ReturnDataSizeOp>(loc);
     }
+    if (builtin->name.str() == "returndatacopy") {
+      mlir::Value dst = genDefTyExpr(call.arguments[0]);
+      mlir::Value offset = genDefTyExpr(call.arguments[1]);
+      mlir::Value size = genDefTyExpr(call.arguments[2]);
+      b.create<mlir::sol::ReturnDataCopyOp>(loc, dst, offset, size);
+      return {};
+    }
     if (builtin->name.str() == "sload") {
       return b.create<mlir::sol::SLoadOp>(loc, genDefTyExpr(call.arguments[0]));
     }

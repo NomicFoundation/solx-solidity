@@ -66,6 +66,15 @@ Value evm::Builder::genCallDataPtr(Value addr, std::optional<Location> locArg) {
   return b.create<LLVM::IntToPtrOp>(loc, callDataAddrSpacePtrTy, addr);
 }
 
+Value evm::Builder::genReturnDataPtr(Value addr,
+                                     std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+
+  auto callDataAddrSpacePtrTy =
+      LLVM::LLVMPointerType::get(b.getContext(), evm::AddrSpace_ReturnData);
+  return b.create<LLVM::IntToPtrOp>(loc, callDataAddrSpacePtrTy, addr);
+}
+
 Value evm::Builder::genStoragePtr(Value addr, std::optional<Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;
 
