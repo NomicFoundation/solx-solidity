@@ -397,6 +397,25 @@ struct BuiltinCallOpLowering : public OpRewritePattern<sol::BuiltinCallOp> {
   }
 };
 
+struct StaticCallOpLowering : public OpRewritePattern<sol::StaticCallOp> {
+  using OpRewritePattern<sol::StaticCallOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::StaticCallOp op,
+                                PatternRewriter &r) const override {
+    evm::Builder evmB(r, op.getLoc());
+
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(
+        op, llvm::Intrinsic::evm_staticcall,
+        /*resTy=*/r.getIntegerType(256),
+        /*ins=*/
+        ValueRange{op.getGas(), op.getAddress(),
+                   evmB.genHeapPtr(op.getInpOffset()), op.getInpSize(),
+                   evmB.genHeapPtr(op.getOutOffset()), op.getOutSize()},
+        "evm.staticcall");
+    return success();
+  }
+};
+
 struct BuiltinRetOpLowering : public OpRewritePattern<sol::BuiltinRetOp> {
   using OpRewritePattern<sol::BuiltinRetOp>::OpRewritePattern;
 
@@ -519,6 +538,7 @@ void evm::populateYulPats(RewritePatternSet &pats) {
       MCopyOpLowering,
       MemGuardOpLowering,
       BuiltinCallOpLowering,
+      StaticCallOpLowering,
       BuiltinRetOpLowering,
       ObjectOpLowering
       // clang-format on

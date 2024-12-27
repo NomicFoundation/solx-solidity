@@ -4,6 +4,7 @@ object "Test" {
   code {
     // TODO:
     // let r := call(0, 1, 2, 3, 4, 5, 6)
+    // r := staticcall(0, 1, 2, 3, 4, 5)
   }
 }
 

@@ -277,6 +277,12 @@ mlir::Value YulToMLIRPass::genExpr(FunctionCall const &call) {
           genDefTyExpr(call.arguments[4]), genDefTyExpr(call.arguments[5]),
           genDefTyExpr(call.arguments[6]));
     }
+    if (builtin->name.str() == "staticcall") {
+      return b.create<mlir::sol::StaticCallOp>(
+          loc, genDefTyExpr(call.arguments[0]), genDefTyExpr(call.arguments[1]),
+          genDefTyExpr(call.arguments[2]), genDefTyExpr(call.arguments[3]),
+          genDefTyExpr(call.arguments[4]), genDefTyExpr(call.arguments[5]));
+    }
     if (builtin->name.str() == "return") {
       b.create<mlir::sol::BuiltinRetOp>(loc, genDefTyExpr(call.arguments[0]),
                                         genDefTyExpr(call.arguments[1]));

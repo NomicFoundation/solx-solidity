@@ -3,6 +3,7 @@
 object "Test" {
   code {
     let r := call(0, 1, 2, 3, 4, 5, 6)
+    r := staticcall(0, 1, 2, 3, 4, 5)
   }
 }
 
@@ -22,6 +23,16 @@ object "Test" {
 // CHECK-NEXT:     %2 = llvm.inttoptr %c5_i256 : i256 to !llvm.ptr<1> loc(#loc10)
 // CHECK-NEXT:     %3 = "llvm.intrcall"(%c0_i256, %c1_i256_0, %c2_i256, %1, %c4_i256, %2, %c6_i256) <{id = 3211 : i32, name = "evm.call"}> : (i256, i256, i256, !llvm.ptr<1>, i256, !llvm.ptr<1>, i256) -> i256 loc(#loc10)
 // CHECK-NEXT:     llvm.store %3, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc1)
+// CHECK-NEXT:     %c0_i256_1 = arith.constant 0 : i256 loc(#loc11)
+// CHECK-NEXT:     %c1_i256_2 = arith.constant 1 : i256 loc(#loc12)
+// CHECK-NEXT:     %c2_i256_3 = arith.constant 2 : i256 loc(#loc13)
+// CHECK-NEXT:     %c3_i256_4 = arith.constant 3 : i256 loc(#loc14)
+// CHECK-NEXT:     %c4_i256_5 = arith.constant 4 : i256 loc(#loc15)
+// CHECK-NEXT:     %c5_i256_6 = arith.constant 5 : i256 loc(#loc16)
+// CHECK-NEXT:     %4 = llvm.inttoptr %c2_i256_3 : i256 to !llvm.ptr<1> loc(#loc17)
+// CHECK-NEXT:     %5 = llvm.inttoptr %c4_i256_5 : i256 to !llvm.ptr<1> loc(#loc17)
+// CHECK-NEXT:     %6 = "llvm.intrcall"(%c0_i256_1, %c1_i256_2, %4, %c3_i256_4, %5, %c5_i256_6) <{id = 3264 : i32, name = "evm.staticcall"}> : (i256, i256, !llvm.ptr<1>, i256, !llvm.ptr<1>, i256) -> i256 loc(#loc17)
+// CHECK-NEXT:     llvm.store %6, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc18)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)
@@ -36,4 +47,12 @@ object "Test" {
 // CHECK-NEXT: #loc8 = loc({{.*}}:4:33)
 // CHECK-NEXT: #loc9 = loc({{.*}}:4:36)
 // CHECK-NEXT: #loc10 = loc({{.*}}:4:13)
+// CHECK-NEXT: #loc11 = loc({{.*}}:5:20)
+// CHECK-NEXT: #loc12 = loc({{.*}}:5:23)
+// CHECK-NEXT: #loc13 = loc({{.*}}:5:26)
+// CHECK-NEXT: #loc14 = loc({{.*}}:5:29)
+// CHECK-NEXT: #loc15 = loc({{.*}}:5:32)
+// CHECK-NEXT: #loc16 = loc({{.*}}:5:35)
+// CHECK-NEXT: #loc17 = loc({{.*}}:5:9)
+// CHECK-NEXT: #loc18 = loc({{.*}}:5:4)
 // CHECK-EMPTY:
