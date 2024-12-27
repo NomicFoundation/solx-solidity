@@ -74,6 +74,12 @@ void SolDialect::initialize() {
   addInterfaces<SolOpAsmDialectInterface>();
 }
 
+// TODO: Implement these!
+// We should track the evm version in the module op.
+bool mlir::sol::evmhasStaticCall(ModuleOp mod) { return true; }
+bool mlir::sol::evmSupportsReturnData(ModuleOp mod) { return true; }
+bool mlir::sol::evmCanOverchargeGasForCall(ModuleOp mod) { return true; }
+
 Type mlir::sol::getEltType(Type ty, Index structTyIdx) {
   if (auto ptrTy = dyn_cast<sol::PointerType>(ty)) {
     return ptrTy.getPointeeType();

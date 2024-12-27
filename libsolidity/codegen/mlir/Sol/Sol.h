@@ -22,6 +22,7 @@
 #pragma once
 
 #include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/OpDefinition.h"
@@ -61,6 +62,14 @@ bool isNonPtrRefType(Type ty);
 
 /// Returns the element type of a non mapping reference type.
 Type getEltType(Type ty, Index structTyIdx = 0);
+
+///
+/// The following functions are used to query the capabilities of the specified
+/// evm in the module.
+///
+bool evmhasStaticCall(ModuleOp mod);
+bool evmSupportsReturnData(ModuleOp mod);
+bool evmCanOverchargeGasForCall(ModuleOp mod);
 
 } // namespace sol
 } // namespace mlir
