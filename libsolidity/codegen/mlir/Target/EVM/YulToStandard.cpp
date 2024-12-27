@@ -492,14 +492,35 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
 } // namespace
 
 void evm::populateYulPats(RewritePatternSet &pats) {
-  pats.add<Keccak256OpLowering, LogOpLowering, AddressOpLowering,
-           CallerOpLowering, GasOpLowering, CallValOpLowering,
-           CallDataLoadOpLowering, CallDataSizeOpLowering,
-           CallDataCopyOpLowering, ReturnDataSizeOpLowering,
-           ReturnDataCopyOpLowering, SLoadOpLowering, SStoreOpLowering,
-           DataOffsetOpLowering, DataSizeOpLowering, CodeSizeOpLowering,
-           CodeCopyOpLowering, ExtCodeSizeOpLowering, MLoadOpLowering,
-           MStoreOpLowering, MCopyOpLowering, MemGuardOpLowering,
-           RevertOpLowering, BuiltinCallOpLowering, BuiltinRetOpLowering,
-           StopOpLowering, ObjectOpLowering>(pats.getContext());
+  pats.add<
+      // clang-format off
+      Keccak256OpLowering,
+      LogOpLowering,
+      AddressOpLowering,
+      CallerOpLowering,
+      GasOpLowering,
+      RevertOpLowering,
+      StopOpLowering,
+      CallValOpLowering,
+      CallDataLoadOpLowering,
+      CallDataSizeOpLowering,
+      CallDataCopyOpLowering,
+      ReturnDataSizeOpLowering,
+      ReturnDataCopyOpLowering,
+      SLoadOpLowering,
+      SStoreOpLowering,
+      DataOffsetOpLowering,
+      DataSizeOpLowering,
+      CodeSizeOpLowering,
+      CodeCopyOpLowering,
+      ExtCodeSizeOpLowering,
+      MLoadOpLowering,
+      MStoreOpLowering,
+      MCopyOpLowering,
+      MemGuardOpLowering,
+      BuiltinCallOpLowering,
+      BuiltinRetOpLowering,
+      ObjectOpLowering
+      // clang-format on
+      >(pats.getContext());
 }

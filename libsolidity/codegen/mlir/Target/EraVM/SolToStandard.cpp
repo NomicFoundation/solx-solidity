@@ -845,14 +845,33 @@ void eravm::populateStage1Pats(RewritePatternSet &pats, TypeConverter &tyConv) {
 
 void eravm::populateStage2Pats(RewritePatternSet &pats) {
   evm::populateContractPat(pats);
-  pats.add<ObjectOpLowering, BuiltinRetOpLowering, RevertOpLowering,
-           StopOpLowering, MLoadOpLowering, MStoreOpLowering, MCopyOpLowering,
-           DataOffsetOpLowering, DataSizeOpLowering, CodeSizeOpLowering,
-           CodeCopyOpLowering, MemGuardOpLowering, CallValOpLowering,
-           CallDataLoadOpLowering, CallDataSizeOpLowering,
-           ReturnDataSizeOpLowering, CallDataCopyOpLowering, SLoadOpLowering,
-           SStoreOpLowering, Keccak256OpLowering, LogOpLowering,
-           AddressOpLowering, CallerOpLowering>(pats.getContext());
+  pats.add<
+      // clang-format off
+      Keccak256OpLowering,
+      LogOpLowering,
+      AddressOpLowering,
+      CallerOpLowering,
+      RevertOpLowering,
+      StopOpLowering,
+      CallValOpLowering,
+      CallDataLoadOpLowering,
+      CallDataSizeOpLowering,
+      CallDataCopyOpLowering,
+      ReturnDataSizeOpLowering,
+      SLoadOpLowering,
+      SStoreOpLowering,
+      DataOffsetOpLowering,
+      DataSizeOpLowering,
+      CodeSizeOpLowering,
+      CodeCopyOpLowering,
+      MLoadOpLowering,
+      MStoreOpLowering,
+      MCopyOpLowering,
+      MemGuardOpLowering,
+      BuiltinRetOpLowering,
+      ObjectOpLowering
+      // clang-format on
+      >(pats.getContext());
 }
 
 void eravm::populateFuncPats(RewritePatternSet &pats, TypeConverter &tyConv) {
