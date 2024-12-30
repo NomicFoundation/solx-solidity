@@ -22,6 +22,7 @@
 #pragma once
 
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
+#include "libsolutil/Numeric.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
@@ -36,9 +37,12 @@
 #include "llvm/ADT/APInt.h"
 #include "llvm/ADT/ArrayRef.h"
 #include <optional>
+#include <utility>
 
 namespace solidity {
 namespace mlirgen {
+
+mlir::APInt getAPInt(solidity::u256 &val, unsigned numBits);
 
 /// Extension of mlir::OpBuilder with APIs helpful for codegen in solidity.
 class BuilderExt {
@@ -102,6 +106,11 @@ public:
   genI256Const(std::string const &val,
                std::optional<mlir::Location> locArg = std::nullopt) {
     return genConst(val, 256, locArg);
+  }
+
+  mlir::Value
+  genI256Const(u256 &val, std::optional<mlir::Location> locArg = std::nullopt) {
+    return genConst(getAPInt(val, 256), locArg);
   }
 
   mlir::Value

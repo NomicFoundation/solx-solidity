@@ -493,9 +493,13 @@ def Sol_ThisOp : Sol_Op<"this"> {
 }
 
 def Sol_ExtCallOp : Sol_Op<"ext_call", [CallOpInterface]> {
+  // FIXME: s/I256/Sol_Int wherever appropriate.
   let arguments = (ins FlatSymbolRefAttr:$callee, Variadic<AnyType>:$ins,
-                       UI256:$addr, I32Attr:$selector);
-  let results = (outs Variadic<AnyType>);
+                       UI256:$addr, I256:$gas, I256:$val, UnitAttr:$try_call,
+                       UnitAttr:$static_call, UnitAttr:$delegate_call,
+                       I32Attr:$static_ret_size, I32Attr:$selector,
+                       TypeAttrOf<FunctionType>:$calleeType);
+  let results = (outs I1:$status, Variadic<AnyType>);
 
   let extraClassDeclaration = [{
     //===------------------------------------------------------------------===//
@@ -513,8 +517,8 @@ def Sol_ExtCallOp : Sol_Op<"ext_call", [CallOpInterface]> {
   }];
 
   let assemblyFormat = [{
-    $callee `(` $ins `)` `at` $addr attr-dict `:`
-       functional-type($ins, results)
+    $callee `(` $ins `)` `at` $addr `gas` $gas `value` $val attr-dict `:`
+      functional-type($ins, results)
   }];
 }
 

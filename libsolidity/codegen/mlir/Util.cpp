@@ -28,6 +28,10 @@
 using namespace mlir;
 using namespace solidity::mlirgen;
 
+APInt solidity::mlirgen::getAPInt(solidity::u256 &val, unsigned numBits) {
+  return APInt(numBits, val.str(), /*radix=*/10);
+}
+
 Value BuilderExt::genIntCast(unsigned width, bool isSigned, Value val,
                              std::optional<Location> locArg) {
   auto srcType = cast<IntegerType>(val.getType());

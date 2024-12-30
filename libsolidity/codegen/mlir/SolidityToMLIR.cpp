@@ -19,12 +19,15 @@
 // Solidity to MLIR pass
 //
 
+#include "libevmasm/GasMeter.h"
 #include "liblangutil/CharStream.h"
+#include "liblangutil/EVMVersion.h"
 #include "liblangutil/Exceptions.h"
 #include "liblangutil/SourceLocation.h"
 #include "libsolidity/ast/AST.h"
 #include "libsolidity/ast/ASTEnums.h"
 #include "libsolidity/ast/Types.h"
+#include "libsolidity/codegen/ReturnInfo.h"
 #include "libsolidity/codegen/mlir/Interface.h"
 #include "libsolidity/codegen/mlir/Passes.h"
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
@@ -55,8 +58,9 @@ namespace solidity::frontend {
 
 class SolidityToMLIRPass {
 public:
-  explicit SolidityToMLIRPass(mlir::MLIRContext &ctx, CharStream const &stream)
-      : b(&ctx), stream(stream) {}
+  explicit SolidityToMLIRPass(mlir::MLIRContext &ctx, CharStream const &stream,
+                              EVMVersion evmVersion)
+      : b(&ctx), stream(stream), evmVersion(evmVersion) {}
 
   /// Lowers the free functions in the source unit.
   void lowerFreeFuncs(SourceUnit const &);
@@ -76,6 +80,7 @@ public:
 private:
   mlir::OpBuilder b;
   CharStream const &stream;
+  EVMVersion evmVersion;
   mlir::ModuleOp mod;
 
   // TODO: Remove this?
@@ -661,7 +666,8 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const *call) {
   }
 
   // External call
-  case FunctionType::Kind::External: {
+  case FunctionType::Kind::External:
+  case FunctionType::Kind::DelegateCall: {
     // Generate the address.
     auto const *memberAcc =
         dynamic_cast<MemberAccess const *>(&call->expression());
@@ -685,14 +691,46 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const *call) {
     }
 
     // Collect the return types.
-    std::vector<mlir::Type> resTys;
+    // TODO: The builder should prepend the bool type for the status flag here.
+    std::vector<mlir::Type> resTys{b.getI1Type()};
     for (Type const *ty : calleeTy->returnParameterTypes()) {
       resTys.push_back(getType(ty));
     }
 
+    // FIXME: Don't use signless int operands.
+    mlirgen::BuilderExt bExt(b, loc);
+    unsigned staticRetSize =
+        ReturnInfo(EVMVersion(), *calleeTy).estimatedReturnSize;
+
+    // Generate gas.
+    mlir::Value gas;
+    if (evmVersion.canOverchargeGasForCall()) {
+      gas = b.create<mlir::sol::GasOp>(loc);
+    } else {
+      u256 gasNeededByCaller = evmasm::GasCosts::callGas(evmVersion) + 10;
+      size_t encodedHeadSize = 0;
+      for (Type const *ty : calleeTy->returnParameterTypes())
+        encodedHeadSize += ty->decodingType()->calldataHeadSize();
+      if (encodedHeadSize == 0 || !evmVersion.supportsReturndata())
+        gasNeededByCaller += evmasm::GasCosts::callNewAccountGas;
+      gas = b.create<mlir::arith::SubIOp>(loc, b.create<mlir::sol::GasOp>(loc),
+                                          bExt.genI256Const(gasNeededByCaller));
+    }
+
+    // Generate the external call.
     auto callOp = b.create<mlir::sol::ExtCallOp>(
-        loc, resTys, getMangledName(*callee), args, addr, selector);
-    return resTys.empty() ? mlir::Value{} : callOp.getResult(0);
+        loc, resTys, getMangledName(*callee), args, addr, gas,
+        /*value=*/bExt.genI256Const(0), /*tryCall=*/call->annotation().tryCall,
+        /*staticCall=*/calleeTy->stateMutability() <= StateMutability::View,
+        /*delegateCall=*/calleeTy->kind() == FunctionType::Kind::DelegateCall,
+        staticRetSize, selector,
+        mlir::cast<mlir::FunctionType>(getType(calleeTy)));
+    assert(callOp.getNumResults() <= 2 && "NYI");
+    // FIXME: We need to make sure that the caller ast lowering can get the
+    // status result. We should really return a tuple here! For that, we need to
+    // start supporting multi-value return throughout the codegen.
+    return calleeTy->returnParameterTypes().empty() ? callOp.getResult(0)
+                                                    : callOp.getResult(1);
   }
 
   // Event invocation
@@ -1218,7 +1256,7 @@ bool CompilerStack::runMlirPipeline() {
   ctx.getOrLoadDialect<mlir::scf::SCFDialect>();
 
   for (Source const *src : m_sourceOrder) {
-    SolidityToMLIRPass gen(ctx, *src->charStream);
+    SolidityToMLIRPass gen(ctx, *src->charStream, m_evmVersion);
 
     // Lower requested contracts.
     bool hasContract = false;

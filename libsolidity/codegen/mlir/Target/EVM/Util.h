@@ -112,6 +112,10 @@ public:
   /// Generates the free pointer.
   mlir::Value genFreePtr(std::optional<mlir::Location> locArg = std::nullopt);
 
+  /// Generates the free pointer update code.
+  void genFreePtrUpd(mlir::Value freePtr, mlir::Value size,
+                     std::optional<mlir::Location> locArg = std::nullopt);
+
   /// Generates the memory allocation code.
   mlir::Value genMemAlloc(mlir::Value size,
                           std::optional<mlir::Location> locArg = std::nullopt);
@@ -184,6 +188,10 @@ public:
                         std::optional<mlir::Location> locArg = std::nullopt);
   void genRevertWithMsg(mlir::Value cond, std::string const &msg,
                         std::optional<mlir::Location> locArg = std::nullopt);
+
+  /// Generates a forwarding revert.
+  void genForwardingRevert(mlir::Value cond,
+                           std::optional<mlir::Location> locArg = std::nullopt);
 
   /// Generates a revert without message.
   void genRevert(mlir::Value cond,

@@ -25,7 +25,9 @@
 #include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/BuiltinAttributes.h"
+#include "mlir/IR/FunctionInterfaces.h"
 #include "mlir/IR/PatternMatch.h"
+#include "mlir/IR/SymbolTable.h"
 #include "mlir/IR/Types.h"
 #include "mlir/Transforms/DialectConversion.h"
 
@@ -785,6 +787,135 @@ struct ThisOpLowering : public OpRewritePattern<sol::ThisOp> {
   }
 };
 
+struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
+  using OpConversionPattern<sol::ExtCallOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::ExtCallOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    assert(!op.getDelegateCall() && "NYI");
+
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+    evm::Builder evmB(r, loc);
+    auto mod = op->getParentOfType<ModuleOp>();
+
+    if (!sol::evmCanOverchargeGasForCall(mod))
+      llvm_unreachable("NYI");
+
+    // Check if we need to generate the extcodesize check.
+    unsigned totHeadSize = 0;
+    for (auto resTy : op.getCalleeType().getResults()) {
+      totHeadSize += evm::getCallDataHeadSize(resTy);
+    }
+    bool extCodeSizeCheck =
+        totHeadSize == 0 || !sol::evmSupportsReturnData(mod) ||
+        /* TODO: revertStrings() >= RevertStrings::Debug */ false;
+
+    if (extCodeSizeCheck) {
+      // Generate the revert code.
+      auto extCodeSize = r.create<sol::ExtCodeSizeOp>(loc, adaptor.getAddr());
+      auto isExtCodeSizeZero = r.create<arith::CmpIOp>(
+          loc, arith::CmpIPredicate::eq, extCodeSize, bExt.genI256Const(0));
+      if (/*TODO: m_revertStrings < RevertStrings::Debug*/ false)
+        evmB.genRevertWithMsg(isExtCodeSizeZero,
+                              "Target contract does not contain code");
+      else
+        evmB.genRevert(isExtCodeSizeZero);
+    }
+
+    // Generate the store of the selector.
+    Value selectorAddr = evmB.genFreePtr();
+    auto shiftedSelector = APInt(/*numBits=*/256, op.getSelector()) << 224;
+    r.create<sol::MStoreOp>(loc, selectorAddr,
+                            bExt.genI256Const(shiftedSelector));
+
+    // Generate the abi encoding code.
+    Value tupleStart =
+        r.create<arith::AddIOp>(loc, selectorAddr, bExt.genI256Const(4));
+    Value tupleEnd = evmB.genABITupleEncoding(op.getIns().getType(),
+                                              adaptor.getIns(), tupleStart);
+
+    // Generate the call.
+    Value inpSize = r.create<arith::SubIOp>(loc, tupleEnd, selectorAddr);
+    Value outSize = bExt.genI256Const(op.getStaticRetSize());
+    mlir::Value status;
+    if (op.getStaticCall())
+      status =
+          r.create<sol::StaticCallOp>(loc, adaptor.getGas(), adaptor.getAddr(),
+                                      /*inpOffset=*/selectorAddr, inpSize,
+                                      /*outOffset=*/selectorAddr, outSize);
+    else
+      status = r.create<sol::BuiltinCallOp>(
+          loc, adaptor.getGas(), adaptor.getAddr(), adaptor.getVal(),
+          /*inpOffset=*/selectorAddr, inpSize,
+          /*outOffset=*/selectorAddr, outSize);
+
+    // Generate forwarding revert if not try-call.
+    if (!op.getTryCall()) {
+      auto statusIsZero = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq,
+                                                  status, bExt.genI256Const(0));
+      evmB.genForwardingRevert(statusIsZero);
+    }
+
+    // Generate the success status check and set the insertion point to its true
+    // block.
+    auto statusIsNotZero = r.create<arith::CmpIOp>(
+        loc, arith::CmpIPredicate::ne, status, bExt.genI256Const(0));
+    auto ifOp = r.create<scf::IfOp>(loc, statusIsNotZero);
+    r.setInsertionPointToStart(&ifOp.getThenRegion().front());
+
+    bool isRetSizeDynamic = false;
+    for (Type ty : op.getCalleeType().getResults()) {
+      if (sol::isDynamicallySized(ty)) {
+        isRetSizeDynamic = true;
+        break;
+      }
+    }
+
+    // The allocation `selectorAddr` will be reused for the return data.
+
+    // Copy the returndata and decode the results.
+    std::vector<Value> decodedResults;
+    assert(sol::evmSupportsReturnData(mod) && "NYI");
+    Value retDataSize = r.create<sol::ReturnDataSizeOp>(loc);
+    if (isRetSizeDynamic) {
+      r.create<sol::ReturnDataCopyOp>(loc, selectorAddr,
+                                      /*src=*/bExt.genI256Const(0),
+                                      retDataSize);
+      evmB.genFreePtrUpd(selectorAddr, retDataSize);
+      Value tupleEnd = r.create<arith::AddIOp>(loc, selectorAddr, retDataSize);
+      evmB.genABITupleDecoding(op.getCalleeType().getResults(), selectorAddr,
+                               tupleEnd, decodedResults, /*fromMem=*/true);
+    } else {
+      Value staticRetSize = bExt.genI256Const(op.getStaticRetSize());
+      // See https://github.com/ethereum/solidity/pull/12684
+      Value staticRetSizeGreater = r.create<arith::CmpIOp>(
+          loc, arith::CmpIPredicate::ugt, staticRetSize, retDataSize);
+      ifOp = r.create<scf::IfOp>(
+          loc, staticRetSizeGreater,
+          /*thenBuilder=*/
+          [&](OpBuilder &b, Location loc) {
+            evmB.genFreePtrUpd(selectorAddr, retDataSize);
+            // TODO: abi decode.
+            r.create<scf::YieldOp>(loc);
+          },
+          /*elseBuilder=*/
+          [&](OpBuilder &b, Location loc) {
+            evmB.genFreePtrUpd(selectorAddr, staticRetSize);
+            // TODO: abi decode.
+            r.create<scf::YieldOp>(loc);
+          });
+    }
+
+    assert(decodedResults.size() <= 1 && "NYI");
+    std::vector<Value> newResults{status};
+    newResults.insert(newResults.end(), decodedResults.begin(),
+                      decodedResults.end());
+    r.replaceOp(op, newResults);
+    return success();
+  }
+};
+
 struct RequireOpLowering : public OpRewritePattern<sol::RequireOp> {
   using OpRewritePattern<sol::RequireOp>::OpRewritePattern;
 
@@ -1482,6 +1613,10 @@ void evm::populateThisPat(RewritePatternSet &pats) {
   pats.add<ThisOpLowering>(pats.getContext());
 }
 
+void evm::populateExtCallPat(RewritePatternSet &pats, TypeConverter &tyConv) {
+  pats.add<ExtCallOpLowering>(tyConv, pats.getContext());
+}
+
 void evm::populateEmitPat(RewritePatternSet &pats, TypeConverter &tyConv) {
   pats.add<EmitOpLowering>(tyConv, pats.getContext());
 }
@@ -1499,6 +1634,7 @@ void evm::populateStage1Pats(RewritePatternSet &pats, TypeConverter &tyConv) {
   populateCheckedArithPats(pats, tyConv);
   populateMemPats(pats, tyConv);
   populateThisPat(pats);
+  populateExtCallPat(pats, tyConv);
   populateEmitPat(pats, tyConv);
   populateRequirePat(pats);
   populateControlFlowPats(pats);

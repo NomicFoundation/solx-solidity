@@ -97,14 +97,15 @@ Value evm::Builder::genFreePtr(std::optional<Location> locArg) {
   return b.create<sol::MLoadOp>(loc, bExt.genI256Const(64));
 }
 
-Value evm::Builder::genMemAlloc(Value size, std::optional<Location> locArg) {
+void evm::Builder::genFreePtrUpd(Value freePtr, Value size,
+                                 std::optional<Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;
   solidity::mlirgen::BuilderExt bExt(b, loc);
 
-  Value freePtr = genFreePtr(locArg);
-
   // FIXME: Shouldn't we check for overflow in the freePtr + size operation
   // and generate PanicCode::ResourceError?
+  //
+  // FIXME: Do we need round up the size to a multiple of 32 here?
   Value newFreePtr = b.create<arith::AddIOp>(loc, freePtr, size);
 
   // Generate the PanicCode::ResourceError check.
@@ -124,7 +125,14 @@ Value evm::Builder::genMemAlloc(Value size, std::optional<Location> locArg) {
   genPanic(solidity::util::PanicCode::ResourceError, panicCond);
 
   b.create<sol::MStoreOp>(loc, bExt.genI256Const(64), newFreePtr);
+}
 
+Value evm::Builder::genMemAlloc(Value size, std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+  solidity::mlirgen::BuilderExt bExt(b, loc);
+
+  Value freePtr = genFreePtr(locArg);
+  genFreePtrUpd(freePtr, size, loc);
   return freePtr;
 }
 
@@ -446,6 +454,23 @@ void evm::Builder::genPanic(solidity::util::PanicCode code, Value cond,
                                 bExt.genI256Const(24));
         b.create<scf::YieldOp>(loc);
       });
+}
+
+void evm::Builder::genForwardingRevert(Value cond,
+                                       std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+  solidity::mlirgen::BuilderExt bExt(b, loc);
+
+  auto ifOp = b.create<scf::IfOp>(loc, cond);
+
+  OpBuilder::InsertionGuard insertGuard(b);
+  b.setInsertionPointToStart(&ifOp.getThenRegion().front());
+
+  Value freePtr = genFreePtr(loc);
+  Value retDataSize = b.create<sol::ReturnDataSizeOp>(loc);
+  b.create<sol::ReturnDataCopyOp>(loc, /*dst=*/freePtr,
+                                  /*src=*/bExt.genI256Const(0), retDataSize);
+  b.create<sol::RevertOp>(loc, freePtr, retDataSize);
 }
 
 void evm::Builder::genRevert(Value cond, std::optional<Location> locArg) {
