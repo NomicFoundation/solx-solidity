@@ -27,7 +27,6 @@
 #include "libsolidity/ast/AST.h"
 #include "libsolidity/ast/ASTEnums.h"
 #include "libsolidity/ast/Types.h"
-#include "libsolidity/codegen/ReturnInfo.h"
 #include "libsolidity/codegen/mlir/Interface.h"
 #include "libsolidity/codegen/mlir/Passes.h"
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
@@ -703,8 +702,6 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const *call) {
 
     // FIXME: Don't use signless int operands.
     mlirgen::BuilderExt bExt(b, loc);
-    unsigned staticRetSize =
-        ReturnInfo(EVMVersion(), *calleeTy).estimatedReturnSize;
 
     // Generate gas.
     mlir::Value gas;
@@ -727,8 +724,8 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const *call) {
         /*value=*/bExt.genI256Const(0), /*tryCall=*/call->annotation().tryCall,
         /*staticCall=*/calleeTy->stateMutability() <= StateMutability::View,
         /*delegateCall=*/calleeTy->kind() == FunctionType::Kind::DelegateCall,
-        staticRetSize, selector,
-        mlir::cast<mlir::FunctionType>(getType(calleeTy)));
+        selector,
+        /*calleeType=*/mlir::cast<mlir::FunctionType>(getType(calleeTy)));
     assert(callOp.getNumResults() <= 2 && "NYI");
     // FIXME: We need to make sure that the caller ast lowering can get the
     // status result. We should really return a tuple here! For that, we need to

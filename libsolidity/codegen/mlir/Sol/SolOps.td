@@ -497,8 +497,8 @@ def Sol_ExtCallOp : Sol_Op<"ext_call", [CallOpInterface]> {
   let arguments = (ins FlatSymbolRefAttr:$callee, Variadic<AnyType>:$ins,
                        UI256:$addr, I256:$gas, I256:$val, UnitAttr:$try_call,
                        UnitAttr:$static_call, UnitAttr:$delegate_call,
-                       I32Attr:$static_ret_size, I32Attr:$selector,
-                       TypeAttrOf<FunctionType>:$calleeType);
+                       I32Attr:$selector,
+                       TypeAttrOf<FunctionType>:$callee_type);
   let results = (outs I1:$status, Variadic<AnyType>);
 
   let extraClassDeclaration = [{

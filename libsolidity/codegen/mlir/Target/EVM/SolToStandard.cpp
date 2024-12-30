@@ -802,6 +802,12 @@ struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
     if (!sol::evmCanOverchargeGasForCall(mod))
       llvm_unreachable("NYI");
 
+    // TODO:
+    // - The return arg analysis is done for evm's the supports return data (See
+    // solidity::frontend::ReturnInfo).
+    // - The generated code for the return has returndatacopy and returnsize.
+    assert(sol::evmSupportsReturnData(mod) && "NYI");
+
     // Check if we need to generate the extcodesize check.
     unsigned totHeadSize = 0;
     for (auto resTy : op.getCalleeType().getResults()) {
@@ -835,20 +841,33 @@ struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
     Value tupleEnd = evmB.genABITupleEncoding(op.getIns().getType(),
                                               adaptor.getIns(), tupleStart);
 
+    // Calculate the return size statically and/or check if it's dynamic. This
+    // is copied from solidity::frontend::ReturnInfo.
+    unsigned staticRetSizeVal = 0;
+    bool isRetSizeDynamic = false;
+    for (Type ty : op.getCalleeType().getResults()) {
+      if (sol::isDynamicallySized(ty)) {
+        isRetSizeDynamic = true;
+        staticRetSizeVal = 0;
+        break;
+      }
+      staticRetSizeVal += evm::getCallDataHeadSize(ty);
+    }
+
     // Generate the call.
     Value inpSize = r.create<arith::SubIOp>(loc, tupleEnd, selectorAddr);
-    Value outSize = bExt.genI256Const(op.getStaticRetSize());
+    Value staticRetSize = bExt.genI256Const(staticRetSizeVal);
     mlir::Value status;
     if (op.getStaticCall())
-      status =
-          r.create<sol::StaticCallOp>(loc, adaptor.getGas(), adaptor.getAddr(),
-                                      /*inpOffset=*/selectorAddr, inpSize,
-                                      /*outOffset=*/selectorAddr, outSize);
+      status = r.create<sol::StaticCallOp>(
+          loc, adaptor.getGas(), adaptor.getAddr(),
+          /*inpOffset=*/selectorAddr, inpSize,
+          /*outOffset=*/selectorAddr, /*outSize=*/staticRetSize);
     else
       status = r.create<sol::BuiltinCallOp>(
           loc, adaptor.getGas(), adaptor.getAddr(), adaptor.getVal(),
           /*inpOffset=*/selectorAddr, inpSize,
-          /*outOffset=*/selectorAddr, outSize);
+          /*outOffset=*/selectorAddr, /*outSize=*/staticRetSize);
 
     // Generate forwarding revert if not try-call.
     if (!op.getTryCall()) {
@@ -864,19 +883,10 @@ struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
     auto ifOp = r.create<scf::IfOp>(loc, statusIsNotZero);
     r.setInsertionPointToStart(&ifOp.getThenRegion().front());
 
-    bool isRetSizeDynamic = false;
-    for (Type ty : op.getCalleeType().getResults()) {
-      if (sol::isDynamicallySized(ty)) {
-        isRetSizeDynamic = true;
-        break;
-      }
-    }
-
     // The allocation `selectorAddr` will be reused for the return data.
 
     // Copy the returndata and decode the results.
     std::vector<Value> decodedResults;
-    assert(sol::evmSupportsReturnData(mod) && "NYI");
     Value retDataSize = r.create<sol::ReturnDataSizeOp>(loc);
     if (isRetSizeDynamic) {
       r.create<sol::ReturnDataCopyOp>(loc, selectorAddr,
@@ -887,7 +897,6 @@ struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
       evmB.genABITupleDecoding(op.getCalleeType().getResults(), selectorAddr,
                                tupleEnd, decodedResults, /*fromMem=*/true);
     } else {
-      Value staticRetSize = bExt.genI256Const(op.getStaticRetSize());
       // See https://github.com/ethereum/solidity/pull/12684
       Value staticRetSizeGreater = r.create<arith::CmpIOp>(
           loc, arith::CmpIPredicate::ugt, staticRetSize, retDataSize);

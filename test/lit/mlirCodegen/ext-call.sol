@@ -18,7 +18,7 @@ contract C {
 // CHECK-NEXT:       %2 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc5)
 // CHECK-NEXT:       %3 = sol.gas loc(#loc4)
 // CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc4)
-// CHECK-NEXT:       %status = sol.ext_call @f_12(%2) at %1 gas %3 value %c0_i256 {calleeType = (ui256) -> (), selector = -1277270901 : i32, static_ret_size = 0 : i32} : (ui256) -> i1 loc(#loc4)
+// CHECK-NEXT:       %status = sol.ext_call @f_12(%2) at %1 gas %3 value %c0_i256 {callee_type = (ui256) -> (), selector = -1277270901 : i32} : (ui256) -> i1 loc(#loc4)
 // CHECK-NEXT:       sol.return loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
 // CHECK-NEXT:   } {interface_fns = [{selector = -1277270901 : i32, sym = @f_12, type = (ui256) -> ()}], kind = #Contract} loc(#loc1)
