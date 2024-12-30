@@ -21,6 +21,7 @@
 
 #pragma once
 
+#include "liblangutil/EVMVersion.h"
 #include <string>
 #include <vector>
 
@@ -82,6 +83,7 @@ extern void registerMLIRCLOpts();
 extern bool parseMLIROpts(std::vector<const char *> &argv);
 
 extern bool runYulToMLIRPass(yul::Object const &, langutil::CharStream const &,
-                             yul::Dialect const &, JobSpec const &);
+                             yul::Dialect const &, JobSpec const &,
+                             langutil::EVMVersion);
 
 } // namespace solidity::mlirgen

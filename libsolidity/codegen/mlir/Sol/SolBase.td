@@ -157,6 +157,27 @@ def Sol_ContractKind : I32EnumAttr<"ContractKind",
 def Sol_ContractKindAttr : EnumAttr<Sol_Dialect, Sol_ContractKind,
                                     "ContractKind">;
 
+def Sol_EvmVersion : I32EnumAttr<"EvmVersion",
+                                 "Represents the evm version",
+                                   [I32EnumAttrCase<"Homestead", 0>,
+                                    I32EnumAttrCase<"TangerineWhistle", 1>,
+                                    I32EnumAttrCase<"SpuriousDragon", 2>,
+                                    I32EnumAttrCase<"Byzantium", 3>,
+                                    I32EnumAttrCase<"Constantinople", 4>,
+                                    I32EnumAttrCase<"Petersburg", 5>,
+                                    I32EnumAttrCase<"Istanbul", 6>,
+                                    I32EnumAttrCase<"Berlin", 7>,
+                                    I32EnumAttrCase<"London", 8>,
+                                    I32EnumAttrCase<"Paris", 9>,
+                                    I32EnumAttrCase<"Shanghai", 10>,
+                                    I32EnumAttrCase<"Cancun", 11>,
+                                    I32EnumAttrCase<"Prague", 12>]> {
+  let genSpecializedAttr = 0;
+  let cppNamespace = "::mlir::sol";
+}
+def Sol_EvmVersionAttr : EnumAttr<Sol_Dialect, Sol_EvmVersion,
+                                    "EvmVersion">;
+
 //===----------------------------------------------------------------------===//
 // Op classes
 //===----------------------------------------------------------------------===//

@@ -1260,7 +1260,11 @@ void CommandLineInterface::assembleYul(yul::YulStack::Language _language, yul::Y
 				solUnimplementedAssert(false, "Invalid yul dialect");
 			}
 			if (!mlirgen::runYulToMLIRPass(
-					*stack.parserResult(), stack.charStream(src.first), *dialect, m_options.mlirGenJob))
+					*stack.parserResult(),
+					stack.charStream(src.first),
+					*dialect,
+					m_options.mlirGenJob,
+					m_options.output.evmVersion))
 				solAssert(false, "runYulToMLIRPass failed");
 			else
 				return;

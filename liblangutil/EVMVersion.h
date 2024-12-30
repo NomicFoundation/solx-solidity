@@ -130,6 +130,8 @@ public:
 	/// or whether we can just forward easily all remaining gas (true).
 	bool canOverchargeGasForCall() const { return *this >= tangerineWhistle(); }
 
+	uint32_t getVersionAsInt() { return static_cast<uint32_t>(m_version); }
+
 private:
 	enum class Version {
 		Homestead,

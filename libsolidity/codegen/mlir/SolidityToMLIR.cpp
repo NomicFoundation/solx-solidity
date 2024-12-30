@@ -71,6 +71,10 @@ public:
   /// Initializes (or resets) the module and the insertion-point.
   void init() {
     mod = mlir::ModuleOp::create(b.getUnknownLoc());
+    mod->setAttr("sol.evm_version",
+                 mlir::sol::EvmVersionAttr::get(
+                     b.getContext(), *mlir::sol::symbolizeEvmVersion(
+                                         evmVersion.getVersionAsInt())));
     b.setInsertionPointToEnd(mod.getBody());
   }
 

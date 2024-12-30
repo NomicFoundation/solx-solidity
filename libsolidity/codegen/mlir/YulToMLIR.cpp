@@ -20,6 +20,7 @@
 //
 
 #include "liblangutil/CharStream.h"
+#include "liblangutil/EVMVersion.h"
 #include "liblangutil/Exceptions.h"
 #include "libsolidity/codegen/mlir/Interface.h"
 #include "libsolidity/codegen/mlir/Passes.h"
@@ -61,14 +62,20 @@ class YulToMLIRPass : public ASTWalker {
   mlir::sol::ObjectOp currObj;
   CharStream const &stream;
   Dialect const &yulDialect;
+  EVMVersion evmVersion;
 
 public:
   mlir::ModuleOp getModule() { return mod; }
 
   explicit YulToMLIRPass(mlir::MLIRContext &ctx, CharStream const &stream,
-                         Dialect const &yulDialect)
-      : b(&ctx), stream(stream), yulDialect(yulDialect) {
+                         Dialect const &yulDialect, EVMVersion evmVersion)
+      : b(&ctx), stream(stream), yulDialect(yulDialect),
+        evmVersion(evmVersion) {
     mod = mlir::ModuleOp::create(b.getUnknownLoc());
+    mod->setAttr("sol.evm_version",
+                 mlir::sol::EvmVersionAttr::get(
+                     b.getContext(), *mlir::sol::symbolizeEvmVersion(
+                                         evmVersion.getVersionAsInt())));
     b.setInsertionPointToEnd(mod.getBody());
   }
 
@@ -710,13 +717,15 @@ void YulToMLIRPass::lowerTopLevelObj(Object const &obj) {
 bool solidity::mlirgen::runYulToMLIRPass(Object const &obj,
                                          CharStream const &stream,
                                          Dialect const &yulDialect,
-                                         JobSpec const &job) {
+                                         JobSpec const &job,
+                                         EVMVersion evmVersion) {
   mlir::MLIRContext ctx;
   ctx.getOrLoadDialect<mlir::sol::SolDialect>();
   ctx.getOrLoadDialect<mlir::arith::ArithDialect>();
   ctx.getOrLoadDialect<mlir::scf::SCFDialect>();
   ctx.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
-  solidity::mlirgen::YulToMLIRPass yulToMLIR(ctx, stream, yulDialect);
+  solidity::mlirgen::YulToMLIRPass yulToMLIR(ctx, stream, yulDialect,
+                                             evmVersion);
   yulToMLIR.lowerTopLevelObj(obj);
 
   mlir::ModuleOp mod = yulToMLIR.getModule();

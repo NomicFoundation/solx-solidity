@@ -49,6 +49,10 @@ struct SolOpAsmDialectInterface : public OpAsmDialectInterface {
       os << stringifyFunctionKind(fnKindAttr.getValue());
       return AliasResult::OverridableAlias;
     }
+    if (auto evmVersionAttr = dyn_cast<EvmVersionAttr>(attr)) {
+      os << stringifyEvmVersion(evmVersionAttr.getValue());
+      return AliasResult::OverridableAlias;
+    }
     return AliasResult::NoAlias;
   }
 };
@@ -74,11 +78,20 @@ void SolDialect::initialize() {
   addInterfaces<SolOpAsmDialectInterface>();
 }
 
-// TODO: Implement these!
-// We should track the evm version in the module op.
-bool mlir::sol::evmhasStaticCall(ModuleOp mod) { return true; }
-bool mlir::sol::evmSupportsReturnData(ModuleOp mod) { return true; }
-bool mlir::sol::evmCanOverchargeGasForCall(ModuleOp mod) { return true; }
+bool mlir::sol::evmhasStaticCall(ModuleOp mod) {
+  auto evmVersionAttr = cast<EvmVersionAttr>(mod->getAttr("sol.evm_version"));
+  return evmVersionAttr.getValue() >= EvmVersion::Byzantium;
+}
+
+bool mlir::sol::evmSupportsReturnData(ModuleOp mod) {
+  auto evmVersionAttr = cast<EvmVersionAttr>(mod->getAttr("sol.evm_version"));
+  return evmVersionAttr.getValue() >= EvmVersion::Byzantium;
+}
+
+bool mlir::sol::evmCanOverchargeGasForCall(ModuleOp mod) {
+  auto evmVersionAttr = cast<EvmVersionAttr>(mod->getAttr("sol.evm_version"));
+  return evmVersionAttr.getValue() >= EvmVersion::TangerineWhistle;
+}
 
 Type mlir::sol::getEltType(Type ty, Index structTyIdx) {
   if (auto ptrTy = dyn_cast<sol::PointerType>(ty)) {
