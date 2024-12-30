@@ -123,12 +123,37 @@ struct ConvertSolToStandard
                             cf::ControlFlowDialect, arith::ArithDialect,
                             LLVM::LLVMDialect>();
     convTgt.addIllegalOp<
-        sol::ConstantOp, sol::ExtOp, sol::TruncOp, sol::AddOp, sol::SubOp,
-        sol::MulOp, sol::CmpOp, sol::CAddOp, sol::CSubOp, sol::AllocaOp,
-        sol::MallocOp, sol::AddrOfOp, sol::GepOp, sol::MapOp, sol::CopyOp,
-        sol::DataLocCastOp, sol::LoadOp, sol::StoreOp, sol::ThisOp,
-        sol::ExtCallOp, sol::EmitOp, sol::RequireOp, sol::ConvCastOp, sol::IfOp,
-        sol::SwitchOp, sol::WhileOp, sol::DoWhileOp, sol::ForOp>();
+        // clang-format off
+        sol::ConstantOp,
+        sol::ExtOp,
+        sol::TruncOp,
+        sol::AddOp,
+        sol::SubOp,
+        sol::MulOp,
+        sol::CmpOp,
+        sol::CAddOp,
+        sol::CSubOp,
+        sol::AllocaOp,
+        sol::MallocOp,
+        sol::AddrOfOp,
+        sol::GepOp,
+        sol::MapOp,
+        sol::CopyOp,
+        sol::DataLocCastOp,
+        sol::LoadOp,
+        sol::StoreOp,
+        sol::ThisOp,
+        sol::ExtCallOp,
+        sol::EmitOp,
+        sol::RequireOp,
+        sol::ConvCastOp,
+        sol::IfOp,
+        sol::SwitchOp,
+        sol::WhileOp,
+        sol::DoWhileOp,
+        sol::ForOp
+        // clang-format on
+        >();
     convTgt.addDynamicallyLegalOp<sol::FuncOp>([&](sol::FuncOp op) {
       return tyConv.isSignatureLegal(op.getFunctionType());
     });
