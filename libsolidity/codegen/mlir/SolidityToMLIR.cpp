@@ -144,9 +144,11 @@ private:
   void genZeroedVal(mlir::sol::AllocaOp addr);
 
   /// Generates a integeral constant op.
-  mlir::Value genConst(uint64_t val, mlir::Location loc) {
+  mlir::Value genUnsignedConst(uint64_t val, unsigned numBits,
+                               mlir::Location loc) {
     return b.create<mlir::sol::ConstantOp>(
-        loc, b.getIntegerAttr(b.getIntegerType(64, /*isSigned=*/false), val));
+        loc,
+        b.getIntegerAttr(b.getIntegerType(numBits, /*isSigned=*/false), val));
   }
 
   /// Generates type cast expression.
@@ -594,7 +596,8 @@ mlir::Value SolidityToMLIRPass::genLValExpr(MemberAccess const *memberAcc) {
 
   case Type::Category::Struct: {
     const auto *structTy = dynamic_cast<StructType const *>(memberAccTy);
-    auto memberIdx = genConst(structTy->index(memberAcc->memberName()), loc);
+    auto memberIdx = genUnsignedConst(structTy->index(memberAcc->memberName()),
+                                      /*numBits=*/64, loc);
     return b.create<mlir::sol::GepOp>(
         loc, genRValExpr(&memberAcc->expression()), memberIdx);
     break;
@@ -717,11 +720,14 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const *call) {
       gas = b.create<mlir::arith::SubIOp>(loc, b.create<mlir::sol::GasOp>(loc),
                                           bExt.genI256Const(gasNeededByCaller));
     }
+    gas = b.create<mlir::sol::ConvCastOp>(
+        loc, b.getIntegerType(256, /*isSigned=*/false), gas);
 
     // Generate the external call.
     auto callOp = b.create<mlir::sol::ExtCallOp>(
         loc, resTys, getMangledName(*callee), args, addr, gas,
-        /*value=*/bExt.genI256Const(0), /*tryCall=*/call->annotation().tryCall,
+        /*value=*/genUnsignedConst(0, /*numBits=*/256, loc),
+        /*tryCall=*/call->annotation().tryCall,
         /*staticCall=*/calleeTy->stateMutability() <= StateMutability::View,
         /*delegateCall=*/calleeTy->kind() == FunctionType::Kind::DelegateCall,
         selector,
