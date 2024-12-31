@@ -235,19 +235,20 @@ void EmitOp::print(OpAsmPrinter &p) {
 // IfOp
 //===----------------------------------------------------------------------===//
 
-void IfOp::build(OpBuilder &b, OperationState &res, Value cond, bool hasElse) {
-  res.addOperands(cond);
+void IfOp::build(OpBuilder &builder, OperationState &state, Value cond,
+                 bool hasElse) {
+  state.addOperands(cond);
 
-  OpBuilder::InsertionGuard guard(b);
-  Region *thenRegion = res.addRegion();
-  b.createBlock(thenRegion);
-  b.create<YieldOp>(res.location);
+  OpBuilder::InsertionGuard guard(builder);
+  Region *thenRegion = state.addRegion();
+  builder.createBlock(thenRegion);
+  builder.create<YieldOp>(state.location);
 
-  Region *elseRegion = res.addRegion();
+  Region *elseRegion = state.addRegion();
   if (!hasElse)
     return;
-  b.createBlock(elseRegion);
-  b.create<YieldOp>(res.location);
+  builder.createBlock(elseRegion);
+  builder.create<YieldOp>(state.location);
 }
 
 /// Given the region at `index`, or the parent operation if `index` is None,
@@ -285,7 +286,6 @@ void IfOp::getSuccessorRegions(std::optional<unsigned> index,
   // If the else region does not exist, it is not a viable successor.
   if (elseRegion)
     regions.push_back(RegionSuccessor(elseRegion));
-  return;
 }
 
 //===----------------------------------------------------------------------===//
