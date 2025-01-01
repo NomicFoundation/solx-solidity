@@ -799,8 +799,7 @@ struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
     evm::Builder evmB(r, loc);
     auto mod = op->getParentOfType<ModuleOp>();
 
-    if (!sol::evmCanOverchargeGasForCall(mod))
-      llvm_unreachable("NYI");
+    assert(sol::evmCanOverchargeGasForCall(mod) && "NYI");
 
     // TODO:
     // - The return arg analysis is done for evm's the supports return data (See
@@ -905,13 +904,21 @@ struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
           /*thenBuilder=*/
           [&](OpBuilder &b, Location loc) {
             evmB.genFreePtrUpd(selectorAddr, retDataSize);
-            // TODO: abi decode.
+            Value tupleEnd =
+                r.create<arith::AddIOp>(loc, selectorAddr, retDataSize);
+            evmB.genABITupleDecoding(op.getCalleeType().getResults(),
+                                     selectorAddr, tupleEnd, decodedResults,
+                                     /*fromMem=*/true);
             r.create<scf::YieldOp>(loc);
           },
           /*elseBuilder=*/
           [&](OpBuilder &b, Location loc) {
             evmB.genFreePtrUpd(selectorAddr, staticRetSize);
-            // TODO: abi decode.
+            Value tupleEnd =
+                r.create<arith::AddIOp>(loc, selectorAddr, staticRetSize);
+            evmB.genABITupleDecoding(op.getCalleeType().getResults(),
+                                     selectorAddr, tupleEnd, decodedResults,
+                                     /*fromMem=*/true);
             r.create<scf::YieldOp>(loc);
           });
     }
