@@ -235,22 +235,6 @@ void EmitOp::print(OpAsmPrinter &p) {
 // IfOp
 //===----------------------------------------------------------------------===//
 
-void IfOp::build(OpBuilder &builder, OperationState &state, Value cond,
-                 bool hasElse) {
-  state.addOperands(cond);
-
-  OpBuilder::InsertionGuard guard(builder);
-  Region *thenRegion = state.addRegion();
-  builder.createBlock(thenRegion);
-  builder.create<YieldOp>(state.location);
-
-  Region *elseRegion = state.addRegion();
-  if (!hasElse)
-    return;
-  builder.createBlock(elseRegion);
-  builder.create<YieldOp>(state.location);
-}
-
 /// Given the region at `index`, or the parent operation if `index` is None,
 /// return the successor regions. These are the regions that may be selected
 /// during the flow of control. `operands` is a set of optional attributes that

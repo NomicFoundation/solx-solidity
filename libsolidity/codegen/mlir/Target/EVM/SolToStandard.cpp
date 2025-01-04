@@ -875,18 +875,37 @@ struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
       evmB.genForwardingRevert(statusIsZero);
     }
 
-    // Generate the success status check and set the insertion point to its true
-    // block.
+    // Get the types of the results from the decoding, which should be the same
+    // as the corsp legal types.
+    SmallVector<Type> decodedResultTys;
+    if (failed(getTypeConverter()->convertTypes(op.getCalleeType().getResults(),
+                                                decodedResultTys)))
+      return failure();
+
+    // Generate the if-else op of the status that yields the decoded results.
     auto statusIsNotZero = r.create<arith::CmpIOp>(
         loc, arith::CmpIPredicate::ne, status, bExt.genI256Const(0));
-    auto ifOp = r.create<scf::IfOp>(loc, statusIsNotZero);
-    r.setInsertionPointToStart(&ifOp.getThenRegion().front());
+    auto statusIfOp = r.create<scf::IfOp>(loc, /*resultTys=*/decodedResultTys,
+                                          /*cond=*/statusIsNotZero);
+
+    // Generate the else block (failure) which yields undefs. The undefs will
+    // not be used during execution as the either control flow will skip the
+    // sol.try's success block or hit the previous forwarding revert.
+    r.setInsertionPointToStart(&statusIfOp.getElseRegion().emplaceBlock());
+    SmallVector<Value, 2> undefYields;
+    for (Type ty : decodedResultTys) {
+      undefYields.push_back(r.create<LLVM::UndefOp>(loc, ty));
+    }
+    r.create<scf::YieldOp>(loc, undefYields);
+
+    // Generte the then block (success).
+    r.setInsertionPointToStart(&statusIfOp.getThenRegion().emplaceBlock());
 
     // The allocation `selectorAddr` will be reused for the return data.
 
-    // Copy the returndata and decode the results.
-    std::vector<Value> decodedResults;
+    // Generate the decoding of the results.
     Value retDataSize = r.create<sol::ReturnDataSizeOp>(loc);
+    std::vector<Value> decodedResults;
     if (isRetSizeDynamic) {
       r.create<sol::ReturnDataCopyOp>(loc, selectorAddr,
                                       /*src=*/bExt.genI256Const(0),
@@ -899,35 +918,52 @@ struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
       // See https://github.com/ethereum/solidity/pull/12684
       Value staticRetSizeGreater = r.create<arith::CmpIOp>(
           loc, arith::CmpIPredicate::ugt, staticRetSize, retDataSize);
-      ifOp = r.create<scf::IfOp>(
-          loc, staticRetSizeGreater,
-          /*thenBuilder=*/
-          [&](OpBuilder &b, Location loc) {
-            evmB.genFreePtrUpd(selectorAddr, retDataSize);
-            Value tupleEnd =
-                r.create<arith::AddIOp>(loc, selectorAddr, retDataSize);
-            evmB.genABITupleDecoding(op.getCalleeType().getResults(),
-                                     selectorAddr, tupleEnd, decodedResults,
-                                     /*fromMem=*/true);
-            r.create<scf::YieldOp>(loc);
-          },
-          /*elseBuilder=*/
-          [&](OpBuilder &b, Location loc) {
-            evmB.genFreePtrUpd(selectorAddr, staticRetSize);
-            Value tupleEnd =
-                r.create<arith::AddIOp>(loc, selectorAddr, staticRetSize);
-            evmB.genABITupleDecoding(op.getCalleeType().getResults(),
-                                     selectorAddr, tupleEnd, decodedResults,
-                                     /*fromMem=*/true);
-            r.create<scf::YieldOp>(loc);
-          });
-    }
 
+      auto ifOp = r.create<scf::IfOp>(loc, /*resultTy=*/r.getIntegerType(256),
+                                      /*cond=*/staticRetSizeGreater,
+                                      /*withElse=*/true);
+      // Then block:
+      r.setInsertionPointToStart(&ifOp.getThenRegion().front());
+      evmB.genFreePtrUpd(selectorAddr, retDataSize);
+      Value tupleEnd = r.create<arith::AddIOp>(loc, selectorAddr, retDataSize);
+      r.create<scf::YieldOp>(loc, tupleEnd);
+      // Else block:
+      r.setInsertionPointToStart(&ifOp.getElseRegion().front());
+      evmB.genFreePtrUpd(selectorAddr, staticRetSize);
+      tupleEnd = r.create<arith::AddIOp>(loc, selectorAddr, staticRetSize);
+      r.create<scf::YieldOp>(loc, tupleEnd);
+
+      r.setInsertionPointAfter(ifOp);
+      evmB.genABITupleDecoding(op.getCalleeType().getResults(), selectorAddr,
+                               ifOp.getResult(0), decodedResults,
+                               /*fromMem=*/true);
+    }
+    r.create<scf::YieldOp>(loc, decodedResults);
+
+    // Replace the sol.ext_call op with the status check + the decoded results.
     assert(decodedResults.size() <= 1 && "NYI");
-    std::vector<Value> newResults{status};
-    newResults.insert(newResults.end(), decodedResults.begin(),
-                      decodedResults.end());
+    SmallVector<Value, 2> newResults{statusIsNotZero};
+    newResults.append(statusIfOp.getResults().begin(),
+                      statusIfOp.getResults().end());
     r.replaceOp(op, newResults);
+    return success();
+  }
+};
+
+struct TryOpLowering : public OpConversionPattern<sol::TryOp> {
+  using OpConversionPattern<sol::TryOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::TryOp tryOp, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = tryOp.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+
+    auto ifOp = r.create<sol::IfOp>(loc, tryOp.getStatus());
+    r.inlineRegionBefore(tryOp.getSuccessRegion(), ifOp.getThenRegion(),
+                         ifOp.getThenRegion().begin());
+    r.inlineRegionBefore(tryOp.getFallbackRegion(), ifOp.getElseRegion(),
+                         ifOp.getElseRegion().begin());
+    r.eraseOp(tryOp);
     return success();
   }
 };
@@ -1630,7 +1666,7 @@ void evm::populateThisPat(RewritePatternSet &pats) {
 }
 
 void evm::populateExtCallPat(RewritePatternSet &pats, TypeConverter &tyConv) {
-  pats.add<ExtCallOpLowering>(tyConv, pats.getContext());
+  pats.add<ExtCallOpLowering, TryOpLowering>(tyConv, pats.getContext());
 }
 
 void evm::populateEmitPat(RewritePatternSet &pats, TypeConverter &tyConv) {

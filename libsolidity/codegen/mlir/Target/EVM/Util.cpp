@@ -373,6 +373,9 @@ void evm::Builder::genABITupleDecoding(TypeRange tys, Value tupleStart,
     return b.create<sol::CallDataLoadOp>(loc, headAddr);
   };
 
+  // Decode the args.
+  // The type of the decoded arg should be same as that of the legalized type
+  // (as per the type-converter) of the original type.
   for (auto ty : tys) {
     if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
       Value tailAddr =

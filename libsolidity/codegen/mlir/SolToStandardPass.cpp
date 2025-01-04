@@ -151,7 +151,8 @@ struct ConvertSolToStandard
         sol::SwitchOp,
         sol::WhileOp,
         sol::DoWhileOp,
-        sol::ForOp
+        sol::ForOp,
+        sol::TryOp
         // clang-format on
         >();
     convTgt.addDynamicallyLegalOp<sol::FuncOp>([&](sol::FuncOp op) {

@@ -278,7 +278,7 @@ def Sol_ConditionOp : Sol_Op<"condition", [
 }
 
 def Sol_YieldOp : Sol_Op<"yield", [ReturnLike, Terminator,
-  ParentOneOf<["IfOp", "SwitchOp", "WhileOp", "DoWhileOp", "ForOp"]>]
+  ParentOneOf<["IfOp", "SwitchOp", "TryOp", "WhileOp", "DoWhileOp", "ForOp"]>]
 > {
   let arguments = (ins Variadic<AnyType>:$ins);
 
@@ -295,9 +295,6 @@ def Sol_IfOp : Sol_Op<"if",
 > {
   let arguments = (ins I1:$cond);
   let regions = (region AnyRegion:$thenRegion, AnyRegion:$elseRegion);
-
-  let builders = [OpBuilder<(ins "Value":$cond, "bool":$hasElse)>];
-  let skipDefaultBuilders = 1;
 
   let assemblyFormat = "$cond $thenRegion `else` $elseRegion attr-dict";
 }
@@ -365,6 +362,18 @@ def Sol_ForOp : Sol_Op<"for", [LoopOpInterface, NoRegionArguments,
 
   let extraClassDeclaration = [{
     mlir::Region *maybeGetStep() { return &getStep(); }
+  }];
+}
+
+// TODO: RegionBranchOpInterface
+def Sol_TryOp : Sol_Op<"try", [AutomaticAllocationScope]> {
+  let regions = (region AnyRegion:$successRegion, AnyRegion:$panicRegion,
+                        AnyRegion:$errorRegion, AnyRegion:$fallbackRegion);
+  let arguments = (ins I1:$status);
+
+  let assemblyFormat = [{
+    $status $successRegion `panic` $panicRegion `error` $errorRegion
+      `fallback` $fallbackRegion attr-dict
   }];
 }
 

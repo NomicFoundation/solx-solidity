@@ -516,12 +516,13 @@ void YulToMLIRPass::operator()(If const &ifStmt) {
 
   // TODO: Should we expand here? Or is it beneficial to represent `if` with a
   // non-boolean condition in the IR?
-  auto ifOp = b.create<mlir::sol::IfOp>(
-      loc, convToBool(genExpr(*ifStmt.condition)), /*withElseRegion=*/false);
+  auto ifOp =
+      b.create<mlir::sol::IfOp>(loc, convToBool(genExpr(*ifStmt.condition)));
   mlir::OpBuilder::InsertionGuard insertGuard(b);
 
-  b.setInsertionPointToStart(&ifOp.getThenRegion().front());
+  b.setInsertionPointToStart(&ifOp.getThenRegion().emplaceBlock());
   ASTWalker::operator()(ifStmt.body);
+  b.create<mlir::sol::YieldOp>(ifOp.getLoc());
 }
 
 void YulToMLIRPass::operator()(Switch const &switchStmt) {
@@ -577,12 +578,14 @@ void YulToMLIRPass::operator()(Switch const &switchStmt) {
 
 void YulToMLIRPass::operator()(Break const &brkStmt) {
   b.create<mlir::sol::BreakOp>(getLoc(brkStmt.debugData));
-  b.getBlock()->splitBlock(b.getInsertionPoint());
+  mlir::Block *newBlock = b.getBlock()->splitBlock(b.getInsertionPoint());
+  b.setInsertionPointToStart(newBlock);
 }
 
 void YulToMLIRPass::operator()(Continue const &contStmt) {
   b.create<mlir::sol::ContinueOp>(getLoc(contStmt.debugData));
-  b.getBlock()->splitBlock(b.getInsertionPoint());
+  mlir::Block *newBlock = b.getBlock()->splitBlock(b.getInsertionPoint());
+  b.setInsertionPointToStart(newBlock);
 }
 
 void YulToMLIRPass::operator()(ForLoop const &forStmt) {

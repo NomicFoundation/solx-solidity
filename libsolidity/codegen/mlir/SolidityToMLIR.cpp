@@ -122,6 +122,8 @@ private:
                                      lineCol.line, lineCol.column);
   }
 
+  mlir::Location getLoc(ASTNode const &ast) { return getLoc(ast.location()); }
+
   /// Returns the corresponding mlir type for the solidity type `ty`.
   mlir::Type getType(Type const *ty);
 
@@ -228,6 +230,9 @@ private:
 
   /// Lowers the for statement.
   void lower(ForStatement const &);
+
+  /// Lowers the try statement.
+  void lower(TryStatement const &);
 
   /// Lower the statement.
   void lower(Statement const &);
@@ -921,12 +926,14 @@ void SolidityToMLIRPass::lower(EmitStatement const &emit) {
 
 void SolidityToMLIRPass::lower(Break const &brkStmt) {
   b.create<mlir::sol::BreakOp>(getLoc(brkStmt.location()));
-  b.getBlock()->splitBlock(b.getInsertionPoint());
+  mlir::Block *newBlock = b.getBlock()->splitBlock(b.getInsertionPoint());
+  b.setInsertionPointToStart(newBlock);
 }
 
 void SolidityToMLIRPass::lower(Continue const &contStmt) {
   b.create<mlir::sol::ContinueOp>(getLoc(contStmt.location()));
-  b.getBlock()->splitBlock(b.getInsertionPoint());
+  mlir::Block *newBlock = b.getBlock()->splitBlock(b.getInsertionPoint());
+  b.setInsertionPointToStart(newBlock);
 }
 
 void SolidityToMLIRPass::lower(PlaceholderStatement const &placeholder) {
@@ -955,16 +962,16 @@ void SolidityToMLIRPass::lower(Return const &ret) {
 
 void SolidityToMLIRPass::lower(IfStatement const &ifStmt) {
   mlir::Value cond = genRValExpr(&ifStmt.condition());
-  bool withElse = ifStmt.falseStatement();
-  auto ifOp =
-      b.create<mlir::sol::IfOp>(getLoc(ifStmt.location()), cond, withElse);
+  auto ifOp = b.create<mlir::sol::IfOp>(getLoc(ifStmt.location()), cond);
   mlir::OpBuilder::InsertionGuard insertGuard(b);
 
-  b.setInsertionPointToStart(&ifOp.getThenRegion().front());
+  b.setInsertionPointToStart(&ifOp.getThenRegion().emplaceBlock());
   lower(ifStmt.trueStatement());
-  if (withElse) {
-    b.setInsertionPointToStart(&ifOp.getElseRegion().front());
+  b.create<mlir::sol::YieldOp>(ifOp.getLoc());
+  if (ifStmt.falseStatement()) {
+    b.setInsertionPointToStart(&ifOp.getElseRegion().emplaceBlock());
     lower(*ifStmt.falseStatement());
+    b.create<mlir::sol::YieldOp>(ifOp.getLoc());
   }
 }
 
@@ -1019,6 +1026,30 @@ void SolidityToMLIRPass::lower(ForStatement const &forStmt) {
   }
 }
 
+void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
+  mlir::Location loc = getLoc(tryStmt);
+
+  // TODO: sol.new
+  auto externalCall = mlir::cast<mlir::sol::ExtCallOp>(
+      genRValExpr(&tryStmt.externalCall()).getDefiningOp());
+  auto status = externalCall.getResult(0);
+  auto tryOp = b.create<mlir::sol::TryOp>(loc, status);
+
+  auto lowerCatchStmt = [&](TryCatchClause const *catchStmt,
+                            mlir::Region &region) {
+    assert(!catchStmt->parameters() && "NYI");
+    mlir::OpBuilder::InsertionGuard insertGuard(b);
+    b.setInsertionPointToStart(&region.emplaceBlock());
+    lower(catchStmt->block());
+    b.create<mlir::sol::YieldOp>(loc);
+  };
+
+  if (TryCatchClause const *catchStmt = tryStmt.fallbackClause())
+    lowerCatchStmt(catchStmt, tryOp.getFallbackRegion());
+  if (TryCatchClause const *catchStmt = tryStmt.successClause())
+    lowerCatchStmt(catchStmt, tryOp.getSuccessRegion());
+}
+
 void SolidityToMLIRPass::lower(Statement const &stmt) {
   // Expression
   if (auto *exprStmt = dynamic_cast<ExpressionStatement const *>(&stmt))
@@ -1061,6 +1092,10 @@ void SolidityToMLIRPass::lower(Statement const &stmt) {
   // For
   else if (auto *forStmt = dynamic_cast<ForStatement const *>(&stmt))
     lower(*forStmt);
+
+  // Try
+  else if (auto *tryStmt = dynamic_cast<TryStatement const *>(&stmt))
+    lower(*tryStmt);
 
   // Block
   else if (auto *blk = dynamic_cast<Block const *>(&stmt))
@@ -1310,6 +1345,10 @@ bool CompilerStack::runMlirPipeline() {
 // TODO: Move the following functions somewhere else.
 
 void solidity::mlirgen::registerMLIRCLOpts() {
+  // FIXME: Verifier's InFlightDiagnostic doesn't work with --mmlir
+  // -mlir-print-op-on-diagnostic!
+  mlir::registerMLIRContextCLOptions();
+
   mlir::registerAsmPrinterCLOptions();
 }
 
