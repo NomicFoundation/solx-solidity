@@ -1035,19 +1035,38 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
   auto status = externalCall.getResult(0);
   auto tryOp = b.create<mlir::sol::TryOp>(loc, status);
 
-  auto lowerCatchStmt = [&](TryCatchClause const *catchStmt,
-                            mlir::Region &region) {
-    assert(!catchStmt->parameters() && "NYI");
+  // Lower success clause.
+  if (TryCatchClause const *successClause = tryStmt.successClause()) {
     mlir::OpBuilder::InsertionGuard insertGuard(b);
-    b.setInsertionPointToStart(&region.emplaceBlock());
-    lower(catchStmt->block());
-    b.create<mlir::sol::YieldOp>(loc);
-  };
+    b.setInsertionPointToStart(&tryOp.getSuccessRegion().emplaceBlock());
 
-  if (TryCatchClause const *catchStmt = tryStmt.fallbackClause())
-    lowerCatchStmt(catchStmt, tryOp.getFallbackRegion());
-  if (TryCatchClause const *catchStmt = tryStmt.successClause())
-    lowerCatchStmt(catchStmt, tryOp.getSuccessRegion());
+    // Lower parameters.
+    if (successClause->parameters()) {
+      unsigned i = 1;
+      for (ASTPointer<VariableDeclaration> const &param :
+           successClause->parameters()->parameters()) {
+        mlir::Location loc = getLoc(*param);
+        mlir::Type allocTy =
+            mlir::sol::PointerType::get(b.getContext(), getType(param->type()),
+                                        mlir::sol::DataLocation::Stack);
+        auto addr = b.create<mlir::sol::AllocaOp>(loc, allocTy);
+        trackLocalVarAddr(&*param, addr);
+        b.create<mlir::sol::StoreOp>(loc, externalCall.getResult(i), addr);
+      }
+    }
+
+    lower(successClause->block());
+    b.create<mlir::sol::YieldOp>(loc);
+  }
+
+  // Lower fallback clause.
+  if (TryCatchClause const *fallbackClause = tryStmt.fallbackClause()) {
+    assert(!fallbackClause->parameters() && "NYI");
+    mlir::OpBuilder::InsertionGuard insertGuard(b);
+    b.setInsertionPointToStart(&tryOp.getFallbackRegion().emplaceBlock());
+    lower(fallbackClause->block());
+    b.create<mlir::sol::YieldOp>(loc);
+  }
 }
 
 void SolidityToMLIRPass::lower(Statement const &stmt) {
