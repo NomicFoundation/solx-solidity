@@ -959,10 +959,31 @@ struct TryOpLowering : public OpConversionPattern<sol::TryOp> {
     solidity::mlirgen::BuilderExt bExt(r, loc);
 
     auto ifOp = r.create<sol::IfOp>(loc, tryOp.getStatus());
-    r.inlineRegionBefore(tryOp.getSuccessRegion(), ifOp.getThenRegion(),
-                         ifOp.getThenRegion().begin());
-    r.inlineRegionBefore(tryOp.getFallbackRegion(), ifOp.getElseRegion(),
-                         ifOp.getElseRegion().begin());
+
+    auto genEmptyBlk = [&](Region &region) {
+      OpBuilder::InsertionGuard guard(r);
+      r.setInsertionPointToStart(&region.emplaceBlock());
+      r.create<sol::YieldOp>(loc);
+    };
+
+    if (tryOp.getSuccessRegion().empty())
+      genEmptyBlk(tryOp.getSuccessRegion());
+    else
+      r.inlineRegionBefore(tryOp.getSuccessRegion(), ifOp.getThenRegion(),
+                           ifOp.getThenRegion().begin());
+
+    if (tryOp.getFallbackRegion().empty())
+      genEmptyBlk(tryOp.getFallbackRegion());
+    else
+      r.inlineRegionBefore(tryOp.getFallbackRegion(), ifOp.getElseRegion(),
+                           ifOp.getElseRegion().begin());
+
+    // FIXME: We shouldn't depend on sol.ext_call lowering here!
+    // r.setInsertionPointToStart(&ifOp.getElseRegion().front());
+    // auto returnDataSize = r.create<sol::ReturnDataSizeOp>(loc);
+    // auto externCallOp =
+    //     cast<sol::BuiltinCallOp>(tryOp.getStatus().getDefiningOp());
+
     r.eraseOp(tryOp);
     return success();
   }

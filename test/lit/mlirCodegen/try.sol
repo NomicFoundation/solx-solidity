@@ -2,7 +2,8 @@
 
 contract C {
   function f(uint a) public returns(uint) {
-    try this.f(a) returns (uint r) { r = a; }
+    try this.f(a) returns (uint r) { r = f(r); }
+    catch Panic (uint code) { code = f(code); }
     catch {}
     return 0;
   }
@@ -13,9 +14,10 @@ contract C {
 // CHECK-NEXT: #Contract = #sol<ContractKind Contract>
 // CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
 // CHECK-NEXT: #loc3 = loc({{.*}}:3:13)
+// CHECK-NEXT: #loc11 = loc({{.*}}:5:17)
 // CHECK-NEXT: module attributes {sol.evm_version = #Cancun} {
-// CHECK-NEXT:   sol.contract @C_27 {
-// CHECK-NEXT:     sol.func @f_26(%arg0: ui256 loc({{.*}}:3:13)) -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.contract @C_40 {
+// CHECK-NEXT:     sol.func @f_39(%arg0: ui256 loc({{.*}}:3:13)) -> ui256 attributes {state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       %1 = sol.this loc(#loc4)
@@ -23,23 +25,31 @@ contract C {
 // CHECK-NEXT:       %3 = sol.gas loc(#loc4)
 // CHECK-NEXT:       %4 = sol.conv_cast %3 : i256 -> ui256 loc(#loc4)
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc4)
-// CHECK-NEXT:       %status, %5 = sol.ext_call @f_26(%2) at %1 gas %4 value %c0_ui256 {callee_type = (ui256) -> ui256, selector = -1277270901 : i32, try_call} : (ui256) -> (i1, ui256) loc(#loc4)
+// CHECK-NEXT:       %status, %5 = sol.ext_call @f_39(%2) at %1 gas %4 value %c0_ui256 {callee_type = (ui256) -> ui256, selector = -1277270901 : i32, try_call} : (ui256) -> (i1, ui256) loc(#loc4)
 // CHECK-NEXT:       sol.try %status {
 // CHECK-NEXT:         %7 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc7)
 // CHECK-NEXT:         sol.store %5, %7 : ui256, !sol.ptr<ui256, Stack> loc(#loc7)
-// CHECK-NEXT:         %8 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc8)
-// CHECK-NEXT:         sol.store %8, %7 : ui256, !sol.ptr<ui256, Stack> loc(#loc9)
+// CHECK-NEXT:         %8 = sol.load %7 : !sol.ptr<ui256, Stack>, ui256 loc(#loc8)
+// CHECK-NEXT:         %9 = sol.call @f_39(%8) : (ui256) -> ui256 loc(#loc9)
+// CHECK-NEXT:         sol.store %9, %7 : ui256, !sol.ptr<ui256, Stack> loc(#loc10)
 // CHECK-NEXT:         sol.yield loc(#loc6)
 // CHECK-NEXT:       } panic {
+// CHECK-NEXT:       ^bb0(%arg1: ui256 loc({{.*}}:5:17)):
+// CHECK-NEXT:         %7 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc11)
+// CHECK-NEXT:         sol.store %arg1, %7 : ui256, !sol.ptr<ui256, Stack> loc(#loc6)
+// CHECK-NEXT:         %8 = sol.load %7 : !sol.ptr<ui256, Stack>, ui256 loc(#loc12)
+// CHECK-NEXT:         %9 = sol.call @f_39(%8) : (ui256) -> ui256 loc(#loc13)
+// CHECK-NEXT:         sol.store %9, %7 : ui256, !sol.ptr<ui256, Stack> loc(#loc14)
+// CHECK-NEXT:         sol.yield loc(#loc6)
 // CHECK-NEXT:       } error {
 // CHECK-NEXT:       } fallback {
 // CHECK-NEXT:         sol.yield loc(#loc6)
 // CHECK-NEXT:       } loc(#loc6)
-// CHECK-NEXT:       %c0_ui8 = sol.constant 0 : ui8 loc(#loc10)
-// CHECK-NEXT:       %6 = sol.ext %c0_ui8 : ui8 to ui256 loc(#loc10)
-// CHECK-NEXT:       sol.return %6 : ui256 loc(#loc11)
+// CHECK-NEXT:       %c0_ui8 = sol.constant 0 : ui8 loc(#loc15)
+// CHECK-NEXT:       %6 = sol.ext %c0_ui8 : ui8 to ui256 loc(#loc15)
+// CHECK-NEXT:       sol.return %6 : ui256 loc(#loc16)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:   } {interface_fns = [{selector = -1277270901 : i32, sym = @f_26, type = (ui256) -> ui256}], kind = #Contract} loc(#loc1)
+// CHECK-NEXT:   } {interface_fns = [{selector = -1277270901 : i32, sym = @f_39, type = (ui256) -> ui256}], kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
@@ -48,8 +58,12 @@ contract C {
 // CHECK-NEXT: #loc5 = loc({{.*}}:4:15)
 // CHECK-NEXT: #loc6 = loc({{.*}}:4:4)
 // CHECK-NEXT: #loc7 = loc({{.*}}:4:27)
-// CHECK-NEXT: #loc8 = loc({{.*}}:4:41)
-// CHECK-NEXT: #loc9 = loc({{.*}}:4:37)
-// CHECK-NEXT: #loc10 = loc({{.*}}:6:11)
-// CHECK-NEXT: #loc11 = loc({{.*}}:6:4)
+// CHECK-NEXT: #loc8 = loc({{.*}}:4:43)
+// CHECK-NEXT: #loc9 = loc({{.*}}:4:41)
+// CHECK-NEXT: #loc10 = loc({{.*}}:4:37)
+// CHECK-NEXT: #loc12 = loc({{.*}}:5:39)
+// CHECK-NEXT: #loc13 = loc({{.*}}:5:37)
+// CHECK-NEXT: #loc14 = loc({{.*}}:5:30)
+// CHECK-NEXT: #loc15 = loc({{.*}}:7:11)
+// CHECK-NEXT: #loc16 = loc({{.*}}:7:4)
 // CHECK-EMPTY:

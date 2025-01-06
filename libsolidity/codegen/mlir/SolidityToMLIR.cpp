@@ -43,6 +43,7 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/OperationSupport.h"
 #include "mlir/IR/TypeRange.h"
+#include "mlir/IR/Value.h"
 #include "mlir/IR/Verifier.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Support/LLVM.h"
@@ -1056,6 +1057,32 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
     }
 
     lower(successClause->block());
+    b.create<mlir::sol::YieldOp>(loc);
+  }
+
+  // Lower panic clause.
+  if (TryCatchClause const *panicClause = tryStmt.panicClause()) {
+    mlir::OpBuilder::InsertionGuard insertGuard(b);
+    mlir::Block *blk = &tryOp.getPanicRegion().emplaceBlock();
+    b.setInsertionPointToStart(blk);
+
+    // Add block argument for the error code which is expected to be replaced by
+    // the error code from the external call by the sol.try lowering.
+    assert(panicClause->parameters() &&
+           panicClause->parameters()->parameters().size() == 1);
+    auto ui256 = b.getIntegerType(256, /*isSigned=*/false);
+    ASTPointer<VariableDeclaration> const &codeParam =
+        panicClause->parameters()->parameters()[0];
+    mlir::Location codeParamLoc = getLoc(*codeParam);
+    mlir::BlockArgument codeParamBlkArg = blk->addArgument(ui256, codeParamLoc);
+
+    mlir::Type allocTy = mlir::sol::PointerType::get(
+        b.getContext(), ui256, mlir::sol::DataLocation::Stack);
+    auto codeParamAddr = b.create<mlir::sol::AllocaOp>(codeParamLoc, allocTy);
+    trackLocalVarAddr(&*codeParam, codeParamAddr);
+    b.create<mlir::sol::StoreOp>(loc, codeParamBlkArg, codeParamAddr);
+
+    lower(panicClause->block());
     b.create<mlir::sol::YieldOp>(loc);
   }
 

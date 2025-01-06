@@ -665,7 +665,7 @@ def Sol_BuiltinCallOp : Sol_Op<"builtin_call"> {
   let summary = "Represents the `call` call in yul";
   let arguments = (ins I256:$gas, I256:$address, I256:$value, I256:$inpOffset,
                        I256:$inpSize, I256:$outOffset, I256:$outSize);
-  let results = (outs I256:$out);
+  let results = (outs I256:$status);
   let assemblyFormat = [{
     $gas `,` $address `,` $value `,` $inpOffset `,` $inpSize `,` $outOffset `,`
     $outSize attr-dict
