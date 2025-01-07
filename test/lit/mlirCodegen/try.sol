@@ -4,7 +4,11 @@ contract C {
   function f(uint a) public returns(uint) {
     try this.f(a) returns (uint r) { r = f(r); }
     catch Panic (uint code) { code = f(code); }
-    catch {}
+
+    try this.f(a) returns (uint r) { r = f(r); }
+    catch Panic (uint code) { code = f(code); }
+    catch { a = f(0); }
+
     return 0;
   }
 }
@@ -15,9 +19,10 @@ contract C {
 // CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
 // CHECK-NEXT: #loc3 = loc({{.*}}:3:13)
 // CHECK-NEXT: #loc11 = loc({{.*}}:5:17)
+// CHECK-NEXT: #loc22 = loc({{.*}}:8:17)
 // CHECK-NEXT: module attributes {sol.evm_version = #Cancun} {
-// CHECK-NEXT:   sol.contract @C_40 {
-// CHECK-NEXT:     sol.func @f_39(%arg0: ui256 loc({{.*}}:3:13)) -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.contract @C_73 {
+// CHECK-NEXT:     sol.func @f_72(%arg0: ui256 loc({{.*}}:3:13)) -> ui256 attributes {state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       %1 = sol.this loc(#loc4)
@@ -25,31 +30,61 @@ contract C {
 // CHECK-NEXT:       %3 = sol.gas loc(#loc4)
 // CHECK-NEXT:       %4 = sol.conv_cast %3 : i256 -> ui256 loc(#loc4)
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc4)
-// CHECK-NEXT:       %status, %5 = sol.ext_call @f_39(%2) at %1 gas %4 value %c0_ui256 {callee_type = (ui256) -> ui256, selector = -1277270901 : i32, try_call} : (ui256) -> (i1, ui256) loc(#loc4)
+// CHECK-NEXT:       %status, %5 = sol.ext_call @f_72(%2) at %1 gas %4 value %c0_ui256 {callee_type = (ui256) -> ui256, selector = -1277270901 : i32, try_call} : (ui256) -> (i1, ui256) loc(#loc4)
 // CHECK-NEXT:       sol.try %status {
-// CHECK-NEXT:         %7 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc7)
-// CHECK-NEXT:         sol.store %5, %7 : ui256, !sol.ptr<ui256, Stack> loc(#loc7)
-// CHECK-NEXT:         %8 = sol.load %7 : !sol.ptr<ui256, Stack>, ui256 loc(#loc8)
-// CHECK-NEXT:         %9 = sol.call @f_39(%8) : (ui256) -> ui256 loc(#loc9)
-// CHECK-NEXT:         sol.store %9, %7 : ui256, !sol.ptr<ui256, Stack> loc(#loc10)
+// CHECK-NEXT:         %12 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc7)
+// CHECK-NEXT:         sol.store %5, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc7)
+// CHECK-NEXT:         %13 = sol.load %12 : !sol.ptr<ui256, Stack>, ui256 loc(#loc8)
+// CHECK-NEXT:         %14 = sol.call @f_72(%13) : (ui256) -> ui256 loc(#loc9)
+// CHECK-NEXT:         sol.store %14, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc10)
 // CHECK-NEXT:         sol.yield loc(#loc6)
 // CHECK-NEXT:       } panic {
-// CHECK-NEXT:       ^bb0(%arg1: ui256 loc({{.*}}:5:17)):
-// CHECK-NEXT:         %7 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc11)
-// CHECK-NEXT:         sol.store %arg1, %7 : ui256, !sol.ptr<ui256, Stack> loc(#loc6)
-// CHECK-NEXT:         %8 = sol.load %7 : !sol.ptr<ui256, Stack>, ui256 loc(#loc12)
-// CHECK-NEXT:         %9 = sol.call @f_39(%8) : (ui256) -> ui256 loc(#loc13)
-// CHECK-NEXT:         sol.store %9, %7 : ui256, !sol.ptr<ui256, Stack> loc(#loc14)
+// CHECK-NEXT:       ^bb0(%arg1: i256 loc({{.*}}:5:17)):
+// CHECK-NEXT:         %12 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc11)
+// CHECK-NEXT:         %13 = sol.conv_cast %arg1 : i256 -> ui256 loc(#loc6)
+// CHECK-NEXT:         sol.store %13, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc6)
+// CHECK-NEXT:         %14 = sol.load %12 : !sol.ptr<ui256, Stack>, ui256 loc(#loc12)
+// CHECK-NEXT:         %15 = sol.call @f_72(%14) : (ui256) -> ui256 loc(#loc13)
+// CHECK-NEXT:         sol.store %15, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc14)
 // CHECK-NEXT:         sol.yield loc(#loc6)
 // CHECK-NEXT:       } error {
 // CHECK-NEXT:       } fallback {
-// CHECK-NEXT:         sol.yield loc(#loc6)
 // CHECK-NEXT:       } loc(#loc6)
-// CHECK-NEXT:       %c0_ui8 = sol.constant 0 : ui8 loc(#loc15)
-// CHECK-NEXT:       %6 = sol.ext %c0_ui8 : ui8 to ui256 loc(#loc15)
-// CHECK-NEXT:       sol.return %6 : ui256 loc(#loc16)
+// CHECK-NEXT:       %6 = sol.this loc(#loc15)
+// CHECK-NEXT:       %7 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc16)
+// CHECK-NEXT:       %8 = sol.gas loc(#loc15)
+// CHECK-NEXT:       %9 = sol.conv_cast %8 : i256 -> ui256 loc(#loc15)
+// CHECK-NEXT:       %c0_ui256_0 = sol.constant 0 : ui256 loc(#loc15)
+// CHECK-NEXT:       %status_1, %10 = sol.ext_call @f_72(%7) at %6 gas %9 value %c0_ui256_0 {callee_type = (ui256) -> ui256, selector = -1277270901 : i32, try_call} : (ui256) -> (i1, ui256) loc(#loc15)
+// CHECK-NEXT:       sol.try %status_1 {
+// CHECK-NEXT:         %12 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc18)
+// CHECK-NEXT:         sol.store %10, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc18)
+// CHECK-NEXT:         %13 = sol.load %12 : !sol.ptr<ui256, Stack>, ui256 loc(#loc19)
+// CHECK-NEXT:         %14 = sol.call @f_72(%13) : (ui256) -> ui256 loc(#loc20)
+// CHECK-NEXT:         sol.store %14, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc21)
+// CHECK-NEXT:         sol.yield loc(#loc17)
+// CHECK-NEXT:       } panic {
+// CHECK-NEXT:       ^bb0(%arg1: i256 loc({{.*}}:8:17)):
+// CHECK-NEXT:         %12 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc22)
+// CHECK-NEXT:         %13 = sol.conv_cast %arg1 : i256 -> ui256 loc(#loc17)
+// CHECK-NEXT:         sol.store %13, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc17)
+// CHECK-NEXT:         %14 = sol.load %12 : !sol.ptr<ui256, Stack>, ui256 loc(#loc23)
+// CHECK-NEXT:         %15 = sol.call @f_72(%14) : (ui256) -> ui256 loc(#loc24)
+// CHECK-NEXT:         sol.store %15, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc25)
+// CHECK-NEXT:         sol.yield loc(#loc17)
+// CHECK-NEXT:       } error {
+// CHECK-NEXT:       } fallback {
+// CHECK-NEXT:         %c0_ui8_2 = sol.constant 0 : ui8 loc(#loc26)
+// CHECK-NEXT:         %12 = sol.ext %c0_ui8_2 : ui8 to ui256 loc(#loc26)
+// CHECK-NEXT:         %13 = sol.call @f_72(%12) : (ui256) -> ui256 loc(#loc27)
+// CHECK-NEXT:         sol.store %13, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc28)
+// CHECK-NEXT:         sol.yield loc(#loc17)
+// CHECK-NEXT:       } loc(#loc17)
+// CHECK-NEXT:       %c0_ui8 = sol.constant 0 : ui8 loc(#loc29)
+// CHECK-NEXT:       %11 = sol.ext %c0_ui8 : ui8 to ui256 loc(#loc29)
+// CHECK-NEXT:       sol.return %11 : ui256 loc(#loc30)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:   } {interface_fns = [{selector = -1277270901 : i32, sym = @f_39, type = (ui256) -> ui256}], kind = #Contract} loc(#loc1)
+// CHECK-NEXT:   } {interface_fns = [{selector = -1277270901 : i32, sym = @f_72, type = (ui256) -> ui256}], kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
@@ -64,6 +99,19 @@ contract C {
 // CHECK-NEXT: #loc12 = loc({{.*}}:5:39)
 // CHECK-NEXT: #loc13 = loc({{.*}}:5:37)
 // CHECK-NEXT: #loc14 = loc({{.*}}:5:30)
-// CHECK-NEXT: #loc15 = loc({{.*}}:7:11)
-// CHECK-NEXT: #loc16 = loc({{.*}}:7:4)
+// CHECK-NEXT: #loc15 = loc({{.*}}:7:8)
+// CHECK-NEXT: #loc16 = loc({{.*}}:7:15)
+// CHECK-NEXT: #loc17 = loc({{.*}}:7:4)
+// CHECK-NEXT: #loc18 = loc({{.*}}:7:27)
+// CHECK-NEXT: #loc19 = loc({{.*}}:7:43)
+// CHECK-NEXT: #loc20 = loc({{.*}}:7:41)
+// CHECK-NEXT: #loc21 = loc({{.*}}:7:37)
+// CHECK-NEXT: #loc23 = loc({{.*}}:8:39)
+// CHECK-NEXT: #loc24 = loc({{.*}}:8:37)
+// CHECK-NEXT: #loc25 = loc({{.*}}:8:30)
+// CHECK-NEXT: #loc26 = loc({{.*}}:9:18)
+// CHECK-NEXT: #loc27 = loc({{.*}}:9:16)
+// CHECK-NEXT: #loc28 = loc({{.*}}:9:12)
+// CHECK-NEXT: #loc29 = loc({{.*}}:11:11)
+// CHECK-NEXT: #loc30 = loc({{.*}}:11:4)
 // CHECK-EMPTY:

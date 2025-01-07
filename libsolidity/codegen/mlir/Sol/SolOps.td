@@ -294,7 +294,7 @@ def Sol_IfOp : Sol_Op<"if",
    AutomaticAllocationScope, NoRegionArguments]
 > {
   let arguments = (ins I1:$cond);
-  let regions = (region AnyRegion:$thenRegion, AnyRegion:$elseRegion);
+  let regions = (region MinSizedRegion<1>:$thenRegion, AnyRegion:$elseRegion);
 
   let assemblyFormat = "$cond $thenRegion `else` $elseRegion attr-dict";
 }

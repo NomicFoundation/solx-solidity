@@ -179,6 +179,11 @@ public:
                            std::vector<mlir::Value> &results, bool fromMem,
                            std::optional<mlir::Location> locArg = std::nullopt);
 
+  /// Generates an i256 constant with the selector in the high 32 bits.
+  mlir::Value
+  genI256Selector(std::string const &signature,
+                  std::optional<mlir::Location> locArg = std::nullopt);
+
   /// Generates the panic code.
   void genPanic(solidity::util::PanicCode code, mlir::Value cond,
                 std::optional<mlir::Location> locArg = std::nullopt);

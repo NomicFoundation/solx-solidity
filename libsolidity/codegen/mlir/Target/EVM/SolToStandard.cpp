@@ -21,6 +21,7 @@
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/mlir/Target/EVM/YulToStandard.h"
 #include "libsolidity/codegen/mlir/Util.h"
+#include "libsolutil/FunctionSelector.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
@@ -958,7 +959,7 @@ struct TryOpLowering : public OpConversionPattern<sol::TryOp> {
     Location loc = tryOp.getLoc();
     solidity::mlirgen::BuilderExt bExt(r, loc);
 
-    auto ifOp = r.create<sol::IfOp>(loc, tryOp.getStatus());
+    auto ifStatus = r.create<sol::IfOp>(loc, tryOp.getStatus());
 
     auto genEmptyBlk = [&](Region &region) {
       OpBuilder::InsertionGuard guard(r);
@@ -966,23 +967,134 @@ struct TryOpLowering : public OpConversionPattern<sol::TryOp> {
       r.create<sol::YieldOp>(loc);
     };
 
+    //
+    // Success region
+    //
+
     if (tryOp.getSuccessRegion().empty())
-      genEmptyBlk(tryOp.getSuccessRegion());
+      genEmptyBlk(ifStatus.getThenRegion());
     else
-      r.inlineRegionBefore(tryOp.getSuccessRegion(), ifOp.getThenRegion(),
-                           ifOp.getThenRegion().begin());
+      r.inlineRegionBefore(tryOp.getSuccessRegion(), ifStatus.getThenRegion(),
+                           ifStatus.getThenRegion().begin());
+    //
+    // Failure region
+    //
 
     if (tryOp.getFallbackRegion().empty())
-      genEmptyBlk(tryOp.getFallbackRegion());
+      genEmptyBlk(ifStatus.getElseRegion());
     else
-      r.inlineRegionBefore(tryOp.getFallbackRegion(), ifOp.getElseRegion(),
-                           ifOp.getElseRegion().begin());
+      r.inlineRegionBefore(tryOp.getFallbackRegion(), ifStatus.getElseRegion(),
+                           ifStatus.getElseRegion().begin());
 
-    // FIXME: We shouldn't depend on sol.ext_call lowering here!
-    // r.setInsertionPointToStart(&ifOp.getElseRegion().front());
-    // auto returnDataSize = r.create<sol::ReturnDataSizeOp>(loc);
-    // auto externCallOp =
-    //     cast<sol::BuiltinCallOp>(tryOp.getStatus().getDefiningOp());
+    if (tryOp.getPanicRegion().empty() && tryOp.getErrorRegion().empty()) {
+      r.eraseOp(tryOp);
+      return success();
+    }
+
+    r.setInsertionPointToStart(&ifStatus.getElseRegion().front());
+
+    // Generate a flag to check if we need to run the fallback. The flag will be
+    // set to false by any of the other clause.
+    auto boolAllocaTy = sol::PointerType::get(r.getContext(), r.getI1Type(),
+                                              sol::DataLocation::Stack);
+    auto runFallbackFlag = r.create<sol::AllocaOp>(loc, boolAllocaTy);
+    r.create<sol::StoreOp>(loc, bExt.genBool(true), runFallbackFlag);
+
+    // Generate an if op that checks if the returndata is large enough to hold
+    // the selector.
+    //
+    // The ops after this if op belong to the fallback. Track it for the
+    // fallback lowering.
+    auto returnDataSize = r.create<sol::ReturnDataSizeOp>(loc);
+    auto selectorRetCond = r.create<arith::CmpIOp>(
+        loc, arith::CmpIPredicate::ugt, returnDataSize, bExt.genI256Const(3));
+    auto ifSelectorRet = r.create<sol::IfOp>(loc, selectorRetCond);
+    auto fallbackPoint = r.saveInsertionPoint().getPoint();
+
+    //
+    // Selector region
+    //
+    r.setInsertionPointToStart(&ifSelectorRet.getThenRegion().emplaceBlock());
+    r.setInsertionPoint(r.create<sol::YieldOp>(loc));
+
+    // Generate the selector extraction code.
+    auto zero = bExt.genI256Const(0);
+    r.create<sol::ReturnDataCopyOp>(loc, /*dst=*/zero, /*src=*/zero,
+                                    /*size=*/bExt.genI256Const(4));
+    auto selectorWord = r.create<sol::MLoadOp>(loc, zero);
+    auto selector =
+        r.create<arith::ShRUIOp>(loc, selectorWord, bExt.genI256Const(224));
+
+    // Generate the switch for the panic and error catch blocks.
+    SmallVector<APInt, 2> switchSelectors;
+    APInt panicSelector(
+        /*numBits=*/256,
+        solidity::util::selectorFromSignatureU32("Panic(uint256)"));
+    APInt errorSelector(
+        /*numBits=*/256,
+        solidity::util::selectorFromSignatureU32("Error(string)"));
+    if (!tryOp.getPanicRegion().empty())
+      switchSelectors.push_back(panicSelector);
+    if (!tryOp.getErrorRegion().empty())
+      switchSelectors.push_back(errorSelector);
+    assert(!switchSelectors.empty());
+    auto switchSelectorsAttr = mlir::DenseIntElementsAttr::get(
+        RankedTensorType::get(static_cast<int64_t>(switchSelectors.size()),
+                              r.getIntegerType(256)),
+        switchSelectors);
+    auto switchOp = r.create<sol::SwitchOp>(loc, selector, switchSelectorsAttr,
+                                            switchSelectors.size());
+    r.setInsertionPointToStart(&switchOp.getDefaultRegion().emplaceBlock());
+    r.setInsertionPoint(r.create<sol::YieldOp>(loc));
+
+    //
+    // Panic case region
+    //
+    if (!tryOp.getPanicRegion().empty()) {
+      // FIXME: We should query for the case region using the attribute!
+      r.setInsertionPointToStart(&switchOp.getCaseRegions()[0].emplaceBlock());
+      r.setInsertionPoint(r.create<sol::YieldOp>(loc));
+
+      // Genereate an if op that checks if the returndata is large enough to
+      // hold the panic code.
+      auto panicRetCond =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt,
+                                  returnDataSize, bExt.genI256Const(0x23));
+      auto ifPanicRet = r.create<sol::IfOp>(loc, panicRetCond);
+
+      // Inline the panic region.
+      r.inlineRegionBefore(tryOp.getPanicRegion(), ifPanicRet.getThenRegion(),
+                           ifPanicRet.getThenRegion().begin());
+      Block &thenEntry = ifPanicRet.getThenRegion().front();
+      r.setInsertionPointToStart(&thenEntry);
+      r.create<sol::StoreOp>(loc, bExt.genBool(false), runFallbackFlag);
+      // Replace the panic code block arg with the panic code at offset 4.
+      r.create<sol::ReturnDataCopyOp>(loc, /*dst=*/zero,
+                                      /*src=*/bExt.genI256Const(4),
+                                      /*size=*/bExt.genI256Const(0x20));
+      r.replaceAllUsesWith(thenEntry.getArgument(0),
+                           r.create<sol::MLoadOp>(loc, zero));
+      thenEntry.eraseArgument(0);
+    }
+
+    //
+    // Error case region
+    //
+    if (!tryOp.getErrorRegion().empty()) {
+      llvm_unreachable("NYI");
+    }
+
+    //
+    // Fallback region
+    //
+    Block *fallbackBlk = r.splitBlock(fallbackPoint->getBlock(), fallbackPoint);
+    r.setInsertionPointAfter(ifSelectorRet);
+    auto runFallbackFlagLd = r.create<sol::LoadOp>(loc, runFallbackFlag);
+    auto ifRunFallback = r.create<sol::IfOp>(loc, runFallbackFlagLd);
+    ifRunFallback.getThenRegion().emplaceBlock();
+    r.inlineBlockBefore(fallbackBlk, &ifRunFallback.getThenRegion().front(),
+                        ifRunFallback.getThenRegion().front().begin());
+    r.create<sol::YieldOp>(loc);
 
     r.eraseOp(tryOp);
     return success();

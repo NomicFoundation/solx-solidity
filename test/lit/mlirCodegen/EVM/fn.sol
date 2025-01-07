@@ -142,9 +142,9 @@ contract C {
 // CHECK-NEXT:           %24 = arith.cmpi ugt, %23, %c18446744073709551615_i256_6 : i256 loc(#loc1)
 // CHECK-NEXT:           %25 = arith.cmpi ult, %23, %22 : i256 loc(#loc1)
 // CHECK-NEXT:           %26 = arith.ori %24, %25 : i1 loc(#loc1)
+// CHECK-NEXT:           %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256 = arith.constant 35408467139433450592217433187231851964531694900788300625387963629091585785856 : i256 loc(#loc1)
 // CHECK-NEXT:           scf.if %26 {
 // CHECK-NEXT:             %c0_i256_18 = arith.constant 0 : i256 loc(#loc1)
-// CHECK-NEXT:             %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256 = arith.constant 35408467139433450592217433187231851964531694900788300625387963629091585785856 : i256 loc(#loc1)
 // CHECK-NEXT:             %55 = llvm.inttoptr %c0_i256_18 : i256 to !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:             llvm.store %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256, %55 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:             %c4_i256_19 = arith.constant 4 : i256 loc(#loc1)
