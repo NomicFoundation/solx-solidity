@@ -133,19 +133,9 @@ evm::SolTypeConverter::SolTypeConverter() {
     llvm_unreachable("Unimplemented type conversion");
   });
 
-  addSourceMaterialization([](OpBuilder &b, Type resTy, ValueRange ins,
-                              Location loc) -> Value {
-    if (ins.size() != 1)
-      return b.create<UnrealizedConversionCastOp>(loc, resTy, ins).getResult(0);
-
-    Type i256Ty = b.getIntegerType(256);
-
-    Type inpTy = ins[0].getType();
-
-    if ((sol::isRefType(inpTy) && resTy == i256Ty) ||
-        (inpTy == i256Ty && sol::isRefType(resTy)))
-      return b.create<sol::ConvCastOp>(loc, resTy, ins);
-
-    return b.create<UnrealizedConversionCastOp>(loc, resTy, ins).getResult(0);
-  });
+  addTargetMaterialization(
+      [](OpBuilder &b, Type resTy, ValueRange ins, Location loc) -> Value {
+        assert(ins.size() == 1);
+        return b.create<sol::ConvCastOp>(loc, resTy, ins);
+      });
 }

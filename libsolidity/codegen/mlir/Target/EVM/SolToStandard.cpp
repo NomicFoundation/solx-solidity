@@ -714,7 +714,7 @@ struct DataLocCastOpLowering : public OpConversionPattern<sol::DataLocCastOp> {
                                     /*zeroInit=*/false, sizeInBytes);
         Type i256Ty = r.getIntegerType(256);
         assert(getTypeConverter()->convertType(mallocRes.getType()) == i256Ty);
-        mlir::Value memAddr = getTypeConverter()->materializeSourceConversion(
+        mlir::Value memAddr = getTypeConverter()->materializeTargetConversion(
             r, loc, /*resultType=*/i256Ty, /*inputs=*/mallocRes);
         resAddr = memAddr;
 
