@@ -104,7 +104,8 @@ struct ConvertSolToStandard
 
   /// Converts sol dialect ops except sol.contract and sol.func + related ops.
   /// This pass also legalizes all the sol dialect types.
-  void runStage1Conversion(ModuleOp mod, evm::SolTypeConverter &tyConv) {
+  LogicalResult runStage1Conversion(ModuleOp mod,
+                                    evm::SolTypeConverter &tyConv) {
     OpBuilder b(mod.getContext());
 
     // FIXME: DialectConversion complains "pattern was already applied" if we do
@@ -190,14 +191,15 @@ struct ConvertSolToStandard
     });
 
     if (failed(applyPartialConversion(mod, convTgt, std::move(pats))))
-      signalPassFailure();
+      return failure();
 
     // Remove all state variables.
     mod.walk([](sol::StateVarOp op) { op.erase(); });
+    return success();
   }
 
   /// Converts sol.contract and all yul dialect ops.
-  void runStage2Conversion(ModuleOp mod) {
+  LogicalResult runStage2Conversion(ModuleOp mod) {
     ConversionTarget convTgt(getContext());
     convTgt.addLegalOp<ModuleOp>();
     convTgt.addLegalDialect<sol::SolDialect, func::FuncDialect, scf::SCFDialect,
@@ -221,11 +223,13 @@ struct ConvertSolToStandard
     };
 
     if (failed(applyPartialConversion(mod, convTgt, std::move(pats))))
-      signalPassFailure();
+      return failure();
+    return success();
   }
 
   /// Converts sol.func and related ops.
-  void runStage3Conversion(ModuleOp mod, evm::SolTypeConverter &tyConv) {
+  LogicalResult runStage3Conversion(ModuleOp mod,
+                                    evm::SolTypeConverter &tyConv) {
     ConversionTarget convTgt(getContext());
     convTgt.addLegalOp<ModuleOp>();
     convTgt.addLegalDialect<sol::SolDialect, func::FuncDialect, scf::SCFDialect,
@@ -246,7 +250,8 @@ struct ConvertSolToStandard
     };
 
     if (failed(applyPartialConversion(mod, convTgt, std::move(pats))))
-      signalPassFailure();
+      return failure();
+    return success();
   }
 
   void runOnOperation() override {
@@ -259,9 +264,18 @@ struct ConvertSolToStandard
 
     ModuleOp mod = getOperation();
     evm::SolTypeConverter tyConv;
-    runStage1Conversion(mod, tyConv);
-    runStage2Conversion(mod);
-    runStage3Conversion(mod, tyConv);
+    if (failed(runStage1Conversion(mod, tyConv))) {
+      signalPassFailure();
+      return;
+    }
+    if (failed(runStage2Conversion(mod))) {
+      signalPassFailure();
+      return;
+    }
+    if (failed(runStage3Conversion(mod, tyConv))) {
+      signalPassFailure();
+      return;
+    }
   }
 
   StringRef getArgument() const override { return "convert-sol-to-std"; }
