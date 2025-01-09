@@ -1,3 +1,5 @@
+.. _addr-calc:
+
 Address calculation
 ===================
 Generation
