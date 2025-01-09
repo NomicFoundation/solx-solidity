@@ -1073,8 +1073,15 @@ struct TryOpLowering : public OpConversionPattern<sol::TryOp> {
       r.create<sol::ReturnDataCopyOp>(blkArg.getLoc(), /*dst=*/zero,
                                       /*src=*/bExt.genI256Const(4),
                                       /*size=*/bExt.genI256Const(0x20));
-      r.replaceAllUsesWith(blkArg,
-                           r.create<sol::MLoadOp>(blkArg.getLoc(), zero));
+      Value panicCode = r.create<sol::MLoadOp>(blkArg.getLoc(), zero);
+      auto blkArgRepl = getTypeConverter()->materializeSourceConversion(
+          r, loc, blkArg.getType(), panicCode);
+      // FIXME: Why does the following cause a "no matched legalization pattern"
+      // of the op from the materialization? Is this related to early
+      // legalization of in-place modifications?
+      // (https://discourse.llvm.org/t/dialect-conversion-fails-if-some-requires-recursive-application/79371/6)
+      // r.replaceAllUsesWith(blkArg, blkArgRepl);
+      blkArg.replaceAllUsesWith(blkArgRepl);
       thenEntry.eraseArgument(0);
     }
 
@@ -1118,16 +1125,10 @@ struct TryOpLowering : public OpConversionPattern<sol::TryOp> {
                                       abiTupleSize);
       Value errMsgOffset = r.create<sol::MLoadOp>(loc, abiTuple);
       Value errMsg = r.create<arith::AddIOp>(loc, abiTuple, errMsgOffset);
-      auto errMsgRepl = getTypeConverter()->materializeSourceConversion(
+      auto blkArgRepl = getTypeConverter()->materializeSourceConversion(
           r, loc, blkArg.getType(), errMsg);
-
-      // FIXME: Why does the following cause a "no matched legalization pattern"
-      // of the op from the materialization? Is this related to early
-      // legalization of in-place modifications?
-      // (https://discourse.llvm.org/t/dialect-conversion-fails-if-some-requires-recursive-application/79371/6)
-      // r.replaceAllUsesWith(blkArg, errMsgRepl);
-      blkArg.replaceAllUsesWith(errMsgRepl);
-
+      // FIXME: See panic clause lowering.
+      blkArg.replaceAllUsesWith(blkArgRepl);
       thenEntry.eraseArgument(0);
     }
 

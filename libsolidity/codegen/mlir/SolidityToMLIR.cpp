@@ -1068,25 +1068,19 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
 
     // Add block argument for the error code which is expected to be replaced by
     // the error code from the external call by the sol.try lowering.
-    //
-    // TODO: The block argument should be a ui256 but this causes some in the
-    // dialect conversion of sol.try for evm.
     assert(panicClause->parameters() &&
            panicClause->parameters()->parameters().size() == 1);
-    auto i256 = b.getIntegerType(256);
     auto ui256 = b.getIntegerType(256, /*isSigned=*/false);
     ASTPointer<VariableDeclaration> const &codeParam =
         panicClause->parameters()->parameters()[0];
     mlir::Location codeParamLoc = getLoc(*codeParam);
-    mlir::BlockArgument codeParamBlkArg = blk->addArgument(i256, codeParamLoc);
+    mlir::BlockArgument codeParamBlkArg = blk->addArgument(ui256, codeParamLoc);
 
     mlir::Type allocTy = mlir::sol::PointerType::get(
         b.getContext(), ui256, mlir::sol::DataLocation::Stack);
     auto codeParamAddr = b.create<mlir::sol::AllocaOp>(codeParamLoc, allocTy);
     trackLocalVarAddr(&*codeParam, codeParamAddr);
-    b.create<mlir::sol::StoreOp>(
-        loc, b.create<mlir::sol::ConvCastOp>(loc, ui256, codeParamBlkArg),
-        codeParamAddr);
+    b.create<mlir::sol::StoreOp>(loc, codeParamBlkArg, codeParamAddr);
 
     lower(panicClause->block());
     b.create<mlir::sol::YieldOp>(loc);

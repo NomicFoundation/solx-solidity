@@ -41,13 +41,12 @@ contract C {
 // CHECK-NEXT:         sol.store %14, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc10)
 // CHECK-NEXT:         sol.yield loc(#loc6)
 // CHECK-NEXT:       } panic {
-// CHECK-NEXT:       ^bb0(%arg1: i256 loc({{.*}}:5:17)):
+// CHECK-NEXT:       ^bb0(%arg1: ui256 loc({{.*}}:5:17)):
 // CHECK-NEXT:         %12 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc11)
-// CHECK-NEXT:         %13 = sol.conv_cast %arg1 : i256 -> ui256 loc(#loc6)
-// CHECK-NEXT:         sol.store %13, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc6)
-// CHECK-NEXT:         %14 = sol.load %12 : !sol.ptr<ui256, Stack>, ui256 loc(#loc12)
-// CHECK-NEXT:         %15 = sol.call @f_77(%14) : (ui256) -> ui256 loc(#loc13)
-// CHECK-NEXT:         sol.store %15, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc14)
+// CHECK-NEXT:         sol.store %arg1, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc6)
+// CHECK-NEXT:         %13 = sol.load %12 : !sol.ptr<ui256, Stack>, ui256 loc(#loc12)
+// CHECK-NEXT:         %14 = sol.call @f_77(%13) : (ui256) -> ui256 loc(#loc13)
+// CHECK-NEXT:         sol.store %14, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc14)
 // CHECK-NEXT:         sol.yield loc(#loc6)
 // CHECK-NEXT:       } error {
 // CHECK-NEXT:       } fallback {
@@ -66,13 +65,12 @@ contract C {
 // CHECK-NEXT:         sol.store %14, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc21)
 // CHECK-NEXT:         sol.yield loc(#loc17)
 // CHECK-NEXT:       } panic {
-// CHECK-NEXT:       ^bb0(%arg1: i256 loc({{.*}}:8:17)):
+// CHECK-NEXT:       ^bb0(%arg1: ui256 loc({{.*}}:8:17)):
 // CHECK-NEXT:         %12 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc22)
-// CHECK-NEXT:         %13 = sol.conv_cast %arg1 : i256 -> ui256 loc(#loc17)
-// CHECK-NEXT:         sol.store %13, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc17)
-// CHECK-NEXT:         %14 = sol.load %12 : !sol.ptr<ui256, Stack>, ui256 loc(#loc23)
-// CHECK-NEXT:         %15 = sol.call @f_77(%14) : (ui256) -> ui256 loc(#loc24)
-// CHECK-NEXT:         sol.store %15, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc25)
+// CHECK-NEXT:         sol.store %arg1, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc17)
+// CHECK-NEXT:         %13 = sol.load %12 : !sol.ptr<ui256, Stack>, ui256 loc(#loc23)
+// CHECK-NEXT:         %14 = sol.call @f_77(%13) : (ui256) -> ui256 loc(#loc24)
+// CHECK-NEXT:         sol.store %14, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc25)
 // CHECK-NEXT:         sol.yield loc(#loc17)
 // CHECK-NEXT:       } error {
 // CHECK-NEXT:       ^bb0(%arg1: !sol.string<Memory> loc({{.*}}:9:17)):
