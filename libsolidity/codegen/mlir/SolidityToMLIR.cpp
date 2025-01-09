@@ -1092,6 +1092,34 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
     b.create<mlir::sol::YieldOp>(loc);
   }
 
+  // Lower panic clause.
+  if (TryCatchClause const *errorClause = tryStmt.errorClause()) {
+    mlir::OpBuilder::InsertionGuard insertGuard(b);
+    mlir::Block *blk = &tryOp.getErrorRegion().emplaceBlock();
+    b.setInsertionPointToStart(blk);
+
+    // Add a block argument for the error message which is expected to be
+    // replaced by the error message from the external call by the sol.try
+    // lowering.
+    assert(errorClause->parameters() &&
+           errorClause->parameters()->parameters().size() == 1);
+    auto memStrTy = mlir::sol::StringType::get(b.getContext(),
+                                               mlir::sol::DataLocation::Memory);
+    ASTPointer<VariableDeclaration> const &msgParam =
+        errorClause->parameters()->parameters()[0];
+    mlir::Location msgParamLoc = getLoc(*msgParam);
+    mlir::BlockArgument msgParamBlkArg =
+        blk->addArgument(memStrTy, msgParamLoc);
+
+    mlir::Type allocTy = mlir::sol::PointerType::get(
+        b.getContext(), memStrTy, mlir::sol::DataLocation::Stack);
+    auto msgParamAddr = b.create<mlir::sol::AllocaOp>(msgParamLoc, allocTy);
+    trackLocalVarAddr(&*msgParam, msgParamAddr);
+    b.create<mlir::sol::StoreOp>(loc, msgParamBlkArg, msgParamAddr);
+    lower(errorClause->block());
+    b.create<mlir::sol::YieldOp>(loc);
+  }
+
   // Lower fallback clause.
   if (TryCatchClause const *fallbackClause = tryStmt.fallbackClause()) {
     assert(!fallbackClause->parameters() && "NYI");

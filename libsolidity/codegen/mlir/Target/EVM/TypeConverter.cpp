@@ -133,6 +133,11 @@ evm::SolTypeConverter::SolTypeConverter() {
     llvm_unreachable("Unimplemented type conversion");
   });
 
+  addSourceMaterialization(
+      [](OpBuilder &b, Type resTy, ValueRange ins, Location loc) -> Value {
+        assert(ins.size() == 1);
+        return b.create<sol::ConvCastOp>(loc, resTy, ins);
+      });
   addTargetMaterialization(
       [](OpBuilder &b, Type resTy, ValueRange ins, Location loc) -> Value {
         assert(ins.size() == 1);

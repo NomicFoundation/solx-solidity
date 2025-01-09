@@ -1069,11 +1069,12 @@ struct TryOpLowering : public OpConversionPattern<sol::TryOp> {
       r.setInsertionPointToStart(&thenEntry);
       r.create<sol::StoreOp>(loc, bExt.genBool(false), runFallbackFlag);
       // Replace the panic code block arg with the panic code at offset 4.
-      r.create<sol::ReturnDataCopyOp>(loc, /*dst=*/zero,
+      BlockArgument blkArg = thenEntry.getArgument(0);
+      r.create<sol::ReturnDataCopyOp>(blkArg.getLoc(), /*dst=*/zero,
                                       /*src=*/bExt.genI256Const(4),
                                       /*size=*/bExt.genI256Const(0x20));
-      r.replaceAllUsesWith(thenEntry.getArgument(0),
-                           r.create<sol::MLoadOp>(loc, zero));
+      r.replaceAllUsesWith(blkArg,
+                           r.create<sol::MLoadOp>(blkArg.getLoc(), zero));
       thenEntry.eraseArgument(0);
     }
 
@@ -1081,7 +1082,53 @@ struct TryOpLowering : public OpConversionPattern<sol::TryOp> {
     // Error case region
     //
     if (!tryOp.getErrorRegion().empty()) {
-      llvm_unreachable("NYI");
+      // FIXME: We should query for the case region using the attribute!
+      unsigned errorCaseIdx = switchSelectors.size() == 2 ? 1 : 0;
+      r.setInsertionPointToStart(
+          &switchOp.getCaseRegions()[errorCaseIdx].emplaceBlock());
+      r.setInsertionPoint(r.create<sol::YieldOp>(loc));
+
+      // Genereate an if op that checks if the returndata is large enough to
+      // hold the error message.
+      auto errMsgRetCond =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::uge,
+                                  returnDataSize, bExt.genI256Const(0x44));
+      auto ifErrMsg = r.create<sol::IfOp>(loc, errMsgRetCond);
+
+      // Inline the error region.
+      r.inlineRegionBefore(tryOp.getErrorRegion(), ifErrMsg.getThenRegion(),
+                           ifErrMsg.getThenRegion().begin());
+      Block &thenEntry = ifErrMsg.getThenRegion().front();
+      r.setInsertionPointToStart(&thenEntry);
+      r.create<sol::StoreOp>(loc, bExt.genBool(false), runFallbackFlag);
+
+      // Generate the error message extraction code from the return data and
+      // replace the block argument with it.
+      //
+      // TODO: Is it necessary to generate all the checks in
+      // YulUtilFunctions::tryDecodeErrorMessageFunction()?
+      BlockArgument blkArg = thenEntry.getArgument(0);
+      Location loc = blkArg.getLoc();
+      evm::Builder evmB(r, loc);
+      Value abiTupleSize =
+          r.create<arith::SubIOp>(loc, returnDataSize, bExt.genI256Const(4));
+      Value abiTuple = evmB.genMemAlloc(abiTupleSize);
+      r.create<sol::ReturnDataCopyOp>(loc, /*dst=*/abiTuple,
+                                      /*src=*/bExt.genI256Const(4),
+                                      abiTupleSize);
+      Value errMsgOffset = r.create<sol::MLoadOp>(loc, abiTuple);
+      Value errMsg = r.create<arith::AddIOp>(loc, abiTuple, errMsgOffset);
+      auto errMsgRepl = getTypeConverter()->materializeSourceConversion(
+          r, loc, blkArg.getType(), errMsg);
+
+      // FIXME: Why does the following cause a "no matched legalization pattern"
+      // of the op from the materialization? Is this related to early
+      // legalization of in-place modifications?
+      // (https://discourse.llvm.org/t/dialect-conversion-fails-if-some-requires-recursive-application/79371/6)
+      // r.replaceAllUsesWith(blkArg, errMsgRepl);
+      blkArg.replaceAllUsesWith(errMsgRepl);
+
+      thenEntry.eraseArgument(0);
     }
 
     //
