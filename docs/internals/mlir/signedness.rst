@@ -1,6 +1,7 @@
-********************
+.. _mlir-signedness:
+
 Signedness semantics
-********************
+====================
 Both signless and (un)signed representation of integer types in the high level
 IR will work. (un)signed types might be more easier to maintain at this stage.
 Here are some motivations for it:
@@ -20,7 +21,7 @@ We should move back to the signless representation iff we see a strong
 motivation for it.
 
 Relevant info
-^^^^^^^^^^^^^
+-------------
 - https://nondot.org/sabre/LLVMNotes/TypeSystemChanges.txt
 - https://www.npopov.com/2021/06/02/Design-issues-in-LLVM-IR.html#canonicalization
 - https://github.com/llvm/clangir/issues/62

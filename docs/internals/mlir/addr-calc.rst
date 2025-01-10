@@ -1,4 +1,4 @@
-.. _addr-calc:
+.. _mlir-addr-calc:
 
 Address calculation
 ===================

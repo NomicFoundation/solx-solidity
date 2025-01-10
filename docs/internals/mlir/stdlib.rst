@@ -1,3 +1,5 @@
+.. _mlir-stdlib:
+
 Bytecode stdlib
 ===============
 Simple lowering should continue using OpBuilder. But lengthy lowering might be
@@ -5,7 +7,6 @@ easier to maintain by linking to a stdlib in mlir bytecode.
 
 A stdlib func op can represent a snippet of ir.  Each target could have
 pre-compiled bytecode for each stdlib func op.
-
 
 Pre-processing
 --------------

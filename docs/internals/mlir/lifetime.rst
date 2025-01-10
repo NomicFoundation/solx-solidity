@@ -1,4 +1,4 @@
-.. _lifetime:
+.. _mlir-lifetime:
 
 Lifetime
 ========
@@ -11,6 +11,7 @@ statically know that it's the last allocation before termination).  This can be
 seen in the following forwarding revert lowering.
 
 .. code-block:: yul
+
   function <functionName>() {
     let pos := <allocateUnbounded>()
     returndatacopy(pos, 0, returndatasize())
@@ -18,10 +19,11 @@ seen in the following forwarding revert lowering.
   }
 
 The current mlir lowering lowers memory allocations to the `sol.malloc` op which
-yields a high level address type (see :ref:`addr-calc`).  This allows us to
+yields a high level address type (see :ref:`mlir-addr-calc`).  This allows us to
 detect local allocations like:
 
 .. code-block:: solidity
+
    {
      uint[10] memory a;
      // ...
@@ -38,6 +40,7 @@ all). There are challenges like:
   unbounded allocations in the following:
 
 .. code-block:: solidity
+
    {
      <alloc-a>; // local
      <alloc-b>; // global
