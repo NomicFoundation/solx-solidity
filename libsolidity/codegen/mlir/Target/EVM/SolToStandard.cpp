@@ -1602,13 +1602,11 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
       auto origIfcFnTy =
           cast<FunctionType>(cast<TypeAttr>(ifcFnAttr.get("type")).getValue());
 
+      assert(ifcFnOp.getStateMutability());
+      sol::StateMutability stateMutability = *ifcFnOp.getStateMutability();
+
       if (contrOp.getKind() == sol::ContractKind::Library) {
-        auto optStateMutability = ifcFnOp.getStateMutability();
-        assert(optStateMutability);
-        sol::StateMutability stateMutability = *optStateMutability;
-
-        assert(!(stateMutability == sol::StateMutability::Payable));
-
+        assert(stateMutability != sol::StateMutability::Payable);
         if (stateMutability > sol::StateMutability::View) {
           assert(false && "NYI: Delegate call check");
         }
@@ -1618,8 +1616,8 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
       mlir::Block *caseBlk = r.createBlock(&caseRegion);
       r.setInsertionPointToStart(caseBlk);
 
-      if (!(contrOp.getKind() ==
-            sol::ContractKind::Library /* || func.isPayable() */)) {
+      if (contrOp.getKind() != sol::ContractKind::Library &&
+          stateMutability != sol::StateMutability::Payable) {
         genCallValChk(r, loc);
       }
 
@@ -1712,8 +1710,12 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 
     genFreePtrInit(r, loc);
 
-    if (!ctor /* TODO: || !op.ctor.isPayable() */) {
+    if (!ctor) {
       genCallValChk(r, loc);
+    } else {
+      assert(ctor.getStateMutability());
+      if (*ctor.getStateMutability() != sol::StateMutability::Payable)
+        genCallValChk(r, loc);
     }
 
     // Generate the call to constructor (if required).
