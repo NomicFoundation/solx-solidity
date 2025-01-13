@@ -21,6 +21,7 @@
  * Framework for executing Solidity contracts and testing them against C++ implementation.
  */
 
+#include <libsolidity/codegen/mlir/Interface.h>
 #include <test/libsolidity/SolidityExecutionFramework.h>
 #include <test/libsolidity/util/Common.h>
 
@@ -61,6 +62,8 @@ bytes SolidityExecutionFramework::multiSourceCompileContract(
 	m_compiler.setEOFVersion(m_eofVersion);
 	m_compiler.setOptimiserSettings(m_optimiserSettings);
 	m_compiler.setViaIR(m_compileViaYul);
+	if (m_compileViaMlir)
+		m_compiler.setMLIRGenJobSpec({mlirgen::Action::GenObj, mlirgen::Target::EVM, '3'});
 	m_compiler.setRevertStringBehaviour(m_revertStrings);
 	if (!m_appendCBORMetadata) {
 		m_compiler.setMetadataFormat(CompilerStack::MetadataFormat::NoMetadata);
@@ -80,6 +83,15 @@ bytes SolidityExecutionFramework::multiSourceCompileContract(
 		BOOST_ERROR("Compiling contract failed");
 	}
 	std::string contractName(_contractName.empty() ? m_compiler.lastContractName(_mainSourceName) : _contractName);
+	if (m_compileViaMlir)
+	{
+		std::string bytecode = m_compiler.creationBytecodeFromMlirPipeline(contractName);
+		bytecode += m_compiler.runtimeBytecodeFromMlirPipeline(contractName);
+		bytes ret;
+		for (auto c: bytecode)
+			ret.push_back(c);
+		return ret;
+	}
 	evmasm::LinkerObject obj = m_compiler.object(contractName);
 	BOOST_REQUIRE(obj.linkReferences.empty());
 	if (m_showMetadata)

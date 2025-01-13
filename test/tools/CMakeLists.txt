@@ -1,3 +1,4 @@
+add_subdirectory(soltest-mlir)
 add_subdirectory(ossfuzz)
 
 add_subdirectory(yulInterpreter)

@@ -240,10 +240,8 @@ static void genEvmBytecode(llvm::Module &creationMod, llvm::Module &runtimeMod,
   LLVMMemoryBufferRef bytecodes[2];
   if (LLVMLinkEVM(objs, objIds, /*numInBuffers=*/2, bytecodes, &errMsg))
     llvm_unreachable(errMsg);
-  out.creationBytecode = llvm::toHex(llvm::unwrap(bytecodes[0])->getBuffer(),
-                                     /*LowerCase=*/true);
-  out.runtimeBytecode = llvm::toHex(llvm::unwrap(bytecodes[1])->getBuffer(),
-                                    /*LowerCase=*/true);
+  out.creationBytecode = llvm::unwrap(bytecodes[0])->getBuffer();
+  out.runtimeBytecode = llvm::unwrap(bytecodes[1])->getBuffer();
 
   LLVMDisposeMemoryBuffer(objs[0]);
   LLVMDisposeMemoryBuffer(objs[1]);
@@ -272,8 +270,7 @@ static void genEraVMBytecode(llvm::Module &llvmMod,
                     /*numFactoryDependencySymbols=*/0, &errMsg))
     llvm_unreachable(errMsg);
 
-  out.creationBytecode = llvm::toHex(llvm::unwrap(bytecode)->getBuffer(),
-                                     /*LowerCase=*/true);
+  out.creationBytecode = llvm::unwrap(bytecode)->getBuffer();
   out.runtimeBytecode = out.creationBytecode;
 
   LLVMDisposeMemoryBuffer(obj);

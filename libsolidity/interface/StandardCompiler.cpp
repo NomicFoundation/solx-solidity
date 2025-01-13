@@ -42,6 +42,8 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
+#include <llvm/ADT/StringExtras.h>
+
 #include <algorithm>
 #include <optional>
 
@@ -1590,9 +1592,11 @@ Json StandardCompiler::compileSolidity(StandardCompiler::InputsAndSettings _inpu
 		{
 			// Overwrite object fields with the bytecode from the mlir pipeline.
 			if (evmData.contains("bytecode") && evmData["bytecode"].contains("object"))
-				evmData["bytecode"]["object"] = compilerStack.creationBytecodeFromMlirPipeline(contractName);
+				evmData["bytecode"]["object"]
+					= llvm::toHex(compilerStack.creationBytecodeFromMlirPipeline(contractName), /*LowerCase=*/true);
 			if (evmData.contains("deployedBytecode") && evmData["deployedBytecode"].contains("object"))
-				evmData["deployedBytecode"]["object"] = compilerStack.runtimeBytecodeFromMlirPipeline(contractName);
+				evmData["deployedBytecode"]["object"]
+					= llvm::toHex(compilerStack.runtimeBytecodeFromMlirPipeline(contractName), /*LowerCase=*/true);
 		}
 
 		if (!evmData.empty())
