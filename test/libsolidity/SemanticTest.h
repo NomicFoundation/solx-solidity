@@ -117,6 +117,7 @@ private:
 	std::vector<TestFunctionCall> m_tests;
 	std::map<std::string, Builtin> const m_builtins;
 	std::vector<SideEffectHook> const m_sideEffectHooks;
+	bool m_testCaseWantsMlirRun = false;
 	bool m_testCaseWantsYulRun = true;
 	bool m_testCaseWantsLegacyRun = true;
 	bool m_runWithABIEncoderV1Only = false;

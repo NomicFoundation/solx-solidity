@@ -74,6 +74,7 @@ SemanticTest::SemanticTest(
 	m_enforceGasCostMinValue(std::move(_enforceGasCostMinValue))
 {
 	static std::set<std::string> const compileViaYulAllowedValues{"also", "true", "false"};
+	static std::set<std::string> const mlirRunTriggers{"true"};
 	static std::set<std::string> const yulRunTriggers{"also", "true"};
 	static std::set<std::string> const legacyRunTriggers{"also", "false", "default"};
 
@@ -91,6 +92,7 @@ SemanticTest::SemanticTest(
 	if (m_runWithABIEncoderV1Only && !solidity::test::CommonOptions::get().useABIEncoderV1)
 		m_shouldRun = false;
 
+	std::string compileViaMlir = m_reader.stringSetting("compileViaMlir", "false");
 	std::string compileViaYul = m_reader.stringSetting("compileViaYul", "also");
 	if (m_runWithABIEncoderV1Only && compileViaYul != "false")
 		BOOST_THROW_EXCEPTION(std::runtime_error(
@@ -99,6 +101,7 @@ SemanticTest::SemanticTest(
 		));
 	if (!util::contains(compileViaYulAllowedValues, compileViaYul))
 		BOOST_THROW_EXCEPTION(std::runtime_error("Invalid compileViaYul value: " + compileViaYul + "."));
+	m_testCaseWantsMlirRun = util::contains(mlirRunTriggers, compileViaMlir);
 	m_testCaseWantsYulRun = util::contains(yulRunTriggers, compileViaYul);
 	m_testCaseWantsLegacyRun = util::contains(legacyRunTriggers, compileViaYul);
 
@@ -351,6 +354,7 @@ TestCase::TestResult SemanticTest::runTest(
 
 	reset();
 
+	m_compileViaMlir = m_testCaseWantsMlirRun;
 	m_compileViaYul = _isYulRun;
 
 	if (_isYulRun)

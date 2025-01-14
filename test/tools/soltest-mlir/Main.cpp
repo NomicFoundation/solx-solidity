@@ -42,7 +42,11 @@ struct ExecFramework: frontend::test::SolidityExecutionFramework
 		}
 	  )";
 
+		// m_optimiserSettings = solidity::frontend::OptimiserSettings::full();
+		// m_compileViaYul = true;
+
 		m_compileViaMlir = true;
+
 		m_showMessages = true;
 		// FIXME: How do I query the m_vm of EVMHost?
 		m_evmcHost->getVM(VM_PATH).set_option("trace", "yes");
