@@ -14,9 +14,8 @@ function main() returns (uint) {
 // CHECK-NEXT: module attributes {sol.evm_version = #Cancun} {
 // CHECK-NEXT:   func.func private @__personality() -> i32 attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
 // CHECK-NEXT:   func.func @ret_8() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
-// CHECK-NEXT:     %c42_i8 = arith.constant 42 : i8 loc(#loc2)
-// CHECK-NEXT:     %0 = arith.extui %c42_i8 : i8 to i256 loc(#loc2)
-// CHECK-NEXT:     return %0 : i256 loc(#loc3)
+// CHECK-NEXT:     %c42_i256 = arith.constant 42 : i256 loc(#loc2)
+// CHECK-NEXT:     return %c42_i256 : i256 loc(#loc3)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT:   func.func @no_ret_14(%arg0: i256 loc(unknown)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc5)
@@ -25,11 +24,10 @@ function main() returns (uint) {
 // CHECK-NEXT:     return loc(#loc4)
 // CHECK-NEXT:   } loc(#loc4)
 // CHECK-NEXT:   func.func @main_27() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
-// CHECK-NEXT:     %c42_i8 = arith.constant 42 : i8 loc(#loc7)
-// CHECK-NEXT:     %0 = arith.extui %c42_i8 : i8 to i256 loc(#loc7)
-// CHECK-NEXT:     call @no_ret_14(%0) : (i256) -> () loc(#loc8)
-// CHECK-NEXT:     %1 = call @ret_8() : () -> i256 loc(#loc9)
-// CHECK-NEXT:     return %1 : i256 loc(#loc10)
+// CHECK-NEXT:     %c42_i256 = arith.constant 42 : i256 loc(#loc7)
+// CHECK-NEXT:     call @no_ret_14(%c42_i256) : (i256) -> () loc(#loc8)
+// CHECK-NEXT:     %0 = call @ret_8() : () -> i256 loc(#loc9)
+// CHECK-NEXT:     return %0 : i256 loc(#loc10)
 // CHECK-NEXT:   } loc(#loc6)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)

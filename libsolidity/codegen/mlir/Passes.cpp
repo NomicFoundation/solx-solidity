@@ -22,6 +22,7 @@
 #include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Export.h"
+#include "mlir/Transforms/Passes.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/Target.h"
 #include "llvm-c/TargetMachine.h"
@@ -45,6 +46,9 @@ void solidity::mlirgen::addConversionPasses(mlir::PassManager &passMgr,
                                             Target tgt) {
   passMgr.addPass(mlir::sol::createModifierOpLoweringPass());
   passMgr.addPass(mlir::sol::createConvertSolToStandardPass(tgt));
+  // Canonicalizer removes unreachable blocks, which is important for getting
+  // the translation to llvm-ir working correctly.
+  passMgr.addPass(mlir::createCanonicalizerPass());
 
   // FIXME: Adding individual conversion passes for each dialects causes
   // unrealized_conversion_cast's with index types.
@@ -291,6 +295,7 @@ bool solidity::mlirgen::doJob(JobSpec const &job, mlir::ModuleOp mod,
     assert(job.tgt != Target::Undefined);
     passMgr.addPass(mlir::sol::createModifierOpLoweringPass());
     passMgr.addPass(mlir::sol::createConvertSolToStandardPass(job.tgt));
+    passMgr.addPass(mlir::createCanonicalizerPass());
     if (mlir::failed(passMgr.run(mod)))
       llvm_unreachable("Conversion to standard dialects failed");
     mod.print(llvm::outs());

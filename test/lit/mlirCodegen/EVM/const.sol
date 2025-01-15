@@ -8,9 +8,8 @@ function ui256() returns (uint256) { return 578960446186580977117854925043439539
 // CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
 // CHECK-NEXT: module attributes {sol.evm_version = #Cancun} {
 // CHECK-NEXT:   func.func @ui8_8() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #NonPayable} {
-// CHECK-NEXT:     %c42_i8 = arith.constant 42 : i8 loc(#loc2)
-// CHECK-NEXT:     %0 = arith.extui %c42_i8 : i8 to i256 loc(#loc2)
-// CHECK-NEXT:     return %0 : i256 loc(#loc3)
+// CHECK-NEXT:     %c42_i256 = arith.constant 42 : i256 loc(#loc2)
+// CHECK-NEXT:     return %c42_i256 : i256 loc(#loc3)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT:   func.func @ui256_16() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c-57896044618658097711785492504343953926634992332820282019728792003956564819968_i256 = arith.constant -57896044618658097711785492504343953926634992332820282019728792003956564819968 : i256 loc(#loc5)

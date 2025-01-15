@@ -2,8 +2,9 @@ contract C {
   uint s;
   function f() public { s = 42; }
   function g() public returns (uint) { return s; }
-  function h(uint a) public returns (uint) { return a; }
-  function i(uint a, uint b) public returns (uint) { return a + b; }
+  function i0(uint a) public returns (uint) { return a; }
+  function i1(uint a, uint b) public returns (uint) { return a + b; }
+  function b(bool a) public returns (bool) { return a; }
 }
 
 // ====
@@ -11,5 +12,6 @@ contract C {
 // ----
 // f()
 // g() -> 42
-// h(uint256): 1 -> 1
-// i(uint256,uint256): 2, 1 -> 3
+// i0(uint256): 1 -> 1
+// i1(uint256,uint256): 2, 1 -> 3
+// b(bool): 0 -> false

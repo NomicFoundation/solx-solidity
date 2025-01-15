@@ -17,9 +17,8 @@ function addr() returns (address) {
 // CHECK-NEXT:     return %0 : i256 loc(#loc3)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT:   func.func @addr_20() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #NonPayable} {
-// CHECK-NEXT:     %c0_i8 = arith.constant 0 : i8 loc(#loc5)
-// CHECK-NEXT:     %0 = arith.extui %c0_i8 : i8 to i256 loc(#loc5)
-// CHECK-NEXT:     return %0 : i256 loc(#loc6)
+// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc5)
+// CHECK-NEXT:     return %c0_i256 : i256 loc(#loc6)
 // CHECK-NEXT:   } loc(#loc4)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)

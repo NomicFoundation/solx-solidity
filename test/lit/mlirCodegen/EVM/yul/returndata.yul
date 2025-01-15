@@ -11,17 +11,15 @@ object "Test" {
 // CHECK-NEXT: module @Test attributes {sol.evm_version = #Cancun} {
 // CHECK-NEXT:   func.func private @__entry() attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc1)
-// CHECK-NEXT:     %c0_i256_0 = arith.constant 0 : i256 loc(#loc2)
-// CHECK-NEXT:     %0 = "llvm.intrcall"() <{id = 3253 : i32, name = "evm.returndatasize"}> : () -> i256 loc(#loc3)
-// CHECK-NEXT:     %1 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc4)
-// CHECK-NEXT:     %2 = llvm.inttoptr %c0_i256_0 : i256 to !llvm.ptr<3> loc(#loc4)
-// CHECK-NEXT:     "llvm.intr.memcpy"(%1, %2, %0) <{isVolatile = false}> : (!llvm.ptr<1>, !llvm.ptr<3>, i256) -> () loc(#loc4)
+// CHECK-NEXT:     %0 = "llvm.intrcall"() <{id = 3253 : i32, name = "evm.returndatasize"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:     %1 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc3)
+// CHECK-NEXT:     %2 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<3> loc(#loc3)
+// CHECK-NEXT:     "llvm.intr.memcpy"(%1, %2, %0) <{isVolatile = false}> : (!llvm.ptr<1>, !llvm.ptr<3>, i256) -> () loc(#loc3)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:4:19)
-// CHECK-NEXT: #loc2 = loc({{.*}}:4:22)
-// CHECK-NEXT: #loc3 = loc({{.*}}:4:25)
-// CHECK-NEXT: #loc4 = loc({{.*}}:4:4)
+// CHECK-NEXT: #loc2 = loc({{.*}}:4:25)
+// CHECK-NEXT: #loc3 = loc({{.*}}:4:4)
 // CHECK-EMPTY:
