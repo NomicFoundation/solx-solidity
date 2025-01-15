@@ -18,7 +18,7 @@ contract C {
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT:   func.func private @__entry() attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c32_i256 = arith.constant 32 : i256 loc(#loc1)
-// CHECK-NEXT:     %c24_i256 = arith.constant 24 : i256 loc(#loc1)
+// CHECK-NEXT:     %c36_i256 = arith.constant 36 : i256 loc(#loc1)
 // CHECK-NEXT:     %c65_i256 = arith.constant 65 : i256 loc(#loc1)
 // CHECK-NEXT:     %c4_i256 = arith.constant 4 : i256 loc(#loc1)
 // CHECK-NEXT:     %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256 = arith.constant 35408467139433450592217433187231851964531694900788300625387963629091585785856 : i256 loc(#loc1)
@@ -50,7 +50,7 @@ contract C {
 // CHECK-NEXT:       %26 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:       llvm.store %c65_i256, %26 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:       %27 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       "llvm.intrcall"(%27, %c24_i256) <{id = 3254 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:       "llvm.intrcall"(%27, %c36_i256) <{id = 3254 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     %12 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1> loc(#loc1)

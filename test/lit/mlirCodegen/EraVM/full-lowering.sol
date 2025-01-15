@@ -217,7 +217,7 @@ contract C {
 // CHECK-NEXT: 11:                                               ; preds = %0
 // CHECK-NEXT:   store i256 35408467139433450592217433187231851964531694900788300625387963629091585785856, ptr addrspace(1) null, align 1
 // CHECK-NEXT:   store i256 65, ptr addrspace(1) inttoptr (i256 4 to ptr addrspace(1)), align 1
-// CHECK-NEXT:   call void @__revert(i256 0, i256 24, i256 0)
+// CHECK-NEXT:   call void @__revert(i256 0, i256 36, i256 0)
 // CHECK-NEXT:   call void @.unreachable()
 // CHECK-NEXT:   br label %12
 // CHECK-EMPTY:
@@ -699,7 +699,7 @@ contract C {
 // ASM-NEXT: 	stm.h	0, r1
 // ASM-NEXT: 	add	65, r0, r1
 // ASM-NEXT: 	stm.h	4, r1
-// ASM-NEXT: 	add	24, r0, r2
+// ASM-NEXT: 	add	36, r0, r2
 // ASM-NEXT: 	add	r0, r0, r1
 // ASM-NEXT: 	add	r0, r0, r3
 // ASM-NEXT: 	call	r0, @__revert, @DEFAULT_UNWIND

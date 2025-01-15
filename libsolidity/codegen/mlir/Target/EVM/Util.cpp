@@ -462,7 +462,7 @@ void evm::Builder::genPanic(solidity::util::PanicCode code, Value cond,
         b.create<sol::MStoreOp>(loc, bExt.genI256Const(4),
                                 bExt.genI256Const(static_cast<int64_t>(code)));
         b.create<sol::RevertOp>(loc, bExt.genI256Const(0),
-                                bExt.genI256Const(24));
+                                bExt.genI256Const(0x24));
         b.create<scf::YieldOp>(loc);
       });
 }

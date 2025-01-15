@@ -269,9 +269,9 @@ module {
 // CHECK-NEXT:       %21 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:       llvm.store %c65_i256, %21 {alignment = 1 : i64} : i256, !llvm.ptr<1>
 // CHECK-NEXT:       %c0_i256_7 = arith.constant 0 : i256
-// CHECK-NEXT:       %c24_i256 = arith.constant 24 : i256
+// CHECK-NEXT:       %c36_i256 = arith.constant 36 : i256
 // CHECK-NEXT:       %c2_i256 = arith.constant 2 : i256
-// CHECK-NEXT:       func.call @__revert(%c0_i256_7, %c24_i256, %c2_i256) : (i256, i256, i256) -> ()
+// CHECK-NEXT:       func.call @__revert(%c0_i256_7, %c36_i256, %c2_i256) : (i256, i256, i256) -> ()
 // CHECK-NEXT:       func.call @".unreachable"() : () -> ()
 // CHECK-NEXT:     }
 // CHECK-NEXT:     %c64_i256_2 = arith.constant 64 : i256
@@ -336,9 +336,9 @@ module {
 // CHECK-NEXT:       %21 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:       llvm.store %c65_i256, %21 {alignment = 1 : i64} : i256, !llvm.ptr<1>
 // CHECK-NEXT:       %c0_i256_7 = arith.constant 0 : i256
-// CHECK-NEXT:       %c24_i256 = arith.constant 24 : i256
+// CHECK-NEXT:       %c36_i256 = arith.constant 36 : i256
 // CHECK-NEXT:       %c0_i256_8 = arith.constant 0 : i256
-// CHECK-NEXT:       func.call @__revert(%c0_i256_7, %c24_i256, %c0_i256_8) : (i256, i256, i256) -> ()
+// CHECK-NEXT:       func.call @__revert(%c0_i256_7, %c36_i256, %c0_i256_8) : (i256, i256, i256) -> ()
 // CHECK-NEXT:       func.call @".unreachable"() : () -> ()
 // CHECK-NEXT:     }
 // CHECK-NEXT:     %c64_i256_2 = arith.constant 64 : i256
