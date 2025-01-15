@@ -57,6 +57,7 @@ contract C {
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT:   func.func private @__runtime() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime} {
+// CHECK-NEXT:     %c132_i256 = arith.constant 132 : i256 loc(#loc1)
 // CHECK-NEXT:     %c100_i256 = arith.constant 100 : i256 loc(#loc1)
 // CHECK-NEXT:     %c68_i256 = arith.constant 68 : i256 loc(#loc1)
 // CHECK-NEXT:     %c36_i256 = arith.constant 36 : i256 loc(#loc1)
@@ -123,7 +124,7 @@ contract C {
 // CHECK-NEXT:           %67 = arith.addi %59, %c100_i256 : i256 loc(#loc1)
 // CHECK-NEXT:           %68 = llvm.inttoptr %67 : i256 to !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:           llvm.store %c45888551966424197807937402689295079693071411769653575580334356259971920822272_i256, %68 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:           func.call @__revert(%59, %c36_i256, %c0_i256) : (i256, i256, i256) -> () loc(#loc1)
+// CHECK-NEXT:           func.call @__revert(%59, %c132_i256, %c0_i256) : (i256, i256, i256) -> () loc(#loc1)
 // CHECK-NEXT:           func.call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:         } loc(#loc1)
 // CHECK-NEXT:         %19 = llvm.mlir.addressof @ptr_calldata : !llvm.ptr<ptr<3>> loc(#loc1)

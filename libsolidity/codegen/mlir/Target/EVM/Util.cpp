@@ -344,14 +344,16 @@ Value evm::Builder::genABITupleEncoding(std::string const &str, Value headStart,
   solidity::mlirgen::BuilderExt bExt(b, loc);
 
   // Generate the offset store at the head address.
-  mlir::Value thirtyTwo = bExt.genI256Const(32);
+  Value thirtyTwo = bExt.genI256Const(32);
   b.create<sol::MStoreOp>(loc, headStart, thirtyTwo);
 
   // Generate the string creation at the tail address.
   auto tailAddr = b.create<arith::AddIOp>(loc, headStart, thirtyTwo);
   genStringStore(str, tailAddr, locArg);
+  Value stringSize = bExt.genI256Const(
+      32 + solidity::mlirgen::getRoundUpToMultiple<32>(str.length()));
 
-  return tailAddr;
+  return b.create<arith::AddIOp>(loc, tailAddr, stringSize);
 }
 
 void evm::Builder::genABITupleDecoding(TypeRange tys, Value tupleStart,

@@ -14,6 +14,7 @@ function f(uint256 a) {
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT:   func.func @f_19(%arg0: i256 loc(unknown)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #NonPayable} {
+// CHECK-NEXT:     %c100_i256 = arith.constant 100 : i256 loc(#loc3)
 // CHECK-NEXT:     %c68_i256 = arith.constant 68 : i256 loc(#loc3)
 // CHECK-NEXT:     %c36_i256 = arith.constant 36 : i256 loc(#loc3)
 // CHECK-NEXT:     %c42_i256 = arith.constant 42 : i256 loc(#loc4)
@@ -54,7 +55,7 @@ function f(uint256 a) {
 // CHECK-NEXT:       %15 = llvm.inttoptr %14 : i256 to !llvm.ptr<1> loc(#loc3)
 // CHECK-NEXT:       llvm.store %c31858788171200504151793243853063220343653306658425181981798228421623473504256_i256, %15 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc3)
 // CHECK-NEXT:       %16 = llvm.inttoptr %8 : i256 to !llvm.ptr<1> loc(#loc3)
-// CHECK-NEXT:       "llvm.intrcall"(%16, %c36_i256) <{id = 3254 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc3)
+// CHECK-NEXT:       "llvm.intrcall"(%16, %c100_i256) <{id = 3254 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc3)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc3)
 // CHECK-NEXT:     } loc(#loc3)
 // CHECK-NEXT:     return loc(#loc2)

@@ -36,6 +36,7 @@
 #include "mlir/IR/Types.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/Support/MathExtras.h"
 #include <optional>
 #include <utility>
 
@@ -43,6 +44,12 @@ namespace solidity {
 namespace mlirgen {
 
 mlir::APInt getAPInt(solidity::u256 &val, unsigned numBits);
+
+/// Generates the round-up to multiple.
+template <unsigned multiple>
+unsigned getRoundUpToMultiple(unsigned val) {
+  return ((val + (multiple - 1)) / multiple) * multiple;
+}
 
 /// Extension of mlir::OpBuilder with APIs helpful for codegen in solidity.
 class BuilderExt {
@@ -160,11 +167,12 @@ public:
     return op.getResult();
   }
 
-  /// Generates the round-up to multiple.
+  /// Generates the round-up to a power-of-2 multiple.
   template <unsigned multiple>
   mlir::Value
   genRoundUpToMultiple(mlir::Value val,
                        std::optional<mlir::Location> locArg = std::nullopt) {
+    static_assert(llvm::isPowerOf2_32(multiple));
     mlir::Location loc = locArg ? *locArg : defLoc;
     auto add =
         b.create<mlir::arith::AddIOp>(loc, val, genI256Const(multiple - 1));
