@@ -1,5 +1,5 @@
 contract C {
-  function uc(uint a, uint b) public returns(uint) {
+  function uc(uint a, uint b) public returns (uint) {
     uint r = 0;
     unchecked {
     r += a + b;
@@ -9,7 +9,7 @@ contract C {
     return r;
   }
 
-  function c(uint a, uint b) public returns(uint) {
+  function c(uint a, uint b) public returns (uint) {
     return a + b;
   }
 }

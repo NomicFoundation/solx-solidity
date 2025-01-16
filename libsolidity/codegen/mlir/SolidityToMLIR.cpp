@@ -538,11 +538,11 @@ mlir::Value SolidityToMLIRPass::genBinExpr(Token op, mlir::Value lhs,
 }
 
 mlir::Value SolidityToMLIRPass::genExpr(BinaryOperation const *binOp) {
-  mlir::Type resTy = getType(binOp->leftExpression().annotation().type);
+  mlir::Type argTy = getType(binOp->annotation().commonType);
   auto loc = getLoc(binOp->location());
 
-  mlir::Value lhs = genRValExpr(&binOp->leftExpression(), resTy);
-  mlir::Value rhs = genRValExpr(&binOp->rightExpression(), resTy);
+  mlir::Value lhs = genRValExpr(&binOp->leftExpression(), argTy);
+  mlir::Value rhs = genRValExpr(&binOp->rightExpression(), argTy);
 
   return genBinExpr(binOp->getOperator(), lhs, rhs, loc);
 }

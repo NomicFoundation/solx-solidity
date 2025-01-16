@@ -1,9 +1,9 @@
 contract C {
-  function f(bool a) public returns(bool) {
+  function f(bool a) public returns (bool) {
     require(a);
     return a;
   }
-  function g(bool a) public returns(bool) {
+  function g(bool a) public returns (bool) {
     require(a, "foobar");
     return a;
   }
