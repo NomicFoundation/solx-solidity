@@ -27,11 +27,10 @@ contract C {
   }
 }
 
-// FIXME:
-// f(bool,uint256): false, 1
 // ====
 // compileViaMlir: true
 // ----
 // f(bool,uint256): true, 1 -> 1
 // f(bool,uint256): true, 3 -> 0x11
+// f(bool,uint256): false, 1 -> FAILURE, hex"08c379a0", 0x20, 6, "foobar"
 // g() -> 0x20, 6, "foobar"

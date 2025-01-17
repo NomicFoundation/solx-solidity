@@ -469,21 +469,26 @@ void evm::Builder::genPanic(solidity::util::PanicCode code, Value cond,
       });
 }
 
-void evm::Builder::genForwardingRevert(Value cond,
-                                       std::optional<Location> locArg) {
+void evm::Builder::genForwardingRevert(std::optional<Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;
   solidity::mlirgen::BuilderExt bExt(b, loc);
-
-  auto ifOp = b.create<scf::IfOp>(loc, cond);
-
-  OpBuilder::InsertionGuard insertGuard(b);
-  b.setInsertionPointToStart(&ifOp.getThenRegion().front());
 
   Value freePtr = genFreePtr(loc);
   Value retDataSize = b.create<sol::ReturnDataSizeOp>(loc);
   b.create<sol::ReturnDataCopyOp>(loc, /*dst=*/freePtr,
                                   /*src=*/bExt.genI256Const(0), retDataSize);
   b.create<sol::RevertOp>(loc, freePtr, retDataSize);
+}
+
+void evm::Builder::genForwardingRevert(Value cond,
+                                       std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+
+  auto ifOp = b.create<scf::IfOp>(loc, cond);
+
+  OpBuilder::InsertionGuard insertGuard(b);
+  b.setInsertionPointToStart(&ifOp.getThenRegion().front());
+  genForwardingRevert(loc);
 }
 
 void evm::Builder::genRevert(Value cond, std::optional<Location> locArg) {

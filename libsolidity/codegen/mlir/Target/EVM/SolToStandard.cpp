@@ -961,30 +961,31 @@ struct TryOpLowering : public OpConversionPattern<sol::TryOp> {
 
     auto ifStatus = r.create<sol::IfOp>(loc, tryOp.getStatus());
 
-    auto genEmptyBlk = [&](Region &region) {
-      OpBuilder::InsertionGuard guard(r);
-      r.setInsertionPointToStart(&region.emplaceBlock());
-      r.create<sol::YieldOp>(loc);
-    };
-
     //
     // Success region
     //
 
-    if (tryOp.getSuccessRegion().empty())
-      genEmptyBlk(ifStatus.getThenRegion());
-    else
+    if (tryOp.getSuccessRegion().empty()) {
+      r.setInsertionPointToStart(&tryOp.getSuccessRegion().emplaceBlock());
+      r.create<sol::YieldOp>(loc);
+    } else {
       r.inlineRegionBefore(tryOp.getSuccessRegion(), ifStatus.getThenRegion(),
                            ifStatus.getThenRegion().begin());
+    }
+
     //
     // Failure region
     //
 
-    if (tryOp.getFallbackRegion().empty())
-      genEmptyBlk(ifStatus.getElseRegion());
-    else
+    if (tryOp.getFallbackRegion().empty()) {
+      evm::Builder evmB(r, loc);
+      r.setInsertionPointToStart(&ifStatus.getElseRegion().emplaceBlock());
+      evmB.genForwardingRevert();
+      r.setInsertionPoint(r.create<sol::YieldOp>(loc));
+    } else {
       r.inlineRegionBefore(tryOp.getFallbackRegion(), ifStatus.getElseRegion(),
                            ifStatus.getElseRegion().begin());
+    }
 
     if (tryOp.getPanicRegion().empty() && tryOp.getErrorRegion().empty()) {
       r.eraseOp(tryOp);

@@ -195,6 +195,7 @@ public:
                         std::optional<mlir::Location> locArg = std::nullopt);
 
   /// Generates a forwarding revert.
+  void genForwardingRevert(std::optional<mlir::Location> locArg = std::nullopt);
   void genForwardingRevert(mlir::Value cond,
                            std::optional<mlir::Location> locArg = std::nullopt);
 
