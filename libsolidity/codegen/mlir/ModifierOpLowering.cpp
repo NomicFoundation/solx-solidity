@@ -315,12 +315,12 @@ struct ModifierOpLowering
           allocaLd.erase();
         }
 
-        // Insert the sol.modifier_call_blk before all the placeholders the
-        // `callChain`'s tail.
+        // Clone the sol.modifier_call_blk ops before all the placeholders of
+        // the `callChain`'s tail.
         callChain.back().walk([&](sol::PlaceholderOp placeholder) {
           placeholder->getBlock()->getOperations().splice(
               placeholder->getIterator(),
-              modifierCallBlk.getBody()->getOperations());
+              modifierCallBlk.clone().getBody()->getOperations());
         });
         modifierCallBlk.erase();
 
