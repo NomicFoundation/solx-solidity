@@ -365,8 +365,10 @@ def Sol_ForOp : Sol_Op<"for", [LoopOpInterface, NoRegionArguments,
   }];
 }
 
-// TODO: RegionBranchOpInterface
-def Sol_TryOp : Sol_Op<"try", [AutomaticAllocationScope]> {
+def Sol_TryOp : Sol_Op<"try",
+  [DeclareOpInterfaceMethods<RegionBranchOpInterface>,
+   AutomaticAllocationScope]
+> {
   let regions = (region AnyRegion:$successRegion, AnyRegion:$panicRegion,
                         AnyRegion:$errorRegion, AnyRegion:$fallbackRegion);
   let arguments = (ins I1:$status);

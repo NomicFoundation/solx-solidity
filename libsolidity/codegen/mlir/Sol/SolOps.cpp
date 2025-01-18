@@ -436,6 +436,28 @@ void ForOp::getSuccessorRegions(std::optional<unsigned> index,
 }
 
 //===----------------------------------------------------------------------===//
+// TryOp
+//===----------------------------------------------------------------------===//
+
+void TryOp::getSuccessorRegions(std::optional<unsigned> index,
+                                ArrayRef<Attribute> operands,
+                                SmallVectorImpl<RegionSuccessor> &regions) {
+  // All regions branch back to the parent op.
+  if (index) {
+    regions.push_back(RegionSuccessor());
+    return;
+  }
+
+  // TryOp can branch to any non-empty region.
+  for (Region *region : getRegions()) {
+    if (region->empty())
+      regions.push_back(region);
+  }
+
+  return;
+}
+
+//===----------------------------------------------------------------------===//
 // ModifierOp
 //===----------------------------------------------------------------------===//
 
