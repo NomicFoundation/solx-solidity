@@ -110,43 +110,42 @@ struct CAddOpLowering : public OpConversionPattern<sol::CAddOp> {
     auto ty = cast<IntegerType>(op.getType());
     Value lhs = adaptor.getLhs();
     Value rhs = adaptor.getRhs();
-
     Value sum = r.create<arith::AddIOp>(loc, lhs, rhs);
 
-    if (ty.getWidth() == 256) {
-      // Signed 256-bit int type.
-      if (ty.isSigned()) {
-        // (Copied from the yul codegen)
-        // overflow, if x >= 0 and sum < y
-        // underflow, if x < 0 and sum >= y
+    // Unlike via-ir, small int (< i256) arithmetic is "legalized" by the llvm
+    // backend, so we don't need a different codegen for its overflow/underflow
+    // check since the legalized arithmetic works as if the small int is native
+    // to evm.
 
-        auto zero = bExt.genI256Const(0);
+    if (ty.isSigned()) {
+      // (Copied from the yul codegen)
+      // overflow, if x >= 0 and sum < y
+      // underflow, if x < 0 and sum >= y
 
-        // Generate the overflow condition.
-        auto lhsGtEqZero =
-            r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::sge, lhs, zero);
-        auto sumLtRhs =
-            r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, sum, rhs);
-        auto overflowCond = r.create<arith::AndIOp>(loc, lhsGtEqZero, sumLtRhs);
+      auto zero = bExt.genConst(0, ty.getWidth());
 
-        // Generate the underflow condition.
-        auto lhsLtZero =
-            r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, lhs, zero);
-        auto sumGtEqRhs =
-            r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::sge, sum, rhs);
-        auto underflowCond =
-            r.create<arith::AndIOp>(loc, lhsLtZero, sumGtEqRhs);
+      // Generate the overflow condition.
+      auto lhsGtEqZero =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::sge, lhs, zero);
+      auto sumLtRhs =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, sum, rhs);
+      auto overflowCond = r.create<arith::AndIOp>(loc, lhsGtEqZero, sumLtRhs);
 
-        evmB.genPanic(solidity::util::PanicCode::UnderOverflow,
-                      r.create<arith::OrIOp>(loc, overflowCond, underflowCond));
-        // Unsigned 256-bit int type.
-      } else {
-        evmB.genPanic(
-            solidity::util::PanicCode::UnderOverflow,
-            r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt, lhs, sum));
-      }
+      // Generate the underflow condition.
+      auto lhsLtZero =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, lhs, zero);
+      auto sumGtEqRhs =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::sge, sum, rhs);
+      auto underflowCond = r.create<arith::AndIOp>(loc, lhsLtZero, sumGtEqRhs);
+
+      evmB.genPanic(solidity::util::PanicCode::UnderOverflow,
+                    r.create<arith::OrIOp>(loc, overflowCond, underflowCond));
+
+      // Unsigned case
     } else {
-      llvm_unreachable("NYI");
+      evmB.genPanic(
+          solidity::util::PanicCode::UnderOverflow,
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt, lhs, sum));
     }
 
     r.replaceOp(op, sum);
@@ -163,46 +162,43 @@ struct CSubOpLowering : public OpConversionPattern<sol::CSubOp> {
     solidity::mlirgen::BuilderExt bExt(r, loc);
     evm::Builder evmB(r, loc);
 
+    // See comments in sol.cadd lowering on why we don't have a different
+    // codegen for small ints.
+
     auto ty = cast<IntegerType>(op.getType());
     Value lhs = adaptor.getLhs();
     Value rhs = adaptor.getRhs();
-
     Value diff = r.create<arith::SubIOp>(loc, lhs, rhs);
 
-    if (ty.getWidth() == 256) {
-      // Signed 256-bit int type.
-      if (ty.isSigned()) {
-        // (Copied from the yul codegen)
-        // underflow, if y >= 0 and diff > x
-        // overflow, if y < 0 and diff < x
+    if (ty.isSigned()) {
+      // (Copied from the yul codegen)
+      // underflow, if y >= 0 and diff > x
+      // overflow, if y < 0 and diff < x
 
-        auto zero = bExt.genI256Const(0);
+      auto zero = bExt.genConst(0, ty.getWidth());
 
-        // Generate the overflow condition.
-        auto rhsGtEqZero =
-            r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::sge, rhs, zero);
-        auto diffGtLhs =
-            r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::sgt, diff, lhs);
-        auto overflowCond =
-            r.create<arith::AndIOp>(loc, rhsGtEqZero, diffGtLhs);
+      // Generate the overflow condition.
+      auto rhsGtEqZero =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::sge, rhs, zero);
+      auto diffGtLhs =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::sgt, diff, lhs);
+      auto overflowCond = r.create<arith::AndIOp>(loc, rhsGtEqZero, diffGtLhs);
 
-        // Generate the underflow condition.
-        auto rhsLtZero =
-            r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, rhs, zero);
-        auto diffLtRhs =
-            r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, diff, lhs);
-        auto underflowCond = r.create<arith::AndIOp>(loc, rhsLtZero, diffLtRhs);
+      // Generate the underflow condition.
+      auto rhsLtZero =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, rhs, zero);
+      auto diffLtRhs =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, diff, lhs);
+      auto underflowCond = r.create<arith::AndIOp>(loc, rhsLtZero, diffLtRhs);
 
-        evmB.genPanic(solidity::util::PanicCode::UnderOverflow,
-                      r.create<arith::OrIOp>(loc, overflowCond, underflowCond));
-        // Unsigned 256-bit int type.
-      } else {
-        evmB.genPanic(
-            solidity::util::PanicCode::UnderOverflow,
-            r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt, diff, lhs));
-      }
+      evmB.genPanic(solidity::util::PanicCode::UnderOverflow,
+                    r.create<arith::OrIOp>(loc, overflowCond, underflowCond));
+
+      // Unsigned case
     } else {
-      llvm_unreachable("NYI");
+      evmB.genPanic(
+          solidity::util::PanicCode::UnderOverflow,
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt, diff, lhs));
     }
 
     r.replaceOp(op, diff);
