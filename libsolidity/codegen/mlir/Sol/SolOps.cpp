@@ -60,23 +60,12 @@ void ConstantOp::getAsmResultNames(
 OpFoldResult ConstantOp::fold(FoldAdaptor adaptor) { return getValue(); }
 
 //===----------------------------------------------------------------------===//
-// ExtOp
+// CastOp
 //===----------------------------------------------------------------------===//
 
-bool ExtOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
-  assert(inputs.size() == outputs.size() == 1);
-  return cast<IntegerType>(inputs.front()).getWidth() <
-         cast<IntegerType>(outputs.front()).getWidth();
-}
-
-//===----------------------------------------------------------------------===//
-// TruncOp
-//===----------------------------------------------------------------------===//
-
-bool TruncOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
-  assert(inputs.size() == outputs.size() == 1);
-  return cast<IntegerType>(inputs.front()).getWidth() >
-         cast<IntegerType>(outputs.front()).getWidth();
+bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
+  assert(inputs.size() == 1 && outputs.size() == 1);
+  return isa<IntegerType>(inputs.front()) && isa<IntegerType>(outputs.front());
 }
 
 //===----------------------------------------------------------------------===//

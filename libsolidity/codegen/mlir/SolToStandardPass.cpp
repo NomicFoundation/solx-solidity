@@ -126,8 +126,7 @@ struct ConvertSolToStandard
     convTgt.addIllegalOp<
         // clang-format off
         sol::ConstantOp,
-        sol::ExtOp,
-        sol::TruncOp,
+        sol::CastOp,
         sol::AddOp,
         sol::SubOp,
         sol::MulOp,

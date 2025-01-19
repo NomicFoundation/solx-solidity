@@ -56,32 +56,31 @@ struct ConstantOpLowering : public OpConversionPattern<sol::ConstantOp> {
   }
 };
 
-struct ExtOpLowering : public OpConversionPattern<sol::ExtOp> {
-  using OpConversionPattern<sol::ExtOp>::OpConversionPattern;
+struct CastOpLowering : public OpConversionPattern<sol::CastOp> {
+  using OpConversionPattern<sol::CastOp>::OpConversionPattern;
 
-  LogicalResult matchAndRewrite(sol::ExtOp op, OpAdaptor adaptor,
+  LogicalResult matchAndRewrite(sol::CastOp op, OpAdaptor adaptor,
                                 ConversionPatternRewriter &r) const override {
-    auto origOutTy = cast<IntegerType>(op.getType());
-    IntegerType signlessOutTy = r.getIntegerType(origOutTy.getWidth());
+    auto inpTy = cast<IntegerType>(op.getInp().getType());
+    auto inpTyWidth = inpTy.getWidth();
+    auto outTyWidth = cast<IntegerType>(op.getType()).getWidth();
 
-    if (origOutTy.isSigned())
-      r.replaceOpWithNewOp<arith::ExtSIOp>(op, signlessOutTy, adaptor.getIn());
+    if (inpTyWidth == outTyWidth) {
+      r.replaceOp(op, adaptor.getInp());
+      return success();
+    }
+
+    IntegerType signlessOutTy = r.getIntegerType(outTyWidth);
+
+    if (inpTyWidth > outTyWidth) {
+      r.replaceOpWithNewOp<arith::TruncIOp>(op, signlessOutTy,
+                                            adaptor.getInp());
+      return success();
+    }
+    if (inpTy.isSigned())
+      r.replaceOpWithNewOp<arith::ExtSIOp>(op, signlessOutTy, adaptor.getInp());
     else
-      r.replaceOpWithNewOp<arith::ExtUIOp>(op, signlessOutTy, adaptor.getIn());
-
-    return success();
-  }
-};
-
-struct TruncOpLowering : public OpConversionPattern<sol::TruncOp> {
-  using OpConversionPattern<sol::TruncOp>::OpConversionPattern;
-
-  LogicalResult matchAndRewrite(sol::TruncOp op, OpAdaptor adaptor,
-                                ConversionPatternRewriter &r) const override {
-    IntegerType signlessOutTy =
-        r.getIntegerType(cast<IntegerType>(op.getType()).getWidth());
-    r.replaceOpWithNewOp<arith::TruncIOp>(op, signlessOutTy, adaptor.getIn());
-
+      r.replaceOpWithNewOp<arith::ExtUIOp>(op, signlessOutTy, adaptor.getInp());
     return success();
   }
 };
@@ -1816,7 +1815,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 // debug builds?)
 
 void evm::populateArithPats(RewritePatternSet &pats, TypeConverter &tyConv) {
-  pats.add<ConstantOpLowering, ExtOpLowering, TruncOpLowering,
+  pats.add<ConstantOpLowering, CastOpLowering,
            ArithBinOpConvPat<sol::AddOp, arith::AddIOp>,
            ArithBinOpConvPat<sol::SubOp, arith::SubIOp>,
            ArithBinOpConvPat<sol::MulOp, arith::MulIOp>, CmpOpLowering>(

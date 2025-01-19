@@ -18,6 +18,7 @@
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/mlir/Util.h"
 #include "libsolutil/FunctionSelector.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 
 using namespace mlir;
@@ -428,12 +429,22 @@ void evm::Builder::genABITupleDecoding(TypeRange tys, Value tupleStart,
       results.push_back(dstAddr);
 
     } else if (auto intTy = dyn_cast<IntegerType>(ty)) {
-      Value castedArg = bExt.genIntCast(intTy.getWidth(), intTy.isSigned(),
-                                        genLoad(headAddr));
-      // TODO: Generate the validator for non 256 bit types. The validator
-      // should just check if the loaded value is what we would get if we
-      // extended the original `intTy` value to 256 bits.
-      results.push_back(castedArg);
+      Value arg = genLoad(headAddr);
+      if (intTy.getWidth() != 256) {
+        assert(intTy.getWidth() < 256);
+        Value castedArg =
+            bExt.genIntCast(intTy.getWidth(), intTy.isSigned(), arg);
+
+        // Generate a revert check that checks if the decoded value is within in
+        // the range of the integer type.
+        auto revertCond =
+            b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ne, arg,
+                                    bExt.genIntCast(256, false, castedArg));
+        genRevert(revertCond, loc);
+        results.push_back(castedArg);
+      } else {
+        results.push_back(arg);
+      }
     }
 
     headAddr = b.create<arith::AddIOp>(

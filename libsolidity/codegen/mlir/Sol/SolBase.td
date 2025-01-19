@@ -193,13 +193,4 @@ class Sol_IntBinaryOp<string mnemonic, list<Trait> traits = []> :
   let assemblyFormat = "$lhs `,` $rhs attr-dict `:` type($result)";
 }
 
-class Sol_IntCastOp<string mnemonic, list<Trait> traits = []> :
-    Sol_Op<mnemonic, traits #
-                     [Pure, DeclareOpInterfaceMethods<CastOpInterface>]> {
-  let arguments = (ins Sol_Int:$in);
-  let results = (outs Sol_Int:$out);
-
-  let assemblyFormat = "$in attr-dict `:` type($in) `to` type($out)";
-}
-
 #endif // MLIR_SOL_SOLBASE_TD

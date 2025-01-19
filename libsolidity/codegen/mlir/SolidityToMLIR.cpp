@@ -266,7 +266,7 @@ static mlir::sol::DataLocation getDataLocation(ReferenceType const *ty) {
 
 mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
   // Bool type
-  if (const auto *boolTy = dynamic_cast<BoolType const *>(ty)) {
+  if (dynamic_cast<BoolType const *>(ty)) {
     return b.getIntegerType(/*width=*/1);
   }
 
@@ -285,7 +285,7 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
   }
 
   // Address type
-  if (const auto *addrTy = dynamic_cast<AddressType const *>(ty))
+  if (dynamic_cast<AddressType const *>(ty))
     // FIXME: 256 -> 160
     return b.getIntegerType(256, /*isSigned=*/false);
 
@@ -451,14 +451,8 @@ mlir::Value SolidityToMLIRPass::genCast(mlir::Value val, mlir::Type dstTy) {
     return val;
 
   // Casting to integer type.
-  if (auto dstIntTy = mlir::dyn_cast<mlir::IntegerType>(dstTy)) {
-    auto srcIntTy = mlir::cast<mlir::IntegerType>(srcTy);
-
-    if (dstIntTy.getWidth() > srcIntTy.getWidth())
-      return b.create<mlir::sol::ExtOp>(loc, dstTy, val);
-    assert(dstIntTy.getWidth() < srcIntTy.getWidth());
-    return b.create<mlir::sol::TruncOp>(loc, dstTy, val);
-  }
+  if (mlir::isa<mlir::IntegerType>(dstTy))
+    return b.create<mlir::sol::CastOp>(loc, dstTy, val);
 
   // Casting between reference types (excluding pointer types).
   if (mlir::sol::isNonPtrRefType(dstTy)) {
@@ -474,7 +468,7 @@ mlir::Value SolidityToMLIRPass::genExpr(Literal const *lit) {
   Type const *ty = lit->annotation().type;
 
   // Bool literal
-  if (auto *boolTy = dynamic_cast<BoolType const *>(ty))
+  if (dynamic_cast<BoolType const *>(ty))
     return b.create<mlir::sol::ConstantOp>(
         loc, b.getBoolAttr(lit->token() == Token::TrueLiteral));
 

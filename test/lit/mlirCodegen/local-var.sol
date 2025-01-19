@@ -28,7 +28,7 @@ contract C {
 // CHECK-NEXT:     sol.func @init_23() -> ui256 attributes {state_mutability = #View} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc7)
 // CHECK-NEXT:       %c42_ui8 = sol.constant 42 : ui8 loc(#loc8)
-// CHECK-NEXT:       %1 = sol.ext %c42_ui8 : ui8 to ui256 loc(#loc8)
+// CHECK-NEXT:       %1 = sol.cast %c42_ui8 : ui8 to ui256 loc(#loc8)
 // CHECK-NEXT:       sol.store %1, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc7)
 // CHECK-NEXT:       %2 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc9)
 // CHECK-NEXT:       sol.return %2 : ui256 loc(#loc10)

@@ -25,7 +25,7 @@ contract C {
 // CHECK-NEXT:       sol.modifier_call_blk {
 // CHECK-NEXT:         %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc7)
 // CHECK-NEXT:         %c1_ui8 = sol.constant 1 : ui8 loc(#loc8)
-// CHECK-NEXT:         %2 = sol.ext %c1_ui8 : ui8 to ui256 loc(#loc8)
+// CHECK-NEXT:         %2 = sol.cast %c1_ui8 : ui8 to ui256 loc(#loc8)
 // CHECK-NEXT:         %3 = sol.add %1, %2 : ui256 loc(#loc7)
 // CHECK-NEXT:         sol.call @n_16(%3) : (ui256) -> () loc(#loc6)
 // CHECK-NEXT:       } loc(#loc6)

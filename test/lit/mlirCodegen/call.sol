@@ -14,7 +14,7 @@ function main() returns (uint) {
 // CHECK-NEXT: module attributes {sol.evm_version = #Cancun} {
 // CHECK-NEXT:   sol.func @ret_8() -> ui256 attributes {state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c42_ui8 = sol.constant 42 : ui8 loc(#loc2)
-// CHECK-NEXT:     %0 = sol.ext %c42_ui8 : ui8 to ui256 loc(#loc2)
+// CHECK-NEXT:     %0 = sol.cast %c42_ui8 : ui8 to ui256 loc(#loc2)
 // CHECK-NEXT:     sol.return %0 : ui256 loc(#loc3)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT:   sol.func @no_ret_14(%arg0: ui256 loc({{.*}}:3:16)) attributes {state_mutability = #NonPayable} {
@@ -24,7 +24,7 @@ function main() returns (uint) {
 // CHECK-NEXT:   } loc(#loc4)
 // CHECK-NEXT:   sol.func @main_27() -> ui256 attributes {state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c42_ui8 = sol.constant 42 : ui8 loc(#loc7)
-// CHECK-NEXT:     %0 = sol.ext %c42_ui8 : ui8 to ui256 loc(#loc7)
+// CHECK-NEXT:     %0 = sol.cast %c42_ui8 : ui8 to ui256 loc(#loc7)
 // CHECK-NEXT:     sol.call @no_ret_14(%0) : (ui256) -> () loc(#loc8)
 // CHECK-NEXT:     %1 = sol.call @ret_8() : () -> ui256 loc(#loc9)
 // CHECK-NEXT:     sol.return %1 : ui256 loc(#loc10)

@@ -62,11 +62,13 @@ def Sol_ConstantOp : Op<Sol_Dialect, "constant",
   let hasFolder = 1;
 }
 
-def Sol_ExtOp : Sol_IntCastOp<"ext"> {
-  // TODO: folder
-}
+def Sol_CastOp : Sol_Op<"cast",
+  [Pure, DeclareOpInterfaceMethods<CastOpInterface>]
+>{
+  let arguments = (ins Sol_Int:$inp);
+  let results = (outs Sol_Int:$out);
 
-def Sol_TruncOp : Sol_IntCastOp<"trunc"> {
+  let assemblyFormat = "$inp attr-dict `:` type($inp) `to` type($out)";
   // TODO: folder
 }
 

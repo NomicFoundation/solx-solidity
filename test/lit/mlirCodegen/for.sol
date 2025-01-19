@@ -19,7 +19,7 @@ function f(uint n) {
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:     %c0_ui8 = sol.constant 0 : ui8 loc(#loc4)
-// CHECK-NEXT:     %2 = sol.ext %c0_ui8 : ui8 to ui256 loc(#loc4)
+// CHECK-NEXT:     %2 = sol.cast %c0_ui8 : ui8 to ui256 loc(#loc4)
 // CHECK-NEXT:     sol.store %2, %1 : ui256, !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:     sol.for cond {
 // CHECK-NEXT:       %3 = sol.load %1 : !sol.ptr<ui256, Stack>, ui256 loc(#loc6)
@@ -29,7 +29,7 @@ function f(uint n) {
 // CHECK-NEXT:     } body {
 // CHECK-NEXT:       %3 = sol.load %1 : !sol.ptr<ui256, Stack>, ui256 loc(#loc8)
 // CHECK-NEXT:       %c1_ui8 = sol.constant 1 : ui8 loc(#loc9)
-// CHECK-NEXT:       %4 = sol.ext %c1_ui8 : ui8 to ui256 loc(#loc9)
+// CHECK-NEXT:       %4 = sol.cast %c1_ui8 : ui8 to ui256 loc(#loc9)
 // CHECK-NEXT:       %5 = sol.cmp eq, %3, %4 : ui256 loc(#loc8)
 // CHECK-NEXT:       sol.if %5 {
 // CHECK-NEXT:         sol.break loc(#loc11)
@@ -39,7 +39,7 @@ function f(uint n) {
 // CHECK-NEXT:       } loc(#loc10)
 // CHECK-NEXT:       %6 = sol.load %1 : !sol.ptr<ui256, Stack>, ui256 loc(#loc12)
 // CHECK-NEXT:       %c2_ui8 = sol.constant 2 : ui8 loc(#loc13)
-// CHECK-NEXT:       %7 = sol.ext %c2_ui8 : ui8 to ui256 loc(#loc13)
+// CHECK-NEXT:       %7 = sol.cast %c2_ui8 : ui8 to ui256 loc(#loc13)
 // CHECK-NEXT:       %8 = sol.cmp eq, %6, %7 : ui256 loc(#loc12)
 // CHECK-NEXT:       sol.if %8 {
 // CHECK-NEXT:         sol.continue loc(#loc15)
@@ -51,7 +51,7 @@ function f(uint n) {
 // CHECK-NEXT:     } step {
 // CHECK-NEXT:       %c1_ui8 = sol.constant 1 : ui8 loc(#loc16)
 // CHECK-NEXT:       %3 = sol.load %1 : !sol.ptr<ui256, Stack>, ui256 loc(#loc17)
-// CHECK-NEXT:       %4 = sol.ext %c1_ui8 : ui8 to ui256 loc(#loc16)
+// CHECK-NEXT:       %4 = sol.cast %c1_ui8 : ui8 to ui256 loc(#loc16)
 // CHECK-NEXT:       %5 = sol.add %3, %4 : ui256 loc(#loc17)
 // CHECK-NEXT:       sol.store %5, %1 : ui256, !sol.ptr<ui256, Stack> loc(#loc17)
 // CHECK-NEXT:       sol.yield loc(#loc5)

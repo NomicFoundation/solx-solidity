@@ -19,7 +19,7 @@ function addr() returns (address) {
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT:   sol.func @addr_20() -> ui256 attributes {state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c0_ui8 = sol.constant 0 : ui8 loc(#loc5)
-// CHECK-NEXT:     %0 = sol.ext %c0_ui8 : ui8 to ui256 loc(#loc5)
+// CHECK-NEXT:     %0 = sol.cast %c0_ui8 : ui8 to ui256 loc(#loc5)
 // CHECK-NEXT:     sol.return %0 : ui256 loc(#loc6)
 // CHECK-NEXT:   } loc(#loc4)
 // CHECK-NEXT: } loc(#loc)
