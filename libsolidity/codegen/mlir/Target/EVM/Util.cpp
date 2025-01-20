@@ -15,6 +15,10 @@
 
 // SPDX-License-Identifier: GPL-3.0
 
+// TODO:
+// Why does via-ir generate a signed (instead of an unsigned) comparison
+// (usually involving offsets) in some of the abi encoding/decoding codegen?
+
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/mlir/Util.h"
 #include "libsolutil/FunctionSelector.h"
@@ -316,11 +320,6 @@ Value evm::Builder::genABITupleEncoding(TypeRange tys, ValueRange vals,
           b.create<arith::AddIOp>(loc, tailAddr, bExt.genI256Const(32));
       b.create<sol::MCopyOp>(loc, tailDataAddr, dataAddr, size);
 
-      // Write 0 at the end.
-      b.create<sol::MStoreOp>(loc,
-                              b.create<arith::AddIOp>(loc, tailDataAddr, size),
-                              bExt.genI256Const(0));
-
       tailAddr = b.create<arith::AddIOp>(loc, tailDataAddr,
                                          bExt.genRoundUpToMultiple<32>(size));
 
@@ -372,8 +371,8 @@ void evm::Builder::genABITupleDecoding(TypeRange tys, Value tupleStart,
   Value headAddr = tupleStart;
   auto genLoad = [&](Value addr) -> Value {
     if (fromMem)
-      return b.create<sol::MLoadOp>(loc, headAddr);
-    return b.create<sol::CallDataLoadOp>(loc, headAddr);
+      return b.create<sol::MLoadOp>(loc, addr);
+    return b.create<sol::CallDataLoadOp>(loc, addr);
   };
 
   // Decode the args.
@@ -381,25 +380,29 @@ void evm::Builder::genABITupleDecoding(TypeRange tys, Value tupleStart,
   // (as per the type-converter) of the original type.
   for (auto ty : tys) {
     if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
-      Value tailAddr =
-          b.create<arith::AddIOp>(loc, tupleStart, genLoad(headAddr));
-
-      // FIXME: Shouldn't we check tailAddr < tupleEnd instead? The following
-      // code is copied from the yul codegen. I assume this is from the
-      // following ir-breaking-changes:
+      Value tailOffsetFromTuple = genLoad(headAddr);
+      // As per the ir-breaking-changes ref in docs:
       //
       // - The new code generator imposes a hard limit of ``type(uint64).max``
       //   (``0xffffffffffffffff``) for the free memory pointer. Allocations
       //   that would increase its value beyond this limit revert. The old code
       //   generator does not have this limit.
-      auto invalidTailAddrChk =
-          b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt, tailAddr,
-                                  bExt.genI256Const("0xffffffffffffffff"));
-      genRevertWithMsg(invalidTailAddrChk, "ABI decoding: invalid tuple offset",
-                       locArg);
+      auto invalidTupleOffsetCond = b.create<arith::CmpIOp>(
+          loc, arith::CmpIPredicate::ugt, tailOffsetFromTuple,
+          bExt.genI256Const("0xffffffffffffffff"));
+      genRevertWithMsg(invalidTupleOffsetCond,
+                       "ABI decoding: invalid tuple offset", loc);
+      Value tailAddr =
+          b.create<arith::AddIOp>(loc, tupleStart, tailOffsetFromTuple);
 
-      // TODO: "ABI decoding: invalid calldata array offset" revert check. We
-      // need to track the "headEnd" for this.
+      // The `tailAddr` should point to at least 1 32-byte word in the tuple.
+      // Generate a revert check for that.
+      auto invalidTailAddrCond = b.create<arith::CmpIOp>(
+          loc, arith::CmpIPredicate::sge,
+          b.create<arith::AddIOp>(loc, tailAddr, bExt.genI256Const(31)),
+          tupleEnd);
+      genRevertWithMsg(invalidTailAddrCond,
+                       "ABI decoding: invalid calldata array offset", loc);
 
       Value sizeInBytes = genLoad(tailAddr);
 
