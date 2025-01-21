@@ -1,7 +1,7 @@
 contract C {
   function f(uint a, uint b) public returns (uint) {
     uint r = 1;
-    for (uint i = 0; i < a; i += 1) {
+    for (uint i = 0; i < a; ++i) {
       if (i == b)
         break;
       r += r;

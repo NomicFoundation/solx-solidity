@@ -188,6 +188,9 @@ private:
   mlir::Value genBinExpr(Token op, mlir::Value lhs, mlir::Value rhs,
                          mlir::Location loc);
 
+  /// Returns the mlir expression for the unary operation.
+  mlir::Value genExpr(UnaryOperation const *binOp);
+
   /// Returns the mlir expression for the binary operation.
   mlir::Value genExpr(BinaryOperation const *binOp);
 
@@ -201,6 +204,7 @@ private:
   /// to the corresponding mlir type of `resTy`.
   mlir::Value genRValExpr(Expression const *expr,
                           std::optional<mlir::Type> resTy = std::nullopt);
+  mlir::Value genRValExpr(mlir::Value val);
 
   /// Lowers the expression statement.
   void lower(ExpressionStatement const &);
@@ -531,6 +535,50 @@ mlir::Value SolidityToMLIRPass::genBinExpr(Token op, mlir::Value lhs,
   llvm_unreachable("NYI: Binary operator");
 }
 
+mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const *unaryOp) {
+  mlir::Location loc = getLoc(*unaryOp);
+
+  assert(!*unaryOp->annotation().userDefinedFunction && "NYI");
+
+  Type const *ty = unaryOp->annotation().type;
+  mlir::Type mlirTy = getType(ty);
+
+  // Negative constant
+  if (ty->category() == Type::Category::RationalNumber) {
+    auto intTy = cast<mlir::IntegerType>(mlirTy);
+    u256 val = ty->literalValue(nullptr);
+    return b.create<mlir::sol::ConstantOp>(
+        loc, b.getIntegerAttr(intTy, mlirgen::getAPInt(val, intTy.getWidth())));
+  }
+
+  switch (unaryOp->getOperator()) {
+  // Increment and decrement
+  case Token::Inc:
+  case Token::Dec: {
+    mlir::Value lValExpr = genLValExpr(&unaryOp->subExpression());
+    mlir::Value rValExpr = genRValExpr(lValExpr);
+    mlir::Value one =
+        b.create<mlir::sol::ConstantOp>(loc, b.getIntegerAttr(mlirTy, 1));
+    mlir::Value newVal = genBinExpr(
+        unaryOp->getOperator() == Token::Inc ? Token::Add : Token::Sub,
+        rValExpr, one, loc);
+    b.create<mlir::sol::StoreOp>(loc, newVal, lValExpr);
+    return unaryOp->isPrefixOperation() ? newVal : rValExpr;
+  }
+  // Negation
+  case Token::Sub: {
+    mlir::Value expr = genRValExpr(&unaryOp->subExpression());
+    mlir::Value zero =
+        b.create<mlir::sol::ConstantOp>(loc, b.getIntegerAttr(mlirTy, 0));
+    return genBinExpr(Token::Sub, zero, expr, loc);
+  }
+  default:
+    break;
+  }
+
+  llvm_unreachable("NYI");
+}
+
 mlir::Value SolidityToMLIRPass::genExpr(BinaryOperation const *binOp) {
   mlir::Type argTy = getType(binOp->annotation().commonType);
   auto loc = getLoc(binOp->location());
@@ -843,6 +891,12 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const *expr) {
   return genRValExpr(expr);
 }
 
+mlir::Value SolidityToMLIRPass::genRValExpr(mlir::Value val) {
+  if (mlir::isa<mlir::sol::PointerType>(val.getType()))
+    return b.create<mlir::sol::LoadOp>(val.getLoc(), val);
+  return val;
+}
+
 mlir::Value SolidityToMLIRPass::genRValExpr(Expression const *expr,
                                             std::optional<mlir::Type> resTy) {
   mlir::Value val;
@@ -850,11 +904,6 @@ mlir::Value SolidityToMLIRPass::genRValExpr(Expression const *expr,
   // Literal
   if (auto *lit = dynamic_cast<Literal const *>(expr)) {
     val = genExpr(lit);
-  }
-
-  // Binary operation
-  else if (auto *binOp = dynamic_cast<BinaryOperation const *>(expr)) {
-    val = genExpr(binOp);
   }
 
   // Identifier
@@ -871,6 +920,16 @@ mlir::Value SolidityToMLIRPass::genRValExpr(Expression const *expr,
   // Member access
   else if (auto *memAcc = dynamic_cast<MemberAccess const *>(expr)) {
     val = genRValExpr(memAcc);
+  }
+
+  // Unary operation
+  else if (auto *unaryOp = dynamic_cast<UnaryOperation const *>(expr)) {
+    val = genExpr(unaryOp);
+  }
+
+  // Binary operation
+  else if (auto *binOp = dynamic_cast<BinaryOperation const *>(expr)) {
+    val = genExpr(binOp);
   }
 
   // Tuple

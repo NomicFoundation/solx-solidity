@@ -28,8 +28,22 @@
 using namespace mlir;
 using namespace solidity::mlirgen;
 
-APInt solidity::mlirgen::getAPInt(solidity::u256 &val, unsigned numBits) {
-  return APInt(numBits, val.str(), /*radix=*/10);
+APInt solidity::mlirgen::getAPInt(solidity::u256 const &val, unsigned numBits) {
+  switch (numBits) {
+  case 8:
+    return APInt(numBits, val.convert_to<uint8_t>());
+  case 16:
+    return APInt(numBits, val.convert_to<uint16_t>());
+  case 32:
+    return APInt(numBits, val.convert_to<uint32_t>());
+  case 64:
+    return APInt(numBits, val.convert_to<uint64_t>());
+  case 128:
+    return APInt(numBits, val.str().substr(128, 128), /*radix=*/10);
+  case 256:
+    return APInt(numBits, val.str(), /*radix=*/10);
+  }
+  llvm_unreachable("");
 }
 
 Value BuilderExt::genIntCast(unsigned width, bool isSigned, Value val,

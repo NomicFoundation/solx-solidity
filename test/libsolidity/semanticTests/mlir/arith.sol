@@ -21,6 +21,16 @@ contract C {
   function ci8(uint8 a) public returns (uint8) {
     return a + 1;
   }
+
+  function neg(int a) public returns (int) {
+    return -a;
+  }
+
+  function inc(uint a) public returns (uint) {
+    uint r = a++;
+    r += a;
+    return ++r;
+  }
 }
 
 // ====
@@ -31,3 +41,5 @@ contract C {
 // c(uint256,uint256): -2, 2 -> FAILURE, hex"4e487b71", 0x11
 // uci8(uint8): 255 -> 0
 // ci8(uint8): 255 -> FAILURE, hex"4e487b71", 0x11
+// neg(int256): 1 -> -1
+// inc(uint256): 0 -> 2

@@ -3,6 +3,16 @@
 Optimizing checked arithmetic
 =============================
 
+Optimal lowering
+----------------
+We can generate lesser checks for signed arithmetic if we know the value of 1
+operand (see YulUtilFunctions for unary expression lowering like
+incrementCheckedFunction).  We should integrate this in the sol dialect's binary
+arithmetic op lowering (after canonicalizing the constant arg position).
+
+
+Analysis
+--------
 We could write an analysis that tracks the "known information" about a value at
 a program point (like insignificant bits, known zeros/ones) like llvm's
 `value-tracking

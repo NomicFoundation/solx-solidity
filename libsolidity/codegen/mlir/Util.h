@@ -43,7 +43,7 @@
 namespace solidity {
 namespace mlirgen {
 
-mlir::APInt getAPInt(solidity::u256 &val, unsigned numBits);
+mlir::APInt getAPInt(solidity::u256 const &val, unsigned numBits);
 
 /// Generates the round-up to multiple.
 template <unsigned multiple>
