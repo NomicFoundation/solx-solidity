@@ -5,6 +5,7 @@ contract C {
     r += a + b;
     r *= a * b;
     r -= a - b;
+    r = (a + r) * 2;
     }
     return r;
   }
@@ -25,7 +26,7 @@ contract C {
 // ====
 // compileViaMlir: true
 // ----
-// uc(uint256,uint256): 4, 2 -> 46
+// uc(uint256,uint256): 4, 2 -> 100
 // c(uint256,uint256): -2, 1 -> -1
 // c(uint256,uint256): -2, 2 -> FAILURE, hex"4e487b71", 0x11
 // uci8(uint8): 255 -> 0

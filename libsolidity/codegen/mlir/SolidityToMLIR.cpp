@@ -873,6 +873,12 @@ mlir::Value SolidityToMLIRPass::genRValExpr(Expression const *expr,
     val = genRValExpr(memAcc);
   }
 
+  // Tuple
+  else if (auto *tuple = dynamic_cast<TupleExpression const *>(expr)) {
+    assert(tuple->components().size() == 1 && "NYI");
+    val = genRValExpr(tuple->components()[0].get());
+  }
+
   // Function call
   else if (auto *call = dynamic_cast<FunctionCall const *>(expr)) {
     val = genExpr(call);
