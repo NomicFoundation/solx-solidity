@@ -157,45 +157,34 @@ private:
   /// Generates type cast expression.
   mlir::Value genCast(mlir::Value val, mlir::Type dstTy);
 
-  // We can't completely rely on ExpressionAnnotation::isLValue here since the
-  // TypeChecker doesn't, for instance, tag RHS expression of an assignment as
-  // an r-value.
-
-  // FIXME: The genRValExpr's look almost the same. Unify them!
-
   /// Returns the mlir expression for the literal.
   mlir::Value genExpr(Literal const *lit);
 
   /// Returns the mlir expression for the identifier in an l-value context.
   mlir::Value genLValExpr(Identifier const *ident);
 
-  /// Returns the mlir expression for the identifier in an r-value context.
-  mlir::Value genRValExpr(Identifier const *ident);
-
   /// Returns the mlir expression for the index access in an l-value context.
   mlir::Value genLValExpr(IndexAccess const *idxAcc);
 
-  /// Returns the mlir expression for the index access in an r-value context.
-  mlir::Value genRValExpr(IndexAccess const *idxAcc);
-
   /// Returns the mlir expression for the member access in an r-value context.
   mlir::Value genLValExpr(MemberAccess const *memberAcc);
-
-  /// Returns the mlir expression for the member access in an r-value context.
-  mlir::Value genRValExpr(MemberAccess const *memberAcc);
 
   /// Returns the mlir expression for the binary operation.
   mlir::Value genBinExpr(Token op, mlir::Value lhs, mlir::Value rhs,
                          mlir::Location loc);
 
   /// Returns the mlir expression for the unary operation.
-  mlir::Value genExpr(UnaryOperation const *binOp);
+  mlir::Value genExpr(UnaryOperation const *unaryOp);
 
   /// Returns the mlir expression for the binary operation.
   mlir::Value genExpr(BinaryOperation const *binOp);
 
   /// Returns the mlir expression for the call.
   mlir::Value genExpr(FunctionCall const *call);
+
+  // We can't completely rely on ExpressionAnnotation::isLValue here since the
+  // TypeChecker doesn't, for instance, tag RHS expression of an assignment as
+  // an r-value.
 
   /// Returns the mlir expression in an l-value context.
   mlir::Value genLValExpr(Expression const *expr);
@@ -204,7 +193,7 @@ private:
   /// to the corresponding mlir type of `resTy`.
   mlir::Value genRValExpr(Expression const *expr,
                           std::optional<mlir::Type> resTy = std::nullopt);
-  mlir::Value genRValExpr(mlir::Value val);
+  mlir::Value genRValExpr(mlir::Value val, mlir::Location loc);
 
   /// Lowers the expression statement.
   void lower(ExpressionStatement const &);
@@ -387,14 +376,6 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Identifier const *id) {
   llvm_unreachable("NYI");
 }
 
-mlir::Value SolidityToMLIRPass::genRValExpr(Identifier const *id) {
-  auto addr = genLValExpr(id);
-
-  if (mlir::isa<mlir::sol::PointerType>(addr.getType()))
-    return b.create<mlir::sol::LoadOp>(getLoc(id->location()), addr);
-  return addr;
-}
-
 mlir::ArrayAttr
 SolidityToMLIRPass::getInterfaceFnsAttr(ContractDefinition const &cont) {
   auto const &interfaceFnInfos = cont.interfaceFunctions();
@@ -545,7 +526,7 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const *unaryOp) {
 
   // Negative constant
   if (ty->category() == Type::Category::RationalNumber) {
-    auto intTy = cast<mlir::IntegerType>(mlirTy);
+    auto intTy = mlir::cast<mlir::IntegerType>(mlirTy);
     u256 val = ty->literalValue(nullptr);
     return b.create<mlir::sol::ConstantOp>(
         loc, b.getIntegerAttr(intTy, mlirgen::getAPInt(val, intTy.getWidth())));
@@ -556,7 +537,7 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const *unaryOp) {
   case Token::Inc:
   case Token::Dec: {
     mlir::Value lValExpr = genLValExpr(&unaryOp->subExpression());
-    mlir::Value rValExpr = genRValExpr(lValExpr);
+    mlir::Value rValExpr = genRValExpr(lValExpr, lValExpr.getLoc());
     mlir::Value one =
         b.create<mlir::sol::ConstantOp>(loc, b.getIntegerAttr(mlirTy, 1));
     mlir::Value newVal = genBinExpr(
@@ -616,15 +597,6 @@ mlir::Value SolidityToMLIRPass::genLValExpr(IndexAccess const *idxAcc) {
   llvm_unreachable("Invalid IndexAccess");
 }
 
-mlir::Value SolidityToMLIRPass::genRValExpr(IndexAccess const *idxAcc) {
-  mlir::Value addr = genLValExpr(idxAcc);
-
-  // Don't load non pointer ref types.
-  if (mlir::sol::isNonPtrRefType(addr.getType()))
-    return addr;
-  return b.create<mlir::sol::LoadOp>(getLoc(idxAcc->location()), addr);
-}
-
 mlir::Value SolidityToMLIRPass::genLValExpr(MemberAccess const *memberAcc) {
   mlir::Location loc = getLoc(memberAcc->location());
 
@@ -655,19 +627,6 @@ mlir::Value SolidityToMLIRPass::genLValExpr(MemberAccess const *memberAcc) {
   }
 
   llvm_unreachable("NYI");
-}
-
-mlir::Value SolidityToMLIRPass::genRValExpr(MemberAccess const *memberAcc) {
-  mlir::Value addr = genLValExpr(memberAcc);
-  if (memberAcc->expression().annotation().type->category() ==
-      Type::Category::Struct) {
-    // Don't load non pointer ref types.
-    if (mlir::sol::isNonPtrRefType(addr.getType()))
-      return addr;
-
-    return b.create<mlir::sol::LoadOp>(getLoc(memberAcc->location()), addr);
-  }
-  return addr;
 }
 
 mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const *call) {
@@ -891,9 +850,10 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const *expr) {
   return genRValExpr(expr);
 }
 
-mlir::Value SolidityToMLIRPass::genRValExpr(mlir::Value val) {
+mlir::Value SolidityToMLIRPass::genRValExpr(mlir::Value val,
+                                            mlir::Location loc) {
   if (mlir::isa<mlir::sol::PointerType>(val.getType()))
-    return b.create<mlir::sol::LoadOp>(val.getLoc(), val);
+    return b.create<mlir::sol::LoadOp>(loc, val);
   return val;
 }
 
@@ -908,18 +868,19 @@ mlir::Value SolidityToMLIRPass::genRValExpr(Expression const *expr,
 
   // Identifier
   else if (auto *id = dynamic_cast<Identifier const *>(expr)) {
-    val = genRValExpr(id);
-
+    val = genRValExpr(genLValExpr(id), getLoc(*id));
   }
 
   // Index access
   else if (auto *idxAcc = dynamic_cast<IndexAccess const *>(expr)) {
-    val = genRValExpr(idxAcc);
+    val = genRValExpr(genLValExpr(idxAcc), getLoc(*idxAcc));
   }
 
   // Member access
   else if (auto *memAcc = dynamic_cast<MemberAccess const *>(expr)) {
-    val = genRValExpr(memAcc);
+    mlir::Value lVal = genLValExpr(memAcc);
+    assert(lVal);
+    val = genRValExpr(lVal, getLoc(*memAcc));
   }
 
   // Unary operation
