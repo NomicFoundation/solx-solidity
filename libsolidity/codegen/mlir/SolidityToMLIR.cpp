@@ -1005,12 +1005,12 @@ void SolidityToMLIRPass::lower(WhileStatement const &whileStmt) {
   mlir::OpBuilder::InsertionGuard insertGuard(b);
 
   // Lower condition.
-  b.setInsertionPointToStart(&whileOp.getCond().front());
+  b.setInsertionPointToStart(&whileOp.getCond().emplaceBlock());
   mlir::Value cond = genRValExpr(whileStmt.condition());
   b.create<mlir::sol::ConditionOp>(getLoc(whileStmt.condition()), cond);
 
   // Lower body.
-  b.setInsertionPointToStart(&whileOp.getBody().front());
+  b.setInsertionPointToStart(&whileOp.getBody().emplaceBlock());
   lower(whileStmt.body());
   b.create<mlir::sol::YieldOp>(whileOp.getLoc());
 }
@@ -1026,19 +1026,19 @@ void SolidityToMLIRPass::lower(ForStatement const &forStmt) {
   mlir::OpBuilder::InsertionGuard insertGuard(b);
 
   // Lower condition.
-  b.setInsertionPointToStart(&forOp.getCond().front());
+  b.setInsertionPointToStart(&forOp.getCond().emplaceBlock());
   mlir::Value cond = forStmt.condition() ? genRValExpr(*forStmt.condition())
                                          : bExt.genBool(true, forOp.getLoc());
   b.create<mlir::sol::ConditionOp>(cond.getLoc(), cond);
 
   // Lower body.
-  b.setInsertionPointToStart(&forOp.getBody().front());
+  b.setInsertionPointToStart(&forOp.getBody().emplaceBlock());
   lower(forStmt.body());
   b.create<mlir::sol::YieldOp>(forOp.getLoc());
 
   // Lower loop expression.
   if (forStmt.loopExpression()) {
-    b.setInsertionPointToStart(&forOp.getStep().front());
+    b.setInsertionPointToStart(&forOp.getStep().emplaceBlock());
     forceUncheckedArith = true;
     lower(*forStmt.loopExpression());
     forceUncheckedArith = false;

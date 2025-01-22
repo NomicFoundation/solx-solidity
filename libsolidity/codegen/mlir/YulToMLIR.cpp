@@ -598,18 +598,18 @@ void YulToMLIRPass::operator()(ForLoop const &forStmt) {
   mlir::OpBuilder::InsertionGuard insertGuard(b);
 
   // Lower condition.
-  b.setInsertionPointToStart(&forOp.getCond().front());
+  b.setInsertionPointToStart(&forOp.getCond().emplaceBlock());
   mlir::Value cond = forStmt.condition ? convToBool(genExpr(*forStmt.condition))
                                        : bExt.genBool(true, forOp.getLoc());
   b.create<mlir::sol::ConditionOp>(cond.getLoc(), cond);
 
   // Lower body.
-  b.setInsertionPointToStart(&forOp.getBody().front());
+  b.setInsertionPointToStart(&forOp.getBody().emplaceBlock());
   ASTWalker::operator()(forStmt.body);
   b.create<mlir::sol::YieldOp>(forOp.getLoc());
 
   // Lower post block.
-  b.setInsertionPointToStart(&forOp.getStep().front());
+  b.setInsertionPointToStart(&forOp.getStep().emplaceBlock());
   ASTWalker::operator()(forStmt.post);
   b.create<mlir::sol::YieldOp>(forOp.getLoc());
 }

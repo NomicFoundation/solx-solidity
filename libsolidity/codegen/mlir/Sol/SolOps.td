@@ -160,7 +160,6 @@ def Sol_GepOp : Sol_Op<"gep"> {
   }];
 }
 
-// TODO: Merge with sol.gep.
 def Sol_MapOp : Sol_Op<"map"> {
   let arguments = (ins AnyType:$mapping, AnyType:$key);
   let results = (outs AnyType:$addr);
@@ -315,15 +314,7 @@ def Sol_SwitchOp : Sol_Op<"switch", [
 
 class Sol_WhileOpBase<string mnemonic> : Sol_Op<mnemonic, [
   LoopOpInterface, NoRegionArguments, AutomaticAllocationScope
-]> {
-  let builders = [
-    OpBuilder<(ins), [{
-      $_state.addRegion()->emplaceBlock();
-      $_state.addRegion()->emplaceBlock();
-    }]>
-  ];
-  let skipDefaultBuilders = 1;
-}
+]>;
 
 def Sol_WhileOp : Sol_WhileOpBase<"while"> {
   let regions = (region SizedRegion<1>:$cond, MinSizedRegion<1>:$body);
@@ -345,15 +336,6 @@ def Sol_ForOp : Sol_Op<"for", [LoopOpInterface, NoRegionArguments,
                                AutomaticAllocationScope]> {
   let regions = (region SizedRegion<1>:$cond, MinSizedRegion<1>:$body,
                         SizedRegion<1>:$step);
-
-  let builders = [
-    OpBuilder<(ins), [{
-      $_state.addRegion()->emplaceBlock();
-      $_state.addRegion()->emplaceBlock();
-      $_state.addRegion()->emplaceBlock();
-    }]>
-  ];
-  let skipDefaultBuilders = 1;
 
   let assemblyFormat = [{
     `cond` $cond
