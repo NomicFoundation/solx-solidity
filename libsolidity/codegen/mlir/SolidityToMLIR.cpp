@@ -129,8 +129,8 @@ private:
   mlir::Type getType(Type const *ty);
 
   /// Tracks the address of a local variable.
-  void trackLocalVarAddr(VariableDeclaration const *decl, mlir::Value addr) {
-    localVarAddrMap[decl] = addr;
+  void trackLocalVarAddr(VariableDeclaration const &decl, mlir::Value addr) {
+    localVarAddrMap[&decl] = addr;
   }
 
   /// Returns the mangled name of the declaration composed of its name and its
@@ -158,40 +158,40 @@ private:
   mlir::Value genCast(mlir::Value val, mlir::Type dstTy);
 
   /// Returns the mlir expression for the literal.
-  mlir::Value genExpr(Literal const *lit);
+  mlir::Value genExpr(Literal const &lit);
 
   /// Returns the mlir expression for the identifier in an l-value context.
-  mlir::Value genLValExpr(Identifier const *ident);
+  mlir::Value genLValExpr(Identifier const &ident);
 
   /// Returns the mlir expression for the index access in an l-value context.
-  mlir::Value genLValExpr(IndexAccess const *idxAcc);
+  mlir::Value genLValExpr(IndexAccess const &idxAcc);
 
   /// Returns the mlir expression for the member access in an r-value context.
-  mlir::Value genLValExpr(MemberAccess const *memberAcc);
+  mlir::Value genLValExpr(MemberAccess const &memberAcc);
 
   /// Returns the mlir expression for the binary operation.
   mlir::Value genBinExpr(Token op, mlir::Value lhs, mlir::Value rhs,
                          mlir::Location loc);
 
   /// Returns the mlir expression for the unary operation.
-  mlir::Value genExpr(UnaryOperation const *unaryOp);
+  mlir::Value genExpr(UnaryOperation const &unaryOp);
 
   /// Returns the mlir expression for the binary operation.
-  mlir::Value genExpr(BinaryOperation const *binOp);
+  mlir::Value genExpr(BinaryOperation const &binOp);
 
   /// Returns the mlir expression for the call.
-  mlir::Value genExpr(FunctionCall const *call);
+  mlir::Value genExpr(FunctionCall const &call);
 
   // We can't completely rely on ExpressionAnnotation::isLValue here since the
   // TypeChecker doesn't, for instance, tag RHS expression of an assignment as
   // an r-value.
 
   /// Returns the mlir expression in an l-value context.
-  mlir::Value genLValExpr(Expression const *expr);
+  mlir::Value genLValExpr(Expression const &expr);
 
   /// Returns the mlir expression in an r-value context and optionally casts it
   /// to the corresponding mlir type of `resTy`.
-  mlir::Value genRValExpr(Expression const *expr,
+  mlir::Value genRValExpr(Expression const &expr,
                           std::optional<mlir::Type> resTy = std::nullopt);
   mlir::Value genRValExpr(mlir::Value val, mlir::Location loc);
 
@@ -305,7 +305,7 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
   // Struct type
   if (const auto *structTy = dynamic_cast<StructType const *>(ty)) {
     std::vector<mlir::Type> memberTys;
-    for (auto const &mem : structTy->nativeMembers(nullptr)) {
+    for (const auto &mem : structTy->nativeMembers(nullptr)) {
       memberTys.push_back(getType(mem.type));
     }
 
@@ -331,22 +331,22 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
   llvm_unreachable("NYI: Unknown type");
 }
 
-mlir::Value SolidityToMLIRPass::genLValExpr(Identifier const *id) {
-  Declaration const *decl = id->annotation().referencedDeclaration;
+mlir::Value SolidityToMLIRPass::genLValExpr(Identifier const &id) {
+  Declaration const *decl = id.annotation().referencedDeclaration;
 
   if (MagicVariableDeclaration const *magicVar =
           dynamic_cast<MagicVariableDeclaration const *>(decl)) {
     switch (magicVar->type()->category()) {
     case Type::Category::Contract:
-      assert(id->name() == "this");
-      return b.create<mlir::sol::ThisOp>(getLoc(id->location()));
+      assert(id.name() == "this");
+      return b.create<mlir::sol::ThisOp>(getLoc(id));
     default:
       break;
     }
     llvm_unreachable("NYI");
   }
 
-  if (auto *var = dynamic_cast<VariableDeclaration const *>(decl)) {
+  if (const auto *var = dynamic_cast<VariableDeclaration const *>(decl)) {
     // State variable.
     if (var->isStateVariable()) {
       auto currContr =
@@ -378,10 +378,10 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Identifier const *id) {
 
 mlir::ArrayAttr
 SolidityToMLIRPass::getInterfaceFnsAttr(ContractDefinition const &cont) {
-  auto const &interfaceFnInfos = cont.interfaceFunctions();
+  const auto &interfaceFnInfos = cont.interfaceFunctions();
   std::vector<mlir::Attribute> interfaceFnAttrs;
   interfaceFnAttrs.reserve(interfaceFnInfos.size());
-  for (auto const &i : interfaceFnInfos) {
+  for (const auto &i : interfaceFnInfos) {
     auto fnSymAttr = mlir::SymbolRefAttr::get(
         b.getContext(), getMangledName(i.second->declaration()));
 
@@ -448,22 +448,22 @@ mlir::Value SolidityToMLIRPass::genCast(mlir::Value val, mlir::Type dstTy) {
   llvm_unreachable("NYI or invalid cast");
 }
 
-mlir::Value SolidityToMLIRPass::genExpr(Literal const *lit) {
-  mlir::Location loc = getLoc(lit->location());
-  Type const *ty = lit->annotation().type;
+mlir::Value SolidityToMLIRPass::genExpr(Literal const &lit) {
+  mlir::Location loc = getLoc(lit);
+  Type const *ty = lit.annotation().type;
 
   // Bool literal
   if (dynamic_cast<BoolType const *>(ty))
     return b.create<mlir::sol::ConstantOp>(
-        loc, b.getBoolAttr(lit->token() == Token::TrueLiteral));
+        loc, b.getBoolAttr(lit.token() == Token::TrueLiteral));
 
   // Rational number literal
-  if (auto *ratNumTy = dynamic_cast<RationalNumberType const *>(ty)) {
+  if (const auto *ratNumTy = dynamic_cast<RationalNumberType const *>(ty)) {
     if (ratNumTy->isFractional())
       llvm_unreachable("NYI: Fractional literal");
 
     auto *intTy = ratNumTy->integerType();
-    u256 val = ty->literalValue(lit);
+    u256 val = ty->literalValue(nullptr);
     // TODO: Is there a faster way to convert boost::multiprecision::number to
     // llvm::APInt?
     return b.create<mlir::sol::ConstantOp>(
@@ -516,12 +516,12 @@ mlir::Value SolidityToMLIRPass::genBinExpr(Token op, mlir::Value lhs,
   llvm_unreachable("NYI: Binary operator");
 }
 
-mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const *unaryOp) {
-  mlir::Location loc = getLoc(*unaryOp);
+mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const &unaryOp) {
+  mlir::Location loc = getLoc(unaryOp);
 
-  assert(!*unaryOp->annotation().userDefinedFunction && "NYI");
+  assert(!*unaryOp.annotation().userDefinedFunction && "NYI");
 
-  Type const *ty = unaryOp->annotation().type;
+  Type const *ty = unaryOp.annotation().type;
   mlir::Type mlirTy = getType(ty);
 
   // Negative constant
@@ -532,23 +532,23 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const *unaryOp) {
         loc, b.getIntegerAttr(intTy, mlirgen::getAPInt(val, intTy.getWidth())));
   }
 
-  switch (unaryOp->getOperator()) {
+  switch (unaryOp.getOperator()) {
   // Increment and decrement
   case Token::Inc:
   case Token::Dec: {
-    mlir::Value lValExpr = genLValExpr(&unaryOp->subExpression());
+    mlir::Value lValExpr = genLValExpr(unaryOp.subExpression());
     mlir::Value rValExpr = genRValExpr(lValExpr, lValExpr.getLoc());
     mlir::Value one =
         b.create<mlir::sol::ConstantOp>(loc, b.getIntegerAttr(mlirTy, 1));
     mlir::Value newVal = genBinExpr(
-        unaryOp->getOperator() == Token::Inc ? Token::Add : Token::Sub,
-        rValExpr, one, loc);
+        unaryOp.getOperator() == Token::Inc ? Token::Add : Token::Sub, rValExpr,
+        one, loc);
     b.create<mlir::sol::StoreOp>(loc, newVal, lValExpr);
-    return unaryOp->isPrefixOperation() ? newVal : rValExpr;
+    return unaryOp.isPrefixOperation() ? newVal : rValExpr;
   }
   // Negation
   case Token::Sub: {
-    mlir::Value expr = genRValExpr(&unaryOp->subExpression());
+    mlir::Value expr = genRValExpr(unaryOp.subExpression());
     mlir::Value zero =
         b.create<mlir::sol::ConstantOp>(loc, b.getIntegerAttr(mlirTy, 0));
     return genBinExpr(Token::Sub, zero, expr, loc);
@@ -560,21 +560,21 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const *unaryOp) {
   llvm_unreachable("NYI");
 }
 
-mlir::Value SolidityToMLIRPass::genExpr(BinaryOperation const *binOp) {
-  mlir::Type argTy = getType(binOp->annotation().commonType);
-  auto loc = getLoc(binOp->location());
+mlir::Value SolidityToMLIRPass::genExpr(BinaryOperation const &binOp) {
+  mlir::Type argTy = getType(binOp.annotation().commonType);
+  auto loc = getLoc(binOp);
 
-  mlir::Value lhs = genRValExpr(&binOp->leftExpression(), argTy);
-  mlir::Value rhs = genRValExpr(&binOp->rightExpression(), argTy);
+  mlir::Value lhs = genRValExpr(binOp.leftExpression(), argTy);
+  mlir::Value rhs = genRValExpr(binOp.rightExpression(), argTy);
 
-  return genBinExpr(binOp->getOperator(), lhs, rhs, loc);
+  return genBinExpr(binOp.getOperator(), lhs, rhs, loc);
 }
 
-mlir::Value SolidityToMLIRPass::genLValExpr(IndexAccess const *idxAcc) {
-  mlir::Location loc = getLoc(idxAcc->location());
+mlir::Value SolidityToMLIRPass::genLValExpr(IndexAccess const &idxAcc) {
+  mlir::Location loc = getLoc(idxAcc);
 
-  mlir::Value baseExpr = genRValExpr(&idxAcc->baseExpression());
-  mlir::Value idxExpr = genRValExpr(idxAcc->indexExpression());
+  mlir::Value baseExpr = genRValExpr(idxAcc.baseExpression());
+  mlir::Value idxExpr = genRValExpr(*idxAcc.indexExpression());
 
   // Mapping
   if (auto mappingTy =
@@ -597,13 +597,13 @@ mlir::Value SolidityToMLIRPass::genLValExpr(IndexAccess const *idxAcc) {
   llvm_unreachable("Invalid IndexAccess");
 }
 
-mlir::Value SolidityToMLIRPass::genLValExpr(MemberAccess const *memberAcc) {
-  mlir::Location loc = getLoc(memberAcc->location());
+mlir::Value SolidityToMLIRPass::genLValExpr(MemberAccess const &memberAcc) {
+  mlir::Location loc = getLoc(memberAcc);
 
-  const auto *memberAccTy = memberAcc->expression().annotation().type;
+  const auto *memberAccTy = memberAcc.expression().annotation().type;
   switch (memberAccTy->category()) {
   case Type::Category::Magic:
-    if (memberAcc->memberName() == "sender") {
+    if (memberAcc.memberName() == "sender") {
       // FIXME: sol.caller yields an i256 instead of an address.
       auto callerOp = b.create<mlir::sol::CallerOp>(loc);
       return b.create<mlir::sol::ConvCastOp>(
@@ -616,10 +616,10 @@ mlir::Value SolidityToMLIRPass::genLValExpr(MemberAccess const *memberAcc) {
 
   case Type::Category::Struct: {
     const auto *structTy = dynamic_cast<StructType const *>(memberAccTy);
-    auto memberIdx = genUnsignedConst(structTy->index(memberAcc->memberName()),
+    auto memberIdx = genUnsignedConst(structTy->index(memberAcc.memberName()),
                                       /*numBits=*/64, loc);
-    return b.create<mlir::sol::GepOp>(
-        loc, genRValExpr(&memberAcc->expression()), memberIdx);
+    return b.create<mlir::sol::GepOp>(loc, genRValExpr(memberAcc.expression()),
+                                      memberIdx);
     break;
   }
   default:
@@ -629,38 +629,38 @@ mlir::Value SolidityToMLIRPass::genLValExpr(MemberAccess const *memberAcc) {
   llvm_unreachable("NYI");
 }
 
-mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const *call) {
-  assert(*call->annotation().kind != FunctionCallKind::StructConstructorCall &&
+mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const &call) {
+  assert(*call.annotation().kind != FunctionCallKind::StructConstructorCall &&
          "NYI");
 
   // Type conversion
-  if (*call->annotation().kind == FunctionCallKind::TypeConversion) {
-    return genRValExpr(call->arguments().front().get(),
-                       getType(call->annotation().type));
+  if (*call.annotation().kind == FunctionCallKind::TypeConversion) {
+    return genRValExpr(*call.arguments().front(),
+                       getType(call.annotation().type));
   }
 
-  auto const *calleeTy =
-      dynamic_cast<FunctionType const *>(call->expression().annotation().type);
+  const auto *calleeTy =
+      dynamic_cast<FunctionType const *>(call.expression().annotation().type);
   assert(calleeTy);
 
   std::vector<Type const *> argTys = calleeTy->parameterTypes();
   std::vector<ASTPointer<Expression const>> const &astArgs =
-      call->sortedArguments();
+      call.sortedArguments();
 
-  mlir::Location loc = getLoc(call->location());
+  mlir::Location loc = getLoc(call);
   switch (calleeTy->kind()) {
   // Internal call
   case FunctionType::Kind::Internal: {
     // Get callee.
     assert(currContract);
     FunctionDefinition const *callee =
-        ASTNode::resolveFunctionCall(*call, currContract);
+        ASTNode::resolveFunctionCall(call, currContract);
     assert(callee && "NYI: Internal function dispatch");
 
     // Lower args.
     std::vector<mlir::Value> args;
     for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes())) {
-      args.push_back(genRValExpr(arg.get(), getType(dstTy)));
+      args.push_back(genRValExpr(*arg, getType(dstTy)));
     }
 
     // Collect return types.
@@ -682,16 +682,16 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const *call) {
   case FunctionType::Kind::External:
   case FunctionType::Kind::DelegateCall: {
     // Generate the address.
-    auto const *memberAcc =
-        dynamic_cast<MemberAccess const *>(&call->expression());
+    const auto *memberAcc =
+        dynamic_cast<MemberAccess const *>(&call.expression());
     assert(memberAcc);
     assert(dynamic_cast<ContractType const *>(
         memberAcc->expression().annotation().type));
     mlir::Value addr =
-        genLValExpr(dynamic_cast<Identifier const *>(&memberAcc->expression()));
+        genLValExpr(dynamic_cast<Identifier const &>(memberAcc->expression()));
 
     // Get the callee and the selector.
-    auto const *callee = dynamic_cast<FunctionDefinition const *>(
+    const auto *callee = dynamic_cast<FunctionDefinition const *>(
         memberAcc->annotation().referencedDeclaration);
     assert(callee && "NYI: State variable getters");
     auto selector =
@@ -700,7 +700,7 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const *call) {
     // Lower the args.
     std::vector<mlir::Value> args;
     for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes())) {
-      args.push_back(genRValExpr(arg.get(), getType(dstTy)));
+      args.push_back(genRValExpr(*arg, getType(dstTy)));
     }
 
     // Collect the return types.
@@ -734,7 +734,7 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const *call) {
     auto callOp = b.create<mlir::sol::ExtCallOp>(
         loc, resTys, getMangledName(*callee), args, addr, gas,
         /*value=*/genUnsignedConst(0, /*numBits=*/256, loc),
-        /*tryCall=*/call->annotation().tryCall,
+        /*tryCall=*/call.annotation().tryCall,
         /*staticCall=*/calleeTy->stateMutability() <= StateMutability::View,
         /*delegateCall=*/calleeTy->kind() == FunctionType::Kind::DelegateCall,
         selector,
@@ -749,7 +749,7 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const *call) {
 
   // Event invocation
   case FunctionType::Kind::Event: {
-    auto const &event =
+    const auto &event =
         dynamic_cast<EventDefinition const &>(calleeTy->declaration());
 
     // Lower and track the indexed and non-indexed args.
@@ -760,7 +760,7 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const *call) {
 
       // TODO? YulUtilFunctions::conversionFunction
       mlir::Value arg =
-          genRValExpr(astArgs[i].get(), getType(calleeTy->parameterTypes()[i]));
+          genRValExpr(*astArgs[i], getType(calleeTy->parameterTypes()[i]));
 
       if (event.parameters()[i]->isIndexed()) {
         indexedArgs.push_back(arg);
@@ -782,13 +782,13 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const *call) {
 
   // Require statement
   case FunctionType::Kind::Require: {
-    if (call->arguments().size() == 2) {
+    if (call.arguments().size() == 2) {
       const auto *msg = dynamic_cast<Literal const *>(astArgs[1].get());
       assert(msg && "NYI: Magic vars");
-      b.create<mlir::sol::RequireOp>(loc, genRValExpr(astArgs[0].get()),
+      b.create<mlir::sol::RequireOp>(loc, genRValExpr(*astArgs[0]),
                                      b.getStringAttr(msg->value()));
     } else {
-      b.create<mlir::sol::RequireOp>(loc, genRValExpr(astArgs[0].get()));
+      b.create<mlir::sol::RequireOp>(loc, genRValExpr(*astArgs[0]));
     }
     return {};
   }
@@ -800,24 +800,24 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const *call) {
   llvm_unreachable("NYI");
 }
 
-mlir::Value SolidityToMLIRPass::genLValExpr(Expression const *expr) {
+mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
   // Variable access
-  if (auto *ident = dynamic_cast<Identifier const *>(expr)) {
-    auto addr = genLValExpr(ident);
+  if (const auto *ident = dynamic_cast<Identifier const *>(&expr)) {
+    auto addr = genLValExpr(*ident);
     return addr;
   }
 
   // Index access
-  if (auto *idxAcc = dynamic_cast<IndexAccess const *>(expr)) {
-    return genLValExpr(idxAcc);
+  if (const auto *idxAcc = dynamic_cast<IndexAccess const *>(&expr)) {
+    return genLValExpr(*idxAcc);
   }
 
   // (Compound) Assignment statement
-  if (auto *asgnStmt = dynamic_cast<Assignment const *>(expr)) {
-    mlir::Location loc = getLoc(asgnStmt->location());
+  if (const auto *asgnStmt = dynamic_cast<Assignment const *>(&expr)) {
+    mlir::Location loc = getLoc(*asgnStmt);
 
-    mlir::Value lhs = genLValExpr(&asgnStmt->leftHandSide());
-    mlir::Value rhs = genRValExpr(&asgnStmt->rightHandSide());
+    mlir::Value lhs = genLValExpr(asgnStmt->leftHandSide());
+    mlir::Value rhs = genRValExpr(asgnStmt->rightHandSide());
 
     if (asgnStmt->assignmentOperator() == Token::Assign) {
       mlir::Type lhsTy = lhs.getType();
@@ -835,7 +835,7 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const *expr) {
 
       // Compound assignment statement
     } else {
-      mlir::Value lhsAsRVal = genRValExpr(&asgnStmt->leftHandSide());
+      mlir::Value lhsAsRVal = genRValExpr(asgnStmt->leftHandSide());
       Token binOp =
           TokenTraits::AssignmentToBinaryOp(asgnStmt->assignmentOperator());
       b.create<mlir::sol::StoreOp>(
@@ -857,51 +857,51 @@ mlir::Value SolidityToMLIRPass::genRValExpr(mlir::Value val,
   return val;
 }
 
-mlir::Value SolidityToMLIRPass::genRValExpr(Expression const *expr,
+mlir::Value SolidityToMLIRPass::genRValExpr(Expression const &expr,
                                             std::optional<mlir::Type> resTy) {
   mlir::Value val;
 
   // Literal
-  if (auto *lit = dynamic_cast<Literal const *>(expr)) {
-    val = genExpr(lit);
+  if (const auto *lit = dynamic_cast<Literal const *>(&expr)) {
+    val = genExpr(*lit);
   }
 
   // Identifier
-  else if (auto *id = dynamic_cast<Identifier const *>(expr)) {
-    val = genRValExpr(genLValExpr(id), getLoc(*id));
+  else if (const auto *id = dynamic_cast<Identifier const *>(&expr)) {
+    val = genRValExpr(genLValExpr(*id), getLoc(*id));
   }
 
   // Index access
-  else if (auto *idxAcc = dynamic_cast<IndexAccess const *>(expr)) {
-    val = genRValExpr(genLValExpr(idxAcc), getLoc(*idxAcc));
+  else if (const auto *idxAcc = dynamic_cast<IndexAccess const *>(&expr)) {
+    val = genRValExpr(genLValExpr(*idxAcc), getLoc(*idxAcc));
   }
 
   // Member access
-  else if (auto *memAcc = dynamic_cast<MemberAccess const *>(expr)) {
-    mlir::Value lVal = genLValExpr(memAcc);
+  else if (const auto *memAcc = dynamic_cast<MemberAccess const *>(&expr)) {
+    mlir::Value lVal = genLValExpr(*memAcc);
     assert(lVal);
     val = genRValExpr(lVal, getLoc(*memAcc));
   }
 
   // Unary operation
-  else if (auto *unaryOp = dynamic_cast<UnaryOperation const *>(expr)) {
-    val = genExpr(unaryOp);
+  else if (const auto *unaryOp = dynamic_cast<UnaryOperation const *>(&expr)) {
+    val = genExpr(*unaryOp);
   }
 
   // Binary operation
-  else if (auto *binOp = dynamic_cast<BinaryOperation const *>(expr)) {
-    val = genExpr(binOp);
+  else if (const auto *binOp = dynamic_cast<BinaryOperation const *>(&expr)) {
+    val = genExpr(*binOp);
   }
 
   // Tuple
-  else if (auto *tuple = dynamic_cast<TupleExpression const *>(expr)) {
+  else if (const auto *tuple = dynamic_cast<TupleExpression const *>(&expr)) {
     assert(tuple->components().size() == 1 && "NYI");
-    val = genRValExpr(tuple->components()[0].get());
+    val = genRValExpr(*tuple->components()[0]);
   }
 
   // Function call
-  else if (auto *call = dynamic_cast<FunctionCall const *>(expr)) {
-    val = genExpr(call);
+  else if (const auto *call = dynamic_cast<FunctionCall const *>(&expr)) {
+    val = genExpr(*call);
   }
 
   else {
@@ -917,17 +917,17 @@ mlir::Value SolidityToMLIRPass::genRValExpr(Expression const *expr,
 }
 
 void SolidityToMLIRPass::lower(ExpressionStatement const &exprStmt) {
-  genLValExpr(&exprStmt.expression());
+  genLValExpr(exprStmt.expression());
 }
 
 void SolidityToMLIRPass::lower(
     VariableDeclarationStatement const &varDeclStmt) {
   assert(varDeclStmt.declarations().size() == 1 && "NYI");
-  VariableDeclaration const *varDecl = varDeclStmt.declarations()[0].get();
+  VariableDeclaration const &varDecl = *varDeclStmt.declarations()[0];
 
-  mlir::Location loc = getLoc(varDeclStmt.location());
+  mlir::Location loc = getLoc(varDeclStmt);
 
-  mlir::Type varTy = getType(varDecl->type());
+  mlir::Type varTy = getType(varDecl.type());
   mlir::Type allocTy = mlir::sol::PointerType::get(
       b.getContext(), varTy, mlir::sol::DataLocation::Stack);
 
@@ -935,30 +935,30 @@ void SolidityToMLIRPass::lower(
   trackLocalVarAddr(varDecl, addr);
 
   if (Expression const *initExpr = varDeclStmt.initialValue()) {
-    b.create<mlir::sol::StoreOp>(loc, genRValExpr(initExpr, varTy), addr);
+    b.create<mlir::sol::StoreOp>(loc, genRValExpr(*initExpr, varTy), addr);
   } else {
     genZeroedVal(addr);
   }
 }
 
 void SolidityToMLIRPass::lower(EmitStatement const &emit) {
-  genExpr(&emit.eventCall());
+  genExpr(emit.eventCall());
 }
 
 void SolidityToMLIRPass::lower(Break const &brkStmt) {
-  b.create<mlir::sol::BreakOp>(getLoc(brkStmt.location()));
+  b.create<mlir::sol::BreakOp>(getLoc(brkStmt));
   mlir::Block *newBlock = b.getBlock()->splitBlock(b.getInsertionPoint());
   b.setInsertionPointToStart(newBlock);
 }
 
 void SolidityToMLIRPass::lower(Continue const &contStmt) {
-  b.create<mlir::sol::ContinueOp>(getLoc(contStmt.location()));
+  b.create<mlir::sol::ContinueOp>(getLoc(contStmt));
   mlir::Block *newBlock = b.getBlock()->splitBlock(b.getInsertionPoint());
   b.setInsertionPointToStart(newBlock);
 }
 
 void SolidityToMLIRPass::lower(PlaceholderStatement const &placeholder) {
-  b.create<mlir::sol::PlaceholderOp>(getLoc(placeholder.location()));
+  b.create<mlir::sol::PlaceholderOp>(getLoc(placeholder));
 }
 
 void SolidityToMLIRPass::lower(Return const &ret) {
@@ -974,16 +974,16 @@ void SolidityToMLIRPass::lower(Return const &ret) {
   Expression const *astExpr = ret.expression();
   if (astExpr) {
     mlir::Value expr =
-        genRValExpr(ret.expression(), getType(currFuncResTys[0]));
-    b.create<mlir::sol::ReturnOp>(getLoc(ret.location()), expr);
+        genRValExpr(*ret.expression(), getType(currFuncResTys[0]));
+    b.create<mlir::sol::ReturnOp>(getLoc(ret), expr);
   } else {
     llvm_unreachable("NYI: Empty return");
   }
 }
 
 void SolidityToMLIRPass::lower(IfStatement const &ifStmt) {
-  mlir::Value cond = genRValExpr(&ifStmt.condition());
-  auto ifOp = b.create<mlir::sol::IfOp>(getLoc(ifStmt.location()), cond);
+  mlir::Value cond = genRValExpr(ifStmt.condition());
+  auto ifOp = b.create<mlir::sol::IfOp>(getLoc(ifStmt), cond);
   mlir::OpBuilder::InsertionGuard insertGuard(b);
 
   b.setInsertionPointToStart(&ifOp.getThenRegion().emplaceBlock());
@@ -999,16 +999,15 @@ void SolidityToMLIRPass::lower(IfStatement const &ifStmt) {
 void SolidityToMLIRPass::lower(WhileStatement const &whileStmt) {
   mlir::sol::LoopOpInterface whileOp;
   if (whileStmt.isDoWhile())
-    whileOp = b.create<mlir::sol::DoWhileOp>(getLoc(whileStmt.location()));
+    whileOp = b.create<mlir::sol::DoWhileOp>(getLoc(whileStmt));
   else
-    whileOp = b.create<mlir::sol::WhileOp>(getLoc(whileStmt.location()));
+    whileOp = b.create<mlir::sol::WhileOp>(getLoc(whileStmt));
   mlir::OpBuilder::InsertionGuard insertGuard(b);
 
   // Lower condition.
   b.setInsertionPointToStart(&whileOp.getCond().front());
-  mlir::Value cond = genRValExpr(&whileStmt.condition());
-  b.create<mlir::sol::ConditionOp>(getLoc(whileStmt.condition().location()),
-                                   cond);
+  mlir::Value cond = genRValExpr(whileStmt.condition());
+  b.create<mlir::sol::ConditionOp>(getLoc(whileStmt.condition()), cond);
 
   // Lower body.
   b.setInsertionPointToStart(&whileOp.getBody().front());
@@ -1023,12 +1022,12 @@ void SolidityToMLIRPass::lower(ForStatement const &forStmt) {
   if (forStmt.initializationExpression())
     lower(*forStmt.initializationExpression());
 
-  auto forOp = b.create<mlir::sol::ForOp>(getLoc(forStmt.location()));
+  auto forOp = b.create<mlir::sol::ForOp>(getLoc(forStmt));
   mlir::OpBuilder::InsertionGuard insertGuard(b);
 
   // Lower condition.
   b.setInsertionPointToStart(&forOp.getCond().front());
-  mlir::Value cond = forStmt.condition() ? genRValExpr(forStmt.condition())
+  mlir::Value cond = forStmt.condition() ? genRValExpr(*forStmt.condition())
                                          : bExt.genBool(true, forOp.getLoc());
   b.create<mlir::sol::ConditionOp>(cond.getLoc(), cond);
 
@@ -1052,7 +1051,7 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
 
   // TODO: sol.new
   auto externalCall = mlir::cast<mlir::sol::ExtCallOp>(
-      genRValExpr(&tryStmt.externalCall()).getDefiningOp());
+      genRValExpr(tryStmt.externalCall()).getDefiningOp());
   auto status = externalCall.getResult(0);
   auto tryOp = b.create<mlir::sol::TryOp>(loc, status);
 
@@ -1071,7 +1070,7 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
             mlir::sol::PointerType::get(b.getContext(), getType(param->type()),
                                         mlir::sol::DataLocation::Stack);
         auto addr = b.create<mlir::sol::AllocaOp>(loc, allocTy);
-        trackLocalVarAddr(&*param, addr);
+        trackLocalVarAddr(*param, addr);
         b.create<mlir::sol::StoreOp>(loc, externalCall.getResult(i), addr);
       }
     }
@@ -1099,7 +1098,7 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
     mlir::Type allocTy = mlir::sol::PointerType::get(
         b.getContext(), ui256, mlir::sol::DataLocation::Stack);
     auto codeParamAddr = b.create<mlir::sol::AllocaOp>(codeParamLoc, allocTy);
-    trackLocalVarAddr(&*codeParam, codeParamAddr);
+    trackLocalVarAddr(*codeParam, codeParamAddr);
     b.create<mlir::sol::StoreOp>(loc, codeParamBlkArg, codeParamAddr);
 
     lower(panicClause->block());
@@ -1128,7 +1127,7 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
     mlir::Type allocTy = mlir::sol::PointerType::get(
         b.getContext(), memStrTy, mlir::sol::DataLocation::Stack);
     auto msgParamAddr = b.create<mlir::sol::AllocaOp>(msgParamLoc, allocTy);
-    trackLocalVarAddr(&*msgParam, msgParamAddr);
+    trackLocalVarAddr(*msgParam, msgParamAddr);
     b.create<mlir::sol::StoreOp>(loc, msgParamBlkArg, msgParamAddr);
     lower(errorClause->block());
     b.create<mlir::sol::YieldOp>(loc);
@@ -1146,53 +1145,53 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
 
 void SolidityToMLIRPass::lower(Statement const &stmt) {
   // Expression
-  if (auto *exprStmt = dynamic_cast<ExpressionStatement const *>(&stmt))
+  if (const auto *exprStmt = dynamic_cast<ExpressionStatement const *>(&stmt))
     lower(*exprStmt);
 
   // Variable declaration
-  else if (auto *varDeclStmt =
+  else if (const auto *varDeclStmt =
                dynamic_cast<VariableDeclarationStatement const *>(&stmt))
     lower(*varDeclStmt);
 
   // Emit
-  else if (auto *emitStmt = dynamic_cast<EmitStatement const *>(&stmt))
+  else if (const auto *emitStmt = dynamic_cast<EmitStatement const *>(&stmt))
     lower(*emitStmt);
 
   // Placeholder
-  else if (auto *placeholderStmt =
+  else if (const auto *placeholderStmt =
                dynamic_cast<PlaceholderStatement const *>(&stmt))
     lower(*placeholderStmt);
 
   // Return
-  else if (auto *retStmt = dynamic_cast<Return const *>(&stmt))
+  else if (const auto *retStmt = dynamic_cast<Return const *>(&stmt))
     lower(*retStmt);
 
   // Break
-  else if (auto *brkStmt = dynamic_cast<Break const *>(&stmt))
+  else if (const auto *brkStmt = dynamic_cast<Break const *>(&stmt))
     lower(*brkStmt);
 
   // Continue
-  else if (auto *contStmt = dynamic_cast<Continue const *>(&stmt))
+  else if (const auto *contStmt = dynamic_cast<Continue const *>(&stmt))
     lower(*contStmt);
 
   // If-then-else
-  else if (auto *ifStmt = dynamic_cast<IfStatement const *>(&stmt))
+  else if (const auto *ifStmt = dynamic_cast<IfStatement const *>(&stmt))
     lower(*ifStmt);
 
   // While and do-while
-  else if (auto *whileStmt = dynamic_cast<WhileStatement const *>(&stmt))
+  else if (const auto *whileStmt = dynamic_cast<WhileStatement const *>(&stmt))
     lower(*whileStmt);
 
   // For
-  else if (auto *forStmt = dynamic_cast<ForStatement const *>(&stmt))
+  else if (const auto *forStmt = dynamic_cast<ForStatement const *>(&stmt))
     lower(*forStmt);
 
   // Try
-  else if (auto *tryStmt = dynamic_cast<TryStatement const *>(&stmt))
+  else if (const auto *tryStmt = dynamic_cast<TryStatement const *>(&stmt))
     lower(*tryStmt);
 
   // Block
-  else if (auto *blk = dynamic_cast<Block const *>(&stmt))
+  else if (const auto *blk = dynamic_cast<Block const *>(&stmt))
     lower(*blk);
 
   else
@@ -1227,12 +1226,12 @@ void SolidityToMLIRPass::lower(ModifierDefinition const &modifier) {
   std::vector<mlir::Type> inpTys;
   std::vector<mlir::Location> inpLocs;
 
-  for (auto const &param : modifier.parameters()) {
+  for (const auto &param : modifier.parameters()) {
     inpTys.push_back(getType(param->annotation().type));
-    inpLocs.push_back(getLoc(param->location()));
+    inpLocs.push_back(getLoc(*param));
   }
   auto funcType = b.getFunctionType(inpTys, {});
-  auto op = b.create<mlir::sol::ModifierOp>(getLoc(modifier.location()),
+  auto op = b.create<mlir::sol::ModifierOp>(getLoc(modifier),
                                             getMangledName(modifier), funcType);
 
   mlir::Block *entryBlk = b.createBlock(&op.getRegion());
@@ -1243,12 +1242,12 @@ void SolidityToMLIRPass::lower(ModifierDefinition const &modifier) {
     auto addr = b.create<mlir::sol::AllocaOp>(
         inpLoc, mlir::sol::PointerType::get(b.getContext(), inpTy,
                                             mlir::sol::DataLocation::Stack));
-    trackLocalVarAddr(param.get(), addr);
+    trackLocalVarAddr(*param, addr);
     b.create<mlir::sol::StoreOp>(inpLoc, arg, addr);
   }
 
   lower(modifier.body());
-  b.create<mlir::sol::ReturnOp>(getLoc(modifier.location()));
+  b.create<mlir::sol::ReturnOp>(getLoc(modifier));
 
   b.setInsertionPointAfter(op);
 }
@@ -1258,20 +1257,20 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   std::vector<mlir::Type> inpTys, outTys;
   std::vector<mlir::Location> inpLocs;
 
-  for (auto const &param : fn.parameters()) {
+  for (const auto &param : fn.parameters()) {
     inpTys.push_back(getType(param->annotation().type));
-    inpLocs.push_back(getLoc(param->location()));
+    inpLocs.push_back(getLoc(*param));
   }
 
-  for (auto const &param : fn.returnParameters()) {
+  for (const auto &param : fn.returnParameters()) {
     outTys.push_back(getType(param->annotation().type));
   }
 
   assert(outTys.size() <= 1 && "NYI: Multivalued return");
 
   auto fnTy = b.getFunctionType(inpTys, outTys);
-  auto op = b.create<mlir::sol::FuncOp>(
-      getLoc(fn.location()), getMangledName(fn), fnTy, getStateMutability(fn));
+  auto op = b.create<mlir::sol::FuncOp>(getLoc(fn), getMangledName(fn), fnTy,
+                                        getStateMutability(fn));
 
   if (fn.isConstructor()) {
     op.setKind(mlir::sol::FunctionKind::Constructor);
@@ -1296,12 +1295,12 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
     auto addr = b.create<mlir::sol::AllocaOp>(
         inpLoc, mlir::sol::PointerType::get(b.getContext(), inpTy,
                                             mlir::sol::DataLocation::Stack));
-    trackLocalVarAddr(param.get(), addr);
+    trackLocalVarAddr(*param, addr);
     b.create<mlir::sol::StoreOp>(inpLoc, arg, addr);
   }
 
   for (const ASTPointer<ModifierInvocation> &modifier : fn.modifiers()) {
-    mlir::Location loc = getLoc(modifier->location());
+    mlir::Location loc = getLoc(*modifier);
 
     auto modifierCallBlk = b.create<mlir::sol::ModifierCallBlkOp>(loc);
     mlir::OpBuilder::InsertionGuard insertGuard(b);
@@ -1320,7 +1319,7 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
       unsigned i = 0;
       for (const ASTPointer<Expression> &arg : *modifier->arguments()) {
         mlir::Type reqTy = getType(modifierDef->parameters()[i++]->type());
-        loweredArgs.push_back(genRValExpr(arg.get(), reqTy));
+        loweredArgs.push_back(genRValExpr(*arg, reqTy));
       }
     }
     b.create<mlir::sol::CallOp>(loc, getMangledName(*modifierDef),
@@ -1331,7 +1330,7 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
 
   // Generate empty return.
   if (outTys.empty())
-    b.create<mlir::sol::ReturnOp>(getLoc(fn.location()));
+    b.create<mlir::sol::ReturnOp>(getLoc(fn));
 
   b.setInsertionPointAfter(op);
 }
@@ -1353,14 +1352,13 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
 
   // Create the contract op.
   auto op = b.create<mlir::sol::ContractOp>(
-      getLoc(cont.location()), cont.name() + "_" + util::toString(cont.id()),
+      getLoc(cont), cont.name() + "_" + util::toString(cont.id()),
       getContractKind(cont), getInterfaceFnsAttr(cont),
       /*ctorFnType=*/mlir::TypeAttr{});
   b.setInsertionPointToStart(&op.getBodyRegion().emplaceBlock());
 
   for (VariableDeclaration const *stateVar : cont.stateVariables()) {
-    b.create<mlir::sol::StateVarOp>(getLoc(stateVar->location()),
-                                    stateVar->name(),
+    b.create<mlir::sol::StateVarOp>(getLoc(*stateVar), stateVar->name(),
                                     getType(stateVar->type()));
   }
 
@@ -1378,7 +1376,7 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
 }
 
 void SolidityToMLIRPass::lowerFreeFuncs(SourceUnit const &srcUnit) {
-  for (auto const *func :
+  for (const auto *func :
        ASTNode::filteredNodes<FunctionDefinition>(srcUnit.nodes())) {
     lower(*func);
   }
@@ -1396,7 +1394,7 @@ bool CompilerStack::runMlirPipeline() {
 
     // Lower requested contracts.
     bool hasContract = false;
-    for (auto const *contr :
+    for (const auto *contr :
          ASTNode::filteredNodes<ContractDefinition>(src->ast->nodes())) {
       hasContract = true;
       if (isRequestedContract(*contr)) {
