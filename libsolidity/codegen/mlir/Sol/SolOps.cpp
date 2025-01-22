@@ -442,8 +442,6 @@ void TryOp::getSuccessorRegions(std::optional<unsigned> index,
     if (region->empty())
       regions.push_back(region);
   }
-
-  return;
 }
 
 //===----------------------------------------------------------------------===//
