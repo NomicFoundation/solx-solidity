@@ -161,13 +161,13 @@ private:
   mlir::Value genExpr(Literal const &lit);
 
   /// Returns the mlir expression for the identifier in an l-value context.
-  mlir::Value genLValExpr(Identifier const &ident);
+  mlir::Value genExpr(Identifier const &ident);
 
   /// Returns the mlir expression for the index access in an l-value context.
-  mlir::Value genLValExpr(IndexAccess const &idxAcc);
+  mlir::Value genExpr(IndexAccess const &idxAcc);
 
   /// Returns the mlir expression for the member access in an r-value context.
-  mlir::Value genLValExpr(MemberAccess const &memberAcc);
+  mlir::Value genExpr(MemberAccess const &memberAcc);
 
   /// Returns the mlir expression for the binary operation.
   mlir::Value genBinExpr(Token op, mlir::Value lhs, mlir::Value rhs,
@@ -331,7 +331,7 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
   llvm_unreachable("NYI: Unknown type");
 }
 
-mlir::Value SolidityToMLIRPass::genLValExpr(Identifier const &id) {
+mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
   Declaration const *decl = id.annotation().referencedDeclaration;
 
   if (MagicVariableDeclaration const *magicVar =
@@ -570,7 +570,7 @@ mlir::Value SolidityToMLIRPass::genExpr(BinaryOperation const &binOp) {
   return genBinExpr(binOp.getOperator(), lhs, rhs, loc);
 }
 
-mlir::Value SolidityToMLIRPass::genLValExpr(IndexAccess const &idxAcc) {
+mlir::Value SolidityToMLIRPass::genExpr(IndexAccess const &idxAcc) {
   mlir::Location loc = getLoc(idxAcc);
 
   mlir::Value baseExpr = genRValExpr(idxAcc.baseExpression());
@@ -597,7 +597,7 @@ mlir::Value SolidityToMLIRPass::genLValExpr(IndexAccess const &idxAcc) {
   llvm_unreachable("Invalid IndexAccess");
 }
 
-mlir::Value SolidityToMLIRPass::genLValExpr(MemberAccess const &memberAcc) {
+mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
   mlir::Location loc = getLoc(memberAcc);
 
   const auto *memberAccTy = memberAcc.expression().annotation().type;
@@ -688,7 +688,7 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const &call) {
     assert(dynamic_cast<ContractType const *>(
         memberAcc->expression().annotation().type));
     mlir::Value addr =
-        genLValExpr(dynamic_cast<Identifier const &>(memberAcc->expression()));
+        genExpr(dynamic_cast<Identifier const &>(memberAcc->expression()));
 
     // Get the callee and the selector.
     const auto *callee = dynamic_cast<FunctionDefinition const *>(
@@ -803,13 +803,13 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const &call) {
 mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
   // Variable access
   if (const auto *ident = dynamic_cast<Identifier const *>(&expr)) {
-    auto addr = genLValExpr(*ident);
+    auto addr = genExpr(*ident);
     return addr;
   }
 
   // Index access
   if (const auto *idxAcc = dynamic_cast<IndexAccess const *>(&expr)) {
-    return genLValExpr(*idxAcc);
+    return genExpr(*idxAcc);
   }
 
   // (Compound) Assignment statement
@@ -868,17 +868,17 @@ mlir::Value SolidityToMLIRPass::genRValExpr(Expression const &expr,
 
   // Identifier
   else if (const auto *id = dynamic_cast<Identifier const *>(&expr)) {
-    val = genRValExpr(genLValExpr(*id), getLoc(*id));
+    val = genRValExpr(genExpr(*id), getLoc(*id));
   }
 
   // Index access
   else if (const auto *idxAcc = dynamic_cast<IndexAccess const *>(&expr)) {
-    val = genRValExpr(genLValExpr(*idxAcc), getLoc(*idxAcc));
+    val = genRValExpr(genExpr(*idxAcc), getLoc(*idxAcc));
   }
 
   // Member access
   else if (const auto *memAcc = dynamic_cast<MemberAccess const *>(&expr)) {
-    mlir::Value lVal = genLValExpr(*memAcc);
+    mlir::Value lVal = genExpr(*memAcc);
     assert(lVal);
     val = genRValExpr(lVal, getLoc(*memAcc));
   }
