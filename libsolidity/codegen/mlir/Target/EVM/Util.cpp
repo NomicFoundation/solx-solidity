@@ -127,7 +127,7 @@ void evm::Builder::genFreePtrUpd(Value freePtr, Value size,
   auto newPtrLtOrig = b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ult,
                                               newFreePtr, freePtr);
   auto panicCond = b.create<arith::OrIOp>(loc, newPtrGtMax, newPtrLtOrig);
-  genPanic(solidity::util::PanicCode::ResourceError, panicCond);
+  genPanic(solidity::util::PanicCode::ResourceError, panicCond, loc);
 
   b.create<sol::MStoreOp>(loc, bExt.genI256Const(64), newFreePtr);
 }
@@ -136,7 +136,7 @@ Value evm::Builder::genMemAlloc(Value size, std::optional<Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;
   solidity::mlirgen::BuilderExt bExt(b, loc);
 
-  Value freePtr = genFreePtr(locArg);
+  Value freePtr = genFreePtr(loc);
   genFreePtrUpd(freePtr, size, loc);
   return freePtr;
 }
@@ -283,9 +283,9 @@ void evm::Builder::genABITupleSizeAssert(TypeRange tys, Value tupleSize,
       b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, tupleSize,
                               bExt.genI256Const(totCallDataHeadSz));
   if (/*TODO: m_revertStrings < RevertStrings::Debug*/ false)
-    genRevertWithMsg(shortTupleCond, "ABI decoding: tuple data too short");
+    genRevertWithMsg(shortTupleCond, "ABI decoding: tuple data too short", loc);
   else
-    genRevert(shortTupleCond);
+    genRevert(shortTupleCond, loc);
 }
 
 Value evm::Builder::genABITupleEncoding(TypeRange tys, ValueRange vals,
@@ -349,7 +349,7 @@ Value evm::Builder::genABITupleEncoding(std::string const &str, Value headStart,
 
   // Generate the string creation at the tail address.
   auto tailAddr = b.create<arith::AddIOp>(loc, headStart, thirtyTwo);
-  genStringStore(str, tailAddr, locArg);
+  genStringStore(str, tailAddr, loc);
   Value stringSize = bExt.genI256Const(
       32 + solidity::mlirgen::getRoundUpToMultiple<32>(str.length()));
 
@@ -366,8 +366,8 @@ void evm::Builder::genABITupleDecoding(TypeRange tys, Value tupleStart,
 
   // TODO? {en|de}codingType() for sol dialect types.
 
-  genABITupleSizeAssert(tys,
-                        b.create<arith::SubIOp>(loc, tupleEnd, tupleStart));
+  genABITupleSizeAssert(tys, b.create<arith::SubIOp>(loc, tupleEnd, tupleStart),
+                        loc);
   Value headAddr = tupleStart;
   auto genLoad = [&](Value addr) -> Value {
     if (fromMem)
@@ -408,7 +408,7 @@ void evm::Builder::genABITupleDecoding(TypeRange tys, Value tupleStart,
 
       // Copy the decoded string to a new memory allocation.
       Value dstAddr = genMemAllocForDynArray(
-          sizeInBytes, bExt.genRoundUpToMultiple<32>(sizeInBytes));
+          sizeInBytes, bExt.genRoundUpToMultiple<32>(sizeInBytes), loc);
       Value thirtyTwo = bExt.genI256Const(32);
       Value dstDataAddr = b.create<arith::AddIOp>(loc, dstAddr, thirtyTwo);
       Value srcDataAddr = b.create<arith::AddIOp>(loc, tailAddr, thirtyTwo);
@@ -525,13 +525,14 @@ void evm::Builder::genRevertWithMsg(std::string const &msg,
   solidity::mlirgen::BuilderExt bExt(b, loc);
 
   // Generate the "Error(string)" selector store at free ptr.
-  Value freePtr = genFreePtr();
+  Value freePtr = genFreePtr(loc);
   b.create<sol::MStoreOp>(loc, freePtr, genI256Selector("Error(string)", loc));
 
   // Generate the tuple encoding of the message after the selector.
   auto freePtrPostSelector =
       b.create<arith::AddIOp>(loc, freePtr, bExt.genI256Const(4));
-  Value tailAddr = genABITupleEncoding(msg, /*headStart=*/freePtrPostSelector);
+  Value tailAddr =
+      genABITupleEncoding(msg, /*headStart=*/freePtrPostSelector, loc);
 
   // Generate the revert.
   auto retDataSize = b.create<arith::SubIOp>(loc, tailAddr, freePtr);
@@ -546,5 +547,5 @@ void evm::Builder::genRevertWithMsg(Value cond, std::string const &msg,
 
   OpBuilder::InsertionGuard insertGuard(b);
   b.setInsertionPointToStart(&ifOp.getThenRegion().front());
-  genRevertWithMsg(msg);
+  genRevertWithMsg(msg, loc);
 }
