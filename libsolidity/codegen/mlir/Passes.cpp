@@ -44,6 +44,8 @@
 
 void solidity::mlirgen::addConversionPasses(mlir::PassManager &passMgr,
                                             Target tgt) {
+  // FIXME:
+  // passMgr.addPass(mlir::createCanonicalizerPass());
   passMgr.addPass(mlir::sol::createModifierOpLoweringPass());
   passMgr.addPass(mlir::sol::createConvertSolToStandardPass(tgt));
   // Canonicalizer removes unreachable blocks, which is important for getting
@@ -288,11 +290,17 @@ bool solidity::mlirgen::doJob(JobSpec const &job, mlir::ModuleOp mod,
 
   switch (job.action) {
   case Action::PrintInitStg:
+    // FIXME:
+    // passMgr.addPass(mlir::createCanonicalizerPass());
+    // if (mlir::failed(passMgr.run(mod)))
+    //   llvm_unreachable("");
     mod.print(llvm::outs());
     break;
 
   case Action::PrintStandardMLIR:
     assert(job.tgt != Target::Undefined);
+    // FIXME:
+    // passMgr.addPass(mlir::createCanonicalizerPass());
     passMgr.addPass(mlir::sol::createModifierOpLoweringPass());
     passMgr.addPass(mlir::sol::createConvertSolToStandardPass(job.tgt));
     passMgr.addPass(mlir::createCanonicalizerPass());

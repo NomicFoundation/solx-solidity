@@ -20,5 +20,9 @@ set(LLVM_TARGET_DEFINITIONS SolInterfaces.td)
 mlir_tablegen(SolInterfaces.h.inc -gen-op-interface-decls)
 mlir_tablegen(SolInterfaces.cpp.inc -gen-op-interface-defs)
 
+# Generate sources from SolCanonicalization.td
+set(LLVM_TARGET_DEFINITIONS SolCanonicalization.td)
+mlir_tablegen(SolCanonicalization.inc -gen-rewriters)
+
 # Create MLIRSolExtraIncGen.
 add_public_tablegen_target(MLIRSolExtraIncGen)

@@ -69,7 +69,7 @@ def Sol_CastOp : Sol_Op<"cast",
   let results = (outs Sol_Int:$out);
 
   let assemblyFormat = "$inp attr-dict `:` type($inp) `to` type($out)";
-  // TODO: folder
+  let hasFolder = 1;
 }
 
 def Sol_CAddOp : Sol_IntBinaryOp<"cadd", [Commutative]>;
@@ -194,7 +194,7 @@ def Sol_LoadOp : Sol_Op<"load"> {
 }
 
 def Sol_StoreOp : Sol_Op<"store"> {
-  let arguments = (ins AnyType:$val, Arg<Sol_RefType, "", [MemRead]>:$addr);
+  let arguments = (ins AnyType:$val, Arg<Sol_RefType, "", [MemWrite]>:$addr);
 
   let assemblyFormat = [{
     $val `,` $addr attr-dict `:` type($val) `,` type($addr)
@@ -584,7 +584,7 @@ def Sol_FuncOp : Sol_Op<"func", [AutomaticAllocationScope, CallableOpInterface,
 }
 
 def Sol_ContractOp : Sol_Op<"contract", [Symbol, SymbolTable, SingleBlock,
-                                         NoTerminator]> {
+                                         IsolatedFromAbove, NoTerminator]> {
   // TODO: Represent the following for the lowering:
   // - IRGenerationContext::memoryUnsafeInlineAssemblySeen
   // - IRGenerationContext::reservedMemory
@@ -604,7 +604,8 @@ def Sol_ContractOp : Sol_Op<"contract", [Symbol, SymbolTable, SingleBlock,
 // TODO? Move the rest of the ops to the yul dialect?
 //
 
-def Sol_ObjectOp : Sol_Op<"object", [Symbol, SymbolTable, NoTerminator]> {
+def Sol_ObjectOp : Sol_Op<"object", [Symbol, SymbolTable, NoTerminator,
+                                     IsolatedFromAbove]> {
   let arguments = (ins SymbolNameAttr:$sym_name);
   let regions = (region AnyRegion:$body);
 

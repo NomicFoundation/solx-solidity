@@ -1442,6 +1442,7 @@ void solidity::mlirgen::registerMLIRCLOpts() {
   mlir::registerMLIRContextCLOptions();
 
   mlir::registerAsmPrinterCLOptions();
+  mlir::registerPassManagerCLOptions();
 }
 
 bool solidity::mlirgen::parseMLIROpts(std::vector<const char *> &argv) {

@@ -16,6 +16,7 @@
 // SPDX-License-Identifier: GPL-3.0
 
 #include "Sol.h"
+#include "mlir/Dialect/CommonFolders.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/FunctionImplementation.h"
 #include "mlir/IR/FunctionInterfaces.h"
@@ -62,6 +63,16 @@ OpFoldResult ConstantOp::fold(FoldAdaptor adaptor) { return getValue(); }
 //===----------------------------------------------------------------------===//
 // CastOp
 //===----------------------------------------------------------------------===//
+
+OpFoldResult CastOp::fold(FoldAdaptor adaptor) {
+  auto intTy = cast<IntegerType>(getType());
+  return constFoldCastOp<IntegerAttr, IntegerAttr>(
+      adaptor.getOperands(), getType(),
+      [&](const APInt &val, bool &castStatus) {
+        return intTy.isSigned() ? val.sext(intTy.getWidth())
+                                : val.zext(intTy.getWidth());
+      });
+}
 
 bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
   assert(inputs.size() == 1 && outputs.size() == 1);
