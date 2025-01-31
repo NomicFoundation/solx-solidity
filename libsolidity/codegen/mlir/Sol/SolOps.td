@@ -369,7 +369,8 @@ def Sol_PlaceholderOp : Sol_Op<"placeholder"> {
 }
 
 def Sol_ModifierCallBlkOp : Sol_Op<"modifier_call_blk",
-                                   [SingleBlock, NoTerminator]> {
+                                   [SingleBlock, NoTerminator,
+                                    IsolatedFromAbove]> {
   let regions = (region SizedRegion<1>:$bodyRegion);
 
   let builders = [

@@ -83,36 +83,8 @@ struct ModifierOpLowering
         modifierCall, modifierCall.getCalleeAttr()));
   }
 
-  /// Returns a map that maps all the stack loads in the sol.modifier_call_blk
-  /// to the respective block arg number.
-  llvm::DenseMap<sol::LoadOp, unsigned>
-  createModifierCallBlkArgMap(sol::ModifierCallBlkOp modifierCallBlk) {
-    auto callerFn = cast<sol::FuncOp>(modifierCallBlk->getParentOp());
-    Block &callerFnEntry = callerFn.getBody().front();
-
-    llvm::DenseMap<sol::LoadOp, unsigned> modifierCallBlkArgMap;
-    modifierCallBlk.getBody()->walk([&](sol::LoadOp ld) {
-      bool foundBlkArg = false;
-      if (auto allocaAddr =
-              dyn_cast<sol::AllocaOp>(ld.getAddr().getDefiningOp())) {
-        for (Operation *user : allocaAddr->getUsers()) {
-          auto st = dyn_cast<sol::StoreOp>(user);
-          if (st && st->getBlock() == &callerFnEntry &&
-              isa<BlockArgument>(st.getVal())) {
-            foundBlkArg = true;
-            modifierCallBlkArgMap[ld] =
-                cast<BlockArgument>(st.getVal()).getArgNumber();
-          }
-        }
-        assert(foundBlkArg);
-      }
-    });
-    return modifierCallBlkArgMap;
-  }
-
   /// Creates and returns a function that contains the body of the modifier in
-  /// the context of the sol.modifier_call_blk. This removes the
-  /// sol.modifier_call_blk as well.
+  /// the context of the sol.modifier_call_blk.
   sol::FuncOp createModifierFn(sol::ModifierCallBlkOp modifierCallBlk,
                                OpBuilder b) {
     OpBuilder::InsertionGuard guard(b);
@@ -121,12 +93,6 @@ struct ModifierOpLowering
     auto modifier = cast<sol::ModifierOp>(SymbolTable::lookupNearestSymbolFrom(
         modifierCall, modifierCall.getCalleeAttr()));
     auto callerFn = cast<sol::FuncOp>(modifierCallBlk->getParentOp());
-    Block &callerFnEntry = callerFn.getBody().front();
-
-    // Record the respective block argument of all the stack loads in the
-    // sol.modifier_call_blk.
-    llvm::DenseMap<sol::LoadOp, unsigned> modifierCallBlkArgMap =
-        createModifierCallBlkArgMap(modifierCallBlk);
 
     // Create the modifier function with caller function signature.
     StringRef modifierFnName =
@@ -135,41 +101,29 @@ struct ModifierOpLowering
     auto modifierFn = b.create<sol::FuncOp>(modifier.getLoc(), modifierFnName,
                                             callerFn.getFunctionType());
 
-    // Clone the modifier's body and move the the sol.modifier_call_blk into the
+    // Move the the sol.modifier_call_blk into the modifier function.
+    modifierFn.getBody().takeBody(modifierCallBlk.getRegion());
+    auto &modifierFnEntry = modifierFn.getBody().front();
+    // sol.modifier_call_blk's block args should conform to the signature of the
     // modifier function.
-    IRMapping mapper;
-    modifier.getBody().cloneInto(&modifierFn.getBody(), mapper);
-    Block &modifierFnEntry = modifierFn.getBody().front();
-    modifierFnEntry.getOperations().splice(
-        modifierFnEntry.begin(), modifierCallBlk.getBody()->getOperations());
+    assert(modifierFnEntry.getArgumentTypes() ==
+           modifierFn.getFunctionType().getInputs());
 
-    // Replace uses of the original modifier args with the operands of the
-    // modifier call.
-    assert(modifierCall.getArgOperands().size() ==
-           modifierFnEntry.getNumArguments());
-    for (auto blkArg : modifierFnEntry.getArguments()) {
-      auto respectiveModifierCallArg =
-          modifierCall.getArgOperands()[blkArg.getArgNumber()];
-      blkArg.replaceAllUsesWith(respectiveModifierCallArg);
-    }
+    // Clone the modifier's body and append it to the modifier function. The
+    // cloned modifier's block args will be remapped to the modifier call args.
+    auto &modifierEntry = modifier.getBody().front();
+    IRMapping irMap;
+    for (auto arg : modifierEntry.getArguments())
+      irMap.map(arg, modifierCall.getArgOperands()[arg.getArgNumber()]);
+    modifier.getBody().cloneInto(&modifierFn.getBody(), irMap);
+
+    // "Replace" the modifier call with the entry block of the modifier.
     modifierCall.erase();
+    assert(modifierFnEntry.getNextNode());
+    modifierFnEntry.getOperations().splice(
+        modifierFnEntry.end(), modifierFnEntry.getNextNode()->getOperations());
+    modifierFnEntry.getNextNode()->erase();
 
-    // Change the block arguments in the modifier function to conform to the
-    // caller function signature.
-    modifierFnEntry.eraseArguments(0, modifierFnEntry.getNumArguments());
-    for (BlockArgument arg : callerFnEntry.getArguments())
-      modifierFnEntry.addArgument(arg.getType(), arg.getLoc());
-
-    // Replace stack load uses with the respective block argument.
-    for (auto i : modifierCallBlkArgMap) {
-      sol::LoadOp allocaLd = i.first;
-      unsigned respectiveBlkArgNum = i.second;
-      allocaLd.replaceAllUsesWith(
-          modifierFnEntry.getArgument(respectiveBlkArgNum));
-      allocaLd.erase();
-    }
-
-    modifierCallBlk.erase();
     return modifierFn;
   }
 
@@ -304,29 +258,26 @@ struct ModifierOpLowering
         // placeholders of the current tail of the `callChain`. They're not part
         // of the `callChain` as they won't have placeholders.
 
-        // Replace stack load uses with the respective block argument.
-        llvm::DenseMap<sol::LoadOp, unsigned> modifierCallBlkArgMap =
-            createModifierCallBlkArgMap(modifierCallBlk);
-        for (auto i : modifierCallBlkArgMap) {
-          sol::LoadOp allocaLd = i.first;
-          unsigned respectiveBlkArgNum = i.second;
-          allocaLd.replaceAllUsesWith(
-              callChain.back().front().getArgument(respectiveBlkArgNum));
-          allocaLd.erase();
-        }
-
         // Clone the sol.modifier_call_blk ops before all the placeholders of
         // the `callChain`'s tail.
+        IRMapping irMap;
+        Block &callChainTailEntry = callChain.back().getBody().front();
+        assert(modifierCallBlk.getBody()->getArgumentTypes() ==
+               callChainTailEntry.getArgumentTypes());
+        for (auto arg : modifierCallBlk.getBody()->getArguments())
+          irMap.map(arg, callChainTailEntry.getArgument(arg.getArgNumber()));
         callChain.back().walk([&](sol::PlaceholderOp placeholder) {
+          auto clonedModifierBlk =
+              cast<sol::ModifierCallBlkOp>(modifierCallBlk->clone(irMap));
           placeholder->getBlock()->getOperations().splice(
               placeholder->getIterator(),
-              modifierCallBlk.clone().getBody()->getOperations());
+              clonedModifierBlk.getBody()->getOperations());
         });
-        modifierCallBlk.erase();
-
       } else {
         callChain.push_back(createModifierFn(modifierCallBlk, b));
       }
+
+      modifierCallBlk.erase();
     }
     callChain.push_back(callerFn);
     for (auto *it = callChain.begin(); it != callChain.end(); ++it) {

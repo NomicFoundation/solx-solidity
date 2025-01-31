@@ -1254,34 +1254,32 @@ void SolidityToMLIRPass::lower(ModifierDefinition const &modifier) {
 
 void SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   currFunc = &fn;
+
+  // Create the function type.
   std::vector<mlir::Type> inpTys, outTys;
   std::vector<mlir::Location> inpLocs;
-
   for (const auto &param : fn.parameters()) {
     inpTys.push_back(getType(param->annotation().type));
     inpLocs.push_back(getLoc(*param));
   }
-
-  for (const auto &param : fn.returnParameters()) {
+  for (const auto &param : fn.returnParameters())
     outTys.push_back(getType(param->annotation().type));
-  }
-
   assert(outTys.size() <= 1 && "NYI: Multivalued return");
-
   auto fnTy = b.getFunctionType(inpTys, outTys);
+
+  // Generate sol.func.
   auto op = b.create<mlir::sol::FuncOp>(getLoc(fn), getMangledName(fn), fnTy,
                                         getStateMutability(fn));
 
+  // Set function kind.
   if (fn.isConstructor()) {
     op.setKind(mlir::sol::FunctionKind::Constructor);
     auto currContr =
         mlir::cast<mlir::sol::ContractOp>(b.getBlock()->getParentOp());
     assert(currContr);
     currContr.setCtorFnType(op.getFunctionType());
-
   } else if (fn.isReceive()) {
     op.setKind(mlir::sol::FunctionKind::Receive);
-
   } else if (fn.isFallback()) {
     op.setKind(mlir::sol::FunctionKind::Fallback);
   }
@@ -1289,21 +1287,20 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   mlir::Block *entryBlk = b.createBlock(&op.getRegion());
   b.setInsertionPointToStart(entryBlk);
 
-  for (auto &&[inpTy, inpLoc, param] :
-       ranges::views::zip(inpTys, inpLocs, fn.parameters())) {
-    mlir::Value arg = entryBlk->addArgument(inpTy, inpLoc);
-    auto addr = b.create<mlir::sol::AllocaOp>(
-        inpLoc, mlir::sol::PointerType::get(b.getContext(), inpTy,
-                                            mlir::sol::DataLocation::Stack));
-    trackLocalVarAddr(*param, addr);
-    b.create<mlir::sol::StoreOp>(inpLoc, arg, addr);
-  }
-
+  // Lower modifier invocations.
   for (const ASTPointer<ModifierInvocation> &modifier : fn.modifiers()) {
     mlir::Location loc = getLoc(*modifier);
 
     auto modifierCallBlk = b.create<mlir::sol::ModifierCallBlkOp>(loc);
     mlir::OpBuilder::InsertionGuard insertGuard(b);
+
+    // sol.modifier_call_blk's block args should match that of the function. We
+    // don't need to generate stack allocations since the block args are
+    // "forwarded" in the call chain of modifiers and the modified function.
+    for (auto &&[inpTy, inpLoc, param] :
+         ranges::views::zip(inpTys, inpLocs, fn.parameters()))
+      trackLocalVarAddr(*param,
+                        modifierCallBlk.getBody()->addArgument(inpTy, inpLoc));
 
     b.setInsertionPointToStart(modifierCallBlk.getBody());
 
@@ -1326,6 +1323,18 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
                                 /*results=*/mlir::TypeRange{}, loweredArgs);
   }
 
+  // Lower the args.
+  for (auto &&[inpTy, inpLoc, param] :
+       ranges::views::zip(inpTys, inpLocs, fn.parameters())) {
+    mlir::Value arg = entryBlk->addArgument(inpTy, inpLoc);
+    auto addr = b.create<mlir::sol::AllocaOp>(
+        inpLoc, mlir::sol::PointerType::get(b.getContext(), inpTy,
+                                            mlir::sol::DataLocation::Stack));
+    trackLocalVarAddr(*param, addr);
+    b.create<mlir::sol::StoreOp>(inpLoc, arg, addr);
+  }
+
+  // Lower the body.
   lower(fn.body());
 
   // Generate empty return.
