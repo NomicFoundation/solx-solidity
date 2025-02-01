@@ -34,7 +34,7 @@ function f(uint256 a) {
 // CHECK-NEXT:     %3 = arith.cmpi eq, %2, %false : i1 loc(#loc1)
 // CHECK-NEXT:     scf.if %3 {
 // CHECK-NEXT:       %7 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       "llvm.intrcall"(%7, %c0_i256) <{id = 3254 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:       "llvm.intrcall"(%7, %c0_i256) <{id = 3255 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     %4 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc7)
@@ -55,7 +55,7 @@ function f(uint256 a) {
 // CHECK-NEXT:       %15 = llvm.inttoptr %14 : i256 to !llvm.ptr<1> loc(#loc3)
 // CHECK-NEXT:       llvm.store %c31858788171200504151793243853063220343653306658425181981798228421623473504256_i256, %15 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc3)
 // CHECK-NEXT:       %16 = llvm.inttoptr %8 : i256 to !llvm.ptr<1> loc(#loc3)
-// CHECK-NEXT:       "llvm.intrcall"(%16, %c100_i256) <{id = 3254 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc3)
+// CHECK-NEXT:       "llvm.intrcall"(%16, %c100_i256) <{id = 3255 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc3)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc3)
 // CHECK-NEXT:     } loc(#loc3)
 // CHECK-NEXT:     return loc(#loc2)

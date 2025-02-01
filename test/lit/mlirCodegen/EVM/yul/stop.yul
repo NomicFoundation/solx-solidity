@@ -13,7 +13,7 @@ object "Test" {
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT:   func.func private @__entry() attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"]} {
-// CHECK-NEXT:     "llvm.intrcall"() <{id = 3265 : i32, name = "evm.stop"}> : () -> () loc(#loc1)
+// CHECK-NEXT:     "llvm.intrcall"() <{id = 3266 : i32, name = "evm.stop"}> : () -> () loc(#loc1)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)
 // CHECK-NEXT:   } loc(#loc)

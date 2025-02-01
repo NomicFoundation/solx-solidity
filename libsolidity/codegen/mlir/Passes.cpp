@@ -243,7 +243,10 @@ static void genEvmBytecode(llvm::Module &creationMod, llvm::Module &runtimeMod,
   objIds[1] = runtimeObjName.data();
 
   LLVMMemoryBufferRef bytecodes[2];
-  if (LLVMLinkEVM(objs, objIds, /*numInBuffers=*/2, bytecodes, &errMsg))
+  if (LLVMLinkEVM(/*inBuffers=*/objs, /*inBuffersIDs=*/objIds,
+                  /*numInBuffers=*/2, /*outBuffers=*/bytecodes,
+                  /*linkerSymbolNames=*/nullptr, /*linkerSymbolValues=*/nullptr,
+                  /*numLinkerSymbols=*/0, &errMsg))
     llvm_unreachable(errMsg);
   out.creationBytecode = llvm::unwrap(bytecodes[0])->getBuffer();
   out.runtimeBytecode = llvm::unwrap(bytecodes[1])->getBuffer();
