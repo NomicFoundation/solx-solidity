@@ -26,13 +26,19 @@ contract C {
     return -a;
   }
 
-  function inc(uint a) public returns (uint) {
-    uint r = a++;
+  function inc(int a) public returns (int) {
+    int r = a++;
     r += a;
     return ++r;
   }
+
+  function dec(int8 a) public returns (int8) {
+    return a--;
+  }
 }
 
+// FIXME:
+// dec(int8): -128 -> FAILURE, hex"4e487b71", 0x11
 // ====
 // compileViaMlir: true
 // ----
@@ -42,4 +48,4 @@ contract C {
 // uci8(uint8): 255 -> 0
 // ci8(uint8): 255 -> FAILURE, hex"4e487b71", 0x11
 // neg(int256): 1 -> -1
-// inc(uint256): 0 -> 2
+// inc(int256): 0 -> 2

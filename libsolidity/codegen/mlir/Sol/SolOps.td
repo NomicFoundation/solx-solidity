@@ -72,6 +72,8 @@ def Sol_CastOp : Sol_Op<"cast",
   let hasFolder = 1;
 }
 
+// TODO: Add folders for the c0 case.
+
 def Sol_CAddOp : Sol_IntBinaryOp<"cadd", [Commutative]>;
 
 def Sol_CSubOp : Sol_IntBinaryOp<"csub">;

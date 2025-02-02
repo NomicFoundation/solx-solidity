@@ -110,13 +110,43 @@ struct CAddOpLowering : public OpConversionPattern<sol::CAddOp> {
     auto ty = cast<IntegerType>(op.getType());
     Value lhs = adaptor.getLhs();
     Value rhs = adaptor.getRhs();
-    Value sum = r.create<arith::AddIOp>(loc, lhs, rhs);
 
     // Unlike via-ir, small int (< i256) arithmetic is "legalized" by the llvm
     // backend, so we don't need a different codegen for its overflow/underflow
     // check since the legalized arithmetic works as if the small int is native
     // to evm.
 
+    // Generate lesser checks for signed cadd with a constant.
+    if (ty.isSigned() && isa<arith::ConstantOp>(rhs.getDefiningOp())) {
+      auto constArg = cast<arith::ConstantOp>(rhs.getDefiningOp());
+      auto constVal = cast<IntegerAttr>(constArg.getValue()).getValue();
+      if (constVal.sge(0)) {
+        // A positive constant can only cause overflow.
+        //
+        // Overflow condition: x > (max - y)
+        auto maxLhs = bExt.genConst(
+            APInt::getSignedMaxValue(constVal.getBitWidth()) - constVal,
+            ty.getWidth());
+        auto overflowCond = r.create<arith::CmpIOp>(
+            loc, arith::CmpIPredicate::sgt, lhs, maxLhs);
+        evmB.genPanic(solidity::util::PanicCode::UnderOverflow, overflowCond);
+      } else {
+        // A negative constant can only cause underflow.
+        //
+        // Underflow condition: x < (min - y).
+        auto minLhs = bExt.genConst(
+            APInt::getSignedMinValue(constVal.getBitWidth()) - constVal,
+            ty.getWidth());
+        auto underflowCond = r.create<arith::CmpIOp>(
+            loc, arith::CmpIPredicate::slt, lhs, minLhs);
+        evmB.genPanic(solidity::util::PanicCode::UnderOverflow, underflowCond);
+      }
+
+      r.replaceOpWithNewOp<arith::AddIOp>(op, lhs, rhs);
+      return success();
+    }
+
+    Value sum = r.create<arith::AddIOp>(loc, lhs, rhs);
     if (ty.isSigned()) {
       // (Copied from the yul codegen)
       // overflow, if x >= 0 and sum < y
