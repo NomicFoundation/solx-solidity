@@ -116,57 +116,32 @@ struct CAddOpLowering : public OpConversionPattern<sol::CAddOp> {
     // check since the legalized arithmetic works as if the small int is native
     // to evm.
 
-    // Generate lesser checks for signed cadd with a constant.
-    if (ty.isSigned() && isa<arith::ConstantOp>(rhs.getDefiningOp())) {
-      auto constArg = cast<arith::ConstantOp>(rhs.getDefiningOp());
-      auto constVal = cast<IntegerAttr>(constArg.getValue()).getValue();
-      if (constVal.sge(0)) {
-        // A positive constant can only cause overflow.
-        //
-        // Overflow condition: x > (max - y)
-        auto maxLhs = bExt.genConst(
-            APInt::getSignedMaxValue(constVal.getBitWidth()) - constVal,
-            ty.getWidth());
-        auto overflowCond = r.create<arith::CmpIOp>(
-            loc, arith::CmpIPredicate::sgt, lhs, maxLhs);
-        evmB.genPanic(solidity::util::PanicCode::UnderOverflow, overflowCond);
-      } else {
-        // A negative constant can only cause underflow.
-        //
-        // Underflow condition: x < (min - y).
-        auto minLhs = bExt.genConst(
-            APInt::getSignedMinValue(constVal.getBitWidth()) - constVal,
-            ty.getWidth());
-        auto underflowCond = r.create<arith::CmpIOp>(
-            loc, arith::CmpIPredicate::slt, lhs, minLhs);
-        evmB.genPanic(solidity::util::PanicCode::UnderOverflow, underflowCond);
-      }
-
-      r.replaceOpWithNewOp<arith::AddIOp>(op, lhs, rhs);
-      return success();
-    }
-
     Value sum = r.create<arith::AddIOp>(loc, lhs, rhs);
+
     if (ty.isSigned()) {
       // (Copied from the yul codegen)
-      // overflow, if x >= 0 and sum < y
-      // underflow, if x < 0 and sum >= y
+      // overflow, if y >= 0 and sum < x
+      // underflow, if y < 0 and sum >= x
+      //
+      // We compare rhs with zero since the canonicalizer could make the rhs a
+      // constant which would enable the arith dialect to optimize away the
+      // comparison.
 
       auto zero = bExt.genConst(0, ty.getWidth());
 
       // Generate the overflow condition.
-      auto lhsGtEqZero =
-          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::sge, lhs, zero);
-      auto sumLtRhs =
-          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, sum, rhs);
-      auto overflowCond = r.create<arith::AndIOp>(loc, lhsGtEqZero, sumLtRhs);
+      auto rhsGtEqZero =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::sge, rhs, zero);
+      auto sumLtLhs =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, sum, lhs);
+      auto overflowCond = r.create<arith::AndIOp>(loc, rhsGtEqZero, sumLtLhs);
 
       // Generate the underflow condition.
-      auto lhsLtZero =
-          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, lhs, zero);
-      auto sumGtEqRhs =
-          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::sge, sum, rhs);
-      auto underflowCond = r.create<arith::AndIOp>(loc, lhsLtZero, sumGtEqRhs);
+      auto rhsLtZero =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, rhs, zero);
+      auto sumGtEqLhs =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::sge, sum, lhs);
+      auto underflowCond = r.create<arith::AndIOp>(loc, rhsLtZero, sumGtEqLhs);
 
       evmB.genPanic(solidity::util::PanicCode::UnderOverflow,
                     r.create<arith::OrIOp>(loc, overflowCond, underflowCond));
