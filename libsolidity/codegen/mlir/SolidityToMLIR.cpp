@@ -801,16 +801,21 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const &call) {
 }
 
 mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
-  // Variable access
-  if (const auto *ident = dynamic_cast<Identifier const *>(&expr)) {
-    auto addr = genExpr(*ident);
-    return addr;
-  }
+  // Literal
+  if (const auto *lit = dynamic_cast<Literal const *>(&expr))
+    return genExpr(*lit);
+
+  // Identifier
+  if (const auto *ident = dynamic_cast<Identifier const *>(&expr))
+    return genExpr(*ident);
 
   // Index access
-  if (const auto *idxAcc = dynamic_cast<IndexAccess const *>(&expr)) {
+  if (const auto *idxAcc = dynamic_cast<IndexAccess const *>(&expr))
     return genExpr(*idxAcc);
-  }
+
+  // Member access
+  else if (const auto *memAcc = dynamic_cast<MemberAccess const *>(&expr))
+    return genExpr(*memAcc);
 
   // (Compound) Assignment statement
   if (const auto *asgnStmt = dynamic_cast<Assignment const *>(&expr)) {
@@ -847,25 +852,13 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
     return {};
   }
 
-  // Literal
-  if (const auto *lit = dynamic_cast<Literal const *>(&expr)) {
-    return genExpr(*lit);
-  }
-
-  // Member access
-  else if (const auto *memAcc = dynamic_cast<MemberAccess const *>(&expr)) {
-    return genExpr(*memAcc);
-  }
-
   // Unary operation
-  else if (const auto *unaryOp = dynamic_cast<UnaryOperation const *>(&expr)) {
+  else if (const auto *unaryOp = dynamic_cast<UnaryOperation const *>(&expr))
     return genExpr(*unaryOp);
-  }
 
   // Binary operation
-  else if (const auto *binOp = dynamic_cast<BinaryOperation const *>(&expr)) {
+  else if (const auto *binOp = dynamic_cast<BinaryOperation const *>(&expr))
     return genExpr(*binOp);
-  }
 
   // Tuple
   else if (const auto *tuple = dynamic_cast<TupleExpression const *>(&expr)) {
@@ -874,9 +867,8 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
   }
 
   // Function call
-  else if (const auto *call = dynamic_cast<FunctionCall const *>(&expr)) {
+  else if (const auto *call = dynamic_cast<FunctionCall const *>(&expr))
     return genExpr(*call);
-  }
 
   llvm_unreachable("NYI");
 }
