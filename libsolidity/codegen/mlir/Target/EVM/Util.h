@@ -202,6 +202,10 @@ public:
   /// Generates a revert without message.
   void genRevert(mlir::Value cond,
                  std::optional<mlir::Location> locArg = std::nullopt);
+
+  /// Generates a revert with values. (Useful for debugging)
+  void genDbgRevert(mlir::ValueRange vals,
+                    std::optional<mlir::Location> locArg = std::nullopt);
 };
 
 } // namespace evm

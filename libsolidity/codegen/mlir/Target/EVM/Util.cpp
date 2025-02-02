@@ -440,9 +440,9 @@ void evm::Builder::genABITupleDecoding(TypeRange tys, Value tupleStart,
 
         // Generate a revert check that checks if the decoded value is within in
         // the range of the integer type.
-        auto revertCond =
-            b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ne, arg,
-                                    bExt.genIntCast(256, false, castedArg));
+        auto revertCond = b.create<arith::CmpIOp>(
+            loc, arith::CmpIPredicate::ne, arg,
+            bExt.genIntCast(/*width=*/256, intTy.isSigned(), castedArg));
         genRevert(revertCond, loc);
         results.push_back(castedArg);
       } else {
@@ -548,4 +548,20 @@ void evm::Builder::genRevertWithMsg(Value cond, std::string const &msg,
   OpBuilder::InsertionGuard insertGuard(b);
   b.setInsertionPointToStart(&ifOp.getThenRegion().front());
   genRevertWithMsg(msg, loc);
+}
+
+void evm::Builder::genDbgRevert(ValueRange vals,
+                                std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+  solidity::mlirgen::BuilderExt bExt(b, loc);
+
+  Value freePtr = genFreePtr(loc);
+  unsigned retDataSize = 0;
+  for (Value val : vals) {
+    auto offset =
+        b.create<arith::AddIOp>(loc, freePtr, bExt.genI256Const(retDataSize));
+    b.create<sol::MStoreOp>(loc, offset, val);
+    retDataSize += 32;
+  }
+  b.create<sol::RevertOp>(loc, freePtr, bExt.genI256Const(retDataSize));
 }

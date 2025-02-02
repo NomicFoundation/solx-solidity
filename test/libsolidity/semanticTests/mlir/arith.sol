@@ -38,7 +38,6 @@ contract C {
 }
 
 // FIXME:
-// dec(int8): -128 -> FAILURE, hex"4e487b71", 0x11
 // ====
 // compileViaMlir: true
 // ----
@@ -49,3 +48,4 @@ contract C {
 // ci8(uint8): 255 -> FAILURE, hex"4e487b71", 0x11
 // neg(int256): 1 -> -1
 // inc(int256): 0 -> 2
+// dec(int8): -128 -> FAILURE, hex"4e487b71", 0x11
