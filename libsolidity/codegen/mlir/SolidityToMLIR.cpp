@@ -847,7 +847,38 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
     return {};
   }
 
-  return genRValExpr(expr);
+  // Literal
+  if (const auto *lit = dynamic_cast<Literal const *>(&expr)) {
+    return genExpr(*lit);
+  }
+
+  // Member access
+  else if (const auto *memAcc = dynamic_cast<MemberAccess const *>(&expr)) {
+    return genExpr(*memAcc);
+  }
+
+  // Unary operation
+  else if (const auto *unaryOp = dynamic_cast<UnaryOperation const *>(&expr)) {
+    return genExpr(*unaryOp);
+  }
+
+  // Binary operation
+  else if (const auto *binOp = dynamic_cast<BinaryOperation const *>(&expr)) {
+    return genExpr(*binOp);
+  }
+
+  // Tuple
+  else if (const auto *tuple = dynamic_cast<TupleExpression const *>(&expr)) {
+    assert(tuple->components().size() == 1 && "NYI");
+    return genLValExpr(*tuple->components()[0]);
+  }
+
+  // Function call
+  else if (const auto *call = dynamic_cast<FunctionCall const *>(&expr)) {
+    return genExpr(*call);
+  }
+
+  llvm_unreachable("NYI");
 }
 
 mlir::Value SolidityToMLIRPass::genRValExpr(mlir::Value val,
@@ -859,60 +890,13 @@ mlir::Value SolidityToMLIRPass::genRValExpr(mlir::Value val,
 
 mlir::Value SolidityToMLIRPass::genRValExpr(Expression const &expr,
                                             std::optional<mlir::Type> resTy) {
-  mlir::Value val;
+  mlir::Value lVal = genLValExpr(expr);
+  assert(lVal);
 
-  // Literal
-  if (const auto *lit = dynamic_cast<Literal const *>(&expr)) {
-    val = genExpr(*lit);
-  }
-
-  // Identifier
-  else if (const auto *id = dynamic_cast<Identifier const *>(&expr)) {
-    val = genRValExpr(genExpr(*id), getLoc(*id));
-  }
-
-  // Index access
-  else if (const auto *idxAcc = dynamic_cast<IndexAccess const *>(&expr)) {
-    val = genRValExpr(genExpr(*idxAcc), getLoc(*idxAcc));
-  }
-
-  // Member access
-  else if (const auto *memAcc = dynamic_cast<MemberAccess const *>(&expr)) {
-    mlir::Value lVal = genExpr(*memAcc);
-    assert(lVal);
-    val = genRValExpr(lVal, getLoc(*memAcc));
-  }
-
-  // Unary operation
-  else if (const auto *unaryOp = dynamic_cast<UnaryOperation const *>(&expr)) {
-    val = genExpr(*unaryOp);
-  }
-
-  // Binary operation
-  else if (const auto *binOp = dynamic_cast<BinaryOperation const *>(&expr)) {
-    val = genExpr(*binOp);
-  }
-
-  // Tuple
-  else if (const auto *tuple = dynamic_cast<TupleExpression const *>(&expr)) {
-    assert(tuple->components().size() == 1 && "NYI");
-    val = genRValExpr(*tuple->components()[0]);
-  }
-
-  // Function call
-  else if (const auto *call = dynamic_cast<FunctionCall const *>(&expr)) {
-    val = genExpr(*call);
-  }
-
-  else {
-    llvm_unreachable("NYI");
-  }
-
+  mlir::Value val = genRValExpr(lVal, getLoc(expr));
   // Generate cast (optional).
-  if (resTy) {
+  if (resTy)
     return genCast(val, *resTy);
-  }
-
   return val;
 }
 
