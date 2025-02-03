@@ -814,7 +814,7 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
     return genExpr(*idxAcc);
 
   // Member access
-  else if (const auto *memAcc = dynamic_cast<MemberAccess const *>(&expr))
+  if (const auto *memAcc = dynamic_cast<MemberAccess const *>(&expr))
     return genExpr(*memAcc);
 
   // (Compound) Assignment statement
@@ -853,21 +853,21 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
   }
 
   // Unary operation
-  else if (const auto *unaryOp = dynamic_cast<UnaryOperation const *>(&expr))
+  if (const auto *unaryOp = dynamic_cast<UnaryOperation const *>(&expr))
     return genExpr(*unaryOp);
 
   // Binary operation
-  else if (const auto *binOp = dynamic_cast<BinaryOperation const *>(&expr))
+  if (const auto *binOp = dynamic_cast<BinaryOperation const *>(&expr))
     return genExpr(*binOp);
 
   // Tuple
-  else if (const auto *tuple = dynamic_cast<TupleExpression const *>(&expr)) {
+  if (const auto *tuple = dynamic_cast<TupleExpression const *>(&expr)) {
     assert(tuple->components().size() == 1 && "NYI");
     return genLValExpr(*tuple->components()[0]);
   }
 
   // Function call
-  else if (const auto *call = dynamic_cast<FunctionCall const *>(&expr))
+  if (const auto *call = dynamic_cast<FunctionCall const *>(&expr))
     return genExpr(*call);
 
   llvm_unreachable("NYI");
