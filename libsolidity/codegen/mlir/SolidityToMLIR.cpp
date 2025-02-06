@@ -48,6 +48,7 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Support/LLVM.h"
 #include "range/v3/view/zip.hpp"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/Support/CommandLine.h"
 #include <string>
 
@@ -128,9 +129,16 @@ private:
   /// Returns the corresponding mlir type for the solidity type `ty`.
   mlir::Type getType(Type const *ty);
 
-  /// Tracks the address of a local variable.
+  /// Tracks the address of the local variable.
   void trackLocalVarAddr(VariableDeclaration const &decl, mlir::Value addr) {
     localVarAddrMap[&decl] = addr;
+  }
+
+  /// Returns the address of the local variable.
+  mlir::Value getLocalVarAddr(VariableDeclaration const &decl) {
+    auto it = localVarAddrMap.find(&decl);
+    assert(it != localVarAddrMap.end());
+    return it->second;
   }
 
   /// Returns the mangled name of the declaration composed of its name and its
@@ -180,7 +188,7 @@ private:
   mlir::Value genExpr(BinaryOperation const &binOp);
 
   /// Returns the mlir expression for the call.
-  mlir::Value genExpr(FunctionCall const &call);
+  mlir::SmallVector<mlir::Value> genExprs(FunctionCall const &call);
 
   // We can't completely rely on ExpressionAnnotation::isLValue here since the
   // TypeChecker doesn't, for instance, tag RHS expression of an assignment as
@@ -188,12 +196,14 @@ private:
 
   /// Returns the mlir expression in an l-value context.
   mlir::Value genLValExpr(Expression const &expr);
+  mlir::SmallVector<mlir::Value> genLValExprs(Expression const &expr);
 
   /// Returns the mlir expression in an r-value context and optionally casts it
   /// to the corresponding mlir type of `resTy`.
   mlir::Value genRValExpr(Expression const &expr,
                           std::optional<mlir::Type> resTy = std::nullopt);
   mlir::Value genRValExpr(mlir::Value val, mlir::Location loc);
+  mlir::SmallVector<mlir::Value> genRValExprs(Expression const &expr);
 
   /// Lowers the expression statement.
   void lower(ExpressionStatement const &);
@@ -212,6 +222,9 @@ private:
 
   /// Lowers the return statement.
   void lower(Return const &);
+
+  /// Lowers the assignment statement.
+  void lower(Assignment const &);
 
   /// Lowers the variable declaration statement.
   void lower(VariableDeclarationStatement const &);
@@ -368,9 +381,7 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
     }
 
     // Local variable.
-    auto it = localVarAddrMap.find(var);
-    assert(it != localVarAddrMap.end());
-    return it->second;
+    return getLocalVarAddr(*var);
   }
 
   llvm_unreachable("NYI");
@@ -629,14 +640,17 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
   llvm_unreachable("NYI");
 }
 
-mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const &call) {
+mlir::SmallVector<mlir::Value>
+SolidityToMLIRPass::genExprs(FunctionCall const &call) {
   assert(*call.annotation().kind != FunctionCallKind::StructConstructorCall &&
          "NYI");
+  mlir::SmallVector<mlir::Value, 2> resVals;
 
   // Type conversion
   if (*call.annotation().kind == FunctionCallKind::TypeConversion) {
-    return genRValExpr(*call.arguments().front(),
-                       getType(call.annotation().type));
+    resVals.push_back(genRValExpr(*call.arguments().front(),
+                                  getType(call.annotation().type)));
+    return resVals;
   }
 
   const auto *calleeTy =
@@ -669,13 +683,12 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const &call) {
       resTys.push_back(getType(ty));
     }
 
-    // FIXME: To support multi-valued return args, genExpr should return
-    // ValueRange.
-    assert(resTys.size() <= 1);
     // Generate the call op.
     auto callOp =
         b.create<mlir::sol::CallOp>(loc, getMangledName(*callee), resTys, args);
-    return resTys.empty() ? mlir::Value{} : callOp.getResult(0);
+    for (mlir::Value val : callOp.getResults())
+      resVals.push_back(val);
+    return resVals;
   }
 
   // External call
@@ -739,12 +752,9 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const &call) {
         /*delegateCall=*/calleeTy->kind() == FunctionType::Kind::DelegateCall,
         selector,
         /*calleeType=*/mlir::cast<mlir::FunctionType>(getType(calleeTy)));
-    assert(callOp.getNumResults() <= 2 && "NYI");
-    // FIXME: We need to make sure that the caller ast lowering can get the
-    // status result. We should really return a tuple here! For that, we need to
-    // start supporting multi-value return throughout the codegen.
-    return calleeTy->returnParameterTypes().empty() ? callOp.getResult(0)
-                                                    : callOp.getResult(1);
+    for (mlir::Value val : llvm::drop_begin(callOp.getResults()))
+      resVals.push_back(val);
+    return resVals;
   }
 
   // Event invocation
@@ -800,7 +810,51 @@ mlir::Value SolidityToMLIRPass::genExpr(FunctionCall const &call) {
   llvm_unreachable("NYI");
 }
 
+void SolidityToMLIRPass::lower(Assignment const &asgnStmt) {
+  mlir::Location loc = getLoc(asgnStmt);
+
+  mlir::SmallVector<mlir::Value> lhsVals =
+      genLValExprs(asgnStmt.leftHandSide());
+  mlir::SmallVector<mlir::Value> rhsVals =
+      genRValExprs(asgnStmt.rightHandSide());
+  assert(lhsVals.size() == rhsVals.size());
+
+  if (asgnStmt.assignmentOperator() == Token::Assign) {
+    for (auto [lhsVal, rhsVal] : llvm::zip(lhsVals, rhsVals)) {
+      // Generate copy for assignment to storage reference types.
+      if (mlir::sol::isNonPtrRefType(rhsVal.getType()) &&
+          mlir::sol::getDataLocation(lhsVal.getType()) ==
+              mlir::sol::DataLocation::Storage) {
+        b.create<mlir::sol::CopyOp>(loc, rhsVal, lhsVal);
+      } else {
+        b.create<mlir::sol::StoreOp>(
+            loc, genCast(rhsVal, mlir::sol::getEltType(lhsVal.getType())),
+            lhsVal);
+      }
+    }
+
+    // Compound assignment statement
+  } else {
+    assert(lhsVals.size() == 1);
+    mlir::Value lhs = lhsVals.front();
+    mlir::Value rhs = rhsVals.front();
+    mlir::Value lhsAsRVal = genRValExpr(lhs, loc);
+    Token binOp =
+        TokenTraits::AssignmentToBinaryOp(asgnStmt.assignmentOperator());
+    b.create<mlir::sol::StoreOp>(
+        loc,
+        genBinExpr(binOp, lhsAsRVal, genCast(rhs, lhsAsRVal.getType()), loc),
+        lhs);
+  }
+}
+
 mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
+  // TODO: We should do a faster dispatch here. We could:
+  // (a) Get frontend::ASTConstVisitor and ASTNode::accept to be able to return
+  // mlir::Value(s).
+  // (b) Adopt llvm's rtti in the ast so that we can switch over the enum that
+  // discriminates the derived ast's.
+
   // Literal
   if (const auto *lit = dynamic_cast<Literal const *>(&expr))
     return genExpr(*lit);
@@ -819,36 +873,7 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
 
   // (Compound) Assignment statement
   if (const auto *asgnStmt = dynamic_cast<Assignment const *>(&expr)) {
-    mlir::Location loc = getLoc(*asgnStmt);
-
-    mlir::Value lhs = genLValExpr(asgnStmt->leftHandSide());
-    mlir::Value rhs = genRValExpr(asgnStmt->rightHandSide());
-
-    if (asgnStmt->assignmentOperator() == Token::Assign) {
-      mlir::Type lhsTy = lhs.getType();
-      mlir::Type rhsTy = rhs.getType();
-
-      // Generate copy for assignment to storage reference types.
-      if (mlir::sol::isNonPtrRefType(rhsTy) &&
-          mlir::sol::getDataLocation(lhsTy) ==
-              mlir::sol::DataLocation::Storage) {
-        b.create<mlir::sol::CopyOp>(loc, rhs, lhs);
-      } else {
-        b.create<mlir::sol::StoreOp>(
-            loc, genCast(rhs, mlir::sol::getEltType(lhs.getType())), lhs);
-      }
-
-      // Compound assignment statement
-    } else {
-      mlir::Value lhsAsRVal = genRValExpr(asgnStmt->leftHandSide());
-      Token binOp =
-          TokenTraits::AssignmentToBinaryOp(asgnStmt->assignmentOperator());
-      b.create<mlir::sol::StoreOp>(
-          loc,
-          genBinExpr(binOp, lhsAsRVal, genCast(rhs, lhsAsRVal.getType()), loc),
-          lhs);
-    }
-
+    lower(*asgnStmt);
     return {};
   }
 
@@ -862,15 +887,40 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
 
   // Tuple
   if (const auto *tuple = dynamic_cast<TupleExpression const *>(&expr)) {
-    assert(tuple->components().size() == 1 && "NYI");
+    assert(tuple->components().size() == 1);
     return genLValExpr(*tuple->components()[0]);
   }
 
   // Function call
-  if (const auto *call = dynamic_cast<FunctionCall const *>(&expr))
-    return genExpr(*call);
+  if (const auto *call = dynamic_cast<FunctionCall const *>(&expr)) {
+    mlir::SmallVector<mlir::Value> exprs = genExprs(*call);
+    assert(exprs.size() < 2);
+    if (exprs.size() == 1)
+      return exprs[0];
+    return {};
+  }
 
   llvm_unreachable("NYI");
+}
+
+mlir::SmallVector<mlir::Value>
+SolidityToMLIRPass::genLValExprs(Expression const &expr) {
+  mlir::SmallVector<mlir::Value, 2> vals;
+
+  // Tuple
+  if (const auto *tuple = dynamic_cast<TupleExpression const *>(&expr)) {
+    for (const ASTPointer<Expression> &subExpr : tuple->components()) {
+      vals.push_back(genLValExpr(*subExpr));
+    }
+    return vals;
+  }
+
+  // Function call
+  if (const auto *call = dynamic_cast<FunctionCall const *>(&expr))
+    return genExprs(*call);
+
+  vals.push_back(genLValExpr(expr));
+  return vals;
 }
 
 mlir::Value SolidityToMLIRPass::genRValExpr(mlir::Value val,
@@ -892,33 +942,49 @@ mlir::Value SolidityToMLIRPass::genRValExpr(Expression const &expr,
   return val;
 }
 
+mlir::SmallVector<mlir::Value>
+SolidityToMLIRPass::genRValExprs(Expression const &expr) {
+  mlir::SmallVector<mlir::Value> lVals = genLValExprs(expr);
+  assert(!lVals.empty());
+
+  mlir::SmallVector<mlir::Value, 2> rVals;
+  for (mlir::Value lVal : lVals)
+    rVals.push_back(genRValExpr(lVal, getLoc(expr)));
+
+  return rVals;
+}
+
 void SolidityToMLIRPass::lower(ExpressionStatement const &exprStmt) {
   genLValExpr(exprStmt.expression());
 }
 
 void SolidityToMLIRPass::lower(
     VariableDeclarationStatement const &varDeclStmt) {
-  assert(varDeclStmt.declarations().size() == 1 && "NYI");
-  VariableDeclaration const &varDecl = *varDeclStmt.declarations()[0];
-
   mlir::Location loc = getLoc(varDeclStmt);
 
-  mlir::Type varTy = getType(varDecl.type());
-  mlir::Type allocTy = mlir::sol::PointerType::get(
-      b.getContext(), varTy, mlir::sol::DataLocation::Stack);
+  mlir::SmallVector<mlir::Value> initExprs(varDeclStmt.declarations().size());
+  if (Expression const *initExpr = varDeclStmt.initialValue())
+    initExprs = genRValExprs(*initExpr);
 
-  auto addr = b.create<mlir::sol::AllocaOp>(loc, allocTy);
-  trackLocalVarAddr(varDecl, addr);
+  for (auto [varDeclPtr, initExpr] :
+       llvm::zip(varDeclStmt.declarations(), initExprs)) {
+    VariableDeclaration const &varDecl = *varDeclPtr;
 
-  if (Expression const *initExpr = varDeclStmt.initialValue()) {
-    b.create<mlir::sol::StoreOp>(loc, genRValExpr(*initExpr, varTy), addr);
-  } else {
-    genZeroedVal(addr);
+    mlir::Type varTy = getType(varDecl.type());
+    mlir::Type allocTy = mlir::sol::PointerType::get(
+        b.getContext(), varTy, mlir::sol::DataLocation::Stack);
+
+    auto addr = b.create<mlir::sol::AllocaOp>(loc, allocTy);
+    trackLocalVarAddr(varDecl, addr);
+    if (initExpr)
+      b.create<mlir::sol::StoreOp>(loc, genCast(initExpr, varTy), addr);
+    else
+      genZeroedVal(addr);
   }
 }
 
 void SolidityToMLIRPass::lower(EmitStatement const &emit) {
-  genExpr(emit.eventCall());
+  genLValExprs(emit.eventCall());
 }
 
 void SolidityToMLIRPass::lower(Break const &brkStmt) {
@@ -945,16 +1011,14 @@ void SolidityToMLIRPass::lower(Return const &ret) {
   if (currFuncResTys.empty())
     return;
 
-  assert(currFuncResTys.size() == 1 && "NYI: Multivalued return");
-
   Expression const *astExpr = ret.expression();
-  if (astExpr) {
-    mlir::Value expr =
-        genRValExpr(*ret.expression(), getType(currFuncResTys[0]));
-    b.create<mlir::sol::ReturnOp>(getLoc(ret), expr);
-  } else {
-    llvm_unreachable("NYI: Empty return");
+  assert(astExpr);
+  mlir::SmallVector<mlir::Value> exprs = genRValExprs(*astExpr);
+  mlir::SmallVector<mlir::Value> castedExprs;
+  for (auto [expr, dstTy] : llvm::zip(exprs, currFuncResTys)) {
+    castedExprs.push_back(genCast(expr, getType(dstTy)));
   }
+  b.create<mlir::sol::ReturnOp>(getLoc(ret), castedExprs);
 }
 
 void SolidityToMLIRPass::lower(IfStatement const &ifStmt) {
@@ -1240,7 +1304,6 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   }
   for (const auto &param : fn.returnParameters())
     outTys.push_back(getType(param->annotation().type));
-  assert(outTys.size() <= 1 && "NYI: Multivalued return");
   auto fnTy = b.getFunctionType(inpTys, outTys);
 
   // Generate sol.func.
