@@ -2,15 +2,20 @@
 
 object "Test" {
   code {
+    function no_ret() {}
+
     function ret() -> r {
       r := 42
     }
 
-    // FIXME:
-    // function no_ret() {}
+    function ret2() -> x, y {
+      x := 42
+      y := 43
+    }
 
     let a := ret()
-    // no_ret()
+    let x, y := ret2()
+    no_ret()
   }
 }
 
@@ -20,9 +25,15 @@ object "Test" {
 // CHECK-NEXT: module attributes {sol.evm_version = #Cancun} {
 // CHECK-NEXT:   func.func private @__deploy() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc1)
-// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc2)
-// CHECK-NEXT:     %1 = call @ret() : () -> i256 loc(#loc3)
-// CHECK-NEXT:     llvm.store %1, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc1)
+// CHECK-NEXT:     %0 = call @ret() : () -> i256 loc(#loc2)
+// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc3)
+// CHECK-NEXT:     llvm.store %0, %1 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc1)
+// CHECK-NEXT:     %2:2 = call @ret2() : () -> (i256, i256) loc(#loc4)
+// CHECK-NEXT:     %3 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc5)
+// CHECK-NEXT:     llvm.store %2#0, %3 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc6)
+// CHECK-NEXT:     %4 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc7)
+// CHECK-NEXT:     llvm.store %2#1, %4 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc6)
+// CHECK-NEXT:     call @no_ret() : () -> () loc(#loc8)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT:   func.func private @__runtime() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime} loc(#loc)
@@ -129,21 +140,49 @@ object "Test" {
 // CHECK-NEXT:     } loc(#loc)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)
 // CHECK-NEXT:   } loc(#loc)
+// CHECK-NEXT:   func.func @ret2() -> (i256, i256) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} {
+// CHECK-NEXT:     %c43_i256 = arith.constant 43 : i256 loc(#loc10)
+// CHECK-NEXT:     %c42_i256 = arith.constant 42 : i256 loc(#loc11)
+// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc9)
+// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc12)
+// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc13)
+// CHECK-NEXT:     llvm.store %c42_i256, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc14)
+// CHECK-NEXT:     llvm.store %c43_i256, %1 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc15)
+// CHECK-NEXT:     %2 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc12)
+// CHECK-NEXT:     %3 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc13)
+// CHECK-NEXT:     return %2, %3 : i256, i256 loc(#loc9)
+// CHECK-NEXT:   } loc(#loc9)
 // CHECK-NEXT:   func.func @ret() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} {
-// CHECK-NEXT:     %c42_i256 = arith.constant 42 : i256 loc(#loc5)
-// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc4)
-// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc6)
-// CHECK-NEXT:     llvm.store %c42_i256, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc7)
-// CHECK-NEXT:     %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc6)
-// CHECK-NEXT:     return %1 : i256 loc(#loc4)
-// CHECK-NEXT:   } loc(#loc4)
+// CHECK-NEXT:     %c42_i256 = arith.constant 42 : i256 loc(#loc17)
+// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc16)
+// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc18)
+// CHECK-NEXT:     llvm.store %c42_i256, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc19)
+// CHECK-NEXT:     %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc18)
+// CHECK-NEXT:     return %1 : i256 loc(#loc16)
+// CHECK-NEXT:   } loc(#loc16)
+// CHECK-NEXT:   func.func @no_ret() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} {
+// CHECK-NEXT:     return loc(#loc20)
+// CHECK-NEXT:   } loc(#loc20)
 // CHECK-NEXT:   func.func private @__personality() -> i32 attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
 // CHECK-NEXT: } loc(#loc)
-// CHECK-NEXT: #loc1 = loc({{.*}}:11:4)
-// CHECK-NEXT: #loc2 = loc({{.*}}:11:8)
-// CHECK-NEXT: #loc3 = loc({{.*}}:11:13)
-// CHECK-NEXT: #loc4 = loc({{.*}}:4:4)
-// CHECK-NEXT: #loc5 = loc({{.*}}:5:11)
-// CHECK-NEXT: #loc6 = loc({{.*}}:4:22)
-// CHECK-NEXT: #loc7 = loc({{.*}}:5:6)
+// CHECK-NEXT: #loc1 = loc({{.*}}:15:4)
+// CHECK-NEXT: #loc2 = loc({{.*}}:15:13)
+// CHECK-NEXT: #loc3 = loc({{.*}}:15:8)
+// CHECK-NEXT: #loc4 = loc({{.*}}:16:16)
+// CHECK-NEXT: #loc5 = loc({{.*}}:16:8)
+// CHECK-NEXT: #loc6 = loc({{.*}}:16:4)
+// CHECK-NEXT: #loc7 = loc({{.*}}:16:11)
+// CHECK-NEXT: #loc8 = loc({{.*}}:17:4)
+// CHECK-NEXT: #loc9 = loc({{.*}}:10:4)
+// CHECK-NEXT: #loc10 = loc({{.*}}:12:11)
+// CHECK-NEXT: #loc11 = loc({{.*}}:11:11)
+// CHECK-NEXT: #loc12 = loc({{.*}}:10:23)
+// CHECK-NEXT: #loc13 = loc({{.*}}:10:26)
+// CHECK-NEXT: #loc14 = loc({{.*}}:11:6)
+// CHECK-NEXT: #loc15 = loc({{.*}}:12:6)
+// CHECK-NEXT: #loc16 = loc({{.*}}:6:4)
+// CHECK-NEXT: #loc17 = loc({{.*}}:7:11)
+// CHECK-NEXT: #loc18 = loc({{.*}}:6:22)
+// CHECK-NEXT: #loc19 = loc({{.*}}:7:6)
+// CHECK-NEXT: #loc20 = loc({{.*}}:4:4)
 // CHECK-EMPTY:

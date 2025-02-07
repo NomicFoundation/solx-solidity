@@ -2,15 +2,20 @@
 
 object "Test" {
   code {
+    function no_ret() {}
+
     function ret() -> r {
       r := 42
     }
 
-    // FIXME:
-    // function no_ret() {}
+    function ret2() -> x, y {
+      x := 42
+      y := 43
+    }
 
     let a := ret()
-    // no_ret()
+    let x, y := ret2()
+    no_ret()
   }
 }
 
@@ -18,26 +23,63 @@ object "Test" {
 // CHECK: #Cancun = #sol<EvmVersion Cancun>
 // CHECK-NEXT: module attributes {sol.evm_version = #Cancun} {
 // CHECK-NEXT:   sol.object @Test {
-// CHECK-NEXT:     sol.func @ret() -> i256 {
-// CHECK-NEXT:       %c1_i256_0 = arith.constant 1 : i256 loc(#loc1)
-// CHECK-NEXT:       %2 = llvm.alloca %c1_i256_0 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc2)
-// CHECK-NEXT:       %c42_i256 = arith.constant 42 : i256 loc(#loc3)
-// CHECK-NEXT:       llvm.store %c42_i256, %2 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc4)
-// CHECK-NEXT:       %3 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc2)
-// CHECK-NEXT:       sol.return %3 : i256 loc(#loc1)
+// CHECK-NEXT:     sol.func @no_ret() {
+// CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc5)
-// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc6)
-// CHECK-NEXT:     %1 = sol.call @ret() : () -> i256 loc(#loc7)
-// CHECK-NEXT:     llvm.store %1, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc5)
+// CHECK-NEXT:     sol.func @ret() -> i256 {
+// CHECK-NEXT:       %c1_i256_2 = arith.constant 1 : i256 loc(#loc2)
+// CHECK-NEXT:       %5 = llvm.alloca %c1_i256_2 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc3)
+// CHECK-NEXT:       %c42_i256 = arith.constant 42 : i256 loc(#loc4)
+// CHECK-NEXT:       llvm.store %c42_i256, %5 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc5)
+// CHECK-NEXT:       %6 = llvm.load %5 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc3)
+// CHECK-NEXT:       sol.return %6 : i256 loc(#loc2)
+// CHECK-NEXT:     } loc(#loc2)
+// CHECK-NEXT:     sol.func @ret2() -> (i256, i256) {
+// CHECK-NEXT:       %c1_i256_2 = arith.constant 1 : i256 loc(#loc6)
+// CHECK-NEXT:       %5 = llvm.alloca %c1_i256_2 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc7)
+// CHECK-NEXT:       %c1_i256_3 = arith.constant 1 : i256 loc(#loc6)
+// CHECK-NEXT:       %6 = llvm.alloca %c1_i256_3 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc8)
+// CHECK-NEXT:       %c42_i256 = arith.constant 42 : i256 loc(#loc9)
+// CHECK-NEXT:       llvm.store %c42_i256, %5 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc10)
+// CHECK-NEXT:       %c43_i256 = arith.constant 43 : i256 loc(#loc11)
+// CHECK-NEXT:       llvm.store %c43_i256, %6 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc12)
+// CHECK-NEXT:       %7 = llvm.load %5 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc7)
+// CHECK-NEXT:       %8 = llvm.load %6 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc8)
+// CHECK-NEXT:       sol.return %7, %8 : i256, i256 loc(#loc6)
+// CHECK-NEXT:     } loc(#loc6)
+// CHECK-NEXT:     %0 = sol.call @ret() : () -> i256 loc(#loc13)
+// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc14)
+// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc15)
+// CHECK-NEXT:     llvm.store %0, %1 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc14)
+// CHECK-NEXT:     %2:2 = sol.call @ret2() : () -> (i256, i256) loc(#loc16)
+// CHECK-NEXT:     %c1_i256_0 = arith.constant 1 : i256 loc(#loc17)
+// CHECK-NEXT:     %3 = llvm.alloca %c1_i256_0 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc18)
+// CHECK-NEXT:     llvm.store %2#0, %3 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc17)
+// CHECK-NEXT:     %c1_i256_1 = arith.constant 1 : i256 loc(#loc17)
+// CHECK-NEXT:     %4 = llvm.alloca %c1_i256_1 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc19)
+// CHECK-NEXT:     llvm.store %2#1, %4 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc17)
+// CHECK-NEXT:     sol.call @no_ret() : () -> () loc(#loc20)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:4:4)
-// CHECK-NEXT: #loc2 = loc({{.*}}:4:22)
-// CHECK-NEXT: #loc3 = loc({{.*}}:5:11)
-// CHECK-NEXT: #loc4 = loc({{.*}}:5:6)
-// CHECK-NEXT: #loc5 = loc({{.*}}:11:4)
-// CHECK-NEXT: #loc6 = loc({{.*}}:11:8)
-// CHECK-NEXT: #loc7 = loc({{.*}}:11:13)
+// CHECK-NEXT: #loc2 = loc({{.*}}:6:4)
+// CHECK-NEXT: #loc3 = loc({{.*}}:6:22)
+// CHECK-NEXT: #loc4 = loc({{.*}}:7:11)
+// CHECK-NEXT: #loc5 = loc({{.*}}:7:6)
+// CHECK-NEXT: #loc6 = loc({{.*}}:10:4)
+// CHECK-NEXT: #loc7 = loc({{.*}}:10:23)
+// CHECK-NEXT: #loc8 = loc({{.*}}:10:26)
+// CHECK-NEXT: #loc9 = loc({{.*}}:11:11)
+// CHECK-NEXT: #loc10 = loc({{.*}}:11:6)
+// CHECK-NEXT: #loc11 = loc({{.*}}:12:11)
+// CHECK-NEXT: #loc12 = loc({{.*}}:12:6)
+// CHECK-NEXT: #loc13 = loc({{.*}}:15:13)
+// CHECK-NEXT: #loc14 = loc({{.*}}:15:4)
+// CHECK-NEXT: #loc15 = loc({{.*}}:15:8)
+// CHECK-NEXT: #loc16 = loc({{.*}}:16:16)
+// CHECK-NEXT: #loc17 = loc({{.*}}:16:4)
+// CHECK-NEXT: #loc18 = loc({{.*}}:16:8)
+// CHECK-NEXT: #loc19 = loc({{.*}}:16:11)
+// CHECK-NEXT: #loc20 = loc({{.*}}:17:4)
 // CHECK-EMPTY:

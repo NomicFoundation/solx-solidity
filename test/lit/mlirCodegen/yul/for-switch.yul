@@ -19,10 +19,10 @@ object "Test" {
 // CHECK: #Cancun = #sol<EvmVersion Cancun>
 // CHECK-NEXT: module attributes {sol.evm_version = #Cancun} {
 // CHECK-NEXT:   sol.object @Test {
-// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc1)
-// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc2)
-// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc3)
-// CHECK-NEXT:     llvm.store %c0_i256, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc1)
+// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc1)
+// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc2)
+// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc3)
+// CHECK-NEXT:     llvm.store %c0_i256, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc2)
 // CHECK-NEXT:     sol.for cond {
 // CHECK-NEXT:       %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc5)
 // CHECK-NEXT:       %c2_i256 = arith.constant 2 : i256 loc(#loc6)
@@ -55,9 +55,9 @@ object "Test" {
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
-// CHECK-NEXT: #loc1 = loc({{.*}}:4:10)
-// CHECK-NEXT: #loc2 = loc({{.*}}:4:14)
-// CHECK-NEXT: #loc3 = loc({{.*}}:4:19)
+// CHECK-NEXT: #loc1 = loc({{.*}}:4:19)
+// CHECK-NEXT: #loc2 = loc({{.*}}:4:10)
+// CHECK-NEXT: #loc3 = loc({{.*}}:4:14)
 // CHECK-NEXT: #loc4 = loc({{.*}}:4:4)
 // CHECK-NEXT: #loc5 = loc({{.*}}:4:26)
 // CHECK-NEXT: #loc6 = loc({{.*}}:4:29)

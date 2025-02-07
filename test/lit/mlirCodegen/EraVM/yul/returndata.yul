@@ -14,10 +14,10 @@ object "Test" {
 // CHECK-NEXT: module attributes {sol.evm_version = #Cancun} {
 // CHECK-NEXT:   func.func private @__deploy() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc1)
-// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc2)
-// CHECK-NEXT:     %1 = llvm.mlir.addressof @returndatasize : !llvm.ptr<i256> loc(#loc3)
-// CHECK-NEXT:     %2 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc3)
-// CHECK-NEXT:     llvm.store %2, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc1)
+// CHECK-NEXT:     %0 = llvm.mlir.addressof @returndatasize : !llvm.ptr<i256> loc(#loc2)
+// CHECK-NEXT:     %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc2)
+// CHECK-NEXT:     %2 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc3)
+// CHECK-NEXT:     llvm.store %1, %2 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc1)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT:   func.func private @__runtime() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime} loc(#loc)
@@ -127,6 +127,6 @@ object "Test" {
 // CHECK-NEXT:   func.func private @__personality() -> i32 attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc1 = loc({{.*}}:6:4)
-// CHECK-NEXT: #loc2 = loc({{.*}}:6:8)
-// CHECK-NEXT: #loc3 = loc({{.*}}:6:13)
+// CHECK-NEXT: #loc2 = loc({{.*}}:6:13)
+// CHECK-NEXT: #loc3 = loc({{.*}}:6:8)
 // CHECK-EMPTY:

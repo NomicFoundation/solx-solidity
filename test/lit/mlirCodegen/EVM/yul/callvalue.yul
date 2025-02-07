@@ -11,14 +11,14 @@ object "Test" {
 // CHECK-NEXT: module @Test attributes {sol.evm_version = #Cancun} {
 // CHECK-NEXT:   func.func private @__entry() attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc1)
-// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc2)
-// CHECK-NEXT:     %1 = "llvm.intrcall"() <{id = 3216 : i32, name = "evm.callvalue"}> : () -> i256 loc(#loc3)
-// CHECK-NEXT:     llvm.store %1, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc1)
+// CHECK-NEXT:     %0 = "llvm.intrcall"() <{id = 3216 : i32, name = "evm.callvalue"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc3)
+// CHECK-NEXT:     llvm.store %0, %1 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc1)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:4:4)
-// CHECK-NEXT: #loc2 = loc({{.*}}:4:8)
-// CHECK-NEXT: #loc3 = loc({{.*}}:4:13)
+// CHECK-NEXT: #loc2 = loc({{.*}}:4:13)
+// CHECK-NEXT: #loc3 = loc({{.*}}:4:8)
 // CHECK-EMPTY:
