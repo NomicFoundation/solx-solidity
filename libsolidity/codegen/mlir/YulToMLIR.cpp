@@ -42,6 +42,7 @@
 #include "mlir/IR/Location.h"
 #include "mlir/IR/Value.h"
 #include "mlir/IR/Verifier.h"
+#include "mlir/Support/LLVM.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringRef.h"
@@ -64,6 +65,11 @@ class YulToMLIRPass : public ASTWalker {
   CharStream const &stream;
   Dialect const &yulDialect;
   EVMVersion evmVersion;
+  std::map<YulName, mlir::Value> localVarAddrMap;
+  std::map<std::string,
+           std::function<mlir::SmallVector<mlir::Value>(
+               std::vector<Expression> const &args, mlir::Location loc)>>
+      builtinGenMap;
 
 public:
   mlir::ModuleOp getModule() { return mod; }
@@ -78,6 +84,7 @@ public:
                      b.getContext(), *mlir::sol::symbolizeEvmVersion(
                                          evmVersion.getVersionAsInt())));
     b.setInsertionPointToEnd(mod.getBody());
+    populateBuiltinGenMap();
   }
 
   /// Lowers a subobject
@@ -87,9 +94,6 @@ public:
   void lowerTopLevelObj(Object const &obj);
 
 private:
-  /// Maps a yul variable name to its MemRef
-  std::map<YulName, mlir::Value> localVarAddrMap;
-
   /// Returns the IntegerAttr for `num`
   mlir::IntegerAttr getIntAttr(LiteralValue const &num);
 
@@ -136,6 +140,51 @@ private:
     // FIXME: We should lookup in the current block and its ancestors
     return currObj.lookupSymbol<T>(name);
   }
+
+  /// Defines a simple builtin codegen map.
+  template <typename OpT, bool reverseArgs = false, bool noRet = false>
+  void defSimpleBuiltinGen(const char *str) {
+    builtinGenMap[str] = [&](std::vector<Expression> const &args,
+                             mlir::Location loc) {
+      mlir::SmallVector<mlir::Value, 3> ins;
+
+      if constexpr (reverseArgs) {
+        for (size_t i = args.size(); i--;)
+          ins.push_back(genDefTyExpr(args[i]));
+      } else {
+        for (const Expression &arg : args)
+          ins.push_back(genDefTyExpr(arg));
+      }
+
+      mlir::SmallVector<mlir::Value, 2> resVals;
+      if constexpr (noRet)
+        b.create<OpT>(loc, mlir::TypeRange{}, ins);
+      else
+        resVals.push_back(
+            b.create<OpT>(loc, mlir::TypeRange{getDefIntTy()}, ins));
+
+      return resVals;
+    };
+  }
+  template <typename OpT>
+  void defSimpleBuiltinGenNoRet(const char *str) {
+    defSimpleBuiltinGen<OpT, /*reverseArgs=*/false, /*noRet=*/true>(str);
+  }
+
+  /// Defines builtin codegen map for cmp builtins.
+  template <mlir::arith::CmpIPredicate predicate>
+  void defCmpBuiltinGen(const char *name) {
+    builtinGenMap[name] = [&](std::vector<Expression> const &args,
+                              mlir::Location loc) {
+      mlir::SmallVector<mlir::Value, 2> resVals;
+      resVals.push_back(b.create<mlir::arith::CmpIOp>(
+          loc, predicate, genDefTyExpr(args[0]), genDefTyExpr(args[1])));
+      return resVals;
+    };
+  }
+
+  /// Populates builtinGenMap with codegen of all the builtins.
+  void populateBuiltinGenMap();
 
   /// Returns a cast expression.
   mlir::Value genCast(mlir::Value val, mlir::IntegerType dstTy);
@@ -226,6 +275,88 @@ mlir::Value YulToMLIRPass::convToBool(mlir::Value val) {
   llvm_unreachable("Invalid type");
 }
 
+void YulToMLIRPass::populateBuiltinGenMap() {
+  using namespace mlir;
+  using namespace mlir::sol;
+  defSimpleBuiltinGen<arith::AddIOp>("add");
+  defSimpleBuiltinGen<arith::SubIOp>("sub");
+  defSimpleBuiltinGen<arith::ShRUIOp, /*reverseArgs=*/true>("shr");
+  defCmpBuiltinGen<arith::CmpIPredicate::ult>("lt");
+  defCmpBuiltinGen<arith::CmpIPredicate::slt>("slt");
+  builtinGenMap["iszero"] = [&](std::vector<Expression> const &args,
+                                mlir::Location loc) {
+    mlir::SmallVector<mlir::Value, 2> resVals;
+    mlirgen::BuilderExt bExt(b, loc);
+    resVals.push_back(b.create<mlir::arith::CmpIOp>(
+        loc, mlir::arith::CmpIPredicate::eq, genDefTyExpr(args[0]),
+        bExt.genI256Const(0)));
+    return resVals;
+  };
+  defSimpleBuiltinGen<MLoadOp>("mload");
+  defSimpleBuiltinGenNoRet<MStoreOp>("mstore");
+  defSimpleBuiltinGenNoRet<MCopyOp>("mcopy");
+  defSimpleBuiltinGen<MSizeOp>("msize");
+  defSimpleBuiltinGen<CallDataLoadOp>("calldataload");
+  defSimpleBuiltinGenNoRet<CallDataCopyOp>("calldatacopy");
+  defSimpleBuiltinGen<CallDataSizeOp>("calldatasize");
+  defSimpleBuiltinGenNoRet<ReturnDataCopyOp>("returndatacopy");
+  defSimpleBuiltinGen<ReturnDataSizeOp>("returndatasize");
+  defSimpleBuiltinGenNoRet<CodeCopyOp>("codecopy");
+  defSimpleBuiltinGen<CodeSizeOp>("codesize");
+  defSimpleBuiltinGen<ExtCodeSizeOp>("extcodesize");
+  defSimpleBuiltinGen<SLoadOp>("sload");
+  defSimpleBuiltinGenNoRet<SStoreOp>("sstore");
+  defSimpleBuiltinGenNoRet<BuiltinRetOp>("return");
+  defSimpleBuiltinGenNoRet<RevertOp>("revert");
+  defSimpleBuiltinGenNoRet<StopOp>("stop");
+  defSimpleBuiltinGen<Keccak256Op>("keccak256");
+  defSimpleBuiltinGen<CallValOp>("callvalue");
+  defSimpleBuiltinGen<AddressOp>("address");
+  defSimpleBuiltinGen<CallerOp>("caller");
+  defSimpleBuiltinGen<GasOp>("gas");
+  defSimpleBuiltinGen<BuiltinCallOp>("call");
+  defSimpleBuiltinGen<StaticCallOp>("staticcall");
+  defSimpleBuiltinGenNoRet<LogOp>("log0");
+  defSimpleBuiltinGenNoRet<LogOp>("log1");
+  defSimpleBuiltinGenNoRet<LogOp>("log2");
+  defSimpleBuiltinGenNoRet<LogOp>("log3");
+  defSimpleBuiltinGenNoRet<LogOp>("log4");
+  builtinGenMap["dataoffset"] = [&](std::vector<Expression> const &args,
+                                    Location loc) {
+    SmallVector<Value, 2> resVals;
+    auto *objectName = std::get_if<Literal>(&args[0]);
+    assert(objectName);
+    assert(objectName->kind == LiteralKind::String);
+    auto objectOp = lookupSymbol<sol::ObjectOp>(
+        objectName->value.builtinStringLiteralValue());
+    assert(objectOp && "NYI: References to external object");
+    resVals.push_back(
+        b.create<DataOffsetOp>(loc, FlatSymbolRefAttr::get(objectOp)));
+    return resVals;
+  };
+  builtinGenMap["datasize"] = [&](std::vector<Expression> const &args,
+                                  Location loc) {
+    SmallVector<Value, 2> resVals;
+    auto *objectName = std::get_if<Literal>(&args[0]);
+    assert(objectName);
+    assert(objectName->kind == LiteralKind::String);
+    auto objectOp = lookupSymbol<sol::ObjectOp>(
+        objectName->value.builtinStringLiteralValue());
+    assert(objectOp && "NYI: References to external object");
+    resVals.push_back(
+        b.create<DataSizeOp>(loc, FlatSymbolRefAttr::get(objectOp)));
+    return resVals;
+  };
+  builtinGenMap["memoryguard"] = [&](std::vector<Expression> const &args,
+                                     Location loc) {
+    SmallVector<Value, 2> resVals;
+    auto *arg = std::get_if<Literal>(&args[0]);
+    assert(arg);
+    resVals.push_back(b.create<MemGuardOp>(loc, getIntAttr(arg->value)));
+    return resVals;
+  };
+}
+
 mlir::Value YulToMLIRPass::genExpr(Literal const &lit) {
   mlir::Location loc = this->getLoc(lit.debugData);
 
@@ -242,175 +373,14 @@ mlir::Value YulToMLIRPass::genExpr(Identifier const &id) {
 
 mlir::SmallVector<mlir::Value>
 YulToMLIRPass::genExprs(FunctionCall const &call) {
-  // FIXME: We should extend BuiltinFunction for mlir and add
-  // callbacks((FunctionCall, mlir::OpBuilder, mlir::Location) -> mlir::Value))
-  // to codgen instead of the following inefficent string switch.
   BuiltinFunction const *builtin = yulDialect.builtin(call.functionName.name);
   mlir::Location loc = getLoc(call.debugData);
   mlirgen::BuilderExt bExt(b, loc);
 
   mlir::SmallVector<mlir::Value> resVals;
   if (builtin) {
-    if (builtin->name.str() == "add") {
-      resVals.push_back(
-          b.create<mlir::arith::AddIOp>(loc, genDefTyExpr(call.arguments[0]),
-                                        genDefTyExpr(call.arguments[1])));
-    } else if (builtin->name.str() == "sub") {
-      resVals.push_back(
-          b.create<mlir::arith::SubIOp>(loc, genDefTyExpr(call.arguments[0]),
-                                        genDefTyExpr(call.arguments[1])));
-    } else if (builtin->name.str() == "lt") {
-      resVals.push_back(b.create<mlir::arith::CmpIOp>(
-          loc, mlir::arith::CmpIPredicate::ult, genDefTyExpr(call.arguments[0]),
-          genDefTyExpr(call.arguments[1])));
-    } else if (builtin->name.str() == "slt") {
-      resVals.push_back(b.create<mlir::arith::CmpIOp>(
-          loc, mlir::arith::CmpIPredicate::slt, genDefTyExpr(call.arguments[0]),
-          genDefTyExpr(call.arguments[1])));
-    } else if (builtin->name.str() == "iszero") {
-      resVals.push_back(b.create<mlir::arith::CmpIOp>(
-          loc, mlir::arith::CmpIPredicate::eq, genDefTyExpr(call.arguments[0]),
-          bExt.genI256Const(0)));
-    } else if (builtin->name.str() == "shr") {
-      resVals.push_back(
-          b.create<mlir::arith::ShRUIOp>(loc, genDefTyExpr(call.arguments[1]),
-                                         genDefTyExpr(call.arguments[0])));
-    }
-
-    //
-    // TODO: The lowering of builtin function should be auto generated from
-    // evmasm::InstructionInfo and the corresponding mlir ops
-    //
-
-    else if (builtin->name.str() == "call") {
-      resVals.push_back(b.create<mlir::sol::BuiltinCallOp>(
-          loc, genDefTyExpr(call.arguments[0]), genDefTyExpr(call.arguments[1]),
-          genDefTyExpr(call.arguments[2]), genDefTyExpr(call.arguments[3]),
-          genDefTyExpr(call.arguments[4]), genDefTyExpr(call.arguments[5]),
-          genDefTyExpr(call.arguments[6])));
-    } else if (builtin->name.str() == "staticcall") {
-      resVals.push_back(b.create<mlir::sol::StaticCallOp>(
-          loc, genDefTyExpr(call.arguments[0]), genDefTyExpr(call.arguments[1]),
-          genDefTyExpr(call.arguments[2]), genDefTyExpr(call.arguments[3]),
-          genDefTyExpr(call.arguments[4]), genDefTyExpr(call.arguments[5])));
-    } else if (builtin->name.str() == "return") {
-      b.create<mlir::sol::BuiltinRetOp>(loc, genDefTyExpr(call.arguments[0]),
-                                        genDefTyExpr(call.arguments[1]));
-    } else if (builtin->name.str() == "revert") {
-      b.create<mlir::sol::RevertOp>(loc, genDefTyExpr(call.arguments[0]),
-                                    genDefTyExpr(call.arguments[1]));
-
-    } else if (builtin->name.str() == "stop") {
-      b.create<mlir::sol::StopOp>(loc);
-    } else if (builtin->name.str() == "mload") {
-      resVals.push_back(
-          b.create<mlir::sol::MLoadOp>(loc, genDefTyExpr(call.arguments[0])));
-    } else if (builtin->name.str() == "mstore") {
-      b.create<mlir::sol::MStoreOp>(loc, genDefTyExpr(call.arguments[0]),
-                                    genDefTyExpr(call.arguments[1]));
-    } else if (builtin->name.str() == "mcopy") {
-      b.create<mlir::sol::MCopyOp>(loc, genDefTyExpr(call.arguments[0]),
-                                   genDefTyExpr(call.arguments[1]),
-                                   genDefTyExpr(call.arguments[2]));
-    } else if (builtin->name.str() == "msize") {
-      resVals.push_back(b.create<mlir::sol::MSizeOp>(loc));
-    } else if (builtin->name.str() == "callvalue") {
-      resVals.push_back(b.create<mlir::sol::CallValOp>(loc));
-    } else if (builtin->name.str() == "calldataload") {
-      resVals.push_back(b.create<mlir::sol::CallDataLoadOp>(
-          loc, genDefTyExpr(call.arguments[0])));
-    } else if (builtin->name.str() == "calldatasize") {
-      resVals.push_back(b.create<mlir::sol::CallDataSizeOp>(loc));
-    } else if (builtin->name.str() == "calldatacopy") {
-      mlir::Value dst = genDefTyExpr(call.arguments[0]);
-      mlir::Value offset = genDefTyExpr(call.arguments[1]);
-      mlir::Value size = genDefTyExpr(call.arguments[2]);
-      b.create<mlir::sol::CallDataCopyOp>(loc, dst, offset, size);
-    } else if (builtin->name.str() == "returndatasize") {
-      resVals.push_back(b.create<mlir::sol::ReturnDataSizeOp>(loc));
-    } else if (builtin->name.str() == "returndatacopy") {
-      mlir::Value dst = genDefTyExpr(call.arguments[0]);
-      mlir::Value offset = genDefTyExpr(call.arguments[1]);
-      mlir::Value size = genDefTyExpr(call.arguments[2]);
-      b.create<mlir::sol::ReturnDataCopyOp>(loc, dst, offset, size);
-    } else if (builtin->name.str() == "sload") {
-      resVals.push_back(
-          b.create<mlir::sol::SLoadOp>(loc, genDefTyExpr(call.arguments[0])));
-    } else if (builtin->name.str() == "sstore") {
-      b.create<mlir::sol::SStoreOp>(loc, genDefTyExpr(call.arguments[0]),
-                                    genDefTyExpr(call.arguments[1]));
-    } else if (builtin->name.str() == "dataoffset") {
-      auto *objectName = std::get_if<Literal>(&call.arguments[0]);
-      assert(objectName);
-      assert(objectName->kind == LiteralKind::String);
-      auto objectOp = lookupSymbol<mlir::sol::ObjectOp>(
-          objectName->value.builtinStringLiteralValue());
-      assert(objectOp && "NYI: References to external object");
-      resVals.push_back(b.create<mlir::sol::DataOffsetOp>(
-          loc, mlir::FlatSymbolRefAttr::get(objectOp)));
-    } else if (builtin->name.str() == "datasize") {
-      auto *objectName = std::get_if<Literal>(&call.arguments[0]);
-      assert(objectName);
-      assert(objectName->kind == LiteralKind::String);
-      auto objectOp = lookupSymbol<mlir::sol::ObjectOp>(
-          objectName->value.builtinStringLiteralValue());
-      assert(objectOp && "NYI: References to external object");
-      resVals.push_back(b.create<mlir::sol::DataSizeOp>(
-          loc, mlir::FlatSymbolRefAttr::get(objectOp)));
-    } else if (builtin->name.str() == "codesize") {
-      resVals.push_back(b.create<mlir::sol::CodeSizeOp>(loc));
-    } else if (builtin->name.str() == "codecopy") {
-      mlir::Value dst = genDefTyExpr(call.arguments[0]);
-      mlir::Value offset = genDefTyExpr(call.arguments[1]);
-      mlir::Value size = genDefTyExpr(call.arguments[2]);
-      b.create<mlir::sol::CodeCopyOp>(loc, dst, offset, size);
-    } else if (builtin->name.str() == "extcodesize") {
-      resVals.push_back(b.create<mlir::sol::ExtCodeSizeOp>(
-          loc, genDefTyExpr(call.arguments[0])));
-    } else if (builtin->name.str() == "memoryguard") {
-      auto *arg = std::get_if<Literal>(&call.arguments[0]);
-      assert(arg);
-      resVals.push_back(
-          b.create<mlir::sol::MemGuardOp>(loc, getIntAttr(arg->value)));
-    } else if (builtin->name.str() == "keccak256") {
-      resVals.push_back(
-          b.create<mlir::sol::Keccak256Op>(loc, genDefTyExpr(call.arguments[0]),
-                                           genDefTyExpr(call.arguments[1])));
-    } else if (builtin->name.str() == "log0") {
-      b.create<mlir::sol::LogOp>(loc, genDefTyExpr(call.arguments[0]),
-                                 genDefTyExpr(call.arguments[1]),
-                                 mlir::ValueRange{});
-    } else if (builtin->name.str() == "log1") {
-      b.create<mlir::sol::LogOp>(loc, genDefTyExpr(call.arguments[0]),
-                                 genDefTyExpr(call.arguments[1]),
-                                 genDefTyExpr(call.arguments[2]));
-    } else if (builtin->name.str() == "log2") {
-      b.create<mlir::sol::LogOp>(
-          loc, genDefTyExpr(call.arguments[0]), genDefTyExpr(call.arguments[1]),
-          mlir::ValueRange{genDefTyExpr(call.arguments[2]),
-                           genDefTyExpr(call.arguments[3])});
-    } else if (builtin->name.str() == "log3") {
-      b.create<mlir::sol::LogOp>(
-          loc, genDefTyExpr(call.arguments[0]), genDefTyExpr(call.arguments[1]),
-          mlir::ValueRange{genDefTyExpr(call.arguments[2]),
-                           genDefTyExpr(call.arguments[3]),
-                           genDefTyExpr(call.arguments[4])});
-    } else if (builtin->name.str() == "log4") {
-      b.create<mlir::sol::LogOp>(
-          loc, genDefTyExpr(call.arguments[0]), genDefTyExpr(call.arguments[1]),
-          mlir::ValueRange{genDefTyExpr(call.arguments[2]),
-                           genDefTyExpr(call.arguments[3]),
-                           genDefTyExpr(call.arguments[4]),
-                           genDefTyExpr(call.arguments[5])});
-    } else if (builtin->name.str() == "address") {
-      resVals.push_back(b.create<mlir::sol::AddressOp>(loc));
-    } else if (builtin->name.str() == "caller") {
-      resVals.push_back(b.create<mlir::sol::CallerOp>(loc));
-    } else if (builtin->name.str() == "gas") {
-      resVals.push_back(b.create<mlir::sol::GasOp>(loc));
-    } else
-      solUnimplementedAssert(false, "NYI: builtin " + builtin->name.str());
-    return resVals;
+    assert(builtinGenMap.count(builtin->name.str()));
+    return builtinGenMap[builtin->name.str()](call.arguments, loc);
   }
 
   mlir::sol::FuncOp callee =
