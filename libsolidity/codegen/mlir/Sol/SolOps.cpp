@@ -79,6 +79,16 @@ bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
   return isa<IntegerType>(inputs.front()) && isa<IntegerType>(outputs.front());
 }
 
+bool BytesCastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
+  assert(inputs.size() == 1 && outputs.size() == 1);
+  if (auto inpIntTy = dyn_cast<IntegerType>(inputs.front())) {
+    auto outBytesTy = cast<BytesType>(outputs.front());
+    return inpIntTy.getWidth() == outBytesTy.getSize() * 8;
+  }
+  return cast<BytesType>(inputs.front()).getSize() * 8 ==
+         cast<IntegerType>(outputs.front()).getWidth();
+}
+
 //===----------------------------------------------------------------------===//
 // AllocaOp
 //===----------------------------------------------------------------------===//

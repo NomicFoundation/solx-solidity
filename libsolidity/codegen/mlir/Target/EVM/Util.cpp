@@ -42,6 +42,9 @@ unsigned evm::getCallDataHeadSize(Type ty) {
   if (auto intTy = dyn_cast<IntegerType>(ty))
     return 32;
 
+  if (auto bytesTy = dyn_cast<sol::BytesType>(ty))
+    return 32;
+
   if (sol::hasDynamicallySizedElt(ty))
     return 32;
 
@@ -328,6 +331,10 @@ Value evm::Builder::genABITupleEncoding(TypeRange tys, ValueRange vals,
       val = bExt.genIntCast(/*width=*/256, intTy.isSigned(), val);
       b.create<sol::MStoreOp>(loc, headAddr, val);
 
+      // Bytes type
+    } else if (auto bytesTy = dyn_cast<sol::BytesType>(ty)) {
+      b.create<sol::MStoreOp>(loc, headAddr, val);
+
     } else {
       llvm_unreachable("NYI");
     }
@@ -379,6 +386,7 @@ void evm::Builder::genABITupleDecoding(TypeRange tys, Value tupleStart,
   // The type of the decoded arg should be same as that of the legalized type
   // (as per the type-converter) of the original type.
   for (auto ty : tys) {
+    // String type
     if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
       Value tailOffsetFromTuple = genLoad(headAddr);
       // As per the ir-breaking-changes ref in docs:
@@ -431,6 +439,7 @@ void evm::Builder::genABITupleDecoding(TypeRange tys, Value tupleStart,
 
       results.push_back(dstAddr);
 
+      // Integer type
     } else if (auto intTy = dyn_cast<IntegerType>(ty)) {
       Value arg = genLoad(headAddr);
       if (intTy.getWidth() != 256) {
@@ -448,6 +457,22 @@ void evm::Builder::genABITupleDecoding(TypeRange tys, Value tupleStart,
       } else {
         results.push_back(arg);
       }
+
+      // Bytes type
+    } else if (auto bytesTy = dyn_cast<sol::BytesType>(ty)) {
+      Value arg = genLoad(headAddr);
+      if (bytesTy.getSize() != 32) {
+        assert(bytesTy.getSize() < 32);
+        unsigned numBits = bytesTy.getSize() * 8;
+        Value mask = b.create<arith::ShLIOp>(
+            loc, bExt.genI256Const(APInt::getMaxValue(numBits)),
+            bExt.genI256Const(256 - numBits));
+        Value maskedArg = b.create<arith::AndIOp>(loc, arg, mask);
+        auto revertCond = b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ne,
+                                                  arg, maskedArg);
+        genRevert(revertCond, loc);
+      }
+      results.push_back(arg);
     }
 
     headAddr = b.create<arith::AddIOp>(

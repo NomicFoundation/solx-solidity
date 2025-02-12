@@ -85,6 +85,36 @@ struct CastOpLowering : public OpConversionPattern<sol::CastOp> {
   }
 };
 
+struct BytesCastOpLowering : public OpConversionPattern<sol::BytesCastOp> {
+  using OpConversionPattern<sol::BytesCastOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::BytesCastOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+
+    // Bytes to int
+    if (auto inpBytesTy = dyn_cast<sol::BytesType>(op.getInp().getType())) {
+      auto outIntTy = cast<IntegerType>(op.getType());
+      auto shiftAmt = bExt.genI256Const(256 - (8 * inpBytesTy.getSize()));
+      auto shr = r.create<arith::ShRUIOp>(loc, adaptor.getInp(), shiftAmt);
+      auto repl = bExt.genIntCast(outIntTy.getWidth(), /*isSigned=*/false, shr);
+      r.replaceOp(op, repl);
+      return success();
+    }
+
+    // Int to bytes
+    assert(isa<IntegerType>(adaptor.getInp().getType()));
+    auto outBytesTy = cast<sol::BytesType>(op.getType());
+    Value inpAsI256 =
+        bExt.genIntCast(/*width=*/256, /*isSigned=*/false, adaptor.getInp());
+    auto shiftAmt = bExt.genI256Const(256 - (8 * outBytesTy.getSize()));
+    r.replaceOpWithNewOp<arith::ShLIOp>(op, inpAsI256, shiftAmt);
+
+    return success();
+  }
+};
+
 /// A templatized version of a conversion pattern for lowering arithmetic binary
 /// ops.
 template <typename SrcOpT, typename DstOpT>
@@ -589,6 +619,18 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
         } else {
           res = addrAtIdx;
         }
+
+        // Bytes (!sol.string)
+      } else if (auto strTy = dyn_cast<sol::StringType>(baseAddrTy)) {
+        Value size = r.create<sol::MLoadOp>(loc, remappedBaseAddr);
+        auto panicCond =
+            r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::uge, idx, size);
+        evmB.genPanic(solidity::util::PanicCode::ArrayOutOfBounds, panicCond);
+
+        // Generate the address after the length-slot.
+        Value dataAddr = r.create<arith::AddIOp>(loc, remappedBaseAddr,
+                                                 bExt.genI256Const(32));
+        res = r.create<arith::AddIOp>(loc, dataAddr, idx);
       }
 
       assert(res);
@@ -1816,7 +1858,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 // debug builds?)
 
 void evm::populateArithPats(RewritePatternSet &pats, TypeConverter &tyConv) {
-  pats.add<ConstantOpLowering, CastOpLowering,
+  pats.add<ConstantOpLowering, CastOpLowering, BytesCastOpLowering,
            ArithBinOpConvPat<sol::AddOp, arith::AddIOp>,
            ArithBinOpConvPat<sol::SubOp, arith::SubIOp>,
            ArithBinOpConvPat<sol::MulOp, arith::MulIOp>, CmpOpLowering>(

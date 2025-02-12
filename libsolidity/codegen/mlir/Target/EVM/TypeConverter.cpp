@@ -39,6 +39,12 @@ evm::SolTypeConverter::SolTypeConverter() {
                             IntegerType::Signless);
   });
 
+  // Bytes type
+  addConversion([&](sol::BytesType ty) -> Type {
+    return IntegerType::get(ty.getContext(), /*width=*/256,
+                            IntegerType::Signless);
+  });
+
   // Function type
   addConversion([&](FunctionType ty) -> Type {
     SmallVector<Type> convertedInpTys, convertedResTys;

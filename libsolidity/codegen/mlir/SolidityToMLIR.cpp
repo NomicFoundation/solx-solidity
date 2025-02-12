@@ -271,6 +271,8 @@ static mlir::sol::DataLocation getDataLocation(ReferenceType const *ty) {
 }
 
 mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
+  // FIXME: Replace the if's with a switch on the Type::category().
+
   // Bool type
   if (dynamic_cast<BoolType const *>(ty)) {
     return b.getIntegerType(/*width=*/1);
@@ -294,6 +296,9 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
   if (dynamic_cast<AddressType const *>(ty))
     // FIXME: 256 -> 160
     return b.getIntegerType(256, /*isSigned=*/false);
+
+  if (const auto *fixedBytesTy = dynamic_cast<FixedBytesType const *>(ty))
+    return mlir::sol::BytesType::get(b.getContext(), fixedBytesTy->numBytes());
 
   // Mapping type
   if (const auto *mappingTy = dynamic_cast<MappingType const *>(ty)) {
@@ -445,6 +450,10 @@ mlir::Value SolidityToMLIRPass::genCast(mlir::Value val, mlir::Type dstTy) {
   // Don't cast if we're casting to the same type.
   if (srcTy == dstTy)
     return val;
+
+  if (mlir::isa<mlir::sol::BytesType>(srcTy) ||
+      mlir::isa<mlir::sol::BytesType>(dstTy))
+    return b.create<mlir::sol::BytesCastOp>(loc, dstTy, val);
 
   // Casting to integer type.
   if (mlir::isa<mlir::IntegerType>(dstTy))

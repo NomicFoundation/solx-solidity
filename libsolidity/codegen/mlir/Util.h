@@ -106,6 +106,10 @@ public:
   genI256Const(llvm::APInt const &val,
                std::optional<mlir::Location> locArg = std::nullopt) {
 
+    if (val.getBitWidth() != 256) {
+      assert(val.getBitWidth() < 256);
+      return genConst(val.zext(256), 256, locArg);
+    }
     return genConst(val, 256, locArg);
   }
 

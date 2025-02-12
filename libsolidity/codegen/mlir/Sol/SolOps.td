@@ -72,6 +72,16 @@ def Sol_CastOp : Sol_Op<"cast",
   let hasFolder = 1;
 }
 
+// TODO: folder
+def Sol_BytesCastOp : Sol_Op<"bytes_cast",
+  [Pure, DeclareOpInterfaceMethods<CastOpInterface>]
+>{
+  let arguments = (ins AnyTypeOf<[Sol_BytesType, Sol_Int]>:$inp);
+  let results = (outs AnyTypeOf<[Sol_BytesType, Sol_Int]>:$out);
+
+  let assemblyFormat = "$inp attr-dict `:` type($inp) `to` type($out)";
+}
+
 // TODO: Add folders for the c0 case.
 
 def Sol_CAddOp : Sol_IntBinaryOp<"cadd", [Commutative]>;

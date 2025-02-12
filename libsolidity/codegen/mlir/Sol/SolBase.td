@@ -54,6 +54,11 @@ def I256 : I<256>;
 def UI256 : UI<256>;
 def Sol_Int : AnyTypeOf<[I1, AnySignedInteger, AnyUnsignedInteger]>;
 
+def Sol_BytesType : Sol_Type<"Bytes", "bytes"> {
+  let parameters = (ins "uint32_t":$size);
+  let assemblyFormat = [{ `<` $size `>` }];
+}
+
 def Sol_DataLocation : I32EnumAttr<"DataLocation",
                                    "Data-location in reference-types",
                                    [I32EnumAttrCase<"Storage", 0>,
