@@ -271,44 +271,38 @@ static mlir::sol::DataLocation getDataLocation(ReferenceType const *ty) {
 }
 
 mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
-  // FIXME: Replace the if's with a switch on the Type::category().
-
-  // Bool type
-  if (dynamic_cast<BoolType const *>(ty)) {
+  switch (ty->category()) {
+  case Type::Category::Bool:
     return b.getIntegerType(/*width=*/1);
-  }
 
-  // Integer type
-  if (const auto *intTy = dynamic_cast<IntegerType const *>(ty))
+  case Type::Category::Integer: {
+    const auto *intTy = static_cast<IntegerType const *>(ty);
     return b.getIntegerType(intTy->numBits(), intTy->isSigned());
-
-  // Rational number type
-  if (const auto *ratNumTy = dynamic_cast<RationalNumberType const *>(ty)) {
+  }
+  case Type::Category::RationalNumber: {
+    const auto *ratNumTy = static_cast<RationalNumberType const *>(ty);
     if (ratNumTy->isFractional())
       llvm_unreachable("NYI: Fractional type");
-
-    // Integral rational number type
     const IntegerType *intTy = ratNumTy->integerType();
     return b.getIntegerType(intTy->numBits(), intTy->isSigned());
   }
-
-  // Address type
-  if (dynamic_cast<AddressType const *>(ty))
+  case Type::Category::Address:
     // FIXME: 256 -> 160
     return b.getIntegerType(256, /*isSigned=*/false);
 
-  if (const auto *fixedBytesTy = dynamic_cast<FixedBytesType const *>(ty))
+  case Type::Category::FixedBytes: {
+    const auto *fixedBytesTy = static_cast<FixedBytesType const *>(ty);
     return mlir::sol::BytesType::get(b.getContext(), fixedBytesTy->numBytes());
-
-  // Mapping type
-  if (const auto *mappingTy = dynamic_cast<MappingType const *>(ty)) {
+  }
+  case Type::Category::Mapping: {
+    auto *mappingTy = static_cast<MappingType const *>(ty);
     return mlir::sol::MappingType::get(b.getContext(),
                                        getType(mappingTy->keyType()),
                                        getType(mappingTy->valueType()));
   }
-
-  // Array or string type
-  if (const auto *arrTy = dynamic_cast<ArrayType const *>(ty)) {
+  case Type::Category::Array: {
+    // Array or string type
+    const auto *arrTy = static_cast<ArrayType const *>(ty);
     if (arrTy->isString())
       return mlir::sol::StringType::get(b.getContext(), getDataLocation(arrTy));
     mlir::Type eltTy = getType(arrTy->baseType());
@@ -319,9 +313,8 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
                                      arrTy->length().convert_to<int64_t>(),
                                      eltTy, getDataLocation(arrTy));
   }
-
-  // Struct type
-  if (const auto *structTy = dynamic_cast<StructType const *>(ty)) {
+  case Type::Category::Struct: {
+    const auto *structTy = static_cast<StructType const *>(ty);
     std::vector<mlir::Type> memberTys;
     for (const auto &mem : structTy->nativeMembers(nullptr)) {
       memberTys.push_back(getType(mem.type));
@@ -330,9 +323,8 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
     return mlir::sol::StructType::get(b.getContext(), memberTys,
                                       getDataLocation(structTy));
   }
-
-  // Function type
-  if (const auto *fnTy = dynamic_cast<FunctionType const *>(ty)) {
+  case Type::Category::Function: {
+    const auto *fnTy = static_cast<FunctionType const *>(ty);
     std::vector<mlir::Type> inTys, outTys;
 
     inTys.reserve(fnTy->parameterTypes().size());
@@ -345,8 +337,11 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
 
     return b.getFunctionType(inTys, outTys);
   }
+  default:
+    break;
+  }
 
-  llvm_unreachable("NYI: Unknown type");
+  llvm_unreachable("NYI");
 }
 
 mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
