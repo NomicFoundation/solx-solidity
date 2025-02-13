@@ -14,7 +14,7 @@ object "Test" {
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:     %c64_i256 = arith.constant 64 : i256 loc(#loc3)
 // CHECK-NEXT:     %0 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc4)
-// CHECK-NEXT:     %1 = "llvm.intrcall"(%0, %c64_i256) <{id = 3260 : i32, name = "evm.sha3"}> : (!llvm.ptr<1>, i256) -> i256 loc(#loc4)
+// CHECK-NEXT:     %1 = "llvm.intrcall"(%0, %c64_i256) <{id = 3261 : i32, name = "evm.sha3"}> : (!llvm.ptr<1>, i256) -> i256 loc(#loc4)
 // CHECK-NEXT:     %2 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc5)
 // CHECK-NEXT:     llvm.store %1, %2 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc1)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)

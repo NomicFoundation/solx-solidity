@@ -25,7 +25,7 @@ object "Test" {
 // CHECK-NEXT:     llvm.store %2, %3 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc10)
 // CHECK-NEXT:     %4 = llvm.inttoptr %c2_i256 : i256 to !llvm.ptr<1> loc(#loc11)
 // CHECK-NEXT:     %5 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc11)
-// CHECK-NEXT:     %6 = "llvm.intrcall"(%c0_i256, %c1_i256, %4, %c3_i256, %5, %c5_i256) <{id = 3265 : i32, name = "evm.staticcall"}> : (i256, i256, !llvm.ptr<1>, i256, !llvm.ptr<1>, i256) -> i256 loc(#loc11)
+// CHECK-NEXT:     %6 = "llvm.intrcall"(%c0_i256, %c1_i256, %4, %c3_i256, %5, %c5_i256) <{id = 3266 : i32, name = "evm.staticcall"}> : (i256, i256, !llvm.ptr<1>, i256, !llvm.ptr<1>, i256) -> i256 loc(#loc11)
 // CHECK-NEXT:     llvm.store %6, %3 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc12)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)
 // CHECK-NEXT:   } loc(#loc)
