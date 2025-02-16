@@ -26,6 +26,8 @@
 #include "liblangutil/SourceLocation.h"
 #include "libsolidity/ast/AST.h"
 #include "libsolidity/ast/ASTEnums.h"
+#include "libsolidity/ast/ASTForward.h"
+#include "libsolidity/ast/ASTUtils.h"
 #include "libsolidity/ast/Types.h"
 #include "libsolidity/codegen/mlir/Interface.h"
 #include "libsolidity/codegen/mlir/Passes.h"
@@ -303,7 +305,7 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
   case Type::Category::Array: {
     // Array or string type
     const auto *arrTy = static_cast<ArrayType const *>(ty);
-    if (arrTy->isString())
+    if (arrTy->isByteArrayOrString())
       return mlir::sol::StringType::get(b.getContext(), getDataLocation(arrTy));
     mlir::Type eltTy = getType(arrTy->baseType());
 
@@ -604,10 +606,10 @@ mlir::Value SolidityToMLIRPass::genExpr(IndexAccess const &idxAcc) {
     return b.create<mlir::sol::MapOp>(loc, addrTy, baseExpr, idxExpr);
   }
 
-  // Array indexing
-  if (auto arrTy = mlir::dyn_cast<mlir::sol::ArrayType>(baseExpr.getType())) {
+  // Bytes/array indexing
+  if (mlir::isa<mlir::sol::ArrayType>(baseExpr.getType()) ||
+      mlir::isa<mlir::sol::StringType>(baseExpr.getType()))
     return b.create<mlir::sol::GepOp>(loc, baseExpr, idxExpr);
-  }
 
   llvm_unreachable("Invalid IndexAccess");
 }
@@ -615,10 +617,11 @@ mlir::Value SolidityToMLIRPass::genExpr(IndexAccess const &idxAcc) {
 mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
   mlir::Location loc = getLoc(memberAcc);
 
-  const auto *memberAccTy = memberAcc.expression().annotation().type;
+  const Type *memberAccTy = memberAcc.expression().annotation().type;
+  const ASTString &memberName = memberAcc.memberName();
   switch (memberAccTy->category()) {
   case Type::Category::Magic:
-    if (memberAcc.memberName() == "sender") {
+    if (memberName == "sender") {
       // FIXME: sol.caller yields an i256 instead of an address.
       auto callerOp = b.create<mlir::sol::CallerOp>(loc);
       return b.create<mlir::sol::ConvCastOp>(
@@ -629,6 +632,11 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
   case Type::Category::Contract:
     return {};
 
+  case Type::Category::Array:
+    if (memberName == "length")
+      return b.create<mlir::sol::LengthOp>(loc,
+                                           genRValExpr(memberAcc.expression()));
+    break;
   case Type::Category::Struct: {
     const auto *structTy = dynamic_cast<StructType const *>(memberAccTy);
     auto memberIdx = genUnsignedConst(structTy->index(memberAcc.memberName()),

@@ -141,6 +141,7 @@ struct ConvertSolToStandard
         sol::MapOp,
         sol::CopyOp,
         sol::DataLocCastOp,
+        sol::LengthOp,
         sol::LoadOp,
         sol::StoreOp,
         sol::ThisOp,

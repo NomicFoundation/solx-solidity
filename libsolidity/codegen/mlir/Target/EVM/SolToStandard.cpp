@@ -31,6 +31,7 @@
 #include "mlir/IR/SymbolTable.h"
 #include "mlir/IR/Types.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "llvm/Support/ErrorHandling.h"
 
 using namespace mlir;
 
@@ -623,14 +624,16 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
         // Bytes (!sol.string)
       } else if (auto strTy = dyn_cast<sol::StringType>(baseAddrTy)) {
         Value size = r.create<sol::MLoadOp>(loc, remappedBaseAddr);
-        auto panicCond =
-            r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::uge, idx, size);
+        Value castedIdx =
+            bExt.genIntCast(/*width=*/256, /*isSigned=*/false, idx);
+        auto panicCond = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::uge,
+                                                 castedIdx, size);
         evmB.genPanic(solidity::util::PanicCode::ArrayOutOfBounds, panicCond);
 
         // Generate the address after the length-slot.
         Value dataAddr = r.create<arith::AddIOp>(loc, remappedBaseAddr,
                                                  bExt.genI256Const(32));
-        res = r.create<arith::AddIOp>(loc, dataAddr, idx);
+        res = r.create<arith::AddIOp>(loc, dataAddr, castedIdx);
       }
 
       assert(res);
@@ -677,15 +680,32 @@ struct LoadOpLowering : public OpConversionPattern<sol::LoadOp> {
 
   LogicalResult matchAndRewrite(sol::LoadOp op, OpAdaptor adaptor,
                                 ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
     Value addr = adaptor.getAddr();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
 
     switch (sol::getDataLocation(op.getAddr().getType())) {
     case sol::DataLocation::Stack:
       r.replaceOpWithNewOp<LLVM::LoadOp>(op, addr, evm::getAlignment(addr));
       return success();
-    case sol::DataLocation::Memory:
+    case sol::DataLocation::Memory: {
+      auto addrTy = cast<sol::PointerType>(op.getAddr().getType());
+      auto bytesEleTy = dyn_cast<sol::BytesType>(addrTy.getPointeeType());
+      // If loading from `bytes`, generate the low bits mask-off of the loaded
+      // value.
+      if (bytesEleTy && addrTy.getDataLocation() == sol::DataLocation::Memory) {
+        unsigned numBits = bytesEleTy.getSize() * 8;
+        APInt mask(/*numBits=*/256, 0);
+        assert(numBits <= 256);
+        mask.setHighBits(numBits);
+        auto load = r.create<sol::MLoadOp>(loc, addr);
+        r.replaceOpWithNewOp<arith::AndIOp>(op, load, bExt.genI256Const(mask));
+        return success();
+      }
+
       r.replaceOpWithNewOp<sol::MLoadOp>(op, addr);
       return success();
+    }
     case sol::DataLocation::Storage:
       r.replaceOpWithNewOp<sol::SLoadOp>(op, addr);
       return success();
@@ -702,6 +722,9 @@ struct StoreOpLowering : public OpConversionPattern<sol::StoreOp> {
 
   LogicalResult matchAndRewrite(sol::StoreOp op, OpAdaptor adaptor,
                                 ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+
     Value val = adaptor.getVal();
     Value addr = adaptor.getAddr();
 
@@ -710,9 +733,20 @@ struct StoreOpLowering : public OpConversionPattern<sol::StoreOp> {
       r.replaceOpWithNewOp<LLVM::StoreOp>(op, val, addr,
                                           evm::getAlignment(addr));
       return success();
-    case sol::DataLocation::Memory:
+    case sol::DataLocation::Memory: {
+      auto addrTy = cast<sol::PointerType>(op.getAddr().getType());
+      auto bytesEleTy = dyn_cast<sol::BytesType>(addrTy.getPointeeType());
+      // Generate mstore8 for storing to `bytes`.
+      if (bytesEleTy && addrTy.getDataLocation() == sol::DataLocation::Memory) {
+        assert(bytesEleTy.getSize() == 1 && "NYI");
+        auto byteVal = r.create<sol::ByteOp>(loc, bExt.genI256Const(0), val);
+        r.replaceOpWithNewOp<sol::MStore8Op>(op, addr, byteVal);
+        return success();
+      }
+
       r.replaceOpWithNewOp<sol::MStoreOp>(op, addr, val);
       return success();
+    }
     case sol::DataLocation::Storage:
       r.replaceOpWithNewOp<sol::SStoreOp>(op, addr, val);
       return success();
@@ -779,6 +813,20 @@ struct DataLocCastOpLowering : public OpConversionPattern<sol::DataLocCastOp> {
 
     r.replaceOp(op, resAddr);
     return success();
+  }
+};
+
+struct LengthOpLowering : public OpConversionPattern<sol::LengthOp> {
+  using OpConversionPattern<sol::LengthOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::LengthOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Type ty = op.getInp().getType();
+    if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
+      r.replaceOpWithNewOp<sol::MLoadOp>(op, adaptor.getInp());
+      return success();
+    }
+    llvm_unreachable("NYI");
   }
 };
 
@@ -1873,7 +1921,7 @@ void evm::populateCheckedArithPats(RewritePatternSet &pats,
 void evm::populateMemPats(RewritePatternSet &pats, TypeConverter &tyConv) {
   pats.add<AllocaOpLowering, MallocOpLowering, GepOpLowering, MapOpLowering,
            LoadOpLowering, StoreOpLowering, DataLocCastOpLowering,
-           CopyOpLowering>(tyConv, pats.getContext());
+           LengthOpLowering, CopyOpLowering>(tyConv, pats.getContext());
   pats.add<AddrOfOpLowering>(pats.getContext());
 }
 

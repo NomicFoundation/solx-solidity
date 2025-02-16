@@ -13,6 +13,11 @@ contract C {
     return a;
   }
 
+  function b1(bytes1 a) public returns (bytes1) { return a; }
+  function b2(bytes2 a) public returns (bytes2) { return a; }
+
+  function bts(bytes memory a) public returns (bytes memory) { return a; }
+
   function tuple() public returns (uint, uint) {
     return tuple_internal();
   }
@@ -31,8 +36,11 @@ contract C {
 // CHECK-NEXT: #loc16 = loc({{.*}}:6:26)
 // CHECK-NEXT: #loc20 = loc({{.*}}:8:15)
 // CHECK-NEXT: #loc25 = loc({{.*}}:11:24)
+// CHECK-NEXT: #loc29 = loc({{.*}}:15:14)
+// CHECK-NEXT: #loc33 = loc({{.*}}:16:14)
+// CHECK-NEXT: #loc37 = loc({{.*}}:18:15)
 // CHECK-NEXT: module attributes {sol.evm_version = #Cancun} {
-// CHECK-NEXT:   sol.contract @C_88 {
+// CHECK-NEXT:   sol.contract @C_118 {
 // CHECK-NEXT:     sol.func @i1_10(%arg0: i1 loc({{.*}}:3:14)) -> i1 attributes {state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc3)
 // CHECK-NEXT:       sol.store %arg0, %0 : i1, !sol.ptr<i1, Stack> loc(#loc3)
@@ -71,18 +79,36 @@ contract C {
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc26)
 // CHECK-NEXT:       sol.return %1 : !sol.string<Memory> loc(#loc27)
 // CHECK-NEXT:     } loc(#loc24)
-// CHECK-NEXT:     sol.func @tuple_75() -> (ui256, ui256) attributes {state_mutability = #NonPayable} {
-// CHECK-NEXT:       %0:2 = sol.call @tuple_internal_87() : () -> (ui256, ui256) loc(#loc29)
-// CHECK-NEXT:       sol.return %0#0, %0#1 : ui256, ui256 loc(#loc30)
+// CHECK-NEXT:     sol.func @b1_74(%arg0: !sol.bytes<1> loc({{.*}}:15:14)) -> !sol.bytes<1> attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.bytes<1>, Stack> loc(#loc29)
+// CHECK-NEXT:       sol.store %arg0, %0 : !sol.bytes<1>, !sol.ptr<!sol.bytes<1>, Stack> loc(#loc29)
+// CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.bytes<1>, Stack>, !sol.bytes<1> loc(#loc30)
+// CHECK-NEXT:       sol.return %1 : !sol.bytes<1> loc(#loc31)
 // CHECK-NEXT:     } loc(#loc28)
-// CHECK-NEXT:     sol.func @tuple_internal_87() -> (ui256, ui256) attributes {state_mutability = #NonPayable} {
-// CHECK-NEXT:       %c1_ui8 = sol.constant 1 : ui8 loc(#loc32)
-// CHECK-NEXT:       %c2_ui8 = sol.constant 2 : ui8 loc(#loc33)
-// CHECK-NEXT:       %0 = sol.cast %c1_ui8 : ui8 to ui256 loc(#loc32)
-// CHECK-NEXT:       %1 = sol.cast %c2_ui8 : ui8 to ui256 loc(#loc33)
-// CHECK-NEXT:       sol.return %0, %1 : ui256, ui256 loc(#loc34)
-// CHECK-NEXT:     } loc(#loc31)
-// CHECK-NEXT:   } {interface_fns = [{selector = 167553359 : i32, sym = @str_54, type = (!sol.string<Memory>) -> !sol.string<Memory>}, {selector = 829795042 : i32, sym = @tuple_75, type = () -> (ui256, ui256)}, {selector = 1090974155 : i32, sym = @ui64_20, type = (ui64) -> ui64}, {selector = -1867629089 : i32, sym = @ui256_32, type = (ui256) -> ui256}, {selector = -948490518 : i32, sym = @i1_10, type = (i1) -> i1}], kind = #Contract} loc(#loc1)
+// CHECK-NEXT:     sol.func @b2_84(%arg0: !sol.bytes<2> loc({{.*}}:16:14)) -> !sol.bytes<2> attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.bytes<2>, Stack> loc(#loc33)
+// CHECK-NEXT:       sol.store %arg0, %0 : !sol.bytes<2>, !sol.ptr<!sol.bytes<2>, Stack> loc(#loc33)
+// CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.bytes<2>, Stack>, !sol.bytes<2> loc(#loc34)
+// CHECK-NEXT:       sol.return %1 : !sol.bytes<2> loc(#loc35)
+// CHECK-NEXT:     } loc(#loc32)
+// CHECK-NEXT:     sol.func @bts_94(%arg0: !sol.string<Memory> loc({{.*}}:18:15)) -> !sol.string<Memory> attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc37)
+// CHECK-NEXT:       sol.store %arg0, %0 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc37)
+// CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc38)
+// CHECK-NEXT:       sol.return %1 : !sol.string<Memory> loc(#loc39)
+// CHECK-NEXT:     } loc(#loc36)
+// CHECK-NEXT:     sol.func @tuple_105() -> (ui256, ui256) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0:2 = sol.call @tuple_internal_117() : () -> (ui256, ui256) loc(#loc41)
+// CHECK-NEXT:       sol.return %0#0, %0#1 : ui256, ui256 loc(#loc42)
+// CHECK-NEXT:     } loc(#loc40)
+// CHECK-NEXT:     sol.func @tuple_internal_117() -> (ui256, ui256) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:       %c1_ui8 = sol.constant 1 : ui8 loc(#loc44)
+// CHECK-NEXT:       %c2_ui8 = sol.constant 2 : ui8 loc(#loc45)
+// CHECK-NEXT:       %0 = sol.cast %c1_ui8 : ui8 to ui256 loc(#loc44)
+// CHECK-NEXT:       %1 = sol.cast %c2_ui8 : ui8 to ui256 loc(#loc45)
+// CHECK-NEXT:       sol.return %0, %1 : ui256, ui256 loc(#loc46)
+// CHECK-NEXT:     } loc(#loc43)
+// CHECK-NEXT:   } {interface_fns = [{selector = 167553359 : i32, sym = @str_54, type = (!sol.string<Memory>) -> !sol.string<Memory>}, {selector = 829795042 : i32, sym = @tuple_105, type = () -> (ui256, ui256)}, {selector = 1090974155 : i32, sym = @ui64_20, type = (ui64) -> ui64}, {selector = -1867629089 : i32, sym = @ui256_32, type = (ui256) -> ui256}, {selector = -1660006140 : i32, sym = @b2_84, type = (!sol.bytes<2>) -> !sol.bytes<2>}, {selector = -1094027182 : i32, sym = @b1_74, type = (!sol.bytes<1>) -> !sol.bytes<1>}, {selector = -948490518 : i32, sym = @i1_10, type = (i1) -> i1}, {selector = -12492371 : i32, sym = @bts_94, type = (!sol.string<Memory>) -> !sol.string<Memory>}], kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
@@ -107,10 +133,19 @@ contract C {
 // CHECK-NEXT: #loc26 = loc({{.*}}:12:11)
 // CHECK-NEXT: #loc27 = loc({{.*}}:12:4)
 // CHECK-NEXT: #loc28 = loc({{.*}}:15:2)
-// CHECK-NEXT: #loc29 = loc({{.*}}:16:11)
-// CHECK-NEXT: #loc30 = loc({{.*}}:16:4)
-// CHECK-NEXT: #loc31 = loc({{.*}}:18:2)
-// CHECK-NEXT: #loc32 = loc({{.*}}:19:12)
-// CHECK-NEXT: #loc33 = loc({{.*}}:19:15)
-// CHECK-NEXT: #loc34 = loc({{.*}}:19:4)
+// CHECK-NEXT: #loc30 = loc({{.*}}:15:57)
+// CHECK-NEXT: #loc31 = loc({{.*}}:15:50)
+// CHECK-NEXT: #loc32 = loc({{.*}}:16:2)
+// CHECK-NEXT: #loc34 = loc({{.*}}:16:57)
+// CHECK-NEXT: #loc35 = loc({{.*}}:16:50)
+// CHECK-NEXT: #loc36 = loc({{.*}}:18:2)
+// CHECK-NEXT: #loc38 = loc({{.*}}:18:70)
+// CHECK-NEXT: #loc39 = loc({{.*}}:18:63)
+// CHECK-NEXT: #loc40 = loc({{.*}}:20:2)
+// CHECK-NEXT: #loc41 = loc({{.*}}:21:11)
+// CHECK-NEXT: #loc42 = loc({{.*}}:21:4)
+// CHECK-NEXT: #loc43 = loc({{.*}}:23:2)
+// CHECK-NEXT: #loc44 = loc({{.*}}:24:12)
+// CHECK-NEXT: #loc45 = loc({{.*}}:24:15)
+// CHECK-NEXT: #loc46 = loc({{.*}}:24:4)
 // CHECK-EMPTY:

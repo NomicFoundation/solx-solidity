@@ -220,6 +220,13 @@ def Sol_DataLocCastOp : Sol_Op<"data_loc_cast"> {
   let assemblyFormat = [{ $inp attr-dict `:` type($inp) `,` type($out) }];
 }
 
+def Sol_LengthOp : Sol_Op<"length"> {
+  let arguments = (ins AnyType:$inp);
+  let results = (outs UI256:$len);
+
+  let assemblyFormat = [{ $inp attr-dict `:` type($inp) }];
+}
+
 def Sol_EmitOp : Sol_Op<"emit"> {
   let arguments = (ins Variadic<AnyType>:$args, I8Attr:$indexedArgsCount,
                        OptionalAttr<StrAttr>:$signature);
@@ -712,6 +719,19 @@ def Sol_MStoreOp : Sol_Op<"mstore"> {
   let summary = "Represents the `mstore` call in yul";
   let arguments = (ins I256:$addr, I256:$val);
   let assemblyFormat = "$addr `,` $val attr-dict";
+}
+
+def Sol_MStore8Op : Sol_Op<"mstore8"> {
+  let summary = "Represents the `mstore8` call in yul";
+  let arguments = (ins I256:$addr, I256:$val);
+  let assemblyFormat = "$addr `,` $val attr-dict";
+}
+
+def Sol_ByteOp : Sol_Op<"byte"> {
+  let summary = "Represents the `byte` call in yul";
+  let arguments = (ins I256:$idx, I256:$val);
+  let results = (outs I256:$out);
+  let assemblyFormat = "$idx `,` $val attr-dict";
 }
 
 def Sol_MCopyOp : Sol_Op<"mcopy"> {

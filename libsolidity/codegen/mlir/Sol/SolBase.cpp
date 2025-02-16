@@ -105,6 +105,9 @@ Type mlir::sol::getEltType(Type ty, Index structTyIdx) {
   if (auto arrTy = dyn_cast<sol::ArrayType>(ty)) {
     return arrTy.getEltType();
   }
+  if (isa<sol::StringType>(ty)) {
+    return sol::BytesType::get(ty.getContext(), /*size=*/1);
+  }
   if (auto structTy = dyn_cast<sol::StructType>(ty)) {
     return structTy.getMemberTypes()[structTyIdx];
   }

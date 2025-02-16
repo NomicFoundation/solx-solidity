@@ -5,6 +5,7 @@ object "Test" {
     mstore(0, memoryguard(1))
     mstore(0, mload(1))
     mcopy(0, 10, 5)
+    mstore8(0, byte(0, 0xff))
   }
 }
 
@@ -23,6 +24,11 @@ object "Test" {
 // CHECK-NEXT:     %c10_i256 = arith.constant 10 : i256 loc(#loc9)
 // CHECK-NEXT:     %c5_i256 = arith.constant 5 : i256 loc(#loc10)
 // CHECK-NEXT:     sol.mcopy %c0_i256_1, %c10_i256, %c5_i256 loc(#loc11)
+// CHECK-NEXT:     %c0_i256_2 = arith.constant 0 : i256 loc(#loc12)
+// CHECK-NEXT:     %c0_i256_3 = arith.constant 0 : i256 loc(#loc13)
+// CHECK-NEXT:     %c255_i256 = arith.constant 255 : i256 loc(#loc14)
+// CHECK-NEXT:     %2 = sol.byte %c0_i256_3, %c255_i256 loc(#loc15)
+// CHECK-NEXT:     sol.mstore8 %c0_i256_2, %2 loc(#loc16)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
@@ -37,4 +43,9 @@ object "Test" {
 // CHECK-NEXT: #loc9 = loc({{.*}}:6:13)
 // CHECK-NEXT: #loc10 = loc({{.*}}:6:17)
 // CHECK-NEXT: #loc11 = loc({{.*}}:6:4)
+// CHECK-NEXT: #loc12 = loc({{.*}}:7:12)
+// CHECK-NEXT: #loc13 = loc({{.*}}:7:20)
+// CHECK-NEXT: #loc14 = loc({{.*}}:7:23)
+// CHECK-NEXT: #loc15 = loc({{.*}}:7:15)
+// CHECK-NEXT: #loc16 = loc({{.*}}:7:4)
 // CHECK-EMPTY:

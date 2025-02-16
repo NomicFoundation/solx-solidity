@@ -320,11 +320,42 @@ struct MStoreOpLowering : public OpRewritePattern<sol::MStoreOp> {
 
   LogicalResult matchAndRewrite(sol::MStoreOp op,
                                 PatternRewriter &r) const override {
-    evm::Builder eraB(r, op->getLoc());
+    evm::Builder evmB(r, op->getLoc());
 
-    Value addr = eraB.genHeapPtr(op.getAddr());
+    Value addr = evmB.genHeapPtr(op.getAddr());
     r.replaceOpWithNewOp<LLVM::StoreOp>(op, op.getVal(), addr,
                                         evm::getAlignment(addr));
+    return success();
+  }
+};
+
+struct MStore8OpLowering : public OpRewritePattern<sol::MStore8Op> {
+  using OpRewritePattern<sol::MStore8Op>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::MStore8Op op,
+                                PatternRewriter &r) const override {
+    evm::Builder evmB(r, op->getLoc());
+
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(
+        op, llvm::Intrinsic::evm_mstore8,
+        /*resTy=*/Type{},
+        /*ins=*/ValueRange{evmB.genHeapPtr(op.getAddr()), op.getVal()},
+        "evm.mstore8");
+    return success();
+  }
+};
+
+struct ByteOpLowering : public OpRewritePattern<sol::ByteOp> {
+  using OpRewritePattern<sol::ByteOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::ByteOp op,
+                                PatternRewriter &r) const override {
+    evm::Builder evmB(r, op->getLoc());
+
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(
+        op, llvm::Intrinsic::evm_byte,
+        /*resTy=*/r.getIntegerType(256),
+        /*ins=*/ValueRange{op.getIdx(), op.getVal()}, "evm.byte");
     return success();
   }
 };
@@ -535,6 +566,8 @@ void evm::populateYulPats(RewritePatternSet &pats) {
       ExtCodeSizeOpLowering,
       MLoadOpLowering,
       MStoreOpLowering,
+      MStore8OpLowering,
+      ByteOpLowering,
       MCopyOpLowering,
       MemGuardOpLowering,
       BuiltinCallOpLowering,
