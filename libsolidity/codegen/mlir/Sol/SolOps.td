@@ -227,6 +227,19 @@ def Sol_LengthOp : Sol_Op<"length"> {
   let assemblyFormat = [{ $inp attr-dict `:` type($inp) }];
 }
 
+def Sol_EncodeOp : Sol_Op<"encode"> {
+  let arguments = (ins Variadic<AnyType>:$ins);
+  // FIXME: AnyType -> Sol_StringType causes the asm printer to miss the prefix!
+  let results = (outs AnyType:$res);
+  let assemblyFormat = "($ins^ `:` type($ins))? `:` type($res) attr-dict";
+}
+
+def Sol_DecodeOp : Sol_Op<"decode"> {
+  let arguments = (ins AnyType:$addr);
+  let results = (outs Variadic<AnyType>:$outs);
+  let assemblyFormat = "$addr `:` type($addr) `->` type($outs) attr-dict";
+}
+
 def Sol_EmitOp : Sol_Op<"emit"> {
   let arguments = (ins Variadic<AnyType>:$args, I8Attr:$indexedArgsCount,
                        OptionalAttr<StrAttr>:$signature);

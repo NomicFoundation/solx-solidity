@@ -878,6 +878,53 @@ struct ThisOpLowering : public OpRewritePattern<sol::ThisOp> {
   }
 };
 
+struct EncodeOpLowering : public OpConversionPattern<sol::EncodeOp> {
+  using OpConversionPattern<sol::EncodeOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::EncodeOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+    evm::Builder evmB(r, loc);
+
+    Value freePtr = evmB.genFreePtr();
+    Value tupleStart =
+        r.create<arith::AddIOp>(loc, freePtr, bExt.genI256Const(32));
+    Value tupleEnd = evmB.genABITupleEncoding(
+        op.getOperandTypes(), adaptor.getOperands(), tupleStart);
+    Value tupleSize = r.create<arith::SubIOp>(loc, tupleEnd, tupleStart);
+    r.create<sol::MStoreOp>(loc, freePtr, tupleSize);
+    Value allocationSize = r.create<arith::SubIOp>(loc, tupleEnd, freePtr);
+    evmB.genFreePtrUpd(freePtr, allocationSize);
+    r.replaceOp(op, freePtr);
+    return success();
+  }
+};
+
+struct DecodeOpLowering : public OpConversionPattern<sol::DecodeOp> {
+  using OpConversionPattern<sol::DecodeOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::DecodeOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+    evm::Builder evmB(r, loc);
+
+    std::vector<Value> results;
+    Value tupleSize = r.create<sol::MLoadOp>(loc, adaptor.getAddr());
+    Value tupleStart =
+        r.create<arith::AddIOp>(loc, adaptor.getAddr(), bExt.genI256Const(32));
+    Value tupleEnd = r.create<arith::AddIOp>(loc, tupleStart, tupleSize);
+    bool fromMem = sol::getDataLocation(op.getAddr().getType()) ==
+                   sol::DataLocation::Memory;
+    assert(fromMem && "NYI");
+    evmB.genABITupleDecoding(op.getResultTypes(), tupleStart, tupleEnd, results,
+                             fromMem);
+    r.replaceOp(op, results);
+    return success();
+  }
+};
+
 struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
   using OpConversionPattern<sol::ExtCallOp>::OpConversionPattern;
 
@@ -1939,6 +1986,11 @@ void evm::populateThisPat(RewritePatternSet &pats) {
   pats.add<ThisOpLowering>(pats.getContext());
 }
 
+void evm::populateAbiPats(mlir::RewritePatternSet &pats,
+                          mlir::TypeConverter &tyConv) {
+  pats.add<EncodeOpLowering, DecodeOpLowering>(tyConv, pats.getContext());
+}
+
 void evm::populateExtCallPat(RewritePatternSet &pats, TypeConverter &tyConv) {
   pats.add<ExtCallOpLowering, TryOpLowering>(tyConv, pats.getContext());
 }
@@ -1960,6 +2012,7 @@ void evm::populateStage1Pats(RewritePatternSet &pats, TypeConverter &tyConv) {
   populateCheckedArithPats(pats, tyConv);
   populateMemPats(pats, tyConv);
   populateThisPat(pats);
+  populateAbiPats(pats, tyConv);
   populateExtCallPat(pats, tyConv);
   populateEmitPat(pats, tyConv);
   populateRequirePat(pats);
