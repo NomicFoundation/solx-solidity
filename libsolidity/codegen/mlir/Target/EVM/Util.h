@@ -173,6 +173,11 @@ public:
   genABITupleEncoding(std::string const &str, mlir::Value headStart,
                       std::optional<mlir::Location> locArg = std::nullopt);
 
+  mlir::Value
+  genABITupleDecoding(mlir::Type ty, mlir::Value addr, bool fromMem,
+                      mlir::Value tupleStart, mlir::Value tupleEnd,
+                      std::optional<mlir::Location> locArg = std::nullopt);
+
   /// Generates the tuple decoder code as per the ABI and populates the results.
   void genABITupleDecoding(mlir::TypeRange tys, mlir::Value tupleStart,
                            mlir::Value tupleEnd,
