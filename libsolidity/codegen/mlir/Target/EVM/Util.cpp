@@ -295,6 +295,74 @@ void evm::Builder::genABITupleSizeAssert(TypeRange tys, Value tupleSize,
     genRevert(shortTupleCond, loc);
 }
 
+Value evm::Builder::genABITupleEncoding(Type ty, Value val, Value headAddr,
+                                        Value tupleStart, Value tailAddr,
+                                        std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+  solidity::mlirgen::BuilderExt bExt(b, loc);
+
+  // Integer type
+  if (auto intTy = dyn_cast<IntegerType>(ty)) {
+    val = bExt.genIntCast(/*width=*/256, intTy.isSigned(), val);
+    b.create<sol::MStoreOp>(loc, headAddr, val);
+    return tailAddr;
+  }
+
+  // Bytes type
+  if (auto bytesTy = dyn_cast<sol::BytesType>(ty)) {
+    b.create<sol::MStoreOp>(loc, headAddr, val);
+    return tailAddr;
+  }
+
+  // Array type
+  if (auto arrTy = dyn_cast<sol::ArrayType>(ty)) {
+    assert(!arrTy.isDynSized() && "NYI");
+    Value dstAddr = headAddr;
+    Value srcAddr = val;
+    // Generate a loop to copy the array.
+    b.create<scf::ForOp>(
+        loc, /*lowerBound=*/bExt.genIdxConst(0),
+        /*upperBound=*/bExt.genIdxConst(arrTy.getSize()),
+        /*step=*/bExt.genIdxConst(1),
+        /*iterArgs=*/ValueRange{dstAddr, srcAddr},
+        /*builder=*/
+        [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
+          Value dstAddr = iterArgs[0];
+          Value srcAddr = iterArgs[1];
+          Value srcVal = b.create<sol::MLoadOp>(loc, srcAddr);
+          tailAddr = genABITupleEncoding(arrTy.getEltType(), srcVal, dstAddr,
+                                         tupleStart, tailAddr, loc);
+          b.create<scf::YieldOp>(
+              loc, ValueRange{b.create<arith::AddIOp>(loc, dstAddr,
+                                                      bExt.genI256Const(32)),
+                              b.create<arith::AddIOp>(loc, srcAddr,
+                                                      bExt.genI256Const(32))});
+        });
+    return tailAddr;
+  }
+
+  // String type
+  if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
+    b.create<sol::MStoreOp>(loc, headAddr,
+                            b.create<arith::SubIOp>(loc, tailAddr, tupleStart));
+
+    // Generate the length field copy.
+    auto size = b.create<sol::MLoadOp>(loc, val);
+    b.create<sol::MStoreOp>(loc, tailAddr, size);
+
+    // Generate the data copy.
+    auto dataAddr = b.create<arith::AddIOp>(loc, val, bExt.genI256Const(32));
+    auto tailDataAddr =
+        b.create<arith::AddIOp>(loc, tailAddr, bExt.genI256Const(32));
+    b.create<sol::MCopyOp>(loc, tailDataAddr, dataAddr, size);
+
+    return b.create<arith::AddIOp>(loc, tailDataAddr,
+                                   bExt.genRoundUpToMultiple<32>(size));
+  }
+
+  llvm_unreachable("NYI");
+}
+
 Value evm::Builder::genABITupleEncoding(TypeRange tys, ValueRange vals,
                                         Value tupleStart,
                                         std::optional<mlir::Location> locArg) {
@@ -311,37 +379,7 @@ Value evm::Builder::genABITupleEncoding(TypeRange tys, ValueRange vals,
   for (auto it : llvm::zip(tys, vals)) {
     Type ty = std::get<0>(it);
     Value val = std::get<1>(it);
-
-    // String type
-    if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
-      b.create<sol::MStoreOp>(
-          loc, headAddr, b.create<arith::SubIOp>(loc, tailAddr, tupleStart));
-
-      // Copy the length field.
-      auto size = b.create<sol::MLoadOp>(loc, val);
-      b.create<sol::MStoreOp>(loc, tailAddr, size);
-
-      // Copy the data.
-      auto dataAddr = b.create<arith::AddIOp>(loc, val, bExt.genI256Const(32));
-      auto tailDataAddr =
-          b.create<arith::AddIOp>(loc, tailAddr, bExt.genI256Const(32));
-      b.create<sol::MCopyOp>(loc, tailDataAddr, dataAddr, size);
-
-      tailAddr = b.create<arith::AddIOp>(loc, tailDataAddr,
-                                         bExt.genRoundUpToMultiple<32>(size));
-
-      // Integer type
-    } else if (auto intTy = dyn_cast<IntegerType>(ty)) {
-      val = bExt.genIntCast(/*width=*/256, intTy.isSigned(), val);
-      b.create<sol::MStoreOp>(loc, headAddr, val);
-
-      // Bytes type
-    } else if (auto bytesTy = dyn_cast<sol::BytesType>(ty)) {
-      b.create<sol::MStoreOp>(loc, headAddr, val);
-
-    } else {
-      llvm_unreachable("NYI");
-    }
+    tailAddr = genABITupleEncoding(ty, val, headAddr, tupleStart, tailAddr);
     headAddr = b.create<arith::AddIOp>(
         loc, headAddr, bExt.genI256Const(getCallDataHeadSize(ty)));
   }
