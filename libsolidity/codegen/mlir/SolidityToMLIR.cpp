@@ -311,9 +311,11 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
 
     // TODO: Does convert_to alreay do this?
     assert(arrTy->length() <= INT64_MAX);
-    return mlir::sol::ArrayType::get(b.getContext(),
-                                     arrTy->length().convert_to<int64_t>(),
-                                     eltTy, getDataLocation(arrTy));
+    int64_t size = arrTy->isDynamicallySized()
+                       ? -1
+                       : arrTy->length().convert_to<int64_t>();
+    return mlir::sol::ArrayType::get(b.getContext(), size, eltTy,
+                                     getDataLocation(arrTy));
   }
   case Type::Category::Struct: {
     const auto *structTy = static_cast<StructType const *>(ty);

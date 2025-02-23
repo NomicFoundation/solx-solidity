@@ -438,12 +438,25 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
 
   // Array type
   if (auto arrTy = dyn_cast<sol::ArrayType>(ty)) {
-    assert(!sol::hasDynamicallySizedElt(arrTy) && "NYI");
-    Value dstAddr = genMemAlloc(bExt.genI256Const(arrTy.getSize() * 32), loc);
-    Value srcAddr = addr;
+    Value dstAddr, srcAddr, size, ret;
+    Value thirtyTwo = bExt.genI256Const(32);
+    if (arrTy.isDynSized()) {
+      Value i256Size = genLoad(addr);
+      dstAddr = genMemAllocForDynArray(
+          i256Size, b.create<arith::MulIOp>(loc, i256Size, thirtyTwo));
+      ret = dstAddr;
+      dstAddr = b.create<arith::AddIOp>(loc, dstAddr, thirtyTwo);
+      srcAddr = b.create<arith::AddIOp>(loc, addr, thirtyTwo);
+      size = bExt.genCastToIdx(i256Size);
+    } else {
+      dstAddr = genMemAlloc(bExt.genI256Const(arrTy.getSize() * 32), loc);
+      ret = dstAddr;
+      srcAddr = addr;
+      size = bExt.genIdxConst(arrTy.getSize());
+    }
     b.create<scf::ForOp>(
         loc, /*lowerBound=*/bExt.genIdxConst(0),
-        /*upperBound=*/bExt.genIdxConst(arrTy.getSize()),
+        /*upperBound=*/size,
         /*step=*/bExt.genIdxConst(1),
         /*iterArgs=*/ValueRange{dstAddr, srcAddr},
         /*builder=*/
@@ -462,7 +475,7 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
                   b.create<arith::AddIOp>(loc, dstAddr, bExt.genI256Const(32)),
                   b.create<arith::AddIOp>(loc, srcAddr, srcStride)});
         });
-    return dstAddr;
+    return ret;
   }
 
   // Bytes type
@@ -484,33 +497,10 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
 
   // String type
   if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
-    Value tailOffsetFromTuple = genLoad(addr);
-    // As per the ir-breaking-changes ref in docs:
-    //
-    // - The new code generator imposes a hard limit of ``type(uint64).max``
-    //   (``0xffffffffffffffff``) for the free memory pointer. Allocations
-    //   that would increase its value beyond this limit revert. The old code
-    //   generator does not have this limit.
-    auto invalidTupleOffsetCond = b.create<arith::CmpIOp>(
-        loc, arith::CmpIPredicate::ugt, tailOffsetFromTuple,
-        bExt.genI256Const("0xffffffffffffffff"));
-    genRevertWithMsg(invalidTupleOffsetCond,
-                     "ABI decoding: invalid tuple offset", loc);
-    Value tailAddr =
-        b.create<arith::AddIOp>(loc, tupleStart, tailOffsetFromTuple);
-
-    // The `tailAddr` should point to at least 1 32-byte word in the tuple.
-    // Generate a revert check for that.
-    auto invalidTailAddrCond = b.create<arith::CmpIOp>(
-        loc, arith::CmpIPredicate::sge,
-        b.create<arith::AddIOp>(loc, tailAddr, bExt.genI256Const(31)),
-        tupleEnd);
-    genRevertWithMsg(invalidTailAddrCond,
-                     "ABI decoding: invalid calldata array offset", loc);
-
-    Value sizeInBytes = genLoad(tailAddr);
+    Value tailAddr = addr;
 
     // Copy the decoded string to a new memory allocation.
+    Value sizeInBytes = genLoad(tailAddr);
     Value dstAddr = genMemAllocForDynArray(
         sizeInBytes, bExt.genRoundUpToMultiple<32>(sizeInBytes), loc);
     Value thirtyTwo = bExt.genI256Const(32);
@@ -550,13 +540,42 @@ void evm::Builder::genABITupleDecoding(TypeRange tys, Value tupleStart,
 
   genABITupleSizeAssert(tys, b.create<arith::SubIOp>(loc, tupleEnd, tupleStart),
                         loc);
+
+  auto genLoad = [&](Value addr) -> Value {
+    if (fromMem)
+      return b.create<sol::MLoadOp>(loc, addr);
+    return b.create<sol::CallDataLoadOp>(loc, addr);
+  };
+
   // Decode the args.
   // The type of the decoded arg should be same as that of the legalized type
   // (as per the type-converter) of the original type.
   Value headAddr = tupleStart;
   for (Type ty : tys) {
-    results.push_back(
-        genABITupleDecoding(ty, headAddr, fromMem, tupleStart, tupleEnd, loc));
+    if (sol::hasDynamicallySizedElt(ty)) {
+      Value tailOffsetFromTuple = genLoad(headAddr);
+      auto invalidTupleOffsetCond = b.create<arith::CmpIOp>(
+          loc, arith::CmpIPredicate::ugt, tailOffsetFromTuple,
+          bExt.genI256Const("0xffffffffffffffff"));
+      genRevertWithMsg(invalidTupleOffsetCond,
+                       "ABI decoding: invalid tuple offset", loc);
+      Value tailAddr =
+          b.create<arith::AddIOp>(loc, tupleStart, tailOffsetFromTuple);
+
+      // The `tailAddr` should point to at least 1 32-byte word in the tuple.
+      // Generate a revert check for that.
+      auto invalidTailAddrCond = b.create<arith::CmpIOp>(
+          loc, arith::CmpIPredicate::sge,
+          b.create<arith::AddIOp>(loc, tailAddr, bExt.genI256Const(31)),
+          tupleEnd);
+      genRevertWithMsg(invalidTailAddrCond,
+                       "ABI decoding: invalid calldata array offset", loc);
+      results.push_back(genABITupleDecoding(ty, tailAddr, fromMem, tupleStart,
+                                            tupleEnd, loc));
+    } else {
+      results.push_back(genABITupleDecoding(ty, headAddr, fromMem, tupleStart,
+                                            tupleEnd, loc));
+    }
     headAddr = b.create<arith::AddIOp>(
         loc, headAddr, bExt.genI256Const(getCallDataHeadSize(ty)));
   }

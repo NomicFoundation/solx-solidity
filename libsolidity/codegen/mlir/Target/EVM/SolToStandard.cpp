@@ -566,15 +566,15 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
           }
 
           // Generate `if iszero(lt(index, <arrayLen>(baseRef)))` (yul).
+          auto idxTy = cast<IntegerType>(idx.getType());
+          Value castedIdx = bExt.genIntCast(256, idxTy.isSigned(), idx);
           auto panicCond = r.create<arith::CmpIOp>(
-              loc, arith::CmpIPredicate::uge, idx, size);
+              loc, arith::CmpIPredicate::uge, castedIdx, size);
           evmB.genPanic(solidity::util::PanicCode::ArrayOutOfBounds, panicCond);
 
           //
           // Generate the address.
           //
-          Value castedIdx =
-              bExt.genIntCast(/*width=*/256, /*isSigned=*/false, idx);
           Value scaledIdx =
               r.create<arith::MulIOp>(loc, castedIdx, bExt.genI256Const(32));
           if (arrTy.isDynSized()) {
