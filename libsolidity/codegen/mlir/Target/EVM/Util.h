@@ -218,6 +218,10 @@ public:
   /// Generates a revert with values. (Useful for debugging)
   void genDbgRevert(mlir::ValueRange vals,
                     std::optional<mlir::Location> locArg = std::nullopt);
+
+  /// Conditionally generates a revert with values. (Useful for debugging)
+  void genCondDbgRevert(mlir::Value cond, mlir::ValueRange vals,
+                        std::optional<mlir::Location> locArg = std::nullopt);
 };
 
 } // namespace evm

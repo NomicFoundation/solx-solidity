@@ -445,6 +445,7 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
       dstAddr = genMemAllocForDynArray(
           i256Size, b.create<arith::MulIOp>(loc, i256Size, thirtyTwo));
       ret = dstAddr;
+      // Skip the size fields in both the addresses.
       dstAddr = b.create<arith::AddIOp>(loc, dstAddr, thirtyTwo);
       srcAddr = b.create<arith::AddIOp>(loc, addr, thirtyTwo);
       size = bExt.genCastToIdx(i256Size);
@@ -454,6 +455,7 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
       srcAddr = addr;
       size = bExt.genIdxConst(arrTy.getSize());
     }
+
     b.create<scf::ForOp>(
         loc, /*lowerBound=*/bExt.genIdxConst(0),
         /*upperBound=*/size,
@@ -461,19 +463,31 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
         /*iterArgs=*/ValueRange{dstAddr, srcAddr},
         /*builder=*/
         [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
-          Value dstAddr = iterArgs[0];
-          Value srcAddr = iterArgs[1];
-          b.create<sol::MStoreOp>(
-              loc, dstAddr,
-              genABITupleDecoding(arrTy.getEltType(), srcAddr, fromMem,
-                                  tupleStart, tupleEnd, loc));
+          Value iDstAddr = iterArgs[0];
+          Value iSrcAddr = iterArgs[1];
+          if (sol::hasDynamicallySizedElt(arrTy.getEltType())) {
+            // The elements are offset wrt to the start of this array (after the
+            // size field if dynamic) that contain the inner element.
+            Value offsetFromSrcAddr =
+                b.create<arith::AddIOp>(loc, srcAddr, genLoad(iSrcAddr));
+            b.create<sol::MStoreOp>(
+                loc, iDstAddr,
+                genABITupleDecoding(arrTy.getEltType(), offsetFromSrcAddr,
+                                    fromMem, tupleStart, tupleEnd, loc));
+          } else {
+            b.create<sol::MStoreOp>(
+                loc, iDstAddr,
+                genABITupleDecoding(arrTy.getEltType(), iSrcAddr, fromMem,
+                                    tupleStart, tupleEnd, loc));
+          }
+
           Value srcStride =
               bExt.genI256Const(getCallDataHeadSize(arrTy.getEltType()));
           b.create<scf::YieldOp>(
               loc,
               ValueRange{
-                  b.create<arith::AddIOp>(loc, dstAddr, bExt.genI256Const(32)),
-                  b.create<arith::AddIOp>(loc, srcAddr, srcStride)});
+                  b.create<arith::AddIOp>(loc, iDstAddr, bExt.genI256Const(32)),
+                  b.create<arith::AddIOp>(loc, iSrcAddr, srcStride)});
         });
     return ret;
   }
@@ -690,4 +704,14 @@ void evm::Builder::genDbgRevert(ValueRange vals,
     retDataSize += 32;
   }
   b.create<sol::RevertOp>(loc, freePtr, bExt.genI256Const(retDataSize));
+}
+
+void evm::Builder::genCondDbgRevert(Value cond, ValueRange vals,
+                                    std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+
+  auto ifOp = b.create<scf::IfOp>(loc, cond);
+  OpBuilder::InsertionGuard insertGuard(b);
+  b.setInsertionPointToStart(&ifOp.getThenRegion().front());
+  genDbgRevert(vals, loc);
 }
