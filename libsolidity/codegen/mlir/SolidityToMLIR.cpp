@@ -770,6 +770,14 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       resVals.push_back(val);
     return resVals;
   }
+  case FunctionType::Kind::ObjectCreation: {
+    mlir::Type ty =
+        getType(dynamic_cast<ArrayType const *>(call.annotation().type));
+    assert(astArgs.size() == 1);
+    resVals.push_back(b.create<mlir::sol::MallocOp>(
+        loc, ty, /*zeroInit=*/true, genRValExpr(*astArgs.front())));
+    return resVals;
+  }
 
   // Event invocation
   case FunctionType::Kind::Event: {

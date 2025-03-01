@@ -36,7 +36,7 @@ function malloc() {
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT:   sol.func @malloc_32() attributes {state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory>, Stack> loc(#loc8)
-// CHECK-NEXT:     %1 = sol.malloc zero_init : !sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory> loc(#loc8)
+// CHECK-NEXT:     %1 = sol.malloc zero_init :  !sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory> loc(#loc8)
 // CHECK-NEXT:     sol.store %1, %0 : !sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory>, !sol.ptr<!sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory>, Stack> loc(#loc8)
 // CHECK-NEXT:     sol.return loc(#loc7)
 // CHECK-NEXT:   } loc(#loc7)

@@ -476,14 +476,20 @@ struct MallocOpLowering : public OpConversionPattern<sol::MallocOp> {
     return memPtr;
   }
 
-  Value genMemAlloc(sol::MallocOp op, PatternRewriter &r) const {
-    return genMemAlloc(op.getType(), op.getZeroInit(), op.getSize(),
+  Value genMemAlloc(sol::MallocOp op, OpAdaptor adaptor,
+                    PatternRewriter &r) const {
+    solidity::mlirgen::BuilderExt bExt(r, op.getLoc());
+    Value size;
+    if (adaptor.getSize())
+      size = bExt.genIntCast(256, false, adaptor.getSize());
+
+    return genMemAlloc(op.getType(), op.getZeroInit(), size,
                        /*recDepth=*/-1, r, op.getLoc());
   }
 
   LogicalResult matchAndRewrite(sol::MallocOp op, OpAdaptor adaptor,
                                 ConversionPatternRewriter &r) const override {
-    Value freePtr = genMemAlloc(op, r);
+    Value freePtr = genMemAlloc(op, adaptor, r);
     r.replaceOp(op, freePtr);
     return success();
   }
@@ -783,15 +789,8 @@ struct DataLocCastOpLowering : public OpConversionPattern<sol::DataLocCastOp> {
 
         // Generate the memory allocation.
         auto sizeInBytes = evmB.genLoad(adaptor.getInp(), srcDataLoc);
-        auto memPtrTy =
-            sol::StringType::get(r.getContext(), sol::DataLocation::Memory);
-        Value mallocRes =
-            r.create<sol::MallocOp>(loc, memPtrTy,
-                                    /*zeroInit=*/false, sizeInBytes);
-        Type i256Ty = r.getIntegerType(256);
-        assert(getTypeConverter()->convertType(mallocRes.getType()) == i256Ty);
-        mlir::Value memAddr = getTypeConverter()->materializeTargetConversion(
-            r, loc, /*resultType=*/i256Ty, /*inputs=*/mallocRes);
+        Value memAddr = evmB.genMemAllocForDynArray(
+            sizeInBytes, bExt.genRoundUpToMultiple<32>(sizeInBytes));
         resAddr = memAddr;
 
         // Generate the loop to copy the data (sol.malloc lowering will generate
