@@ -167,7 +167,7 @@ public:
   /// address.
   mlir::Value
   genABITupleEncoding(mlir::Type ty, mlir::Value val, mlir::Value addr,
-                      mlir::Value tupleStart, mlir::Value tailAddr,
+                      bool inTail, mlir::Value tupleStart, mlir::Value tailAddr,
                       std::optional<mlir::Location> locArg = std::nullopt);
 
   /// Generates the tuple encoder code as per the ABI and returns the address at

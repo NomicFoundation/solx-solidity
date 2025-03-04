@@ -881,9 +881,10 @@ void SolidityToMLIRPass::lower(Assignment const &asgnStmt) {
               mlir::sol::DataLocation::Storage) {
         b.create<mlir::sol::CopyOp>(loc, rhsVal, lhsVal);
       } else {
-        b.create<mlir::sol::StoreOp>(
-            loc, genCast(rhsVal, mlir::sol::getEltType(lhsVal.getType())),
-            lhsVal);
+        mlir::Value castedRhs = rhsVal;
+        if (mlir::isa<mlir::sol::PointerType>(lhsVal.getType()))
+          castedRhs = genCast(rhsVal, mlir::sol::getEltType(lhsVal.getType()));
+        b.create<mlir::sol::StoreOp>(loc, castedRhs, lhsVal);
       }
     }
 

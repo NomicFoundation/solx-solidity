@@ -295,84 +295,100 @@ void evm::Builder::genABITupleSizeAssert(TypeRange tys, Value tupleSize,
     genRevert(shortTupleCond, loc);
 }
 
-Value evm::Builder::genABITupleEncoding(Type ty, Value val, Value headAddr,
-                                        Value tupleStart, Value tailAddr,
+Value evm::Builder::genABITupleEncoding(Type ty, Value src, Value dstAddr,
+                                        bool dstAddrInTail, Value tupleStart,
+                                        Value tailAddr,
                                         std::optional<Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;
   solidity::mlirgen::BuilderExt bExt(b, loc);
-  auto genTailAddrStore = [&]() {
-    b.create<sol::MStoreOp>(loc, headAddr,
-                            b.create<arith::SubIOp>(loc, tailAddr, tupleStart));
-  };
 
   // Integer type
   if (auto intTy = dyn_cast<IntegerType>(ty)) {
-    val = bExt.genIntCast(/*width=*/256, intTy.isSigned(), val);
-    b.create<sol::MStoreOp>(loc, headAddr, val);
+    src = bExt.genIntCast(/*width=*/256, intTy.isSigned(), src);
+    b.create<sol::MStoreOp>(loc, dstAddr, src);
     return tailAddr;
   }
 
   // Bytes type
   if (auto bytesTy = dyn_cast<sol::BytesType>(ty)) {
-    b.create<sol::MStoreOp>(loc, headAddr, val);
+    b.create<sol::MStoreOp>(loc, dstAddr, src);
     return tailAddr;
   }
 
   // Array type
   if (auto arrTy = dyn_cast<sol::ArrayType>(ty)) {
     Value thirtyTwo = bExt.genI256Const(32);
-    Value dstAddr, srcAddr, size;
-    if (sol::hasDynamicallySizedElt(ty)) {
-      genTailAddrStore();
-
+    Value dstArrAddr, srcArrAddr, size;
+    if (arrTy.isDynSized()) {
       // Generate the size store.
-      Value i256Size = b.create<sol::MLoadOp>(loc, val);
-      b.create<sol::MStoreOp>(loc, tailAddr, i256Size);
+      Value i256Size = b.create<sol::MLoadOp>(loc, src);
+      assert(dstAddr == tailAddr);
+      b.create<sol::MStoreOp>(loc, dstAddr, i256Size);
 
       size = bExt.genCastToIdx(i256Size);
-      dstAddr = b.create<arith::AddIOp>(loc, tailAddr, thirtyTwo);
-      srcAddr = b.create<arith::AddIOp>(loc, val, thirtyTwo);
+      dstArrAddr = b.create<arith::AddIOp>(loc, dstAddr, thirtyTwo);
+      srcArrAddr = b.create<arith::AddIOp>(loc, src, thirtyTwo);
 
       // Generate the tail address update.
       Value sizeInBytes = b.create<arith::MulIOp>(loc, i256Size, thirtyTwo);
-      tailAddr = b.create<arith::AddIOp>(loc, dstAddr, sizeInBytes);
+      tailAddr = b.create<arith::AddIOp>(loc, dstArrAddr, sizeInBytes);
     } else {
       size = bExt.genIdxConst(arrTy.getSize());
-      dstAddr = headAddr;
-      srcAddr = val;
+      dstArrAddr = dstAddr;
+      srcArrAddr = src;
+
+      if (dstAddrInTail) {
+        // Generate the tail address update.
+        Value i256Size = bExt.genI256Const(arrTy.getSize());
+        Value sizeInBytes = b.create<arith::MulIOp>(loc, i256Size, thirtyTwo);
+        tailAddr = b.create<arith::AddIOp>(loc, dstArrAddr, sizeInBytes);
+      }
     }
 
     // Generate a loop to copy the array.
-    b.create<scf::ForOp>(
+    auto forOp = b.create<scf::ForOp>(
         loc, /*lowerBound=*/bExt.genIdxConst(0),
         /*upperBound=*/size,
         /*step=*/bExt.genIdxConst(1),
-        /*iterArgs=*/ValueRange{dstAddr, srcAddr},
+        /*iterArgs=*/ValueRange{dstArrAddr, srcArrAddr, tailAddr},
         /*builder=*/
         [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
-          Value dstAddr = iterArgs[0];
-          Value srcAddr = iterArgs[1];
-          Value srcVal = b.create<sol::MLoadOp>(loc, srcAddr);
-          genABITupleEncoding(arrTy.getEltType(), srcVal, dstAddr, tupleStart,
-                              tailAddr, loc);
+          Value iDstAddr = iterArgs[0];
+          Value iSrcAddr = iterArgs[1];
+          Value iTailAddr = iterArgs[2];
+
+          Value srcVal = b.create<sol::MLoadOp>(loc, iSrcAddr);
+          Value nextTailAddr;
+          if (sol::hasDynamicallySizedElt(arrTy.getEltType())) {
+            b.create<sol::MStoreOp>(
+                loc, iDstAddr,
+                b.create<arith::SubIOp>(loc, iTailAddr, dstArrAddr));
+            assert(dstAddrInTail);
+            nextTailAddr =
+                genABITupleEncoding(arrTy.getEltType(), srcVal, iTailAddr,
+                                    dstAddrInTail, tupleStart, iTailAddr, loc);
+          } else {
+            nextTailAddr =
+                genABITupleEncoding(arrTy.getEltType(), srcVal, iDstAddr,
+                                    dstAddrInTail, tupleStart, iTailAddr, loc);
+          }
+
           b.create<scf::YieldOp>(
-              loc,
-              ValueRange{b.create<arith::AddIOp>(loc, dstAddr, thirtyTwo),
-                         b.create<arith::AddIOp>(loc, srcAddr, thirtyTwo)});
+              loc, ValueRange{b.create<arith::AddIOp>(loc, iDstAddr, thirtyTwo),
+                              b.create<arith::AddIOp>(loc, iSrcAddr, thirtyTwo),
+                              nextTailAddr});
         });
-    return tailAddr;
+    return forOp.getResult(2);
   }
 
   // String type
   if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
-    genTailAddrStore();
-
     // Generate the length field copy.
-    auto size = b.create<sol::MLoadOp>(loc, val);
+    auto size = b.create<sol::MLoadOp>(loc, src);
     b.create<sol::MStoreOp>(loc, tailAddr, size);
 
     // Generate the data copy.
-    auto dataAddr = b.create<arith::AddIOp>(loc, val, bExt.genI256Const(32));
+    auto dataAddr = b.create<arith::AddIOp>(loc, src, bExt.genI256Const(32));
     auto tailDataAddr =
         b.create<arith::AddIOp>(loc, tailAddr, bExt.genI256Const(32));
     b.create<sol::MCopyOp>(loc, tailDataAddr, dataAddr, size);
@@ -400,7 +416,15 @@ Value evm::Builder::genABITupleEncoding(TypeRange tys, ValueRange vals,
   for (auto it : llvm::zip(tys, vals)) {
     Type ty = std::get<0>(it);
     Value val = std::get<1>(it);
-    tailAddr = genABITupleEncoding(ty, val, headAddr, tupleStart, tailAddr);
+    if (sol::hasDynamicallySizedElt(ty)) {
+      b.create<sol::MStoreOp>(
+          loc, headAddr, b.create<arith::SubIOp>(loc, tailAddr, tupleStart));
+      tailAddr = genABITupleEncoding(ty, val, tailAddr, /*inTail=*/true,
+                                     tupleStart, tailAddr);
+    } else {
+      tailAddr = genABITupleEncoding(ty, val, headAddr, /*inTail=*/false,
+                                     tupleStart, tailAddr);
+    }
     headAddr = b.create<arith::AddIOp>(
         loc, headAddr, bExt.genI256Const(getCallDataHeadSize(ty)));
   }

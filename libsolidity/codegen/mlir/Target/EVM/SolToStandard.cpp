@@ -373,8 +373,7 @@ struct MallocOpLowering : public OpConversionPattern<sol::MallocOp> {
       // FIXME: Round up size for byte arays.
       if (arrayTy.isDynSized()) {
         // Dynamic allocation is only performed for the outermost dimension.
-        if (sizeVar) {
-          assert(recDepth == 0);
+        if (sizeVar && recDepth == 0) {
           sizeInBytes =
               r.create<arith::MulIOp>(loc, sizeVar, bExt.genI256Const(32));
           memPtr = evmB.genMemAllocForDynArray(sizeVar, sizeInBytes);
@@ -397,47 +396,22 @@ struct MallocOpLowering : public OpConversionPattern<sol::MallocOp> {
         //
         // Store the offsets to the "inner" allocations.
         //
-        if (auto constSize =
-                dyn_cast<arith::ConstantIntOp>(sizeInBytes.getDefiningOp())) {
-          // FIXME: .value() yields s64!
-          assert(constSize.value() >= 32);
-          // Generate the "unrolled" stores of offsets since the size is static.
-          r.create<sol::MStoreOp>(
-              loc, dataPtr,
-              genMemAlloc(eltTy, zeroInit, sizeVar, recDepth, r, loc));
-          // FIXME: Is the stride always 32?
-          assert(constSize.value() % 32 == 0);
-          auto sizeInWords = constSize.value() / 32;
-          for (int64_t i = 1; i < sizeInWords; ++i) {
-            Value incrMemPtr = r.create<arith::AddIOp>(
-                loc, dataPtr, bExt.genI256Const(32 * i));
-            r.create<sol::MStoreOp>(
-                loc, incrMemPtr,
-                genMemAlloc(eltTy, zeroInit, sizeVar, recDepth, r, loc));
-          }
-        } else {
-          // Generate the loop for the stores of offsets.
+        // Generate the loop for the stores of offsets.
 
-          // TODO? Generate an unrolled loop if the size variable is a
-          // ConstantOp?
-
-          // `size` should be a multiple of 32.
-
-          r.create<scf::ForOp>(
-              loc, /*lowerBound=*/bExt.genIdxConst(0),
-              /*upperBound=*/bExt.genCastToIdx(sizeInBytes),
-              /*step=*/bExt.genIdxConst(32), /*iterArgs=*/std::nullopt,
-              /*builder=*/
-              [&](OpBuilder &b, Location loc, Value indVar,
-                  ValueRange iterArgs) {
-                Value incrMemPtr = r.create<arith::AddIOp>(
-                    loc, dataPtr, bExt.genCastToI256(indVar));
-                r.create<sol::MStoreOp>(
-                    loc, incrMemPtr,
-                    genMemAlloc(eltTy, zeroInit, sizeVar, recDepth, r, loc));
-                b.create<scf::YieldOp>(loc);
-              });
-        }
+        // `size` should be a multiple of 32.
+        r.create<scf::ForOp>(
+            loc, /*lowerBound=*/bExt.genIdxConst(0),
+            /*upperBound=*/bExt.genCastToIdx(sizeInBytes),
+            /*step=*/bExt.genIdxConst(32), /*iterArgs=*/std::nullopt,
+            /*builder=*/
+            [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
+              Value incrMemPtr = r.create<arith::AddIOp>(
+                  loc, dataPtr, bExt.genCastToI256(indVar));
+              r.create<sol::MStoreOp>(
+                  loc, incrMemPtr,
+                  genMemAlloc(eltTy, zeroInit, sizeVar, recDepth, r, loc));
+              b.create<scf::YieldOp>(loc);
+            });
 
       } else if (zeroInit) {
         Value callDataSz = r.create<sol::CallDataSizeOp>(loc);
@@ -478,13 +452,14 @@ struct MallocOpLowering : public OpConversionPattern<sol::MallocOp> {
 
   Value genMemAlloc(sol::MallocOp op, OpAdaptor adaptor,
                     PatternRewriter &r) const {
-    solidity::mlirgen::BuilderExt bExt(r, op.getLoc());
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
     Value size;
     if (adaptor.getSize())
       size = bExt.genIntCast(256, false, adaptor.getSize());
 
     return genMemAlloc(op.getType(), op.getZeroInit(), size,
-                       /*recDepth=*/-1, r, op.getLoc());
+                       /*recDepth=*/-1, r, loc);
   }
 
   LogicalResult matchAndRewrite(sol::MallocOp op, OpAdaptor adaptor,
@@ -732,29 +707,31 @@ struct StoreOpLowering : public OpConversionPattern<sol::StoreOp> {
     solidity::mlirgen::BuilderExt bExt(r, loc);
 
     Value val = adaptor.getVal();
-    Value addr = adaptor.getAddr();
+    Value remappedAddr = adaptor.getAddr();
 
     switch (sol::getDataLocation(op.getAddr().getType())) {
     case sol::DataLocation::Stack:
-      r.replaceOpWithNewOp<LLVM::StoreOp>(op, val, addr,
-                                          evm::getAlignment(addr));
+      r.replaceOpWithNewOp<LLVM::StoreOp>(op, val, remappedAddr,
+                                          evm::getAlignment(remappedAddr));
       return success();
     case sol::DataLocation::Memory: {
-      auto addrTy = cast<sol::PointerType>(op.getAddr().getType());
-      auto bytesEleTy = dyn_cast<sol::BytesType>(addrTy.getPointeeType());
+      Type addrTy = op.getAddr().getType();
+      auto dataLoc = sol::getDataLocation(addrTy);
+
       // Generate mstore8 for storing to `bytes`.
-      if (bytesEleTy && addrTy.getDataLocation() == sol::DataLocation::Memory) {
+      auto bytesEleTy = dyn_cast<sol::BytesType>(sol::getEltType(addrTy));
+      if (bytesEleTy && dataLoc == sol::DataLocation::Memory) {
         assert(bytesEleTy.getSize() == 1 && "NYI");
         auto byteVal = r.create<sol::ByteOp>(loc, bExt.genI256Const(0), val);
-        r.replaceOpWithNewOp<sol::MStore8Op>(op, addr, byteVal);
+        r.replaceOpWithNewOp<sol::MStore8Op>(op, remappedAddr, byteVal);
         return success();
       }
 
-      r.replaceOpWithNewOp<sol::MStoreOp>(op, addr, val);
+      r.replaceOpWithNewOp<sol::MStoreOp>(op, remappedAddr, val);
       return success();
     }
     case sol::DataLocation::Storage:
-      r.replaceOpWithNewOp<sol::SStoreOp>(op, addr, val);
+      r.replaceOpWithNewOp<sol::SStoreOp>(op, remappedAddr, val);
       return success();
     default:
       break;
