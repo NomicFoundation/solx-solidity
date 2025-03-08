@@ -80,8 +80,9 @@ contract C {
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.array<2 x !sol.array<2 x ui256, Memory>, Memory>, !sol.ptr<!sol.array<2 x !sol.array<2 x ui256, Memory>, Memory>, Stack> loc(#loc20)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.array<2 x !sol.array<2 x ui256, Memory>, Memory>, Stack>, !sol.array<2 x !sol.array<2 x ui256, Memory>, Memory> loc(#loc21)
 // CHECK-NEXT:       %c0_ui8 = sol.constant 0 : ui8 loc(#loc22)
-// CHECK-NEXT:       %2 = sol.gep %1, %c0_ui8 : !sol.array<2 x !sol.array<2 x ui256, Memory>, Memory>, ui8, !sol.array<2 x ui256, Memory> loc(#loc21)
-// CHECK-NEXT:       sol.return %2 : !sol.array<2 x ui256, Memory> loc(#loc23)
+// CHECK-NEXT:       %2 = sol.gep %1, %c0_ui8 : !sol.array<2 x !sol.array<2 x ui256, Memory>, Memory>, ui8, !sol.ptr<!sol.array<2 x ui256, Memory>, Memory> loc(#loc21)
+// CHECK-NEXT:       %3 = sol.load %2 : !sol.ptr<!sol.array<2 x ui256, Memory>, Memory>, !sol.array<2 x ui256, Memory> loc(#loc21)
+// CHECK-NEXT:       sol.return %3 : !sol.array<2 x ui256, Memory> loc(#loc23)
 // CHECK-NEXT:     } loc(#loc19)
 // CHECK-NEXT:     sol.func @darr_72(%arg0: !sol.array<? x ui256, Memory> loc({{.*}}:11:16)) -> !sol.array<? x ui256, Memory> attributes {state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.array<? x ui256, Memory>, Stack> loc(#loc25)

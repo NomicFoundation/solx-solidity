@@ -154,12 +154,8 @@ void GepOp::build(OpBuilder &odsBuilder, OperationState &odsState,
     eltTy = getEltType(baseAddrTy);
   }
 
-  Type resTy;
-  if (isNonPtrRefType(eltTy))
-    resTy = eltTy;
-  else
-    resTy = sol::PointerType::get(odsBuilder.getContext(), eltTy,
-                                  getDataLocation(baseAddrTy));
+  auto resTy = sol::PointerType::get(odsBuilder.getContext(), eltTy,
+                                     getDataLocation(baseAddrTy));
   build(odsBuilder, odsState, resTy, baseAddr, idx);
 }
 

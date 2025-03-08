@@ -570,14 +570,7 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
         }
         assert(addrAtIdx);
 
-        // We need to generate load for member/element having a reference type
-        // since reference types track address.
-        if (sol::isNonPtrRefType(eltTy)) {
-          assert(sol::getDataLocation(eltTy) == sol::DataLocation::Memory);
-          res = r.create<sol::MLoadOp>(loc, addrAtIdx);
-        } else {
-          res = addrAtIdx;
-        }
+        res = addrAtIdx;
 
         // Memory struct
       } else if (auto structTy = dyn_cast<sol::StructType>(baseAddrTy)) {
@@ -591,16 +584,7 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
             bExt.genIntCast(/*width=*/256, /*isSigned=*/false, idxConstOp);
         auto scaledIdx =
             r.create<arith::MulIOp>(loc, memberIdx, bExt.genI256Const(32));
-        Value addrAtIdx =
-            r.create<arith::AddIOp>(loc, remappedBaseAddr, scaledIdx);
-
-        auto memberTy = structTy.getMemberTypes()[idxConstOp.value()];
-        if (sol::isNonPtrRefType(memberTy)) {
-          assert(sol::getDataLocation(memberTy) == sol::DataLocation::Memory);
-          res = r.create<sol::MLoadOp>(loc, addrAtIdx);
-        } else {
-          res = addrAtIdx;
-        }
+        res = r.create<arith::AddIOp>(loc, remappedBaseAddr, scaledIdx);
 
         // Bytes (!sol.string)
       } else if (auto strTy = dyn_cast<sol::StringType>(baseAddrTy)) {

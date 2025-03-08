@@ -38,10 +38,8 @@ Side effect:
 - Out-of-bounds array access is expected to cause panic. Unlike load/store ops,
   address calculation ops know the bounds of the array, so they are expected to
   generate this check. So we can't rely on the side-effect attribute of
-  load/store ops.
-
-- Indexing of multi-dimensional memory arrays involve mload'ing to get the
-  address of the inner allocation.
+  load/store ops. This also involves a memory access if the array is dynamic
+  (for loading the size field).
 
 No side effect:
 

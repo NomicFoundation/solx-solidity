@@ -460,7 +460,7 @@ mlir::Value SolidityToMLIRPass::genCast(mlir::Value val, mlir::Type dstTy) {
 
   // Casting between reference types (excluding pointer types).
   if (mlir::sol::isNonPtrRefType(dstTy)) {
-    assert(mlir::sol::isNonPtrRefType(dstTy));
+    assert(mlir::sol::isNonPtrRefType(srcTy));
     return b.create<mlir::sol::DataLocCastOp>(loc, dstTy, val);
   }
 
