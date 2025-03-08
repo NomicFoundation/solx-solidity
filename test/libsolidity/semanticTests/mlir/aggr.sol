@@ -30,6 +30,10 @@ contract C {
     a[0][1] = a[1][0];
     return (a[0][1], a[1][0]);
   }
+  function dar3(uint[2][] memory a) public returns (uint, uint) {
+    a[0][1] = a[1][0];
+    return (a[0][1], a[1][0]);
+  }
   function darr() public returns (uint[] memory) {
     uint[] memory a;
     a = new uint[](2);
@@ -46,6 +50,11 @@ contract C {
     a[1][0] = a[0][1];
     return a;
   }
+  function darr3() public returns (uint[2][] memory) {
+    uint[2][] memory a;
+    a = new uint[2][](1);
+    return a;
+  }
 }
 
 // ====
@@ -56,5 +65,7 @@ contract C {
 // ar2(uint256[2][2]): 1, 2, 3, 4 -> 3, 3
 // arr() -> 1, 1
 // dar2(uint256[][]): 0x20, 2, 0x40, 0xa0, 2, 3, 4, 2, 5, 6 -> 5, 5
+// dar3(uint256[2][]): 0x20, 2, 1, 2, 3, 4 -> 3, 3
 // darr() -> 32, 2, 1, 1
 // darr2() -> 0x20, 2, 0x40, 0xa0, 2, 0, 1, 2, 1, 0
+// darr3() -> 0x20, 1, 0, 0
