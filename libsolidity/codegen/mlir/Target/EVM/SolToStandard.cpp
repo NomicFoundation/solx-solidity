@@ -795,9 +795,20 @@ struct LengthOpLowering : public OpConversionPattern<sol::LengthOp> {
 
   LogicalResult matchAndRewrite(sol::LengthOp op, OpAdaptor adaptor,
                                 ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
     Type ty = op.getInp().getType();
+
     if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
       r.replaceOpWithNewOp<sol::MLoadOp>(op, adaptor.getInp());
+      return success();
+    }
+    if (auto arrTy = dyn_cast<sol::ArrayType>(ty)) {
+      if (arrTy.isDynSized()) {
+        r.replaceOpWithNewOp<sol::MLoadOp>(op, adaptor.getInp());
+        return success();
+      }
+      r.replaceOp(op, bExt.genI256Const(arrTy.getSize()));
       return success();
     }
     llvm_unreachable("NYI");

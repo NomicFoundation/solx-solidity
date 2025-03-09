@@ -55,6 +55,12 @@ contract C {
     a = new uint[2][](1);
     return a;
   }
+  function len() public returns (uint, uint) {
+    uint[] memory a;
+    a = new uint[](2);
+    uint[3] memory b;
+    return (a.length, b.length);
+  }
 }
 
 // ====
@@ -69,3 +75,4 @@ contract C {
 // darr() -> 32, 2, 1, 1
 // darr2() -> 0x20, 2, 0x40, 0xa0, 2, 0, 1, 2, 1, 0
 // darr3() -> 0x20, 1, 0, 0
+// len() -> 2, 3
