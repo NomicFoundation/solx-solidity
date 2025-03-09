@@ -668,7 +668,14 @@ struct LoadOpLowering : public OpConversionPattern<sol::LoadOp> {
         return success();
       }
 
-      r.replaceOpWithNewOp<sol::MLoadOp>(op, addr);
+      auto ld = r.create<sol::MLoadOp>(loc, addr);
+      if (auto intTy = dyn_cast<IntegerType>(op.getType())) {
+        Value castedRes =
+            bExt.genIntCast(intTy.getWidth(), intTy.isSigned(), ld);
+        r.replaceOp(op, castedRes);
+        return success();
+      }
+      r.replaceOp(op, ld);
       return success();
     }
     case sol::DataLocation::Storage:
@@ -690,12 +697,12 @@ struct StoreOpLowering : public OpConversionPattern<sol::StoreOp> {
     Location loc = op.getLoc();
     solidity::mlirgen::BuilderExt bExt(r, loc);
 
-    Value val = adaptor.getVal();
+    Value remappedVal = adaptor.getVal();
     Value remappedAddr = adaptor.getAddr();
 
     switch (sol::getDataLocation(op.getAddr().getType())) {
     case sol::DataLocation::Stack:
-      r.replaceOpWithNewOp<LLVM::StoreOp>(op, val, remappedAddr,
+      r.replaceOpWithNewOp<LLVM::StoreOp>(op, remappedVal, remappedAddr,
                                           evm::getAlignment(remappedAddr));
       return success();
     case sol::DataLocation::Memory: {
@@ -706,16 +713,23 @@ struct StoreOpLowering : public OpConversionPattern<sol::StoreOp> {
       auto bytesEleTy = dyn_cast<sol::BytesType>(sol::getEltType(addrTy));
       if (bytesEleTy && dataLoc == sol::DataLocation::Memory) {
         assert(bytesEleTy.getSize() == 1 && "NYI");
-        auto byteVal = r.create<sol::ByteOp>(loc, bExt.genI256Const(0), val);
+        auto byteVal =
+            r.create<sol::ByteOp>(loc, bExt.genI256Const(0), remappedVal);
         r.replaceOpWithNewOp<sol::MStore8Op>(op, remappedAddr, byteVal);
         return success();
       }
 
-      r.replaceOpWithNewOp<sol::MStoreOp>(op, remappedAddr, val);
+      if (auto intTy = dyn_cast<IntegerType>(op.getVal().getType())) {
+        Value castedVal =
+            bExt.genIntCast(/*width=*/256, intTy.isSigned(), remappedVal);
+        r.replaceOpWithNewOp<sol::MStoreOp>(op, remappedAddr, castedVal);
+        return success();
+      }
+      r.replaceOpWithNewOp<sol::MStoreOp>(op, remappedAddr, remappedVal);
       return success();
     }
     case sol::DataLocation::Storage:
-      r.replaceOpWithNewOp<sol::SStoreOp>(op, remappedAddr, val);
+      r.replaceOpWithNewOp<sol::SStoreOp>(op, remappedAddr, remappedVal);
       return success();
     default:
       break;
