@@ -518,6 +518,7 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
         Value addrAtIdx;
 
         Type eltTy = arrTy.getEltType();
+        (void)eltTy;
         assert((isa<IntegerType>(eltTy) || sol::isNonPtrRefType(eltTy)) &&
                "NYI");
 

@@ -419,10 +419,10 @@ Value evm::Builder::genABITupleEncoding(TypeRange tys, ValueRange vals,
     if (sol::hasDynamicallySizedElt(ty)) {
       b.create<sol::MStoreOp>(
           loc, headAddr, b.create<arith::SubIOp>(loc, tailAddr, tupleStart));
-      tailAddr = genABITupleEncoding(ty, val, tailAddr, /*inTail=*/true,
+      tailAddr = genABITupleEncoding(ty, val, tailAddr, /*dstAddrInTail=*/true,
                                      tupleStart, tailAddr);
     } else {
-      tailAddr = genABITupleEncoding(ty, val, headAddr, /*inTail=*/false,
+      tailAddr = genABITupleEncoding(ty, val, headAddr, /*dstAddrInTail=*/false,
                                      tupleStart, tailAddr);
     }
     headAddr = b.create<arith::AddIOp>(
