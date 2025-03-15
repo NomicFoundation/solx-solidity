@@ -4,6 +4,7 @@ Language Features:
 * Yul: Introduce builtin `clz(x)` for counting the number of leading zero bits in a 256-bit word.
 
 Compiler Features:
+* Custom Storage Layout: Allow using `constant` state variables in the base slot expression.
 * ethdebug: Experimental support for instructions and source locations under EOF.
 * EVM: Set default EVM Version to `osaka`.
 * DocString Parser: Warn about deprecation of inline assembly special comment `memory-safe-assembly`.
@@ -11,6 +12,7 @@ Compiler Features:
 * Syntax Checker: Warn about deprecation of virtual modifiers.
 * Type Checker: Warn about deprecation of `send` and `transfer` functions on instances of `address`.
 * Type Checker: Warn about deprecation of comparisons between variables of contract types.
+
 
 Bugfixes:
 * Assembler: Fix not using a fixed-width type for IDs being assigned to subassemblies nested more than one level away, resulting in inconsistent `--asm-json` output between target architectures.
