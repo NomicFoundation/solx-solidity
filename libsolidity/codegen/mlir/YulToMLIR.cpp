@@ -30,6 +30,7 @@
 #include "libyul/AST.h"
 #include "libyul/Dialect.h"
 #include "libyul/Object.h"
+#include "libyul/Utilities.h"
 #include "libyul/optimiser/ASTWalker.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
@@ -375,18 +376,19 @@ mlir::Value YulToMLIRPass::genExpr(Identifier const &id) {
 
 mlir::SmallVector<mlir::Value>
 YulToMLIRPass::genExprs(FunctionCall const &call) {
-  BuiltinFunction const *builtin = yulDialect.builtin(call.functionName.name);
+  BuiltinFunction const *builtin =
+      yul::resolveBuiltinFunction(call.functionName, yulDialect);
   mlir::Location loc = getLoc(call.debugData);
   mlirgen::BuilderExt bExt(b, loc);
 
   mlir::SmallVector<mlir::Value> resVals;
   if (builtin) {
-    assert(builtinGenMap.count(builtin->name.str()));
-    return builtinGenMap[builtin->name.str()](call.arguments, loc);
+    assert(builtinGenMap.count(builtin->name));
+    return builtinGenMap[builtin->name](call.arguments, loc);
   }
 
-  mlir::sol::FuncOp callee =
-      lookupSymbol<mlir::sol::FuncOp>(call.functionName.name.str());
+  mlir::sol::FuncOp callee = lookupSymbol<mlir::sol::FuncOp>(
+      yul::resolveFunctionName(call.functionName, yulDialect));
   assert(callee);
   std::vector<mlir::Value> args;
   args.reserve(call.arguments.size());

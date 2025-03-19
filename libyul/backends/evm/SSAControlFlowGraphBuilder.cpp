@@ -24,11 +24,11 @@
 #include <libyul/Exceptions.h>
 #include <libyul/backends/evm/ControlFlow.h>
 #include <libyul/ControlFlowSideEffectsCollector.h>
+#include <libyul/Utilities.h>
 
 #include <libsolutil/Algorithms.h>
 #include <libsolutil/StringUtils.h>
 #include <libsolutil/Visitor.h>
-#include <libsolutil/cxx20.h>
 
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/drop_last.hpp>
@@ -196,7 +196,7 @@ void SSAControlFlowGraphBuilder::cleanUnreachable()
 				it = block.entries.erase(it);
 		for (auto phi: block.phis)
 			if (auto* phiInfo = std::get_if<SSACFG::PhiValue>(&m_graph.valueInfo(phi)))
-				cxx20::erase_if(phiInfo->arguments, [&](SSACFG::ValueId _arg) {
+				std::erase_if(phiInfo->arguments, [&](SSACFG::ValueId _arg) {
 					if (isUnreachableValue(_arg))
 					{
 						maybeTrivialPhi.insert(phi);
@@ -342,19 +342,21 @@ void SSAControlFlowGraphBuilder::operator()(Switch const& _switch)
 	}
 	else
 	{
+		std::optional<BuiltinHandle> equalityBuiltinHandle = m_dialect.equalityFunctionHandle();
+		yulAssert(equalityBuiltinHandle);
+
 		auto makeValueCompare = [&](Case const& _case) {
 			FunctionCall const& ghostCall = m_graph.ghostCalls.emplace_back(FunctionCall{
 				debugDataOf(_case),
-				Identifier{{}, "eq"_yulname},
+				BuiltinName{{}, *equalityBuiltinHandle},
 				{*_case.value /* skip second argument */ }
 			});
 			auto outputValue = m_graph.newVariable(m_currentBlock);
-			BuiltinFunction const* builtin = m_dialect.builtin(ghostCall.functionName.name);
 			currentBlock().operations.emplace_back(SSACFG::Operation{
 				{outputValue},
 				SSACFG::BuiltinCall{
 					debugDataOf(_case),
-					*builtin,
+					m_dialect.builtin(*equalityBuiltinHandle),
 					ghostCall
 				},
 				{m_graph.newLiteral(debugDataOf(_case), _case.value->value.value()), expression}
@@ -421,6 +423,7 @@ void SSAControlFlowGraphBuilder::operator()(ForLoop const& _loop)
 
 	if (constantCondition.has_value())
 	{
+		std::visit(*this, *_loop.condition);
 		if (*constantCondition)
 		{
 			jump(debugDataOf(*_loop.condition), loopBody);
@@ -546,7 +549,7 @@ std::vector<SSACFG::ValueId> SSAControlFlowGraphBuilder::visitFunctionCall(Funct
 {
 	bool canContinue = true;
 	SSACFG::Operation operation = [&](){
-		if (BuiltinFunction const* builtin = m_dialect.builtin(_call.functionName.name))
+		if (BuiltinFunction const* builtin = resolveBuiltinFunction(_call.functionName, m_dialect))
 		{
 			SSACFG::Operation result{{}, SSACFG::BuiltinCall{_call.debugData, *builtin, _call}, {}};
 			for (auto&& [idx, arg]: _call.arguments | ranges::views::enumerate | ranges::views::reverse)
@@ -559,7 +562,8 @@ std::vector<SSACFG::ValueId> SSAControlFlowGraphBuilder::visitFunctionCall(Funct
 		}
 		else
 		{
-			Scope::Function const& function = lookupFunction(_call.functionName.name);
+			YulName const functionName{resolveFunctionName(_call.functionName, m_dialect)};
+			Scope::Function const& function = lookupFunction(functionName);
 			auto const* definition = findFunctionDefinition(&function);
 			yulAssert(definition);
 			canContinue = m_sideEffects.functionSideEffects().at(definition).canContinue;

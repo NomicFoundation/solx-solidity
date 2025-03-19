@@ -21,9 +21,12 @@
 
 #pragma once
 
+#include <libsolutil/Assertions.h>
+
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include <boost/operators.hpp>
 
@@ -61,10 +64,10 @@ public:
 	static EVMVersion shanghai() { return {Version::Shanghai}; }
 	static EVMVersion cancun() { return {Version::Cancun}; }
 	static EVMVersion prague() { return {Version::Prague}; }
+	static EVMVersion osaka() { return {Version::Osaka}; }
 
-	static std::optional<EVMVersion> fromString(std::string const& _version)
-	{
-		for (auto const& v: {
+	static std::vector<EVMVersion> allVersions() {
+		return {
 			homestead(),
 			tangerineWhistle(),
 			spuriousDragon(),
@@ -77,11 +80,23 @@ public:
 			paris(),
 			shanghai(),
 			cancun(),
-			prague()
-		})
+			prague(),
+			osaka(),
+		};
+	}
+
+	static std::optional<EVMVersion> fromString(std::string const& _version)
+	{
+		for (auto const& v: allVersions())
 			if (_version == v.name())
 				return v;
 		return std::nullopt;
+	}
+
+	static EVMVersion firstWithEOF() { return {Version::Osaka}; }
+
+	bool isExperimental() const {
+		return *this > EVMVersion{};
 	}
 
 	bool operator==(EVMVersion const& _other) const { return m_version == _other.m_version; }
@@ -104,8 +119,9 @@ public:
 		case Version::Shanghai: return "shanghai";
 		case Version::Cancun: return "cancun";
 		case Version::Prague: return "prague";
+		case Version::Osaka: return "osaka";
 		}
-		return "INVALID";
+		util::unreachable();
 	}
 
 	/// Has the RETURNDATACOPY and RETURNDATASIZE opcodes.
@@ -123,6 +139,7 @@ public:
 	bool hasBlobHash() const { return *this >= cancun(); }
 	bool hasMcopy() const { return *this >= cancun(); }
 	bool supportsTransientStorage() const { return *this >= cancun(); }
+	bool supportsEOF() const { return *this >= firstWithEOF(); }
 
 	bool hasOpcode(evmasm::Instruction _opcode, std::optional<uint8_t> _eofVersion) const;
 
@@ -146,7 +163,8 @@ private:
 		Paris,
 		Shanghai,
 		Cancun,
-		Prague
+		Prague,
+		Osaka,
 	};
 
 	EVMVersion(Version _version): m_version(_version) {}

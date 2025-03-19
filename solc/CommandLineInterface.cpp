@@ -45,6 +45,7 @@
 #include <libyul/YulStack.h>
 #include <libyul/backends/evm/EVMDialect.h>
 
+#include <libevmasm/Ethdebug.h>
 #include <libevmasm/Disassemble.h>
 
 #include <liblangutil/Exceptions.h>
@@ -120,7 +121,6 @@ std::ostream& CommandLineInterface::serr(bool _markAsUsed)
 static std::string const g_stdinFileName = "<stdin>";
 static std::string const g_strAbi = "abi";
 static std::string const g_strAsm = "asm";
-static std::string const g_strAst = "ast";
 static std::string const g_strBinary = "bin";
 static std::string const g_strBinaryRuntime = "bin-runtime";
 static std::string const g_strContracts = "contracts";
@@ -150,8 +150,11 @@ static bool needsHumanTargetedStdout(CommandLineOptions const& _options)
 		_options.compiler.outputs.abi ||
 		_options.compiler.outputs.asm_ ||
 		_options.compiler.outputs.asmJson ||
+		_options.compiler.outputs.yulCFGJson ||
 		_options.compiler.outputs.binary ||
 		_options.compiler.outputs.binaryRuntime ||
+		_options.compiler.outputs.ethdebug ||
+		_options.compiler.outputs.ethdebugRuntime ||
 		_options.compiler.outputs.metadata ||
 		_options.compiler.outputs.natspecUser ||
 		_options.compiler.outputs.natspecDev ||
@@ -259,12 +262,13 @@ void CommandLineInterface::handleIR(std::string const& _contractName)
 	if (!m_options.compiler.outputs.ir)
 		return;
 
+	std::optional<std::string> const& ir = m_compiler->yulIR(_contractName);
 	if (!m_options.output.dir.empty())
-		createFile(m_compiler->filesystemFriendlyName(_contractName) + ".yul", m_compiler->yulIR(_contractName));
+		createFile(m_compiler->filesystemFriendlyName(_contractName) + ".yul", ir.value_or(""));
 	else
 	{
-		sout() << "IR:" << std::endl;
-		sout() << m_compiler->yulIR(_contractName) << std::endl;
+		sout() << "IR:\n";
+		sout() << ir.value_or("") << std::endl;
 	}
 }
 
@@ -275,11 +279,12 @@ void CommandLineInterface::handleIRAst(std::string const& _contractName)
 	if (!m_options.compiler.outputs.irAstJson)
 		return;
 
+	std::optional<Json> const& yulIRAst = m_compiler->yulIRAst(_contractName);
 	if (!m_options.output.dir.empty())
 		createFile(
 			m_compiler->filesystemFriendlyName(_contractName) + "_yul_ast.json",
 			util::jsonPrint(
-				m_compiler->yulIRAst(_contractName),
+				yulIRAst.value_or(Json{}),
 				m_options.formatting.json
 			)
 		);
@@ -287,7 +292,7 @@ void CommandLineInterface::handleIRAst(std::string const& _contractName)
 	{
 		sout() << "IR AST:" << std::endl;
 		sout() << util::jsonPrint(
-			m_compiler->yulIRAst(_contractName),
+			yulIRAst.value_or(Json{}),
 			m_options.formatting.json
 		) << std::endl;
 	}
@@ -300,18 +305,20 @@ void CommandLineInterface::handleYulCFGExport(std::string const& _contractName)
 	if (!m_options.compiler.outputs.yulCFGJson)
 		return;
 
+	std::optional<Json> const& yulCFGJson = m_compiler->yulCFGJson(_contractName);
 	if (!m_options.output.dir.empty())
 		createFile(
 			m_compiler->filesystemFriendlyName(_contractName) + "_yul_cfg.json",
 			util::jsonPrint(
-				m_compiler->yulCFGJson(_contractName),
+				yulCFGJson.value_or(Json{}),
 				m_options.formatting.json
 			)
 		);
 	else
 	{
+		sout() << "Yul Control Flow Graph:" << std::endl;
 		sout() << util::jsonPrint(
-			m_compiler->yulCFGJson(_contractName),
+			yulCFGJson.value_or(Json{}),
 			m_options.formatting.json
 		) << std::endl;
 	}
@@ -324,15 +331,16 @@ void CommandLineInterface::handleIROptimized(std::string const& _contractName)
 	if (!m_options.compiler.outputs.irOptimized)
 		return;
 
+	std::optional<std::string> const& irOptimized = m_compiler->yulIROptimized(_contractName);
 	if (!m_options.output.dir.empty())
 		createFile(
 			m_compiler->filesystemFriendlyName(_contractName) + "_opt.yul",
-			m_compiler->yulIROptimized(_contractName)
+			irOptimized.value_or("")
 		);
 	else
 	{
 		sout() << "Optimized IR:" << std::endl;
-		sout() << m_compiler->yulIROptimized(_contractName) << std::endl;
+		sout() << irOptimized.value_or("") << std::endl;
 	}
 }
 
@@ -343,11 +351,12 @@ void CommandLineInterface::handleIROptimizedAst(std::string const& _contractName
 	if (!m_options.compiler.outputs.irOptimizedAstJson)
 		return;
 
+	std::optional<Json> const& yulIROptimizedAst = m_compiler->yulIROptimizedAst(_contractName);
 	if (!m_options.output.dir.empty())
 		createFile(
 			m_compiler->filesystemFriendlyName(_contractName) + "_opt_yul_ast.json",
 			util::jsonPrint(
-				m_compiler->yulIROptimizedAst(_contractName),
+				yulIROptimizedAst.value_or(Json{}),
 				m_options.formatting.json
 			)
 		);
@@ -355,7 +364,7 @@ void CommandLineInterface::handleIROptimizedAst(std::string const& _contractName
 	{
 		sout() << "Optimized IR AST:" << std::endl;
 		sout() << util::jsonPrint(
-			m_compiler->yulIROptimizedAst(_contractName),
+			yulIROptimizedAst.value_or(Json{}),
 			m_options.formatting.json
 		) << std::endl;
 	}
@@ -543,6 +552,44 @@ void CommandLineInterface::handleGasEstimation(std::string const& _contract)
 			sout() << "   " << name << ":\t";
 			sout() << value.get<std::string>() << std::endl;
 		}
+	}
+}
+
+void CommandLineInterface::handleEthdebug()
+{
+	if (m_options.compiler.outputs.ethdebug || m_options.compiler.outputs.ethdebugRuntime)
+	{
+		std::string ethdebug{jsonPrint(removeNullMembers(m_compiler->ethdebug()), m_options.formatting.json)};
+		if (!m_options.output.dir.empty())
+			createFile("ethdebug.json", ethdebug);
+		else
+			sout() << "======= Debug Data (ethdebug/format/info/resources) =======" << std::endl << ethdebug << std::endl;
+	}
+}
+
+void CommandLineInterface::handleEthdebug(std::string const& _contract)
+{
+	solAssert(CompilerInputModes.count(m_options.input.mode) == 1);
+
+	if (!(m_options.compiler.outputs.ethdebug || m_options.compiler.outputs.ethdebugRuntime))
+		return;
+
+	if (m_options.compiler.outputs.ethdebug)
+	{
+		std::string ethdebug{jsonPrint(removeNullMembers(m_compiler->ethdebug(_contract)), m_options.formatting.json)};
+		if (!m_options.output.dir.empty())
+			createFile(m_compiler->filesystemFriendlyName(_contract) + "_ethdebug.json", ethdebug);
+		else
+			sout() << "Debug Data (ethdebug/format/program):" << std::endl << ethdebug << std::endl;
+	}
+
+	if (m_options.compiler.outputs.ethdebugRuntime)
+	{
+		std::string ethdebugRuntime{jsonPrint(removeNullMembers(m_compiler->ethdebugRuntime(_contract)), m_options.formatting.json)};
+		if (!m_options.output.dir.empty())
+			createFile(m_compiler->filesystemFriendlyName(_contract) + "_ethdebug-runtime.json", ethdebugRuntime);
+		else
+			sout() << "Debug Data of the runtime part (ethdebug/format/program):" << std::endl << ethdebugRuntime << std::endl;
 	}
 }
 
@@ -845,7 +892,13 @@ void CommandLineInterface::assembleFromEVMAssemblyJSON()
 	solAssert(m_fileReader.sourceUnits().size() == 1);
 	auto&& [sourceUnitName, source] = *m_fileReader.sourceUnits().begin();
 
-	auto evmAssemblyStack = std::make_unique<evmasm::EVMAssemblyStack>(m_options.output.evmVersion, m_options.output.eofVersion);
+	auto evmAssemblyStack = std::make_unique<evmasm::EVMAssemblyStack>(
+		m_options.output.evmVersion,
+		m_options.output.eofVersion,
+		evmasm::Assembly::OptimiserSettings::translateSettings(
+			m_options.optimiserSettings()
+		)
+	);
 	try
 	{
 		evmAssemblyStack->parseAndAnalyze(sourceUnitName, source);
@@ -908,6 +961,8 @@ void CommandLineInterface::compile()
 			m_options.compiler.outputs.opcodes ||
 			m_options.compiler.outputs.binary ||
 			m_options.compiler.outputs.binaryRuntime ||
+			m_options.compiler.outputs.ethdebug ||
+			m_options.compiler.outputs.ethdebugRuntime ||
 			(m_options.compiler.combinedJsonRequests && (
 				m_options.compiler.combinedJsonRequests->binary ||
 				m_options.compiler.combinedJsonRequests->binaryRuntime ||
@@ -958,12 +1013,22 @@ void CommandLineInterface::compile()
 		if (!successful)
 			solThrow(CommandLineExecutionError, "");
 	}
+	// NOTE: This includes langutil::StackTooDeepError.
 	catch (CompilerError const& _exception)
 	{
 		m_hasOutput = true;
 		formatter.printExceptionInformation(
 			_exception,
 			Error::errorSeverity(Error::Type::CompilerError)
+		);
+		solThrow(CommandLineExecutionError, "");
+	}
+	catch (yul::StackTooDeepError const& _exception)
+	{
+		m_hasOutput = true;
+		formatter.printExceptionInformation(
+			_exception,
+			Error::errorSeverity(Error::Type::YulException)
 		);
 		solThrow(CommandLineExecutionError, "");
 	}
@@ -1228,9 +1293,10 @@ void CommandLineInterface::assembleYul(yul::YulStack::Language _language, yul::Y
 
 	bool successful = true;
 	std::map<std::string, yul::YulStack> yulStacks;
-	for (auto const& src: m_fileReader.sourceUnits())
+	std::map<std::string, yul::MachineAssemblyObject> objects;
+	for (auto const& [sourceUnitName, yulSource]: m_fileReader.sourceUnits())
 	{
-		auto& stack = yulStacks[src.first] = yul::YulStack(
+		auto& stack = yulStacks[sourceUnitName] = yul::YulStack(
 			m_options.output.evmVersion,
 			m_options.output.eofVersion,
 			_language,
@@ -1243,7 +1309,7 @@ void CommandLineInterface::assembleYul(yul::YulStack::Language _language, yul::Y
 		// FIXME: Support more than 1 source units.
 		if (m_options.mlirGenJob.action != mlirgen::Action::Undefined)
 		{
-			if (!stack.parseAndAnalyze(src.first, src.second))
+			if (!stack.parseAndAnalyze(sourceUnitName, yulSource))
 			{
 				successful = false;
 				break;
@@ -1261,7 +1327,7 @@ void CommandLineInterface::assembleYul(yul::YulStack::Language _language, yul::Y
 			}
 			if (!mlirgen::runYulToMLIRPass(
 					*stack.parserResult(),
-					stack.charStream(src.first),
+					stack.charStream(sourceUnitName),
 					*dialect,
 					m_options.mlirGenJob,
 					m_options.output.evmVersion))
@@ -1270,20 +1336,28 @@ void CommandLineInterface::assembleYul(yul::YulStack::Language _language, yul::Y
 				return;
 		}
 
-		if (!stack.parseAndAnalyze(src.first, src.second))
-			successful = false;
+		successful = successful && stack.parseAndAnalyze(sourceUnitName, yulSource);
+		if (!successful)
+			solAssert(stack.hasErrors(), "No error reported, but parsing/analysis failed.");
 		else
-			stack.optimize();
-
-		if (successful && m_options.compiler.outputs.asmJson)
 		{
-			std::shared_ptr<yul::Object> result = stack.parserResult();
-			if (result && !result->hasContiguousSourceIndices())
+			if (
+				m_options.compiler.outputs.asmJson &&
+				stack.parserResult() &&
+				!stack.parserResult()->hasContiguousSourceIndices()
+			)
 				solThrow(
 					CommandLineExecutionError,
 					"Generating the assembly JSON output was not possible. "
 					"Source indices provided in the @use-src annotation in the Yul input do not start at 0 or are not contiguous."
 				);
+
+			stack.optimize();
+
+			yul::MachineAssemblyObject object = stack.assemble(_targetMachine);
+			if (object.bytecode)
+				object.bytecode->link(m_options.linker.libraries);
+			objects.insert({sourceUnitName, std::move(object)});
 		}
 	}
 
@@ -1307,13 +1381,24 @@ void CommandLineInterface::assembleYul(yul::YulStack::Language _language, yul::Y
 		solThrow(CommandLineExecutionError, "");
 	}
 
-	for (auto const& src: m_fileReader.sourceUnits())
+	for (auto const& [sourceUnitName, yulSource]: m_fileReader.sourceUnits())
 	{
 		solAssert(_targetMachine == yul::YulStack::Machine::EVM);
-		std::string machine = "EVM";
-		sout() << std::endl << "======= " << src.first << " (" << machine << ") =======" << std::endl;
 
-		yul::YulStack& stack = yulStacks[src.first];
+		yul::YulStack const& stack = yulStacks[sourceUnitName];
+		yul::MachineAssemblyObject const& object = objects[sourceUnitName];
+
+		if (m_options.compiler.outputs.ethdebug)
+		{
+			sout() << "======= Debug Data (ethdebug/format/info/resources) =======" << std::endl;
+			sout() << util::jsonPrint(
+					evmasm::ethdebug::resources({{sourceUnitName}}, VersionString),
+					m_options.formatting.json
+			) << std::endl;
+		}
+
+		std::string machine = "EVM";
+		sout() << std::endl << "======= " << sourceUnitName << " (" << machine << ") =======" << std::endl;
 
 		if (m_options.compiler.outputs.irOptimized)
 		{
@@ -1322,10 +1407,6 @@ void CommandLineInterface::assembleYul(yul::YulStack::Language _language, yul::Y
 			sout() << std::endl << "Pretty printed source:" << std::endl;
 			sout() << stack.print() << std::endl;
 		}
-
-		yul::MachineAssemblyObject object;
-		object = stack.assemble(_targetMachine);
-		object.bytecode->link(m_options.linker.libraries);
 
 		if (m_options.compiler.outputs.binary)
 		{
@@ -1365,6 +1446,14 @@ void CommandLineInterface::assembleYul(yul::YulStack::Language _language, yul::Y
 				m_options.formatting.json
 			) << std::endl;
 		}
+		if (m_options.compiler.outputs.ethdebug)
+		{
+			sout() << std::endl << "Debug Data (ethdebug/format/program):" << std::endl;
+			sout() << util::jsonPrint(
+				object.ethdebug,
+				m_options.formatting.json
+			) << std::endl;
+		}
 	}
 }
 
@@ -1376,6 +1465,8 @@ void CommandLineInterface::outputCompilationResults()
 
 	// do we need AST output?
 	handleAst();
+
+	handleEthdebug();
 
 	CompilerOutputs astOutputSelection;
 	astOutputSelection.astCompactJson = true;
@@ -1408,6 +1499,7 @@ void CommandLineInterface::outputCompilationResults()
 			handleTransientStorageLayout(contract);
 			handleNatspec(true, contract);
 			handleNatspec(false, contract);
+			handleEthdebug(contract);
 		} // end of contracts iteration
 	}
 

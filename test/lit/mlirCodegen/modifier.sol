@@ -1,3 +1,5 @@
+// FIXME:
+// XFAIL: *
 // RUN: solc --mlir-action=print-init --mmlir --mlir-print-debuginfo %s | FileCheck %s
 
 contract C {

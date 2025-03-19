@@ -209,7 +209,7 @@ Local Solidity variables are available for assignments, for example:
     ``assembly { signextend(<num_bytes_of_x_minus_one>, x) }``
 
 
-Since Solidity 0.6.0, the name of a inline assembly variable may not
+Since Solidity 0.6.0, the name of an inline assembly variable may not
 shadow any declaration visible in the scope of the inline assembly block
 (including variable, contract and function declarations).
 
@@ -257,6 +257,8 @@ starting from where this pointer points at and update it.
 There is no guarantee that the memory has not been used before and thus
 you cannot assume that its contents are zero bytes.
 There is no built-in mechanism to release or free allocated memory.
+Solidity does not guarantee and does not require that the values in memory
+are placed at positions aligned to a multiple of any value.
 Here is an assembly snippet you can use for allocating memory that follows the process outlined above:
 
 .. code-block:: yul

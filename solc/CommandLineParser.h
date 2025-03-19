@@ -90,6 +90,8 @@ struct CompilerOutputs
 			{"storage-layout", &CompilerOutputs::storageLayout},
 			{"transient-storage-layout", &CompilerOutputs::transientStorageLayout},
 			{"yul-cfg-json", &CompilerOutputs::yulCFGJson},
+			{"ethdebug", &CompilerOutputs::ethdebug},
+			{"ethdebug-runtime", &CompilerOutputs::ethdebugRuntime},
 		};
 		return components;
 	}
@@ -112,6 +114,8 @@ struct CompilerOutputs
 	bool metadata = false;
 	bool storageLayout = false;
 	bool transientStorageLayout = false;
+	bool ethdebug = false;
+	bool ethdebugRuntime = false;
 };
 
 struct CombinedJsonRequests

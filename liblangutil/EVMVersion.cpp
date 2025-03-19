@@ -28,8 +28,8 @@ using namespace solidity::langutil;
 
 bool EVMVersion::hasOpcode(Instruction _opcode, std::optional<uint8_t> _eofVersion) const
 {
-	// EOF version can be only defined since prague
-	assert(!_eofVersion.has_value() || this->m_version >= prague());
+	// EOF version can be only defined since osaka
+	assert(!_eofVersion.has_value() || *this >= EVMVersion::firstWithEOF());
 
 	switch (_opcode)
 	{
@@ -76,6 +76,21 @@ bool EVMVersion::hasOpcode(Instruction _opcode, std::optional<uint8_t> _eofVersi
 	case Instruction::EXTCODECOPY:
 	case Instruction::GAS:
 		return !_eofVersion.has_value();
+	// Instructions below available only in EOF
+	case Instruction::EOFCREATE:
+	case Instruction::RETURNCONTRACT:
+	case Instruction::DATALOADN:
+	case Instruction::RJUMP:
+	case Instruction::RJUMPI:
+	case Instruction::CALLF:
+	case Instruction::JUMPF:
+	case Instruction::DUPN:
+	case Instruction::SWAPN:
+	case Instruction::RETF:
+	case Instruction::EXTCALL:
+	case Instruction::EXTSTATICCALL:
+	case Instruction::EXTDELEGATECALL:
+		return _eofVersion.has_value();
 	default:
 		return true;
 	}

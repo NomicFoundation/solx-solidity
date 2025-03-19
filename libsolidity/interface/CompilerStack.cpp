@@ -79,12 +79,13 @@
 #include <liblangutil/SemVerHandler.h>
 #include <liblangutil/SourceReferenceFormatter.h>
 
-
 #include <libsolutil/SwarmHash.h>
 #include <libsolutil/IpfsHash.h>
 #include <libsolutil/JSON.h>
 #include <libsolutil/Algorithms.h>
 #include <libsolutil/FunctionSelector.h>
+
+#include <libevmasm/Ethdebug.h>
 
 #include <boost/algorithm/string/replace.hpp>
 
@@ -420,6 +421,7 @@ bool CompilerStack::parse()
 	catch (UnimplementedFeatureError const& _error)
 	{
 		reportUnimplementedFeatureError(_error);
+		return false;
 	}
 
 	return true;
@@ -507,9 +509,14 @@ bool CompilerStack::analyze()
 		else if (!analyzeLegacy(noErrors))
 			noErrors = false;
 	}
-	catch (FatalError const& error)
+	catch (FatalError const&)
 	{
-		solAssert(m_errorReporter.hasErrors(), "Unreported fatal error: "s + error.what());
+		if (!m_errorReporter.hasErrors())
+		{
+			std::cerr << "Unreported fatal error:" << std::endl;
+			std::cerr << boost::current_exception_diagnostic_information() << std::endl;
+			solAssert(false, "Unreported fatal error.");
+		}
 		noErrors = false;
 	}
 	catch (UnimplementedFeatureError const& _error)
@@ -558,7 +565,7 @@ bool CompilerStack::analyzeLegacy(bool _noErrorsSoFar)
 	//
 	// Note: this does not resolve overloaded functions. In order to do that, types of arguments are needed,
 	// which is only done one step later.
-	TypeChecker typeChecker(m_evmVersion, m_errorReporter);
+	TypeChecker typeChecker(m_evmVersion, m_eofVersion, m_errorReporter);
 	for (Source const* source: m_sourceOrder)
 		if (source->ast && !typeChecker.checkTypeRequirements(*source->ast))
 			noErrors = false;
@@ -787,19 +794,18 @@ bool CompilerStack::compile(State _stopAfter)
 					}
 					catch (Error const& _error)
 					{
-						// Since codegen has no access to the error reporter, the only way for it to
-						// report an error is to throw. In most cases it uses dedicated exceptions,
-						// but CodeGenerationError is one case where someone decided to just throw Error.
-						solAssert(_error.type() == Error::Type::CodeGenerationError);
-						m_errorReporter.error(_error.errorId(), _error.type(), SourceLocation(), _error.what());
-						return false;
+						reportCodeGenerationError(_error, contract);
 					}
 					catch (UnimplementedFeatureError const& _error)
 					{
-						reportUnimplementedFeatureError(_error);
-						return false;
+						reportUnimplementedFeatureError(_error, contract);
 					}
+
+					if (m_errorReporter.hasErrors())
+						return false;
 				}
+
+	solAssert(!m_errorReporter.hasErrors());
 	m_stackState = CompilationSuccessful;
 	this->link();
 	return true;
@@ -831,7 +837,12 @@ YulStack CompilerStack::loadGeneratedIR(std::string const& _ir) const
 		yulAnalysisSuccessful,
 		_ir + "\n\n"
 		"Invalid IR generated:\n" +
-		SourceReferenceFormatter::formatErrorInformation(stack.errors(), stack) + "\n"
+		SourceReferenceFormatter::formatErrorInformation(
+			stack.errors(),
+			stack, // _charStreamProvider
+			false, // _colored
+			true   // _withErrorIds
+		) + "\n"
 	);
 
 	return stack;
@@ -909,7 +920,7 @@ Json CompilerStack::generatedSources(std::string const& _contractName, bool _run
 			yul::EVMDialect const& dialect = yul::EVMDialect::strictAssemblyForEVM(m_evmVersion, m_eofVersion);
 			std::shared_ptr<yul::AST> parserResult = yul::Parser{errorReporter, dialect}.parse(charStream);
 			solAssert(parserResult);
-			sources[0]["ast"] = yul::AsmJsonConverter{sourceIndex}(parserResult->root());
+			sources[0]["ast"] = yul::AsmJsonConverter{dialect, sourceIndex}(parserResult->root());
 			sources[0]["name"] = sourceName;
 			sources[0]["id"] = sourceIndex;
 			sources[0]["language"] = "Yul";
@@ -978,46 +989,61 @@ std::string const CompilerStack::filesystemFriendlyName(std::string const& _cont
 	return matchContract.contract->name();
 }
 
-std::string const& CompilerStack::yulIR(std::string const& _contractName) const
+std::optional<std::string> const& CompilerStack::yulIR(std::string const& _contractName) const
 {
 	solAssert(m_stackState == CompilationSuccessful, "Compilation was not successful.");
 	return contract(_contractName).yulIR;
 }
 
-Json CompilerStack::yulIRAst(std::string const& _contractName) const
+std::optional<Json> CompilerStack::yulIRAst(std::string const& _contractName) const
 {
 	solAssert(m_stackState == CompilationSuccessful, "Compilation was not successful.");
 	solUnimplementedAssert(!isExperimentalSolidity());
 
 	// NOTE: Intentionally not using LazyInit. The artifact can get very large and we don't want to
 	// keep it around when compiling a large project containing many contracts.
-	return loadGeneratedIR(contract(_contractName).yulIR).astJson();
+	Contract const& currentContract = contract(_contractName);
+	yulAssert(currentContract.contract);
+	yulAssert(currentContract.yulIR.has_value() == currentContract.contract->canBeDeployed());
+	if (!currentContract.yulIR)
+		return std::nullopt;
+	return loadGeneratedIR(*currentContract.yulIR).astJson();
 }
 
-Json CompilerStack::yulCFGJson(std::string const& _contractName) const
+std::optional<Json> CompilerStack::yulCFGJson(std::string const& _contractName) const
 {
 	solAssert(m_stackState == CompilationSuccessful, "Compilation was not successful.");
 	solUnimplementedAssert(!isExperimentalSolidity());
 
 	// NOTE: Intentionally not using LazyInit. The artifact can get very large and we don't want to
 	// keep it around when compiling a large project containing many contracts.
-	return loadGeneratedIR(contract(_contractName).yulIR).cfgJson();
+	Contract const& currentContract = contract(_contractName);
+	yulAssert(currentContract.contract);
+	yulAssert(currentContract.yulIROptimized.has_value() == currentContract.contract->canBeDeployed());
+	if (!currentContract.yulIROptimized)
+		return std::nullopt;
+	return loadGeneratedIR(*currentContract.yulIROptimized).cfgJson();
 }
 
-std::string const& CompilerStack::yulIROptimized(std::string const& _contractName) const
+std::optional<std::string> const& CompilerStack::yulIROptimized(std::string const& _contractName) const
 {
 	solAssert(m_stackState == CompilationSuccessful, "Compilation was not successful.");
 	return contract(_contractName).yulIROptimized;
 }
 
-Json CompilerStack::yulIROptimizedAst(std::string const& _contractName) const
+std::optional<Json> CompilerStack::yulIROptimizedAst(std::string const& _contractName) const
 {
 	solAssert(m_stackState == CompilationSuccessful, "Compilation was not successful.");
 	solUnimplementedAssert(!isExperimentalSolidity());
 
 	// NOTE: Intentionally not using LazyInit. The artifact can get very large and we don't want to
 	// keep it around when compiling a large project containing many contracts.
-	return loadGeneratedIR(contract(_contractName).yulIROptimized).astJson();
+	Contract const& currentContract = contract(_contractName);
+	yulAssert(currentContract.contract);
+	yulAssert(currentContract.yulIROptimized.has_value() == currentContract.contract->canBeDeployed());
+	if (!currentContract.yulIROptimized)
+		return std::nullopt;
+	return loadGeneratedIR(*currentContract.yulIROptimized).astJson();
 }
 
 evmasm::LinkerObject const& CompilerStack::object(std::string const& _contractName) const
@@ -1191,6 +1217,34 @@ Json CompilerStack::interfaceSymbols(std::string const& _contractName) const
 	return interfaceSymbols;
 }
 
+Json CompilerStack::ethdebug() const
+{
+	solAssert(m_stackState >= AnalysisSuccessful, "Analysis was not successful.");
+	solAssert(!m_contracts.empty());
+	return evmasm::ethdebug::resources(sourceNames(), VersionString);
+}
+
+Json CompilerStack::ethdebug(std::string const& _contractName) const
+{
+	return ethdebug(contract(_contractName), /* runtime */ false);
+}
+
+Json CompilerStack::ethdebugRuntime(std::string const& _contractName) const
+{
+	return ethdebug(contract(_contractName), /* runtime */ true);
+}
+
+Json CompilerStack::ethdebug(Contract const& _contract, bool _runtime) const
+{
+	solAssert(m_stackState >= AnalysisSuccessful, "Analysis was not successful.");
+	solAssert(_contract.contract);
+	solUnimplementedAssert(!isExperimentalSolidity());
+	evmasm::LinkerObject const& object = _runtime ? _contract.runtimeObject : _contract.object;
+	std::shared_ptr<evmasm::Assembly> const& assembly = _runtime ? _contract.evmRuntimeAssembly : _contract.evmAssembly;
+	solAssert(sourceIndices().contains(_contract.contract->sourceUnitName()));
+	return evmasm::ethdebug::program(_contract.contract->name(), sourceIndices()[_contract.contract->sourceUnitName()], assembly.get(), object);
+}
+
 bytes CompilerStack::cborMetadata(std::string const& _contractName, bool _forIR) const
 {
 	solAssert(m_stackState >= AnalysisSuccessful, "Analysis was not successful.");
@@ -1293,9 +1347,14 @@ StringMap CompilerStack::loadMissingSources(SourceUnit const& _ast)
 				}
 			}
 	}
-	catch (FatalError const& error)
+	catch (FatalError const&)
 	{
-		solAssert(m_errorReporter.hasErrors(), "Unreported fatal error: "s + error.what());
+		if (!m_errorReporter.hasErrors())
+		{
+			std::cerr << "Unreported fatal error:" << std::endl;
+			std::cerr << boost::current_exception_diagnostic_information() << std::endl;
+			solAssert(false, "Unreported fatal error.");
+		}
 	}
 	return newSources;
 }
@@ -1512,7 +1571,12 @@ void CompilerStack::compileContract(
 
 	Contract& compiledContract = m_contracts.at(_contract.fullyQualifiedName());
 
-	std::shared_ptr<Compiler> compiler = std::make_shared<Compiler>(m_evmVersion, m_revertStrings, m_optimiserSettings);
+	std::shared_ptr<Compiler> compiler = std::make_shared<Compiler>(
+		m_evmVersion,
+		m_eofVersion,
+		m_revertStrings,
+		m_optimiserSettings
+	);
 
 	solAssert(!m_viaIR, "");
 	bytes cborEncodedMetadata = createCBORMetadata(compiledContract, /* _forIR */ false);
@@ -1530,10 +1594,12 @@ void CompilerStack::compileContract(
 void CompilerStack::generateIR(ContractDefinition const& _contract, bool _unoptimizedOnly)
 {
 	solAssert(m_stackState >= AnalysisSuccessful, "");
-
 	Contract& compiledContract = m_contracts.at(_contract.fullyQualifiedName());
-	if (!compiledContract.yulIR.empty())
+	if (compiledContract.yulIR)
+	{
+		solAssert(!compiledContract.yulIR->empty());
 		return;
+	}
 
 	if (!*_contract.sourceUnit().annotation().useABICoderV2)
 		m_errorReporter.warning(
@@ -1552,7 +1618,7 @@ void CompilerStack::generateIR(ContractDefinition const& _contract, bool _unopti
 
 	std::map<ContractDefinition const*, std::string_view const> otherYulSources;
 	for (auto const& pair: m_contracts)
-		otherYulSources.emplace(pair.second.contract, pair.second.yulIR);
+		otherYulSources.emplace(pair.second.contract, pair.second.yulIR ? *pair.second.yulIR : std::string_view{});
 
 	if (m_experimentalAnalysis)
 	{
@@ -1589,7 +1655,8 @@ void CompilerStack::generateIR(ContractDefinition const& _contract, bool _unopti
 		);
 	}
 
-	YulStack stack = loadGeneratedIR(compiledContract.yulIR);
+	yulAssert(compiledContract.yulIR);
+	YulStack stack = loadGeneratedIR(*compiledContract.yulIR);
 	if (!_unoptimizedOnly)
 	{
 		stack.optimize();
@@ -1605,18 +1672,25 @@ void CompilerStack::generateEVMFromIR(ContractDefinition const& _contract)
 		return;
 
 	Contract& compiledContract = m_contracts.at(_contract.fullyQualifiedName());
-	solAssert(!compiledContract.yulIROptimized.empty(), "");
+	solAssert(compiledContract.yulIROptimized);
+	solAssert(!compiledContract.yulIROptimized->empty());
 	if (!compiledContract.object.bytecode.empty())
 		return;
 
 	// Re-parse the Yul IR in EVM dialect
-	YulStack stack = loadGeneratedIR(compiledContract.yulIROptimized);
-
-	//cout << yul::AsmPrinter{}(*stack.parserResult()->code) << endl;
+	YulStack stack = loadGeneratedIR(*compiledContract.yulIROptimized);
 
 	std::string deployedName = IRNames::deployedObject(_contract);
 	solAssert(!deployedName.empty(), "");
 	tie(compiledContract.evmAssembly, compiledContract.evmRuntimeAssembly) = stack.assembleEVMWithDeployed(deployedName);
+
+	if (stack.hasErrors())
+	{
+		for (std::shared_ptr<Error const> const& error: stack.errors())
+			reportIRPostAnalysisError(error.get(), compiledContract.contract);
+		return;
+	}
+
 	assembleYul(_contract, compiledContract.evmAssembly, compiledContract.evmRuntimeAssembly);
 }
 
@@ -2009,8 +2083,58 @@ experimental::Analysis const& CompilerStack::experimentalAnalysis() const
 	return *m_experimentalAnalysis;
 }
 
-void CompilerStack::reportUnimplementedFeatureError(UnimplementedFeatureError const& _error)
+void CompilerStack::reportUnimplementedFeatureError(
+	UnimplementedFeatureError const& _error,
+	ContractDefinition const* _contractDefinition
+)
 {
-	solAssert(_error.comment(), "Unimplemented feature errors must include a message for the user");
-	m_errorReporter.unimplementedFeatureError(1834_error, _error.sourceLocation(), *_error.comment());
+	solAssert(_error.comment(), "Errors must include a message for the user.");
+	if (_error.sourceLocation().sourceName)
+		solAssert(m_sources.count(*_error.sourceLocation().sourceName) != 0);
+
+	m_errorReporter.unimplementedFeatureError(
+		1834_error,
+		(_error.sourceLocation().sourceName || !_contractDefinition) ?
+			_error.sourceLocation() :
+			_contractDefinition->location(),
+		*_error.comment()
+	);
+}
+
+void CompilerStack::reportCodeGenerationError(Error const& _error, ContractDefinition const* _contractDefinition)
+{
+	solAssert(_error.type() == Error::Type::CodeGenerationError);
+	solAssert(_error.comment(), "Errors must include a message for the user.");
+	if (_error.sourceLocation() && _error.sourceLocation()->sourceName)
+		solAssert(m_sources.count(*_error.sourceLocation()->sourceName) != 0);
+	solAssert(_contractDefinition);
+
+	m_errorReporter.codeGenerationError(
+		_error.errorId(),
+		(_error.sourceLocation() && _error.sourceLocation()->sourceName) ?
+			*_error.sourceLocation() :
+			_contractDefinition->location(),
+		*_error.comment()
+	);
+}
+
+void CompilerStack::reportIRPostAnalysisError(Error const* _error, ContractDefinition const* _contractDefinition)
+{
+	solAssert(_error);
+	solAssert(_error->comment(), "Errors must include a message for the user.");
+	solAssert(!_error->secondarySourceLocation());
+	solAssert(_contractDefinition);
+
+	// Do not report Yul warnings and infos. These are only reported in pure Yul compilation.
+	if (!Error::isError(_error->severity()))
+		return;
+
+	m_errorReporter.error(
+		_error->errorId(),
+		_error->type(),
+		// Ignore the original location. It's likely missing, but even if not, it points at Yul source.
+		// CompilerStack can only point at locations in Solidity sources.
+		_contractDefinition->location(),
+		*_error->comment()
+	);
 }

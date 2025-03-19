@@ -37,6 +37,8 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include <range/v3/algorithm/find_if.hpp>
+
 namespace solidity::frontend
 {
 
@@ -255,6 +257,8 @@ ASTPointer<ASTNode> ASTJsonImporter::convertJsonToASTNode(Json const& _json)
 		return createLiteral(_json);
 	if (nodeType == "StructuredDocumentation")
 		return createDocumentation(_json);
+	if (nodeType == "StorageLayoutSpecifier")
+		return createStorageLayoutSpecifier(_json);
 	else
 		astAssert(false, "Unknown type of ASTNode: " + nodeType);
 
@@ -348,7 +352,17 @@ ASTPointer<ContractDefinition> ASTJsonImporter::createContractDefinition(Json co
 		baseContracts,
 		subNodes,
 		contractKind(_node),
-		memberAsBool(_node, "abstract")
+		memberAsBool(_node, "abstract"),
+		nullOrCast<StorageLayoutSpecifier>(member(_node, "storageLayout"))
+	);
+}
+
+ASTPointer<StorageLayoutSpecifier> ASTJsonImporter::createStorageLayoutSpecifier(Json const& _node)
+{
+	astAssert(_node.contains("baseSlotExpression"), "Expected field \"baseSlotExpression\" is missing.");
+	return createASTNode<StorageLayoutSpecifier>(
+		_node,
+		convertJsonToASTNode<Expression>(_node["baseSlotExpression"])
 	);
 }
 
@@ -742,7 +756,9 @@ ASTPointer<InlineAssembly> ASTJsonImporter::createInlineAssembly(Json const& _no
 			flags->emplace_back(std::make_shared<ASTString>(flag.get<std::string>()));
 		}
 	}
-	std::shared_ptr<yul::AST> operations = std::make_shared<yul::AST>(yul::AsmJsonImporter(m_sourceNames).createAST(member(_node, "AST")));
+	std::shared_ptr<yul::AST> operations = std::make_shared<yul::AST>(
+		yul::AsmJsonImporter(dialect, m_sourceNames).createAST(member(_node, "AST"))
+	);
 	return createASTNode<InlineAssembly>(
 		_node,
 		nullOrASTString(_node, "documentation"),

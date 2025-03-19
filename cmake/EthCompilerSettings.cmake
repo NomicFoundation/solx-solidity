@@ -98,9 +98,15 @@ if (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MA
 
 	# Additional GCC-specific compiler settings.
 	if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
-		# Check that we've got GCC 8.0 or newer.
-		if (NOT (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 8.0))
-			message(FATAL_ERROR "${PROJECT_NAME} requires g++ 8.0 or greater.")
+		# Check that we've got GCC 11.0 or newer.
+		if (NOT (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11.0))
+			message(FATAL_ERROR "${PROJECT_NAME} requires g++ 11.0 or greater.")
+		endif ()
+
+		# GCC 12 emits warnings for string concatenations with operator+ under O3
+		# See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105651
+		if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0 AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 13.0)
+			add_compile_options(-Wno-error=restrict)
 		endif ()
 
 		# Use fancy colors in the compiler diagnostics
@@ -108,11 +114,13 @@ if (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MA
 
 	# Additional Clang-specific compiler settings.
 	elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-		# Check that we've got clang 7.0 or newer.
-		if (NOT (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 7.0))
-			message(FATAL_ERROR "${PROJECT_NAME} requires clang++ 7.0 or greater.")
+		# Check that we've got clang 14.0 or newer.
+		if (NOT (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 14.0))
+			message(FATAL_ERROR "${PROJECT_NAME} requires clang++ 14.0 or greater.")
 		endif ()
 
+		# use std::invoke_result, superseding std::result_of which has been removed in c++20
+		add_compile_definitions(BOOST_ASIO_HAS_STD_INVOKE_RESULT)
 		if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin")
 			# Set stack size to 32MB - by default Apple's clang defines a stack size of 8MB.
 			# Normally 16MB is enough to run all tests, but it will exceed the stack, if -DSANITIZE=address is used.
@@ -171,6 +179,10 @@ if (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MA
 			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s ALLOW_TABLE_GROWTH=1")
 			# Disable warnings about not being pure asm.js due to memory growth.
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-almost-asm")
+			# Increase stack size from 5MB to 16MB to prevent stack overflow issues.
+			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s TOTAL_STACK=16mb")
+			# Increase memory size from 16MB to 32MB since the stack size is now 16MB.
+			set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s INITIAL_MEMORY=32mb")
 		endif()
 	endif()
 
@@ -268,12 +280,6 @@ if(COVERAGE)
 		message(FATAL_ERROR "Coverage not supported")
 	endif()
 	add_compile_options(-g --coverage)
-endif()
-
-# SMT Solvers integration
-option(USE_Z3 "Allow compiling with Z3 SMT solver integration" ON)
-if(UNIX AND NOT APPLE)
-	option(USE_Z3_DLOPEN "Dynamically load the Z3 SMT solver instead of linking against it." OFF)
 endif()
 
 # Parallel link jobs (Copied from llvm-17)

@@ -30,6 +30,7 @@
 #include <libyul/optimiser/Suite.h>
 #include <libyul/YulControlFlowGraphExporter.h>
 #include <libevmasm/Assembly.h>
+#include <libevmasm/Ethdebug.h>
 #include <liblangutil/Scanner.h>
 #include <liblangutil/SourceReferenceFormatter.h>
 
@@ -62,6 +63,7 @@ bool YulStack::parse(std::string const& _sourceName, std::string const& _source)
 	catch (UnimplementedFeatureError const& _error)
 	{
 		reportUnimplementedFeatureError(_error);
+		return false;
 	}
 
 	if (!m_errorReporter.hasErrors())
@@ -94,7 +96,7 @@ void YulStack::optimize()
 	{
 		if (
 			!m_optimiserSettings.runYulOptimiser &&
-			yul::MSizeFinder::containsMSize(languageToDialect(m_language, m_evmVersion, m_eofVersion), *m_parserResult)
+			yul::MSizeFinder::containsMSize(*m_parserResult)
 		)
 			return;
 
@@ -166,7 +168,7 @@ bool YulStack::analyzeParsed(Object& _object)
 		m_errorReporter,
 		languageToDialect(m_language, m_evmVersion, m_eofVersion),
 		{},
-		_object.qualifiedDataNames()
+		_object.summarizeStructure()
 	);
 
 	bool success = false;
@@ -192,19 +194,7 @@ bool YulStack::analyzeParsed(Object& _object)
 
 void YulStack::compileEVM(AbstractAssembly& _assembly, bool _optimize) const
 {
-	EVMDialect const* dialect = nullptr;
-	switch (m_language)
-	{
-		case Language::Assembly:
-		case Language::StrictAssembly:
-			dialect = &EVMDialect::strictAssemblyForEVMObjects(m_evmVersion, m_eofVersion);
-			break;
-		default:
-			yulAssert(false, "Invalid language.");
-			break;
-	}
-
-	EVMObjectCompiler::compile(*m_parserResult, _assembly, *dialect, _optimize, m_eofVersion);
+	EVMObjectCompiler::compile(*m_parserResult, _assembly, _optimize);
 }
 
 void YulStack::reparse()
@@ -260,9 +250,14 @@ MachineAssemblyObject YulStack::assemble(Machine _machine)
 std::pair<MachineAssemblyObject, MachineAssemblyObject>
 YulStack::assembleWithDeployed(std::optional<std::string_view> _deployName)
 {
+	yulAssert(m_charStream);
+
 	auto [creationAssembly, deployedAssembly] = assembleEVMWithDeployed(_deployName);
-	yulAssert(creationAssembly, "");
-	yulAssert(m_charStream, "");
+	if (!creationAssembly)
+	{
+		yulAssert(!deployedAssembly);
+		return {MachineAssemblyObject{}, MachineAssemblyObject{}};
+	}
 
 	MachineAssemblyObject creationObject;
 	MachineAssemblyObject deployedObject;
@@ -279,11 +274,15 @@ YulStack::assembleWithDeployed(std::optional<std::string_view> _deployName)
 				{{m_charStream->name(), 0}}
 			);
 		}
+		if (debugInfoSelection().ethdebug)
+			creationObject.ethdebug = evmasm::ethdebug::program(creationObject.assembly->name(), 0, creationObject.assembly.get(), *creationObject.bytecode.get());
 
 		if (deployedAssembly)
 		{
 			deployedObject.bytecode = std::make_shared<evmasm::LinkerObject>(deployedAssembly->assemble());
 			deployedObject.assembly = deployedAssembly;
+			if (debugInfoSelection().ethdebug)
+				deployedObject.ethdebug = evmasm::ethdebug::program(deployedObject.assembly->name(), 0, deployedObject.assembly.get(), *deployedObject.bytecode.get());
 			solAssert(deployedAssembly->codeSections().size() == 1);
 			deployedObject.sourceMappings = std::make_unique<std::string>(
 				evmasm::AssemblyItem::computeSourceMapping(
@@ -293,9 +292,15 @@ YulStack::assembleWithDeployed(std::optional<std::string_view> _deployName)
 			);
 		}
 	}
+	catch (Error const& _error)
+	{
+		m_errorReporter.codeGenerationError(_error);
+		return {MachineAssemblyObject{}, MachineAssemblyObject{}};
+	}
 	catch (UnimplementedFeatureError const& _error)
 	{
 		reportUnimplementedFeatureError(_error);
+		return {MachineAssemblyObject{}, MachineAssemblyObject{}};
 	}
 
 	return {std::move(creationObject), std::move(deployedObject)};
@@ -317,13 +322,13 @@ YulStack::assembleEVMWithDeployed(std::optional<std::string_view> _deployName)
 	// it with the minimal steps required to avoid "stack too deep".
 	bool optimize = m_optimiserSettings.optimizeStackAllocation || (
 		!m_optimiserSettings.runYulOptimiser &&
-		!yul::MSizeFinder::containsMSize(languageToDialect(m_language, m_evmVersion, m_eofVersion), *m_parserResult)
+		!yul::MSizeFinder::containsMSize(*m_parserResult)
 	);
 	try
 	{
 		compileEVM(adapter, optimize);
 
-		assembly.optimise(evmasm::Assembly::OptimiserSettings::translateSettings(m_optimiserSettings, m_evmVersion));
+		assembly.optimise(evmasm::Assembly::OptimiserSettings::translateSettings(m_optimiserSettings));
 
 		std::optional<size_t> subIndex;
 
@@ -349,12 +354,18 @@ YulStack::assembleEVMWithDeployed(std::optional<std::string_view> _deployName)
 			return {std::make_shared<evmasm::Assembly>(assembly), std::make_shared<evmasm::Assembly>(runtimeAssembly)};
 		}
 	}
+	catch (Error const& _error)
+	{
+		m_errorReporter.codeGenerationError(_error);
+		return {nullptr, nullptr};
+	}
 	catch (UnimplementedFeatureError const& _error)
 	{
 		reportUnimplementedFeatureError(_error);
+		return {nullptr, nullptr};
 	}
 
-	return {std::make_shared<evmasm::Assembly>(assembly), {}};
+	return {std::make_shared<evmasm::Assembly>(assembly), nullptr};
 }
 
 std::string YulStack::print() const
@@ -362,7 +373,7 @@ std::string YulStack::print() const
 	yulAssert(m_stackState >= Parsed);
 	yulAssert(m_parserResult, "");
 	yulAssert(m_parserResult->hasCode(), "");
-	return m_parserResult->toString(
+	return (m_debugInfoSelection.ethdebug ? "/// ethdebug: enabled\n" : "") + m_parserResult->toString(
 		m_debugInfoSelection,
 		m_soliditySourceProvider
 	) + "\n";
@@ -389,7 +400,8 @@ Json YulStack::cfgJson() const
 			languageToDialect(m_language, m_evmVersion, m_eofVersion),
 			_object.code()->root()
 		);
-		YulControlFlowGraphExporter exporter(*controlFlow);
+		std::unique_ptr<ControlFlowLiveness> liveness = std::make_unique<ControlFlowLiveness>(*controlFlow);
+		YulControlFlowGraphExporter exporter(*controlFlow, liveness.get());
 		return exporter.run();
 	};
 
@@ -402,7 +414,7 @@ Json YulStack::cfgJson() const
 				subObjectsJson[subObject->name] = exportCFGFromObject(*subObject);
 				subObjectsJson["type"] = "subObject";
 				if (!subObject->subObjects.empty())
-					subObjectsJson["subObjects"] = exportCFGFromSubObjects(subObject->subObjects);
+					subObjectsJson[subObject->name]["subObjects"] = exportCFGFromSubObjects(subObject->subObjects);
 			}
 		return subObjectsJson;
 	};
@@ -411,7 +423,8 @@ Json YulStack::cfgJson() const
 	Json jsonObject = Json::object();
 	jsonObject[object.name] = exportCFGFromObject(object);
 	jsonObject["type"] = "Object";
-	jsonObject["subObjects"] = exportCFGFromSubObjects(object.subObjects);
+	if (!object.subObjects.empty())
+		jsonObject[object.name]["subObjects"] = exportCFGFromSubObjects(object.subObjects);
 	return jsonObject;
 }
 
@@ -423,8 +436,18 @@ std::shared_ptr<Object> YulStack::parserResult() const
 	return m_parserResult;
 }
 
+Dialect const& YulStack::dialect() const
+{
+	yulAssert(m_stackState >= AnalysisSuccessful);
+	yulAssert(m_parserResult && m_parserResult->dialect());
+	return *m_parserResult->dialect();
+}
+
 void YulStack::reportUnimplementedFeatureError(UnimplementedFeatureError const& _error)
 {
-	solAssert(_error.comment(), "Unimplemented feature errors must include a message for the user");
+	yulAssert(m_charStream);
+	yulAssert(_error.comment(), "Errors must include a message for the user.");
+	if (_error.sourceLocation().sourceName)
+		yulAssert(*_error.sourceLocation().sourceName == m_charStream->name());
 	m_errorReporter.unimplementedFeatureError(1920_error, _error.sourceLocation(), *_error.comment());
 }
