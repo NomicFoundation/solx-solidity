@@ -1,5 +1,3 @@
-// FIXME:
-// XFAIL: *
 // RUN: solc --mlir-action=print-init --mmlir --mlir-print-debuginfo %s | FileCheck %s
 
 contract C {
@@ -26,7 +24,7 @@ contract C {
 // CHECK-NEXT:       ^bb0(%arg1: ui256 loc({{.*}}:5:13)):
 // CHECK-NEXT:         %c1_ui8 = sol.constant 1 : ui8 loc(#loc6)
 // CHECK-NEXT:         %1 = sol.cast %c1_ui8 : ui8 to ui256 loc(#loc6)
-// CHECK-NEXT:         %2 = sol.add %arg1, %1 : ui256 loc(#loc7)
+// CHECK-NEXT:         %2 = sol.cadd %arg1, %1 : ui256 loc(#loc7)
 // CHECK-NEXT:         sol.call @n_16(%2) : (ui256) -> () loc(#loc5)
 // CHECK-NEXT:       } loc(#loc5)
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc3)
