@@ -22,6 +22,7 @@ contract C {
     a[1] = a[0];
     return a;
   }
+
   function dar(uint[] memory a) public returns (uint, uint) {
     a[0] = a[1];
     return (a[0], a[1]);
@@ -55,11 +56,21 @@ contract C {
     a = new uint[2][](1);
     return a;
   }
+
   function len() public returns (uint, uint) {
     uint[] memory a;
     a = new uint[](2);
     uint[3] memory b;
     return (a.length, b.length);
+  }
+
+  function lit() public returns (uint[2] memory) {
+    uint b = 2;
+    // FIXME:
+    // uint[2] memory a = [1, b];
+    uint[2] memory a = [uint256(1), b];
+
+    return a;
   }
 }
 
@@ -76,3 +87,4 @@ contract C {
 // darr2() -> 0x20, 2, 0x40, 0xa0, 2, 0, 1, 2, 1, 0
 // darr3() -> 0x20, 1, 0, 0
 // len() -> 2, 3
+// lit() -> 1, 2

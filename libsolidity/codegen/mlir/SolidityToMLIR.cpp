@@ -964,9 +964,20 @@ SolidityToMLIRPass::genLValExprs(Expression const &expr) {
 
   // Tuple
   if (const auto *tuple = dynamic_cast<TupleExpression const *>(&expr)) {
-    for (const ASTPointer<Expression> &subExpr : tuple->components()) {
-      vals.push_back(genLValExpr(*subExpr));
+    // Array literal
+    if (tuple->isInlineArray()) {
+      for (const ASTPointer<Expression> &subExpr : tuple->components())
+        vals.push_back(genRValExpr(*subExpr));
+      auto const arrTy =
+          dynamic_cast<ArrayType const *>(tuple->annotation().type);
+      mlir::SmallVector<mlir::Value, 1> res;
+      res.push_back(b.create<mlir::sol::ArrayLitOp>(getLoc(*tuple),
+                                                    getType(arrTy), vals));
+      return res;
     }
+
+    for (const ASTPointer<Expression> &subExpr : tuple->components())
+      vals.push_back(genLValExpr(*subExpr));
     return vals;
   }
 

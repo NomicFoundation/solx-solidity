@@ -20,6 +20,7 @@
 // (usually involving offsets) in some of the abi encoding/decoding codegen?
 
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
+#include "libsolidity/codegen/CompilerUtils.h"
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Util.h"
 #include "libsolutil/FunctionSelector.h"
@@ -53,6 +54,25 @@ unsigned evm::getCallDataHeadSize(Type ty) {
     return arrTy.getSize() * getCallDataHeadSize(arrTy.getEltType());
 
   llvm_unreachable("NYI: Other types");
+}
+
+int64_t evm::getMallocSize(Type ty) {
+  // String type is dynamic.
+  assert(!isa<sol::StringType>(ty));
+  // Array type.
+  if (auto arrayTy = dyn_cast<sol::ArrayType>(ty)) {
+    assert(!arrayTy.isDynSized());
+    return arrayTy.getSize() * 32;
+  }
+  // Struct type.
+  if (auto structTy = dyn_cast<sol::StructType>(ty)) {
+    // FIXME: Is the memoryHeadSize 32 for all the types (assuming padding is
+    // enabled by default) in StructType::memoryDataSize?
+    return structTy.getMemberTypes().size() * 32;
+  }
+
+  // Value type.
+  return 32;
 }
 
 unsigned evm::getStorageByteCount(Type ty) {
@@ -168,6 +188,120 @@ Value evm::Builder::genMemAllocForDynArray(Value sizeVar, Value sizeInBytes,
   auto memPtr = genMemAlloc(dynSizeInBytes, loc);
   b.create<sol::MStoreOp>(loc, memPtr, sizeVar);
   return memPtr;
+}
+
+/// Generates the memory allocation and optionally the zero initializer code.
+Value evm::Builder::genMemAlloc(Type ty, bool zeroInit, ValueRange initVals,
+                                Value sizeVar, int64_t recDepth,
+                                std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+  solidity::mlirgen::BuilderExt bExt(b, loc);
+
+  recDepth++;
+
+  // Array type.
+  if (auto arrayTy = dyn_cast<sol::ArrayType>(ty)) {
+    Value memPtr;
+    assert(arrayTy.getDataLocation() == sol::DataLocation::Memory);
+
+    Value sizeInBytes, dataPtr;
+    // FIXME: Round up size for byte arays.
+    if (arrayTy.isDynSized()) {
+      // Dynamic allocation is only performed for the outermost dimension.
+      if (sizeVar && recDepth == 0) {
+        sizeInBytes =
+            b.create<arith::MulIOp>(loc, sizeVar, bExt.genI256Const(32));
+        memPtr = genMemAllocForDynArray(sizeVar, sizeInBytes, loc);
+        dataPtr = b.create<arith::AddIOp>(loc, memPtr, bExt.genI256Const(32));
+      } else {
+        return bExt.genI256Const(
+            solidity::frontend::CompilerUtils::zeroPointer);
+      }
+    } else {
+      sizeInBytes = bExt.genI256Const(evm::getMallocSize(ty));
+      memPtr = genMemAlloc(sizeInBytes, loc);
+      dataPtr = memPtr;
+    }
+    assert(sizeInBytes && dataPtr && memPtr);
+
+    Type eltTy = arrayTy.getEltType();
+
+    // Multi-dimensional array / array of structs.
+    if (isa<sol::StructType>(eltTy) || isa<sol::ArrayType>(eltTy)) {
+      assert(initVals.empty());
+      //
+      // Store the offsets to the "inner" allocations.
+      //
+      // Generate the loop for the stores of offsets.
+
+      // `size` should be a multiple of 32.
+      b.create<scf::ForOp>(
+          loc, /*lowerBound=*/bExt.genIdxConst(0),
+          /*upperBound=*/bExt.genCastToIdx(sizeInBytes),
+          /*step=*/bExt.genIdxConst(32), /*iterArgs=*/std::nullopt,
+          /*builder=*/
+          [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
+            Value incrMemPtr = b.create<arith::AddIOp>(
+                loc, dataPtr, bExt.genCastToI256(indVar));
+            b.create<sol::MStoreOp>(
+                loc, incrMemPtr,
+                genMemAlloc(eltTy, zeroInit, initVals, sizeVar, recDepth, loc));
+            b.create<scf::YieldOp>(loc);
+          });
+
+    } else if (zeroInit) {
+      Value callDataSz = b.create<sol::CallDataSizeOp>(loc);
+      b.create<sol::CallDataCopyOp>(loc, dataPtr, callDataSz, sizeInBytes);
+
+    } else {
+      auto addr = dataPtr;
+      for (auto val : initVals) {
+        b.create<sol::MStoreOp>(loc, addr, val);
+        addr = b.create<arith::AddIOp>(loc, addr, bExt.genI256Const(32));
+      }
+    }
+
+    return memPtr;
+  }
+
+  // String type.
+  if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
+    if (sizeVar)
+      return genMemAllocForDynArray(
+          sizeVar, bExt.genRoundUpToMultiple<32>(sizeVar), loc);
+    return bExt.genI256Const(solidity::frontend::CompilerUtils::zeroPointer);
+  }
+
+  // Struct type.
+  if (auto structTy = dyn_cast<sol::StructType>(ty)) {
+    Value memPtr = genMemAlloc(evm::getMallocSize(ty), loc);
+    assert(structTy.getDataLocation() == sol::DataLocation::Memory);
+
+    for (auto memTy : structTy.getMemberTypes()) {
+      Value initVal;
+      if (isa<sol::StructType>(memTy) || isa<sol::ArrayType>(memTy)) {
+        initVal = genMemAlloc(memTy, zeroInit, {}, sizeVar, recDepth, loc);
+        b.create<sol::MStoreOp>(loc, memPtr, initVal);
+      } else if (zeroInit) {
+        b.create<sol::MStoreOp>(loc, memPtr, bExt.genI256Const(0));
+      }
+    }
+    return memPtr;
+  }
+
+  llvm_unreachable("NYI");
+}
+
+Value evm::Builder::genMemAlloc(Type ty, bool zeroInit, ValueRange initVals,
+                                Value sizeVar, std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+  solidity::mlirgen::BuilderExt bExt(b, loc);
+
+  if (sizeVar)
+    sizeVar = bExt.genIntCast(256, false, sizeVar);
+
+  return genMemAlloc(ty, zeroInit, initVals, sizeVar,
+                     /*recDepth=*/-1, loc);
 }
 
 Value evm::Builder::genDataAddrPtr(Value addr, sol::DataLocation dataLoc,

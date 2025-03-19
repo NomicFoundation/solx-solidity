@@ -59,6 +59,10 @@ unsigned getAlignment(mlir::Value ptr);
 /// MLIR version of solidity ast's Type::calldataHeadSize.
 unsigned getCallDataHeadSize(mlir::Type ty);
 
+/// Returns the size (in bytes) of static type without recursively calculating
+/// the element type size.
+int64_t getMallocSize(mlir::Type ty);
+
 /// MLIR version of solidity ast's Type::storageBytes().
 unsigned getStorageByteCount(mlir::Type ty);
 
@@ -127,6 +131,18 @@ public:
   genMemAllocForDynArray(mlir::Value sizeVar, mlir::Value sizeInBytes,
                          std::optional<mlir::Location> locArg = std::nullopt);
 
+  /// Generates the memory allocation code.
+  mlir::Value genMemAlloc(mlir::Type ty, bool zeroInit,
+                          mlir::ValueRange initVals, mlir::Value sizeVar,
+                          std::optional<mlir::Location> locArg = std::nullopt);
+
+private:
+  mlir::Value genMemAlloc(mlir::Type ty, bool zeroInit,
+                          mlir::ValueRange initVals, mlir::Value sizeVar,
+                          int64_t recDepth,
+                          std::optional<mlir::Location> locArg = std::nullopt);
+
+public:
   //
   // TODO? Should we work with the high level types + OpAdaptor for the APIs
   // that work with low level integral type pointers?

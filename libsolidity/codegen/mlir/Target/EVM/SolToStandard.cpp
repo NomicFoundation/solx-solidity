@@ -335,137 +335,24 @@ struct AllocaOpLowering : public OpConversionPattern<sol::AllocaOp> {
 struct MallocOpLowering : public OpConversionPattern<sol::MallocOp> {
   using OpConversionPattern<sol::MallocOp>::OpConversionPattern;
 
-  /// Returns the size (in bytes) of static type without recursively calculating
-  /// the element type size.
-  AllocSize getSize(Type ty) const {
-    // String type is dynamic.
-    assert(!isa<sol::StringType>(ty));
-    // Array type.
-    if (auto arrayTy = dyn_cast<sol::ArrayType>(ty)) {
-      assert(!arrayTy.isDynSized());
-      return arrayTy.getSize() * 32;
-    }
-    // Struct type.
-    if (auto structTy = dyn_cast<sol::StructType>(ty)) {
-      // FIXME: Is the memoryHeadSize 32 for all the types (assuming padding is
-      // enabled by default) in StructType::memoryDataSize?
-      return structTy.getMemberTypes().size() * 32;
-    }
-
-    // Value type.
-    return 32;
-  }
-
-  /// Generates the memory allocation and optionally the zero initializer code.
-  Value genMemAlloc(Type ty, bool zeroInit, Value sizeVar, int64_t recDepth,
-                    PatternRewriter &r, Location loc) const {
-    recDepth++;
-
-    Value memPtr;
-    solidity::mlirgen::BuilderExt bExt(r, loc);
-    evm::Builder evmB(r, loc);
-
-    // Array type.
-    if (auto arrayTy = dyn_cast<sol::ArrayType>(ty)) {
-      assert(arrayTy.getDataLocation() == sol::DataLocation::Memory);
-
-      Value sizeInBytes, dataPtr;
-      // FIXME: Round up size for byte arays.
-      if (arrayTy.isDynSized()) {
-        // Dynamic allocation is only performed for the outermost dimension.
-        if (sizeVar && recDepth == 0) {
-          sizeInBytes =
-              r.create<arith::MulIOp>(loc, sizeVar, bExt.genI256Const(32));
-          memPtr = evmB.genMemAllocForDynArray(sizeVar, sizeInBytes);
-          dataPtr = r.create<arith::AddIOp>(loc, memPtr, bExt.genI256Const(32));
-        } else {
-          return bExt.genI256Const(
-              solidity::frontend::CompilerUtils::zeroPointer);
-        }
-      } else {
-        sizeInBytes = bExt.genI256Const(getSize(ty));
-        memPtr = evmB.genMemAlloc(sizeInBytes, loc);
-        dataPtr = memPtr;
-      }
-      assert(sizeInBytes && dataPtr && memPtr);
-
-      Type eltTy = arrayTy.getEltType();
-
-      // Multi-dimensional array / array of structs.
-      if (isa<sol::StructType>(eltTy) || isa<sol::ArrayType>(eltTy)) {
-        //
-        // Store the offsets to the "inner" allocations.
-        //
-        // Generate the loop for the stores of offsets.
-
-        // `size` should be a multiple of 32.
-        r.create<scf::ForOp>(
-            loc, /*lowerBound=*/bExt.genIdxConst(0),
-            /*upperBound=*/bExt.genCastToIdx(sizeInBytes),
-            /*step=*/bExt.genIdxConst(32), /*iterArgs=*/std::nullopt,
-            /*builder=*/
-            [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
-              Value incrMemPtr = r.create<arith::AddIOp>(
-                  loc, dataPtr, bExt.genCastToI256(indVar));
-              r.create<sol::MStoreOp>(
-                  loc, incrMemPtr,
-                  genMemAlloc(eltTy, zeroInit, sizeVar, recDepth, r, loc));
-              b.create<scf::YieldOp>(loc);
-            });
-
-      } else if (zeroInit) {
-        Value callDataSz = r.create<sol::CallDataSizeOp>(loc);
-        r.create<sol::CallDataCopyOp>(loc, dataPtr, callDataSz, sizeInBytes);
-      }
-
-      // String type.
-    } else if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
-      if (sizeVar)
-        memPtr = evmB.genMemAllocForDynArray(
-            sizeVar, bExt.genRoundUpToMultiple<32>(sizeVar));
-      else
-        return bExt.genI256Const(
-            solidity::frontend::CompilerUtils::zeroPointer);
-
-      // Struct type.
-    } else if (auto structTy = dyn_cast<sol::StructType>(ty)) {
-      memPtr = evmB.genMemAlloc(getSize(ty), loc);
-      assert(structTy.getDataLocation() == sol::DataLocation::Memory);
-
-      for (auto memTy : structTy.getMemberTypes()) {
-        Value initVal;
-        if (isa<sol::StructType>(memTy) || isa<sol::ArrayType>(memTy)) {
-          initVal = genMemAlloc(memTy, zeroInit, sizeVar, recDepth, r, loc);
-          r.create<sol::MStoreOp>(loc, memPtr, initVal);
-        } else if (zeroInit) {
-          r.create<sol::MStoreOp>(loc, memPtr, bExt.genI256Const(0));
-        }
-      }
-      // TODO: Support other types.
-    } else {
-      llvm_unreachable("Invalid type");
-    }
-
-    assert(memPtr);
-    return memPtr;
-  }
-
-  Value genMemAlloc(sol::MallocOp op, OpAdaptor adaptor,
-                    PatternRewriter &r) const {
-    Location loc = op.getLoc();
-    solidity::mlirgen::BuilderExt bExt(r, loc);
-    Value size;
-    if (adaptor.getSize())
-      size = bExt.genIntCast(256, false, adaptor.getSize());
-
-    return genMemAlloc(op.getType(), op.getZeroInit(), size,
-                       /*recDepth=*/-1, r, loc);
-  }
-
   LogicalResult matchAndRewrite(sol::MallocOp op, OpAdaptor adaptor,
                                 ConversionPatternRewriter &r) const override {
-    Value freePtr = genMemAlloc(op, adaptor, r);
-    r.replaceOp(op, freePtr);
+    evm::Builder evmB(r, op.getLoc());
+    r.replaceOp(op, evmB.genMemAlloc(op.getType(), op.getZeroInit(), {},
+                                     adaptor.getSize()));
+    return success();
+  }
+};
+
+struct ArrayLitOpLowering : public OpConversionPattern<sol::ArrayLitOp> {
+  using OpConversionPattern<sol::ArrayLitOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::ArrayLitOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    evm::Builder evmB(r, loc);
+    r.replaceOp(op,
+                evmB.genMemAlloc(op.getType(), false, adaptor.getIns(), {}));
     return success();
   }
 };
@@ -1952,9 +1839,10 @@ void evm::populateCheckedArithPats(RewritePatternSet &pats,
 }
 
 void evm::populateMemPats(RewritePatternSet &pats, TypeConverter &tyConv) {
-  pats.add<AllocaOpLowering, MallocOpLowering, GepOpLowering, MapOpLowering,
-           LoadOpLowering, StoreOpLowering, DataLocCastOpLowering,
-           LengthOpLowering, CopyOpLowering>(tyConv, pats.getContext());
+  pats.add<AllocaOpLowering, MallocOpLowering, ArrayLitOpLowering,
+           GepOpLowering, MapOpLowering, LoadOpLowering, StoreOpLowering,
+           DataLocCastOpLowering, LengthOpLowering, CopyOpLowering>(
+      tyConv, pats.getContext());
   pats.add<AddrOfOpLowering>(pats.getContext());
 }
 
