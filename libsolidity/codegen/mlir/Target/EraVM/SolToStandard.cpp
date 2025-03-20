@@ -495,8 +495,9 @@ struct BuiltinRetOpLowering : public OpRewritePattern<sol::BuiltinRetOp> {
     auto immutablesSize = 0; // TODO: Implement this!
     auto immutablesNumPtr = r.create<LLVM::IntToPtrOp>(
         loc, heapAuxAddrSpacePtrTy,
-        bExt.genI256Const(eravm::HeapAuxOffsetCtorRetData +
-                          eravm::ByteLen_Field));
+        bExt.genI256Const(
+            static_cast<unsigned>(eravm::HeapAuxOffsetCtorRetData) +
+            eravm::ByteLen_Field));
     r.create<LLVM::StoreOp>(
         loc, bExt.genI256Const(immutablesSize / eravm::ByteLen_Field),
         immutablesNumPtr, eravm::getAlignment(immutablesNumPtr));
@@ -674,7 +675,7 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
         LLVM::LLVMPointerType::get(r.getContext(), eravm::AddrSpace_Generic);
     std::vector<Type> inTys{genericAddrSpacePtrTy};
     constexpr unsigned argCnt =
-        eravm::MandatoryArgCnt + eravm::ExtraABIDataSize;
+        static_cast<unsigned>(eravm::MandatoryArgCnt) + eravm::ExtraABIDataSize;
     for (unsigned i = 0; i < argCnt - 1; ++i) {
       inTys.push_back(i256Ty);
     }

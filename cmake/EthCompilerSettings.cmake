@@ -63,6 +63,8 @@ if (("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" MA
 		add_compile_options(-Wno-unused-parameter) # llvm-15 build cfg
 		# `FnTraitsT` in llvm-15's mlir/IR/PatternMatch.h might be unused
 		add_compile_options(-Wno-unused-local-typedef)
+		# FIXME: These are reported for some mlir headers with C++20.
+		add_compile_options(-Wno-ambiguous-reversed-operator)
 
 		# llvm-15 build cfg:
 		# check_cxx_compiler_flag(-Wextra-semi WEXTRA_SEMI)

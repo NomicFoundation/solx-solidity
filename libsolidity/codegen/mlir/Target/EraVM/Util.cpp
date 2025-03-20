@@ -297,7 +297,8 @@ sol::FuncOp eravm::Builder::getOrInsertFarCall(ModuleOp mod) {
   auto i256Ty = IntegerType::get(ctx, 256);
   auto genericPtrTy = LLVM::LLVMPointerType::get(ctx, AddrSpace_Generic);
 
-  std::vector<Type> inpTys(eravm::MandatoryArgCnt + eravm::ExtraABIDataSize,
+  std::vector<Type> inpTys(static_cast<unsigned>(eravm::MandatoryArgCnt) +
+                               eravm::ExtraABIDataSize,
                            i256Ty);
   auto fnTy = FunctionType::get(ctx, inpTys, {genericPtrTy, i1Ty});
 

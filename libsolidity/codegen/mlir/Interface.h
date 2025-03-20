@@ -30,8 +30,8 @@ class CharStream;
 } // namespace solidity::langutil
 
 namespace solidity::yul {
-struct Dialect;
-struct Object;
+class Dialect;
+class Object;
 }; // namespace solidity::yul
 
 namespace solidity::mlirgen {

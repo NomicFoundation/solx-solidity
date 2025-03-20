@@ -63,14 +63,14 @@ enum AddrSpace : unsigned {
   AddrSpace_Storage = 5,
 };
 
-enum ByteLen {
+enum ByteLen : unsigned {
   ByteLen_Byte = 1,
   ByteLen_X32 = 4,
   ByteLen_X64 = 8,
   ByteLen_EthAddr = 20,
   ByteLen_Field = 32
 };
-enum BitLen {
+enum BitLen : unsigned {
   BitLen_Bool = 1,
   BitLen_Byte = 8,
   BitLen_X32 = BitLen_Byte * ByteLen_X32,
@@ -98,7 +98,7 @@ static const char *GlobReturnDataPtr = "ptr_return_data";
 static const char *GlobDecommitPtr = "ptr_decommit";
 static const char *GlobActivePtr = "ptr_active";
 
-enum EntryInfo {
+enum EntryInfo : unsigned {
   ArgIndexCallDataABI = 0,
   ArgIndexCallFlags = 1,
   MandatoryArgCnt = 2,
