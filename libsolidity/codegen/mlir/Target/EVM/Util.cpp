@@ -228,7 +228,18 @@ Value evm::Builder::genMemAlloc(Type ty, bool zeroInit, ValueRange initVals,
 
     // Multi-dimensional array / array of structs.
     if (isa<sol::StructType>(eltTy) || isa<sol::ArrayType>(eltTy)) {
-      assert(initVals.empty());
+      if (!initVals.empty()) {
+        // This is probably a multi-dimensional array literal op. The inner
+        // allocation should be done by another array literal op. So we only
+        // store the offsets.
+        Value addr = dataPtr;
+        for (auto val : initVals) {
+          b.create<sol::MStoreOp>(loc, addr, val);
+          addr = b.create<arith::AddIOp>(loc, addr, bExt.genI256Const(32));
+        }
+        return memPtr;
+      }
+
       //
       // Store the offsets to the "inner" allocations.
       //
@@ -254,7 +265,7 @@ Value evm::Builder::genMemAlloc(Type ty, bool zeroInit, ValueRange initVals,
       b.create<sol::CallDataCopyOp>(loc, dataPtr, callDataSz, sizeInBytes);
 
     } else {
-      auto addr = dataPtr;
+      Value addr = dataPtr;
       for (auto val : initVals) {
         b.create<sol::MStoreOp>(loc, addr, val);
         addr = b.create<arith::AddIOp>(loc, addr, bExt.genI256Const(32));

@@ -192,6 +192,9 @@ private:
   /// Returns the mlir expression for the call.
   mlir::SmallVector<mlir::Value> genExprs(FunctionCall const &call);
 
+  /// Returns the mlir expression for the tuple.
+  mlir::SmallVector<mlir::Value> genExprs(TupleExpression const &tuple);
+
   // We can't completely rely on ExpressionAnnotation::isLValue here since the
   // TypeChecker doesn't, for instance, tag RHS expression of an assignment as
   // an r-value.
@@ -864,6 +867,27 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
   llvm_unreachable("NYI");
 }
 
+mlir::SmallVector<mlir::Value>
+SolidityToMLIRPass::genExprs(TupleExpression const &tuple) {
+  mlir::SmallVector<mlir::Value, 2> vals;
+
+  // Array literal
+  if (tuple.isInlineArray()) {
+    for (const ASTPointer<Expression> &subExpr : tuple.components())
+      vals.push_back(
+          genRValExpr(*subExpr, getType(subExpr->annotation().type)));
+    auto const arrTy = dynamic_cast<ArrayType const *>(tuple.annotation().type);
+    mlir::SmallVector<mlir::Value, 1> res;
+    res.push_back(
+        b.create<mlir::sol::ArrayLitOp>(getLoc(tuple), getType(arrTy), vals));
+    return res;
+  }
+
+  for (const ASTPointer<Expression> &subExpr : tuple.components())
+    vals.push_back(genLValExpr(*subExpr));
+  return vals;
+}
+
 void SolidityToMLIRPass::lower(Assignment const &asgnStmt) {
   mlir::Location loc = getLoc(asgnStmt);
 
@@ -942,8 +966,9 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
 
   // Tuple
   if (const auto *tuple = dynamic_cast<TupleExpression const *>(&expr)) {
-    assert(tuple->components().size() == 1);
-    return genLValExpr(*tuple->components()[0]);
+    mlir::SmallVector<mlir::Value, 1> res = genExprs(*tuple);
+    assert(res.size() == 1);
+    return res.front();
   }
 
   // Function call
@@ -960,31 +985,15 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
 
 mlir::SmallVector<mlir::Value>
 SolidityToMLIRPass::genLValExprs(Expression const &expr) {
-  mlir::SmallVector<mlir::Value, 2> vals;
-
   // Tuple
-  if (const auto *tuple = dynamic_cast<TupleExpression const *>(&expr)) {
-    // Array literal
-    if (tuple->isInlineArray()) {
-      for (const ASTPointer<Expression> &subExpr : tuple->components())
-        vals.push_back(genRValExpr(*subExpr));
-      auto const arrTy =
-          dynamic_cast<ArrayType const *>(tuple->annotation().type);
-      mlir::SmallVector<mlir::Value, 1> res;
-      res.push_back(b.create<mlir::sol::ArrayLitOp>(getLoc(*tuple),
-                                                    getType(arrTy), vals));
-      return res;
-    }
-
-    for (const ASTPointer<Expression> &subExpr : tuple->components())
-      vals.push_back(genLValExpr(*subExpr));
-    return vals;
-  }
+  if (const auto *tuple = dynamic_cast<TupleExpression const *>(&expr))
+    return genExprs(*tuple);
 
   // Function call
   if (const auto *call = dynamic_cast<FunctionCall const *>(&expr))
     return genExprs(*call);
 
+  mlir::SmallVector<mlir::Value, 1> vals;
   vals.push_back(genLValExpr(expr));
   return vals;
 }

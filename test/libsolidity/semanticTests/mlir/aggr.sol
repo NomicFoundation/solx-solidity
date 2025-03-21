@@ -72,6 +72,12 @@ contract C {
 
     return a;
   }
+  function lit2() public returns (uint[2] memory, uint[2] memory) {
+    uint[2][2] memory a = [[uint(10), uint(11)], [uint(20), uint(21)]];
+    return (a[0], a[1]);
+    // FIXME:
+    // return a;
+  }
 }
 
 // ====
@@ -88,3 +94,4 @@ contract C {
 // darr3() -> 0x20, 1, 0, 0
 // len() -> 2, 3
 // lit() -> 1, 2
+// lit2() -> 10, 11, 20, 21
