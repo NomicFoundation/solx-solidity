@@ -518,8 +518,10 @@ Value evm::Builder::genABITupleEncoding(Type ty, Value src, Value dstAddr,
                                     dstAddrInTail, tupleStart, iTailAddr, loc);
           }
 
+          Value dstStride =
+              bExt.genI256Const(getCallDataHeadSize(arrTy.getEltType()));
           b.create<scf::YieldOp>(
-              loc, ValueRange{b.create<arith::AddIOp>(loc, iDstAddr, thirtyTwo),
+              loc, ValueRange{b.create<arith::AddIOp>(loc, iDstAddr, dstStride),
                               b.create<arith::AddIOp>(loc, iSrcAddr, thirtyTwo),
                               nextTailAddr});
         });
