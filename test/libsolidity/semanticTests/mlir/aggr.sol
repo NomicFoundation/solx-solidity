@@ -66,15 +66,11 @@ contract C {
 
   function lit() public returns (uint[2] memory) {
     uint b = 2;
-    // FIXME:
-    // uint[2] memory a = [1, b];
-    uint[2] memory a = [uint256(1), b];
-
+    uint[2] memory a = [1, b];
     return a;
   }
   function lit2() public returns (uint[2][3] memory) {
-    uint[2][3] memory a = [[uint(10), uint(11)], [uint(20), uint(21)],
-      [uint(30), uint(31)]];
+    uint[2][3] memory a = [[uint(10), 11], [uint(20), 21], [uint(30), 31]];
     return a;
   }
 }
