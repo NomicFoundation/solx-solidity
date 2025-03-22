@@ -37,7 +37,6 @@ contract C {
   }
 }
 
-// FIXME:
 // ====
 // compileViaMlir: true
 // ----
