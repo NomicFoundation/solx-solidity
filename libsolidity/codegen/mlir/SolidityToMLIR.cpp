@@ -711,9 +711,27 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
   // External call
   case FunctionType::Kind::External:
   case FunctionType::Kind::DelegateCall: {
+    // Handle the FunctionCallOptions case.
+    Expression const *callExpr = &call.expression();
+    mlir::Value gas, value;
+    mlir::Type ui256Ty = b.getIntegerType(256, /*isSigned=*/false);
+    if (const auto *fnCallOpt =
+            dynamic_cast<FunctionCallOptions const *>(&call.expression())) {
+      for (const auto &[namePtr, exprPtr] :
+           llvm::zip(fnCallOpt->names(), fnCallOpt->options())) {
+        ASTString const &name = *namePtr;
+        Expression const &expr = *exprPtr;
+        mlir::Value loweredExpr = genRValExpr(expr, ui256Ty);
+        if (name == "gas")
+          gas = loweredExpr;
+        else if (name == "value")
+          value = loweredExpr;
+      }
+      callExpr = &fnCallOpt->expression();
+    }
+
     // Generate the address.
-    const auto *memberAcc =
-        dynamic_cast<MemberAccess const *>(&call.expression());
+    const auto *memberAcc = dynamic_cast<MemberAccess const *>(callExpr);
     assert(memberAcc);
     assert(dynamic_cast<ContractType const *>(
         memberAcc->expression().annotation().type));
@@ -744,26 +762,31 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     mlirgen::BuilderExt bExt(b, loc);
 
     // Generate gas.
-    mlir::Value gas;
-    if (evmVersion.canOverchargeGasForCall()) {
-      gas = b.create<mlir::sol::GasOp>(loc);
-    } else {
-      u256 gasNeededByCaller = evmasm::GasCosts::callGas(evmVersion) + 10;
-      size_t encodedHeadSize = 0;
-      for (Type const *ty : calleeTy->returnParameterTypes())
-        encodedHeadSize += ty->decodingType()->calldataHeadSize();
-      if (encodedHeadSize == 0 || !evmVersion.supportsReturndata())
-        gasNeededByCaller += evmasm::GasCosts::callNewAccountGas;
-      gas = b.create<mlir::arith::SubIOp>(loc, b.create<mlir::sol::GasOp>(loc),
+    if (!gas) {
+      if (evmVersion.canOverchargeGasForCall()) {
+        gas = b.create<mlir::sol::GasOp>(loc);
+      } else {
+        u256 gasNeededByCaller = evmasm::GasCosts::callGas(evmVersion) + 10;
+        size_t encodedHeadSize = 0;
+        for (Type const *ty : calleeTy->returnParameterTypes())
+          encodedHeadSize += ty->decodingType()->calldataHeadSize();
+        if (encodedHeadSize == 0 || !evmVersion.supportsReturndata())
+          gasNeededByCaller += evmasm::GasCosts::callNewAccountGas;
+        gas =
+            b.create<mlir::arith::SubIOp>(loc, b.create<mlir::sol::GasOp>(loc),
                                           bExt.genI256Const(gasNeededByCaller));
+      }
     }
-    gas = b.create<mlir::sol::ConvCastOp>(
-        loc, b.getIntegerType(256, /*isSigned=*/false), gas);
+    gas = b.create<mlir::sol::ConvCastOp>(loc, ui256Ty, gas);
+
+    // Generate value.
+    if (!value) {
+      value = genUnsignedConst(0, /*numBits=*/256, loc);
+    }
 
     // Generate the external call.
     auto callOp = b.create<mlir::sol::ExtCallOp>(
-        loc, resTys, getMangledName(*callee), args, addr, gas,
-        /*value=*/genUnsignedConst(0, /*numBits=*/256, loc),
+        loc, resTys, getMangledName(*callee), args, addr, gas, value,
         /*tryCall=*/call.annotation().tryCall,
         /*staticCall=*/calleeTy->stateMutability() <= StateMutability::View,
         /*delegateCall=*/calleeTy->kind() == FunctionType::Kind::DelegateCall,
