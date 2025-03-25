@@ -242,17 +242,36 @@ static void genEvmBytecode(llvm::Module &creationMod, llvm::Module &runtimeMod,
     llvm_unreachable(errMsg);
   objIds[1] = runtimeObjName.data();
 
-  LLVMMemoryBufferRef bytecodes[2];
-  if (LLVMLinkEVM(/*inBuffers=*/objs, /*inBuffersIDs=*/objIds,
-                  /*numInBuffers=*/2, /*outBuffers=*/bytecodes,
+  // "Assemble" (see comments in LLVMAssembleEVM) them.
+  LLVMMemoryBufferRef creationObj, runtimeObj;
+  if (LLVMAssembleEVM(/*codeSegment=*/0, /*inBuffers=*/objs,
+                      /*inBuffersIDs=*/objIds, /*inBuffersNum=*/2,
+                      /*outBuffer=*/&creationObj, /*errorMessage=*/&errMsg))
+    llvm_unreachable(errMsg);
+  if (LLVMAssembleEVM(/*codeSegment=*/1, /*inBuffers=*/&objs[1],
+                      /*inBuffersIDs=*/&objIds[1], /*inBuffersNum=*/1,
+                      /*outBuffer=*/&runtimeObj, /*errorMessage=*/&errMsg))
+    llvm_unreachable(errMsg);
+
+  // Generate bytecode.
+  LLVMMemoryBufferRef creationBytecode, runtimeBytecode;
+  if (LLVMLinkEVM(/*inBuffer=*/creationObj, /*outBuffer=*/&creationBytecode,
                   /*linkerSymbolNames=*/nullptr, /*linkerSymbolValues=*/nullptr,
                   /*numLinkerSymbols=*/0, &errMsg))
     llvm_unreachable(errMsg);
-  out.creationBytecode = llvm::unwrap(bytecodes[0])->getBuffer();
-  out.runtimeBytecode = llvm::unwrap(bytecodes[1])->getBuffer();
+  if (LLVMLinkEVM(/*inBuffer=*/runtimeObj, /*outBuffer=*/&runtimeBytecode,
+                  /*linkerSymbolNames=*/nullptr, /*linkerSymbolValues=*/nullptr,
+                  /*numLinkerSymbols=*/0, &errMsg))
+    llvm_unreachable(errMsg);
+  out.creationBytecode = llvm::unwrap(creationBytecode)->getBuffer();
+  out.runtimeBytecode = llvm::unwrap(runtimeBytecode)->getBuffer();
 
   LLVMDisposeMemoryBuffer(objs[0]);
   LLVMDisposeMemoryBuffer(objs[1]);
+  LLVMDisposeMemoryBuffer(creationObj);
+  LLVMDisposeMemoryBuffer(runtimeObj);
+  LLVMDisposeMemoryBuffer(creationBytecode);
+  LLVMDisposeMemoryBuffer(runtimeBytecode);
 }
 
 static void genEraVMBytecode(llvm::Module &llvmMod,

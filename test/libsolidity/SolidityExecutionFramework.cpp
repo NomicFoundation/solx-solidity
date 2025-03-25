@@ -86,7 +86,6 @@ bytes SolidityExecutionFramework::multiSourceCompileContract(
 	if (m_compileViaMlir)
 	{
 		std::string bytecode = m_compiler.creationBytecodeFromMlirPipeline(contractName);
-		bytecode += m_compiler.runtimeBytecodeFromMlirPipeline(contractName);
 		bytes ret;
 		for (auto c: bytecode)
 			ret.push_back(c);
