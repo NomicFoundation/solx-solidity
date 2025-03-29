@@ -107,7 +107,7 @@ Solidity Tools
     Tool to generate Solidity interface source from a given ABI JSON.
 
 * `Aderyn <https://github.com/Cyfrin/aderyn>`_
-    Rust-based solidity smart contract static analyzer designed to help find vulnerabilities in Solidity code bases.
+    Rust-based solidity smart contract static analyzer designed to help find vulnerabilities in Solidity code bases. Comes with `VS Code Extension <https://marketplace.visualstudio.com/items?itemName=Cyfrin.aderyn>` for easy use.
 
 * `Doxity <https://github.com/DigixGlobal/doxity>`_
     Documentation Generator for Solidity.
