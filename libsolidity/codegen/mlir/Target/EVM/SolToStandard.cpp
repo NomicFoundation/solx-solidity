@@ -387,9 +387,10 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
     Type baseAddrTy = op.getBaseAddr().getType();
     Value remappedBaseAddr = adaptor.getBaseAddr();
     Value idx = adaptor.getIdx();
+    sol::DataLocation dataLoc = sol::getDataLocation(baseAddrTy);
     Value res;
 
-    switch (sol::getDataLocation(baseAddrTy)) {
+    switch (dataLoc) {
     case sol::DataLocation::Stack: {
       auto stkPtrTy =
           LLVM::LLVMPointerType::get(r.getContext(), evm::AddrSpace_Stack);
@@ -399,6 +400,7 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
       break;
     }
 
+    case sol::DataLocation::CallData:
     case sol::DataLocation::Memory: {
       // Memory array
       if (auto arrTy = dyn_cast<sol::ArrayType>(baseAddrTy)) {
@@ -429,7 +431,7 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
           //
           Value size;
           if (arrTy.isDynSized()) {
-            size = r.create<sol::MLoadOp>(loc, remappedBaseAddr);
+            size = evmB.genLoad(remappedBaseAddr, dataLoc);
           } else {
             size = bExt.genI256Const(arrTy.getSize());
           }
@@ -476,7 +478,7 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
 
         // Bytes (!sol.string)
       } else if (auto strTy = dyn_cast<sol::StringType>(baseAddrTy)) {
-        Value size = r.create<sol::MLoadOp>(loc, remappedBaseAddr);
+        Value size = evmB.genLoad(remappedBaseAddr, dataLoc);
         Value castedIdx =
             bExt.genIntCast(/*width=*/256, /*isSigned=*/false, idx);
         auto panicCond = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::uge,
@@ -534,29 +536,33 @@ struct LoadOpLowering : public OpConversionPattern<sol::LoadOp> {
   LogicalResult matchAndRewrite(sol::LoadOp op, OpAdaptor adaptor,
                                 ConversionPatternRewriter &r) const override {
     Location loc = op.getLoc();
-    Value addr = adaptor.getAddr();
     solidity::mlirgen::BuilderExt bExt(r, loc);
+    evm::Builder evmB(r, loc);
 
-    switch (sol::getDataLocation(op.getAddr().getType())) {
+    Value addr = adaptor.getAddr();
+    sol::DataLocation dataLoc = sol::getDataLocation(op.getAddr().getType());
+
+    switch (dataLoc) {
     case sol::DataLocation::Stack:
       r.replaceOpWithNewOp<LLVM::LoadOp>(op, addr, evm::getAlignment(addr));
       return success();
+    case sol::DataLocation::CallData:
     case sol::DataLocation::Memory: {
       auto addrTy = cast<sol::PointerType>(op.getAddr().getType());
       auto bytesEleTy = dyn_cast<sol::BytesType>(addrTy.getPointeeType());
       // If loading from `bytes`, generate the low bits mask-off of the loaded
       // value.
-      if (bytesEleTy && addrTy.getDataLocation() == sol::DataLocation::Memory) {
+      if (bytesEleTy && dataLoc == sol::DataLocation::Memory) {
         unsigned numBits = bytesEleTy.getSize() * 8;
         APInt mask(/*numBits=*/256, 0);
         assert(numBits <= 256);
         mask.setHighBits(numBits);
-        auto load = r.create<sol::MLoadOp>(loc, addr);
+        auto load = evmB.genLoad(addr, dataLoc);
         r.replaceOpWithNewOp<arith::AndIOp>(op, load, bExt.genI256Const(mask));
         return success();
       }
 
-      auto ld = r.create<sol::MLoadOp>(loc, addr);
+      auto ld = evmB.genLoad(addr, dataLoc);
       if (auto intTy = dyn_cast<IntegerType>(op.getType())) {
         Value castedRes =
             bExt.genIntCast(intTy.getWidth(), intTy.isSigned(), ld);
@@ -595,7 +601,7 @@ struct StoreOpLowering : public OpConversionPattern<sol::StoreOp> {
       return success();
     case sol::DataLocation::Memory: {
       Type addrTy = op.getAddr().getType();
-      auto dataLoc = sol::getDataLocation(addrTy);
+      sol::DataLocation dataLoc = sol::getDataLocation(addrTy);
 
       // Generate mstore8 for storing to `bytes`.
       auto bytesEleTy = dyn_cast<sol::BytesType>(sol::getEltType(addrTy));
@@ -685,15 +691,18 @@ struct LengthOpLowering : public OpConversionPattern<sol::LengthOp> {
                                 ConversionPatternRewriter &r) const override {
     Location loc = op.getLoc();
     solidity::mlirgen::BuilderExt bExt(r, loc);
+    evm::Builder evmB(r, loc);
+
     Type ty = op.getInp().getType();
+    sol::DataLocation dataLoc = sol::getDataLocation(ty);
 
     if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
-      r.replaceOpWithNewOp<sol::MLoadOp>(op, adaptor.getInp());
+      r.replaceOp(op, evmB.genLoad(adaptor.getInp(), dataLoc));
       return success();
     }
     if (auto arrTy = dyn_cast<sol::ArrayType>(ty)) {
       if (arrTy.isDynSized()) {
-        r.replaceOpWithNewOp<sol::MLoadOp>(op, adaptor.getInp());
+        r.replaceOp(op, evmB.genLoad(adaptor.getInp(), dataLoc));
         return success();
       }
       r.replaceOp(op, bExt.genI256Const(arrTy.getSize()));

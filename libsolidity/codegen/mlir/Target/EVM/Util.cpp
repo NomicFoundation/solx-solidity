@@ -339,6 +339,9 @@ Value evm::Builder::genLoad(Value addr, sol::DataLocation dataLoc,
                             std::optional<Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;
 
+  if (dataLoc == sol::DataLocation::CallData)
+    return b.create<sol::CallDataLoadOp>(loc, addr);
+
   if (dataLoc == sol::DataLocation::Memory)
     return b.create<sol::MLoadOp>(loc, addr);
 
@@ -466,7 +469,7 @@ Value evm::Builder::genABITupleEncoding(Type ty, Value src, Value dstAddr,
     Value dstArrAddr, srcArrAddr, size;
     if (arrTy.isDynSized()) {
       // Generate the size store.
-      Value i256Size = b.create<sol::MLoadOp>(loc, src);
+      Value i256Size = genLoad(src, arrTy.getDataLocation(), loc);
       assert(dstAddr == tailAddr);
       b.create<sol::MStoreOp>(loc, dstAddr, i256Size);
 
@@ -502,7 +505,7 @@ Value evm::Builder::genABITupleEncoding(Type ty, Value src, Value dstAddr,
           Value iSrcAddr = iterArgs[1];
           Value iTailAddr = iterArgs[2];
 
-          Value srcVal = b.create<sol::MLoadOp>(loc, iSrcAddr);
+          Value srcVal = genLoad(iSrcAddr, arrTy.getDataLocation(), loc);
           Value nextTailAddr;
           if (sol::hasDynamicallySizedElt(arrTy.getEltType())) {
             b.create<sol::MStoreOp>(
@@ -531,14 +534,19 @@ Value evm::Builder::genABITupleEncoding(Type ty, Value src, Value dstAddr,
   // String type
   if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
     // Generate the length field copy.
-    auto size = b.create<sol::MLoadOp>(loc, src);
+    auto size = genLoad(src, stringTy.getDataLocation(), loc);
     b.create<sol::MStoreOp>(loc, tailAddr, size);
 
     // Generate the data copy.
     auto dataAddr = b.create<arith::AddIOp>(loc, src, bExt.genI256Const(32));
     auto tailDataAddr =
         b.create<arith::AddIOp>(loc, tailAddr, bExt.genI256Const(32));
-    b.create<sol::MCopyOp>(loc, tailDataAddr, dataAddr, size);
+    if (stringTy.getDataLocation() == sol::DataLocation::Memory)
+      b.create<sol::MCopyOp>(loc, tailDataAddr, dataAddr, size);
+    else if (stringTy.getDataLocation() == sol::DataLocation::CallData)
+      b.create<sol::CallDataCopyOp>(loc, tailDataAddr, dataAddr, size);
+    else
+      llvm_unreachable("NYI");
 
     return b.create<arith::AddIOp>(loc, tailDataAddr,
                                    bExt.genRoundUpToMultiple<32>(size));
@@ -603,6 +611,9 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
   Location loc = locArg ? *locArg : defLoc;
   solidity::mlirgen::BuilderExt bExt(b, loc);
 
+  // TODO: Generate assertions for checking if addresses of reference types is
+  // within the calldata.
+
   auto genLoad = [&](Value addr) -> Value {
     if (fromMem)
       return b.create<sol::MLoadOp>(loc, addr);
@@ -630,6 +641,9 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
 
   // Array type
   if (auto arrTy = dyn_cast<sol::ArrayType>(ty)) {
+    if (arrTy.getDataLocation() == sol::DataLocation::CallData)
+      return addr;
+
     Value dstAddr, srcAddr, size, ret;
     Value thirtyTwo = bExt.genI256Const(32);
     if (arrTy.isDynSized()) {

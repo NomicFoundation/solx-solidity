@@ -57,6 +57,18 @@ contract C {
     return a;
   }
 
+  function car(uint[2] calldata a) public returns (uint) {
+    return a.length + a[0];
+  }
+
+  function dcar(uint[] calldata a) public returns (uint) {
+    return a.length + a[0];
+  }
+
+  function dcarr(uint[][] calldata a) public returns (uint[][] calldata) {
+    return a;
+  }
+
   function len() public returns (uint, uint) {
     uint[] memory a;
     a = new uint[](2);
@@ -75,6 +87,8 @@ contract C {
   }
 }
 
+// FIXME:
+// dcarr(uint256[][]): 0x20, 2, 0x40, 0xa0, 2, 3, 4, 2, 5, 6 -> 0x20, 2, 0x40, 0xa0, 2, 3, 4, 2, 5, 6
 // ====
 // compileViaMlir: true
 // ----
@@ -87,6 +101,8 @@ contract C {
 // darr() -> 32, 2, 1, 1
 // darr2() -> 0x20, 2, 0x40, 0xa0, 2, 0, 1, 2, 1, 0
 // darr3() -> 0x20, 1, 0, 0
+// car(uint256[2]): 1, 3 -> 3
+// dcar(uint256[]): 32, 2, 1, 3 -> 3
 // len() -> 2, 3
 // lit() -> 1, 2
 // lit2() -> 10, 11, 20, 21, 30, 31

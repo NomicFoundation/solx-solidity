@@ -64,7 +64,8 @@ evm::SolTypeConverter::SolTypeConverter() {
       return LLVM::LLVMArrayType::get(eltTy, ty.getSize());
     }
 
-    // Map to the 256 bit address in memory.
+    // Map to the 256 bit address in calldata/memory.
+    case sol::DataLocation::CallData:
     case sol::DataLocation::Memory:
       return IntegerType::get(ty.getContext(), 256,
                               IntegerType::SignednessSemantics::Signless);
@@ -79,7 +80,8 @@ evm::SolTypeConverter::SolTypeConverter() {
   // String type
   addConversion([&](sol::StringType ty) -> Type {
     switch (ty.getDataLocation()) {
-    // Map to the 256 bit address in memory.
+    // Map to the 256 bit address in calldata/memory.
+    case sol::DataLocation::CallData:
     case sol::DataLocation::Memory:
     // Map to the 256 bit slot offset.
     case sol::DataLocation::Storage:
@@ -103,6 +105,7 @@ evm::SolTypeConverter::SolTypeConverter() {
   // Struct type
   addConversion([&](sol::StructType ty) -> Type {
     switch (ty.getDataLocation()) {
+    case sol::DataLocation::CallData:
     case sol::DataLocation::Memory:
       return IntegerType::get(ty.getContext(), 256,
                               IntegerType::SignednessSemantics::Signless);
@@ -121,7 +124,8 @@ evm::SolTypeConverter::SolTypeConverter() {
       return LLVM::LLVMPointerType::get(eltTy);
     }
 
-    // Map to the 256 bit address in memory.
+    // Map to the 256 bit address in calldata/memory.
+    case sol::DataLocation::CallData:
     case sol::DataLocation::Memory:
     // Map to the 256 bit slot offset.
     //
