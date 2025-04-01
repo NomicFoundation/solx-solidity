@@ -508,6 +508,12 @@ Value evm::Builder::genABITupleEncoding(Type ty, Value src, Value dstAddr,
           Value srcVal = genLoad(iSrcAddr, arrTy.getDataLocation(), loc);
           Value nextTailAddr;
           if (sol::hasDynamicallySizedElt(arrTy.getEltType())) {
+            if (arrTy.getDataLocation() == sol::DataLocation::CallData)
+              // Multi-dimensional dynamic arrays in calldata tracks inner
+              // allocations using offsets wrt to the start array. Here `srcVal`
+              // (on the rhs) is that offset.
+              srcVal = b.create<arith::AddIOp>(loc, srcArrAddr, srcVal);
+
             b.create<sol::MStoreOp>(
                 loc, iDstAddr,
                 b.create<arith::SubIOp>(loc, iTailAddr, dstArrAddr));
@@ -674,11 +680,11 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
           if (sol::hasDynamicallySizedElt(arrTy.getEltType())) {
             // The elements are offset wrt to the start of this array (after the
             // size field if dynamic) that contain the inner element.
-            Value offsetFromSrcAddr =
+            Value offsetFromSrcArr =
                 b.create<arith::AddIOp>(loc, srcAddr, genLoad(iSrcAddr));
             b.create<sol::MStoreOp>(
                 loc, iDstAddr,
-                genABITupleDecoding(arrTy.getEltType(), offsetFromSrcAddr,
+                genABITupleDecoding(arrTy.getEltType(), offsetFromSrcArr,
                                     fromMem, tupleStart, tupleEnd, loc));
           } else {
             b.create<sol::MStoreOp>(
