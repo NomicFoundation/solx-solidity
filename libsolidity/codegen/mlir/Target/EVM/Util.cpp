@@ -142,20 +142,7 @@ void evm::Builder::genFreePtrUpd(Value freePtr, Value size,
 
   // Generate the PanicCode::ResourceError check.
   //
-  // FIXME: Do we need to check this in EraVM? I assume this is from the
-  // following ir-breaking-changes:
-  // - The new code generator imposes a hard limit of ``type(uint64).max``
-  //   (``0xffffffffffffffff``) for the free memory pointer. Allocations that
-  //   would increase its value beyond this limit revert. The old code generator
-  //   does not have this limit.
-  auto newPtrGtMax =
-      b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt, newFreePtr,
-                              bExt.genI256Const("0xffffffffffffffff"));
-  auto newPtrLtOrig = b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ult,
-                                              newFreePtr, freePtr);
-  auto panicCond = b.create<arith::OrIOp>(loc, newPtrGtMax, newPtrLtOrig);
-  genPanic(solidity::util::PanicCode::ResourceError, panicCond, loc);
-
+  // TODO: Do we need to imposes a hard limit of ``type(uint64).max`` here?
   b.create<sol::MStoreOp>(loc, bExt.genI256Const(64), newFreePtr);
 }
 
@@ -654,12 +641,24 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
     Value thirtyTwo = bExt.genI256Const(32);
     if (arrTy.isDynSized()) {
       Value i256Size = genLoad(addr);
+      srcAddr = b.create<arith::AddIOp>(loc, addr, thirtyTwo);
+
+      // Generate an assertion that checks the size. (We don't need to do this
+      // for static arrays because we already generated the tuple size
+      // assertion).
+      auto scaledSize = b.create<arith::MulIOp>(
+          loc, i256Size,
+          bExt.genI256Const(getCallDataHeadSize(arrTy.getEltType())));
+      auto endAddr = b.create<arith::AddIOp>(loc, srcAddr, scaledSize);
+      genRevertWithMsg(b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt,
+                                               endAddr, tupleEnd),
+                       "ABI decoding: invalid array size", loc);
+
       dstAddr = genMemAllocForDynArray(
           i256Size, b.create<arith::MulIOp>(loc, i256Size, thirtyTwo));
       ret = dstAddr;
       // Skip the size fields in both the addresses.
       dstAddr = b.create<arith::AddIOp>(loc, dstAddr, thirtyTwo);
-      srcAddr = b.create<arith::AddIOp>(loc, addr, thirtyTwo);
       size = bExt.genCastToIdx(i256Size);
     } else {
       dstAddr = genMemAlloc(bExt.genI256Const(arrTy.getSize() * 32), loc);
@@ -682,6 +681,10 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
             // size field if dynamic) that contain the inner element.
             Value offsetFromSrcArr =
                 b.create<arith::AddIOp>(loc, srcAddr, genLoad(iSrcAddr));
+            genRevertWithMsg(
+                b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt,
+                                        offsetFromSrcArr, tupleEnd),
+                "ABI decoding: invalid array offset", loc);
             b.create<sol::MStoreOp>(
                 loc, iDstAddr,
                 genABITupleDecoding(arrTy.getEltType(), offsetFromSrcArr,
@@ -732,15 +735,19 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
     Value thirtyTwo = bExt.genI256Const(32);
     Value dstDataAddr = b.create<arith::AddIOp>(loc, dstAddr, thirtyTwo);
     Value srcDataAddr = b.create<arith::AddIOp>(loc, tailAddr, thirtyTwo);
-    // TODO: "ABI decoding: invalid byte array length" revert check.
+    Value endAddr = b.create<arith::AddIOp>(loc, srcDataAddr, sizeInBytes);
+    genRevertWithMsg(b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt,
+                                             endAddr, tupleEnd),
+                     "ABI decoding: invalid byte array length", loc);
 
     // FIXME: ABIFunctions::abiDecodingFunctionByteArrayAvailableLength only
     // allocates length + 32 (where length is rounded up to a multiple of 32)
     // bytes. The "+ 32" is for the size field. But it calls
     // YulUtilFunctions::copyToMemoryFunction with the _cleanup param enabled
     // which makes the writing of the zero at the end an out-of-bounds write.
-    // Even if the allocation was done correctly, why should we write zero at
+    // Even if the allocation was done correctly, do we need to write zero at
     // the end?
+
     if (fromMem)
       // TODO? Check m_evmVersion.hasMcopy() and legalize here or in sol.mcopy
       // lowering?
@@ -779,14 +786,9 @@ void evm::Builder::genABITupleDecoding(TypeRange tys, Value tupleStart,
   Value headAddr = tupleStart;
   for (Type ty : tys) {
     if (sol::hasDynamicallySizedElt(ty)) {
-      Value tailOffsetFromTuple = genLoad(headAddr);
-      auto invalidTupleOffsetCond = b.create<arith::CmpIOp>(
-          loc, arith::CmpIPredicate::ugt, tailOffsetFromTuple,
-          bExt.genI256Const("0xffffffffffffffff"));
-      genRevertWithMsg(invalidTupleOffsetCond,
-                       "ABI decoding: invalid tuple offset", loc);
+      // TODO: Do we need the "ABI decoding: invalid tuple offset" check here?
       Value tailAddr =
-          b.create<arith::AddIOp>(loc, tupleStart, tailOffsetFromTuple);
+          b.create<arith::AddIOp>(loc, tupleStart, genLoad(headAddr));
 
       // The `tailAddr` should point to at least 1 32-byte word in the tuple.
       // Generate a revert check for that.
