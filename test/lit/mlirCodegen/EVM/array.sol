@@ -48,7 +48,11 @@ function lit_2d() {
   uint[2][2] memory a = [[uint(10), uint(11)], [uint(20), uint(21)]];
 }
 
-function cdarr(uint[] calldata a) returns (uint, uint) {
+function cd_arr(uint[] calldata a) returns (uint, uint) {
+  return (a.length, a[0]);
+}
+
+function stg_arr(uint[] storage a) returns (uint, uint) {
   return (a.length, a[0]);
 }
 
@@ -356,7 +360,7 @@ function cdarr(uint[] calldata a) returns (uint, uint) {
 // CHECK-NEXT:       "llvm.intrcall"(%64, %c36_i256) <{id = 3257 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc39)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc39)
 // CHECK-NEXT:     } loc(#loc39)
-// CHECK-NEXT:     %26 = arith.addi %22, %c64_i256 : i256 loc(#loc76)
+// CHECK-NEXT:     %26 = arith.addi %22, %c64_i256 : i256 loc(#loc82)
 // CHECK-NEXT:     %27 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1> loc(#loc40)
 // CHECK-NEXT:     %28 = llvm.load %27 {alignment = 1 : i64} : !llvm.ptr<1> -> i256 loc(#loc40)
 // CHECK-NEXT:     %29 = arith.addi %28, %c96_i256 : i256 loc(#loc40)
@@ -399,7 +403,7 @@ function cdarr(uint[] calldata a) returns (uint, uint) {
 // CHECK-NEXT:       "llvm.intrcall"(%64, %c36_i256) <{id = 3257 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc41)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc41)
 // CHECK-NEXT:     } loc(#loc41)
-// CHECK-NEXT:     %47 = arith.addi %43, %c64_i256 : i256 loc(#loc77)
+// CHECK-NEXT:     %47 = arith.addi %43, %c64_i256 : i256 loc(#loc83)
 // CHECK-NEXT:     %48 = llvm.inttoptr %47 : i256 to !llvm.ptr<1> loc(#loc41)
 // CHECK-NEXT:     llvm.store %c1_i256, %48 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc41)
 // CHECK-NEXT:     %49 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc42)
@@ -430,7 +434,7 @@ function cdarr(uint[] calldata a) returns (uint, uint) {
 // CHECK-NEXT:       "llvm.intrcall"(%64, %c36_i256) <{id = 3257 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc42)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc42)
 // CHECK-NEXT:     } loc(#loc42)
-// CHECK-NEXT:     %59 = arith.addi %55, %c64_i256 : i256 loc(#loc78)
+// CHECK-NEXT:     %59 = arith.addi %55, %c64_i256 : i256 loc(#loc84)
 // CHECK-NEXT:     %60 = llvm.inttoptr %59 : i256 to !llvm.ptr<1> loc(#loc42)
 // CHECK-NEXT:     %61 = llvm.load %60 {alignment = 1 : i64} : !llvm.ptr<1> -> i256 loc(#loc42)
 // CHECK-NEXT:     return %61 : i256 loc(#loc43)
@@ -538,7 +542,7 @@ function cdarr(uint[] calldata a) returns (uint, uint) {
 // CHECK-NEXT:     llvm.store %15, %21 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc62)
 // CHECK-NEXT:     return loc(#loc61)
 // CHECK-NEXT:   } loc(#loc61)
-// CHECK-NEXT:   func.func @cdarr_276(%arg0: i256 loc(unknown)) -> (i256, i256) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @cd_arr_276(%arg0: i256 loc(unknown)) -> (i256, i256) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc71)
 // CHECK-NEXT:     %c32_i256 = arith.constant 32 : i256 loc(#loc71)
 // CHECK-NEXT:     %c36_i256 = arith.constant 36 : i256 loc(#loc71)
@@ -569,6 +573,40 @@ function cdarr(uint[] calldata a) returns (uint, uint) {
 // CHECK-NEXT:     %10 = llvm.load %9 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc74)
 // CHECK-NEXT:     return %3, %10 : i256, i256 loc(#loc75)
 // CHECK-NEXT:   } loc(#loc70)
+// CHECK-NEXT:   func.func @stg_arr_294(%arg0: i256 loc(unknown)) -> (i256, i256) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #NonPayable} {
+// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc77)
+// CHECK-NEXT:     %c32_i256 = arith.constant 32 : i256 loc(#loc77)
+// CHECK-NEXT:     %c36_i256 = arith.constant 36 : i256 loc(#loc77)
+// CHECK-NEXT:     %c50_i256 = arith.constant 50 : i256 loc(#loc77)
+// CHECK-NEXT:     %c4_i256 = arith.constant 4 : i256 loc(#loc77)
+// CHECK-NEXT:     %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256 = arith.constant 35408467139433450592217433187231851964531694900788300625387963629091585785856 : i256 loc(#loc77)
+// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc78)
+// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr<i256> loc(#loc78)
+// CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc78)
+// CHECK-NEXT:     %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc79)
+// CHECK-NEXT:     %2 = llvm.inttoptr %1 : i256 to !llvm.ptr<5> loc(#loc79)
+// CHECK-NEXT:     %3 = llvm.load %2 {alignment = 1 : i64} : !llvm.ptr<5> -> i256 loc(#loc79)
+// CHECK-NEXT:     %4 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc77)
+// CHECK-NEXT:     %5 = llvm.inttoptr %4 : i256 to !llvm.ptr<5> loc(#loc77)
+// CHECK-NEXT:     %6 = llvm.load %5 {alignment = 1 : i64} : !llvm.ptr<5> -> i256 loc(#loc77)
+// CHECK-NEXT:     %7 = arith.cmpi ule, %6, %c0_i256 : i256 loc(#loc77)
+// CHECK-NEXT:     scf.if %7 {
+// CHECK-NEXT:       %13 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc77)
+// CHECK-NEXT:       llvm.store %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256, %13 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc77)
+// CHECK-NEXT:       %14 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc77)
+// CHECK-NEXT:       llvm.store %c50_i256, %14 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc77)
+// CHECK-NEXT:       %15 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc77)
+// CHECK-NEXT:       "llvm.intrcall"(%15, %c36_i256) <{id = 3257 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc77)
+// CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc77)
+// CHECK-NEXT:     } loc(#loc77)
+// CHECK-NEXT:     %8 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc77)
+// CHECK-NEXT:     llvm.store %4, %8 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc77)
+// CHECK-NEXT:     %9 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc77)
+// CHECK-NEXT:     %10 = "llvm.intrcall"(%9, %c32_i256) <{id = 3262 : i32, name = "evm.sha3"}> : (!llvm.ptr<1>, i256) -> i256 loc(#loc77)
+// CHECK-NEXT:     %11 = llvm.inttoptr %10 : i256 to !llvm.ptr<5> loc(#loc80)
+// CHECK-NEXT:     %12 = llvm.load %11 {alignment = 1 : i64} : !llvm.ptr<5> -> i256 loc(#loc80)
+// CHECK-NEXT:     return %3, %12 : i256, i256 loc(#loc81)
+// CHECK-NEXT:   } loc(#loc76)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc1 = loc({{.*}}:3:9)
 // CHECK-NEXT: #loc2 = loc({{.*}}:2:0)
@@ -641,11 +679,17 @@ function cdarr(uint[] calldata a) returns (uint, uint) {
 // CHECK-NEXT: #loc69 = loc({{.*}}:47:24)
 // CHECK-NEXT: #loc70 = loc({{.*}}:50:0)
 // CHECK-NEXT: #loc71 = loc({{.*}}:51:20)
-// CHECK-NEXT: #loc72 = loc({{.*}}:50:15)
+// CHECK-NEXT: #loc72 = loc({{.*}}:50:16)
 // CHECK-NEXT: #loc73 = loc({{.*}}:51:10)
 // CHECK-NEXT: #loc74 = loc({{.*}}:51:9)
 // CHECK-NEXT: #loc75 = loc({{.*}}:51:2)
-// CHECK-NEXT: #loc76 = loc(fused[#loc39, #loc33])
-// CHECK-NEXT: #loc77 = loc(fused[#loc41, #loc33])
-// CHECK-NEXT: #loc78 = loc(fused[#loc42, #loc33])
+// CHECK-NEXT: #loc76 = loc({{.*}}:54:0)
+// CHECK-NEXT: #loc77 = loc({{.*}}:55:20)
+// CHECK-NEXT: #loc78 = loc({{.*}}:54:17)
+// CHECK-NEXT: #loc79 = loc({{.*}}:55:10)
+// CHECK-NEXT: #loc80 = loc({{.*}}:55:9)
+// CHECK-NEXT: #loc81 = loc({{.*}}:55:2)
+// CHECK-NEXT: #loc82 = loc(fused[#loc39, #loc33])
+// CHECK-NEXT: #loc83 = loc(fused[#loc41, #loc33])
+// CHECK-NEXT: #loc84 = loc(fused[#loc42, #loc33])
 // CHECK-EMPTY:

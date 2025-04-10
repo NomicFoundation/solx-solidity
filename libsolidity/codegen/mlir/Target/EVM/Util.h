@@ -63,8 +63,8 @@ unsigned getCallDataHeadSize(mlir::Type ty);
 /// the element type size.
 int64_t getMallocSize(mlir::Type ty);
 
-/// MLIR version of solidity ast's Type::storageBytes().
-unsigned getStorageByteCount(mlir::Type ty);
+/// MLIR version of solidity ast's Type::storageSize().
+unsigned getStorageSlotCount(mlir::Type ty);
 
 /// IR Builder for EVM specific lowering.
 class Builder {

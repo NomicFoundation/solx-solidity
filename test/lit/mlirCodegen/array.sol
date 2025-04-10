@@ -48,7 +48,11 @@ function lit_2d() {
   uint[2][2] memory a = [[uint(10), uint(11)], [uint(20), uint(21)]];
 }
 
-function cdarr(uint[] calldata a) returns (uint, uint) {
+function cd_arr(uint[] calldata a) returns (uint, uint) {
+  return (a.length, a[0]);
+}
+
+function stg_arr(uint[] storage a) returns (uint, uint) {
   return (a.length, a[0]);
 }
 
@@ -61,7 +65,8 @@ function cdarr(uint[] calldata a) returns (uint, uint) {
 // CHECK-NEXT: #loc9 = loc({{.*}}:5:39)
 // CHECK-NEXT: #loc15 = loc({{.*}}:8:17)
 // CHECK-NEXT: #loc16 = loc({{.*}}:8:37)
-// CHECK-NEXT: #loc85 = loc({{.*}}:50:15)
+// CHECK-NEXT: #loc85 = loc({{.*}}:50:16)
+// CHECK-NEXT: #loc92 = loc({{.*}}:54:17)
 // CHECK-NEXT: module attributes {sol.evm_version = #Cancun} {
 // CHECK-NEXT:   sol.func @ui_1d_16(%arg0: !sol.array<3 x ui256, Memory> loc({{.*}}:2:15), %arg1: ui256 loc({{.*}}:2:36)) -> ui256 attributes {state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.array<3 x ui256, Memory>, Stack> loc(#loc2)
@@ -217,7 +222,7 @@ function cdarr(uint[] calldata a) returns (uint, uint) {
 // CHECK-NEXT:     sol.store %6, %7 : !sol.array<2 x !sol.array<2 x ui256, Memory>, Memory>, !sol.ptr<!sol.array<2 x !sol.array<2 x ui256, Memory>, Memory>, Stack> loc(#loc83)
 // CHECK-NEXT:     sol.return loc(#loc75)
 // CHECK-NEXT:   } loc(#loc75)
-// CHECK-NEXT:   sol.func @cdarr_276(%arg0: !sol.array<? x ui256, CallData> loc({{.*}}:50:15)) -> (ui256, ui256) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @cd_arr_276(%arg0: !sol.array<? x ui256, CallData> loc({{.*}}:50:16)) -> (ui256, ui256) attributes {state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.array<? x ui256, CallData>, Stack> loc(#loc85)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.array<? x ui256, CallData>, !sol.ptr<!sol.array<? x ui256, CallData>, Stack> loc(#loc85)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<!sol.array<? x ui256, CallData>, Stack>, !sol.array<? x ui256, CallData> loc(#loc86)
@@ -228,6 +233,17 @@ function cdarr(uint[] calldata a) returns (uint, uint) {
 // CHECK-NEXT:     %5 = sol.load %4 : !sol.ptr<ui256, CallData>, ui256 loc(#loc89)
 // CHECK-NEXT:     sol.return %2, %5 : ui256, ui256 loc(#loc90)
 // CHECK-NEXT:   } loc(#loc84)
+// CHECK-NEXT:   sol.func @stg_arr_294(%arg0: !sol.array<? x ui256, Storage> loc({{.*}}:54:17)) -> (ui256, ui256) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.array<? x ui256, Storage>, Stack> loc(#loc92)
+// CHECK-NEXT:     sol.store %arg0, %0 : !sol.array<? x ui256, Storage>, !sol.ptr<!sol.array<? x ui256, Storage>, Stack> loc(#loc92)
+// CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<!sol.array<? x ui256, Storage>, Stack>, !sol.array<? x ui256, Storage> loc(#loc93)
+// CHECK-NEXT:     %2 = sol.length %1 : !sol.array<? x ui256, Storage> loc(#loc93)
+// CHECK-NEXT:     %3 = sol.load %0 : !sol.ptr<!sol.array<? x ui256, Storage>, Stack>, !sol.array<? x ui256, Storage> loc(#loc94)
+// CHECK-NEXT:     %c0_ui8 = sol.constant 0 : ui8 loc(#loc95)
+// CHECK-NEXT:     %4 = sol.gep %3, %c0_ui8 : !sol.array<? x ui256, Storage>, ui8, !sol.ptr<ui256, Storage> loc(#loc94)
+// CHECK-NEXT:     %5 = sol.load %4 : !sol.ptr<ui256, Storage>, ui256 loc(#loc96)
+// CHECK-NEXT:     sol.return %2, %5 : ui256, ui256 loc(#loc97)
+// CHECK-NEXT:   } loc(#loc91)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
@@ -313,4 +329,10 @@ function cdarr(uint[] calldata a) returns (uint, uint) {
 // CHECK-NEXT: #loc88 = loc({{.*}}:51:22)
 // CHECK-NEXT: #loc89 = loc({{.*}}:51:9)
 // CHECK-NEXT: #loc90 = loc({{.*}}:51:2)
+// CHECK-NEXT: #loc91 = loc({{.*}}:54:0)
+// CHECK-NEXT: #loc93 = loc({{.*}}:55:10)
+// CHECK-NEXT: #loc94 = loc({{.*}}:55:20)
+// CHECK-NEXT: #loc95 = loc({{.*}}:55:22)
+// CHECK-NEXT: #loc96 = loc({{.*}}:55:9)
+// CHECK-NEXT: #loc97 = loc({{.*}}:55:2)
 // CHECK-EMPTY:

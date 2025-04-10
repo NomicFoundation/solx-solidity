@@ -401,8 +401,9 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
     }
 
     case sol::DataLocation::CallData:
-    case sol::DataLocation::Memory: {
-      // Memory array
+    case sol::DataLocation::Memory:
+    case sol::DataLocation::Storage: {
+      // Memory/calldata/storage array
       if (auto arrTy = dyn_cast<sol::ArrayType>(baseAddrTy)) {
         Value addrAtIdx;
 
@@ -419,9 +420,10 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
           if (!arrTy.isDynSized()) {
             // FIXME: Should this be done by the verifier?
             assert(constIdx.value() < arrTy.getSize());
+            unsigned stride = dataLoc == sol::DataLocation::Storage ? 1 : 32;
             addrAtIdx = r.create<arith::AddIOp>(
                 loc, remappedBaseAddr,
-                bExt.genI256Const(constIdx.value() * 32));
+                bExt.genI256Const(constIdx.value() * stride));
           }
         }
 
@@ -430,11 +432,10 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
           // Generate PanicCode::ArrayOutOfBounds check.
           //
           Value size;
-          if (arrTy.isDynSized()) {
+          if (arrTy.isDynSized())
             size = evmB.genLoad(remappedBaseAddr, dataLoc);
-          } else {
+          else
             size = bExt.genI256Const(arrTy.getSize());
-          }
 
           // Generate `if iszero(lt(index, <arrayLen>(baseRef)))` (yul).
           auto idxTy = cast<IntegerType>(idx.getType());
@@ -446,12 +447,13 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
           //
           // Generate the address.
           //
-          Value scaledIdx =
-              r.create<arith::MulIOp>(loc, castedIdx, bExt.genI256Const(32));
+          Value stride = dataLoc == sol::DataLocation::Storage
+                             ? bExt.genI256Const(1)
+                             : bExt.genI256Const(32);
+          Value scaledIdx = r.create<arith::MulIOp>(loc, castedIdx, stride);
           if (arrTy.isDynSized()) {
             // Generate the address after the length-slot.
-            Value dataAddr = r.create<arith::AddIOp>(loc, remappedBaseAddr,
-                                                     bExt.genI256Const(32));
+            Value dataAddr = evmB.genDataAddrPtr(remappedBaseAddr, dataLoc);
             addrAtIdx = r.create<arith::AddIOp>(loc, dataAddr, scaledIdx);
           } else {
             addrAtIdx =

@@ -67,6 +67,8 @@ evm::SolTypeConverter::SolTypeConverter() {
     // Map to the 256 bit address in calldata/memory.
     case sol::DataLocation::CallData:
     case sol::DataLocation::Memory:
+    // Map to the 256 bit slot offset.
+    case sol::DataLocation::Storage:
       return IntegerType::get(ty.getContext(), 256,
                               IntegerType::SignednessSemantics::Signless);
 

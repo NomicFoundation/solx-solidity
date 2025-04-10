@@ -41,13 +41,8 @@ unsigned evm::getAlignment(Value ptr) {
 }
 
 unsigned evm::getCallDataHeadSize(Type ty) {
-  if (isa<IntegerType>(ty))
-    return 32;
-
-  if (isa<sol::BytesType>(ty))
-    return 32;
-
-  if (sol::hasDynamicallySizedElt(ty))
+  if (isa<IntegerType>(ty) || isa<sol::BytesType>(ty) ||
+      sol::hasDynamicallySizedElt(ty))
     return 32;
 
   if (auto arrTy = dyn_cast<sol::ArrayType>(ty))
@@ -75,10 +70,14 @@ int64_t evm::getMallocSize(Type ty) {
   return 32;
 }
 
-unsigned evm::getStorageByteCount(Type ty) {
+unsigned evm::getStorageSlotCount(Type ty) {
   if (isa<IntegerType>(ty) || isa<sol::MappingType>(ty) ||
-      isa<sol::StringType>(ty))
-    return 32;
+      sol::hasDynamicallySizedElt(ty))
+    return 1;
+
+  if (auto arrTy = dyn_cast<sol::ArrayType>(ty))
+    return arrTy.getSize() * getStorageSlotCount(arrTy.getEltType());
+
   llvm_unreachable("NYI: Other types");
 }
 
@@ -307,7 +306,8 @@ Value evm::Builder::genDataAddrPtr(Value addr, sol::DataLocation dataLoc,
   Location loc = locArg ? *locArg : defLoc;
   solidity::mlirgen::BuilderExt bExt(b, loc);
 
-  if (dataLoc == sol::DataLocation::Memory) {
+  if (dataLoc == sol::DataLocation::Memory ||
+      dataLoc == sol::DataLocation::CallData) {
     // Return the address after the first word.
     return b.create<arith::AddIOp>(loc, addr, bExt.genI256Const(32));
   }
