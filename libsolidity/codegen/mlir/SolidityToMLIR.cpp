@@ -883,6 +883,24 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     return resVals;
   }
 
+  case FunctionType::Kind::ArrayPush: {
+    ArrayType const *arrTy =
+        dynamic_cast<ArrayType const *>(calleeTy->selfType());
+    solAssert(arrTy);
+    const auto *memberAcc =
+        dynamic_cast<MemberAccess const *>(&call.expression());
+    solAssert(memberAcc);
+    auto storagePtrTy =
+        mlir::sol::PointerType::get(b.getContext(), getType(arrTy->baseType()),
+                                    mlir::sol::DataLocation::Storage);
+    auto newAddr = b.create<mlir::sol::PushOp>(
+        loc, storagePtrTy, genRValExpr(memberAcc->expression()));
+    if (!astArgs.empty())
+      b.create<mlir::sol::StoreOp>(loc, genRValExpr(*astArgs[0]), newAddr);
+    resVals.push_back(newAddr);
+    return resVals;
+  }
+
   default:
     break;
   }

@@ -138,6 +138,13 @@ def Sol_MallocOp : Sol_Op<"malloc"> {
   }];
 }
 
+def Sol_PushOp : Sol_Op<"push"> {
+  let arguments = (ins AnyType:$inp);
+  // FIXME: AnyType -> Sol_PtrTy causes the asm printer to miss the prefix!
+  let results = (outs AnyType:$addr);
+  let assemblyFormat = "$inp attr-dict `:` type($inp) `->` type($addr)";
+}
+
 def Sol_ArrayLitOp : Sol_Op<"array_lit"> {
   let arguments = (ins Variadic<AnyType>:$ins);
   // FIXME: AnyType -> Sol_PtrTy causes the asm printer to miss the prefix!

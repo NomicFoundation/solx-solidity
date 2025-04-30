@@ -357,6 +357,26 @@ struct ArrayLitOpLowering : public OpConversionPattern<sol::ArrayLitOp> {
   }
 };
 
+struct PushOpLowering : public OpConversionPattern<sol::PushOp> {
+  using OpConversionPattern<sol::PushOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::PushOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    evm::Builder evmB(r, loc);
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+
+    Value slot = adaptor.getInp();
+    Value size = r.create<sol::SLoadOp>(loc, slot);
+    Value newSize = r.create<arith::AddIOp>(loc, size, bExt.genI256Const(1));
+    r.create<sol::SStoreOp>(loc, slot, newSize);
+    Value dataSlot = evmB.genDataAddrPtr(slot, sol::DataLocation::Storage);
+
+    r.replaceOp(op, r.create<arith::AddIOp>(loc, dataSlot, size));
+    return success();
+  }
+};
+
 struct AddrOfOpLowering : public OpRewritePattern<sol::AddrOfOp> {
   using OpRewritePattern<sol::AddrOfOp>::OpRewritePattern;
 
@@ -1851,9 +1871,9 @@ void evm::populateCheckedArithPats(RewritePatternSet &pats,
 
 void evm::populateMemPats(RewritePatternSet &pats, TypeConverter &tyConv) {
   pats.add<AllocaOpLowering, MallocOpLowering, ArrayLitOpLowering,
-           GepOpLowering, MapOpLowering, LoadOpLowering, StoreOpLowering,
-           DataLocCastOpLowering, LengthOpLowering, CopyOpLowering>(
-      tyConv, pats.getContext());
+           PushOpLowering, GepOpLowering, MapOpLowering, LoadOpLowering,
+           StoreOpLowering, DataLocCastOpLowering, LengthOpLowering,
+           CopyOpLowering>(tyConv, pats.getContext());
   pats.add<AddrOfOpLowering>(pats.getContext());
 }
 
