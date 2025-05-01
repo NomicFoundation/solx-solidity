@@ -138,6 +138,7 @@ struct ConvertSolToStandard
         sol::MallocOp,
         sol::ArrayLitOp,
         sol::PushOp,
+        sol::PopOp,
         sol::AddrOfOp,
         sol::GepOp,
         sol::MapOp,

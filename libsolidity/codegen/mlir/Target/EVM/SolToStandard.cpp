@@ -377,6 +377,36 @@ struct PushOpLowering : public OpConversionPattern<sol::PushOp> {
   }
 };
 
+struct PopOpLowering : public OpConversionPattern<sol::PopOp> {
+  using OpConversionPattern<sol::PopOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::PopOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    evm::Builder evmB(r, loc);
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+
+    Value slot = adaptor.getInp();
+    Value oldSize = r.create<sol::SLoadOp>(loc, slot);
+
+    // Generate the empty array panic check.
+    Value panicCond = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq,
+                                              oldSize, bExt.genI256Const(0));
+    evmB.genPanic(solidity::util::PanicCode::EmptyArrayPop, panicCond);
+
+    Value newSize = r.create<arith::SubIOp>(loc, oldSize, bExt.genI256Const(1));
+    r.create<sol::SStoreOp>(loc, slot, newSize);
+    Value dataSlot = evmB.genDataAddrPtr(slot, sol::DataLocation::Storage);
+
+    // Zero the deleted slot.
+    Value tailAddr = r.create<arith::AddIOp>(loc, dataSlot, newSize);
+    r.create<sol::SStoreOp>(loc, tailAddr, bExt.genI256Const(0));
+
+    r.eraseOp(op);
+    return success();
+  }
+};
+
 struct AddrOfOpLowering : public OpRewritePattern<sol::AddrOfOp> {
   using OpRewritePattern<sol::AddrOfOp>::OpRewritePattern;
 
@@ -1871,9 +1901,9 @@ void evm::populateCheckedArithPats(RewritePatternSet &pats,
 
 void evm::populateMemPats(RewritePatternSet &pats, TypeConverter &tyConv) {
   pats.add<AllocaOpLowering, MallocOpLowering, ArrayLitOpLowering,
-           PushOpLowering, GepOpLowering, MapOpLowering, LoadOpLowering,
-           StoreOpLowering, DataLocCastOpLowering, LengthOpLowering,
-           CopyOpLowering>(tyConv, pats.getContext());
+           PushOpLowering, PopOpLowering, GepOpLowering, MapOpLowering,
+           LoadOpLowering, StoreOpLowering, DataLocCastOpLowering,
+           LengthOpLowering, CopyOpLowering>(tyConv, pats.getContext());
   pats.add<AddrOfOpLowering>(pats.getContext());
 }
 

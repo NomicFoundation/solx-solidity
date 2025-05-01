@@ -883,7 +883,8 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     return resVals;
   }
 
-  case FunctionType::Kind::ArrayPush: {
+  case FunctionType::Kind::ArrayPush:
+  case FunctionType::Kind::ArrayPop: {
     ArrayType const *arrTy =
         dynamic_cast<ArrayType const *>(calleeTy->selfType());
     solAssert(arrTy);
@@ -893,6 +894,14 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     auto storagePtrTy =
         mlir::sol::PointerType::get(b.getContext(), getType(arrTy->baseType()),
                                     mlir::sol::DataLocation::Storage);
+
+    // Lower `pop`
+    if (calleeTy->kind() == FunctionType::Kind::ArrayPop) {
+      b.create<mlir::sol::PopOp>(loc, genRValExpr(memberAcc->expression()));
+      return resVals;
+    }
+
+    // Lower `push`
     auto newAddr = b.create<mlir::sol::PushOp>(
         loc, storagePtrTy, genRValExpr(memberAcc->expression()));
     if (!astArgs.empty())
