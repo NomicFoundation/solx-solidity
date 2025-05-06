@@ -198,9 +198,9 @@ contract C {
 // CHECK-EMPTY:
 // CHECK-NEXT: ; Function Attrs: nofree null_pointer_is_valid
 // CHECK-NEXT: define private i256 @f1_18() #0 personality ptr @__personality {
-// CHECK-NEXT:   store i256 1, ptr addrspace(1) null, align 1
+// CHECK-NEXT:   store i256 0, ptr addrspace(1) null, align 1
 // CHECK-NEXT:   %1 = call i256 @__sha3(ptr addrspace(1) null, i256 32, i1 false)
-// CHECK-NEXT:   %2 = load i256, ptr addrspace(5) inttoptr (i256 1 to ptr addrspace(5)), align 1
+// CHECK-NEXT:   %2 = load i256, ptr addrspace(5) null, align 1
 // CHECK-NEXT:   %3 = add i256 %2, 31
 // CHECK-NEXT:   %4 = and i256 %3, -32
 // CHECK-NEXT:   %5 = add i256 %4, 32
@@ -652,32 +652,29 @@ contract C {
 // ASM-EMPTY:
 // ASM-NEXT: f1_18:
 // ASM-NEXT: .func_begin5:
-// ASM-NEXT: 	incsp	7
-// ASM-NEXT: 	add	1, r0, r1
-// ASM-NEXT: 	add	r1, r0, stack-[2]
-// ASM-NEXT: 	stm.h	0, r1
+// ASM-NEXT: 	incsp	6
+// ASM-NEXT: 	stm.h	0, r0
 // ASM-NEXT: 	add	32, r0, r2
 // ASM-NEXT: 	add	r0, r0, r1
 // ASM-NEXT: 	add	r0, r0, r3
 // ASM-NEXT: 	call	r0, @__sha3, @DEFAULT_UNWIND
-// ASM-NEXT: 	add	r1, r0, stack-[3]
-// ASM-NEXT: 	add	stack-[2], r0, r1
-// ASM-NEXT: 	lds	r1, r2
+// ASM-NEXT: 	add	r1, r0, stack-[2]
+// ASM-NEXT: 	lds	r0, r2
 // ASM-NEXT: 	add	31, r2, r1
 // ASM-NEXT: 	and	code[@CPI5_1], r1, r3
-// ASM-NEXT: 	add	r3, r0, stack-[4]
+// ASM-NEXT: 	add	r3, r0, stack-[3]
 // ASM-NEXT: 	ldm.h	64, r1
-// ASM-NEXT: 	add	r1, r0, stack-[5]
+// ASM-NEXT: 	add	r1, r0, stack-[4]
 // ASM-NEXT: 	add	r3, r1, r3
 // ASM-NEXT: 	add	32, r3, r3
 // ASM-NEXT: 	stm.h	64, r3
 // ASM-NEXT: 	stm.h	r1, r2
-// ASM-NEXT: 	add	32, r1, stack-[6]
-// ASM-NEXT: 	add	r0, r0, stack-[7]
+// ASM-NEXT: 	add	32, r1, stack-[5]
+// ASM-NEXT: 	add	r0, r0, stack-[6]
 // ASM-NEXT: 	jump	@.BB5_1
 // ASM-NEXT: .BB5_1:
-// ASM-NEXT: 	add	stack-[4], r0, r3
-// ASM-NEXT: 	add	stack-[7], r0, r1
+// ASM-NEXT: 	add	stack-[3], r0, r3
+// ASM-NEXT: 	add	stack-[6], r0, r1
 // ASM-NEXT: 	add	r1, r0, stack-[1]
 // ASM-NEXT: 	sub!	r1, r3, r2
 // ASM-NEXT: 	add	r0, r0, r2
@@ -695,15 +692,15 @@ contract C {
 // ASM-NEXT: 	jump	@.BB5_2
 // ASM-NEXT: .BB5_2:
 // ASM-NEXT: 	add	stack-[1], r0, r1
-// ASM-NEXT: 	add	stack-[3], r1, r3
+// ASM-NEXT: 	add	stack-[2], r1, r3
 // ASM-NEXT: 	lds	r3, r3
 // ASM-NEXT: 	shl.s	5, r1, r4
-// ASM-NEXT: 	add	stack-[6], r4, r2
+// ASM-NEXT: 	add	stack-[5], r4, r2
 // ASM-NEXT: 	stm.h	r2, r3
-// ASM-NEXT: 	add	1, r1, stack-[7]
+// ASM-NEXT: 	add	1, r1, stack-[6]
 // ASM-NEXT: 	jump	@.BB5_1
 // ASM-NEXT: .BB5_3:
-// ASM-NEXT: 	add	stack-[5], r0, r1
+// ASM-NEXT: 	add	stack-[4], r0, r1
 // ASM-NEXT: 	ret
 // ASM-NEXT: .func_end5:
 // ASM-EMPTY:

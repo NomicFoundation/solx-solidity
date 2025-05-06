@@ -247,85 +247,85 @@ module {
 // CHECK-NEXT:     llvm.unreachable
 // CHECK-NEXT:   }
 // CHECK-NEXT:   func.func @f.0(%arg0: i256, %arg1: i256) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} {
-// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256
-// CHECK-NEXT:     %0 = llvm.inttoptr %c1_i256 : i256 to !llvm.ptr<5>
-// CHECK-NEXT:     %1 = llvm.load %0 {alignment = 1 : i64} : !llvm.ptr<5> -> i256
-// CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256
-// CHECK-NEXT:     %2 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %0 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<5>
+// CHECK-NEXT:     %1 = llvm.load %0 {alignment = 1 : i64} : !llvm.ptr<5> -> i256
+// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256
+// CHECK-NEXT:     %c0_i256_0 = arith.constant 0 : i256
+// CHECK-NEXT:     %2 = llvm.inttoptr %c0_i256_0 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:     llvm.store %arg0, %2 {alignment = 1 : i64} : i256, !llvm.ptr<1>
 // CHECK-NEXT:     %c32_i256 = arith.constant 32 : i256
 // CHECK-NEXT:     %3 = llvm.inttoptr %c32_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     llvm.store %c2_i256, %3 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:     llvm.store %c1_i256, %3 {alignment = 1 : i64} : i256, !llvm.ptr<1>
 // CHECK-NEXT:     %c64_i256 = arith.constant 64 : i256
-// CHECK-NEXT:     %4 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %4 = llvm.inttoptr %c0_i256_0 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:     %false = arith.constant false
 // CHECK-NEXT:     %5 = call @__sha3(%4, %c64_i256, %false) : (!llvm.ptr<1>, i256, i1) -> i256
 // CHECK-NEXT:     %6 = llvm.inttoptr %5 : i256 to !llvm.ptr<5>
 // CHECK-NEXT:     %7 = llvm.load %6 {alignment = 1 : i64} : !llvm.ptr<5> -> i256
-// CHECK-NEXT:     %c3_i256 = arith.constant 3 : i256
-// CHECK-NEXT:     %c0_i256_0 = arith.constant 0 : i256
-// CHECK-NEXT:     %8 = llvm.inttoptr %c0_i256_0 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256
+// CHECK-NEXT:     %c0_i256_1 = arith.constant 0 : i256
+// CHECK-NEXT:     %8 = llvm.inttoptr %c0_i256_1 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:     llvm.store %arg1, %8 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:     %c32_i256_1 = arith.constant 32 : i256
-// CHECK-NEXT:     %9 = llvm.inttoptr %c32_i256_1 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     llvm.store %c3_i256, %9 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:     %c64_i256_2 = arith.constant 64 : i256
-// CHECK-NEXT:     %10 = llvm.inttoptr %c0_i256_0 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     %false_3 = arith.constant false
-// CHECK-NEXT:     %11 = call @__sha3(%10, %c64_i256_2, %false_3) : (!llvm.ptr<1>, i256, i1) -> i256
-// CHECK-NEXT:     %c0_i256_4 = arith.constant 0 : i256
-// CHECK-NEXT:     %12 = llvm.inttoptr %c0_i256_4 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %c32_i256_2 = arith.constant 32 : i256
+// CHECK-NEXT:     %9 = llvm.inttoptr %c32_i256_2 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     llvm.store %c2_i256, %9 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:     %c64_i256_3 = arith.constant 64 : i256
+// CHECK-NEXT:     %10 = llvm.inttoptr %c0_i256_1 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %false_4 = arith.constant false
+// CHECK-NEXT:     %11 = call @__sha3(%10, %c64_i256_3, %false_4) : (!llvm.ptr<1>, i256, i1) -> i256
+// CHECK-NEXT:     %c0_i256_5 = arith.constant 0 : i256
+// CHECK-NEXT:     %12 = llvm.inttoptr %c0_i256_5 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:     llvm.store %arg0, %12 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:     %c32_i256_5 = arith.constant 32 : i256
-// CHECK-NEXT:     %13 = llvm.inttoptr %c32_i256_5 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %c32_i256_6 = arith.constant 32 : i256
+// CHECK-NEXT:     %13 = llvm.inttoptr %c32_i256_6 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:     llvm.store %11, %13 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:     %c64_i256_6 = arith.constant 64 : i256
-// CHECK-NEXT:     %14 = llvm.inttoptr %c0_i256_4 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     %false_7 = arith.constant false
-// CHECK-NEXT:     %15 = call @__sha3(%14, %c64_i256_6, %false_7) : (!llvm.ptr<1>, i256, i1) -> i256
+// CHECK-NEXT:     %c64_i256_7 = arith.constant 64 : i256
+// CHECK-NEXT:     %14 = llvm.inttoptr %c0_i256_5 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %false_8 = arith.constant false
+// CHECK-NEXT:     %15 = call @__sha3(%14, %c64_i256_7, %false_8) : (!llvm.ptr<1>, i256, i1) -> i256
 // CHECK-NEXT:     %16 = llvm.inttoptr %15 : i256 to !llvm.ptr<5>
 // CHECK-NEXT:     %17 = llvm.load %16 {alignment = 1 : i64} : !llvm.ptr<5> -> i256
 // CHECK-NEXT:     return
 // CHECK-NEXT:   }
 // CHECK-NEXT:   func.func @f(%arg0: i256, %arg1: i256) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime} {
-// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256
-// CHECK-NEXT:     %0 = llvm.inttoptr %c1_i256 : i256 to !llvm.ptr<5>
-// CHECK-NEXT:     %1 = llvm.load %0 {alignment = 1 : i64} : !llvm.ptr<5> -> i256
-// CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256
-// CHECK-NEXT:     %2 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %0 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<5>
+// CHECK-NEXT:     %1 = llvm.load %0 {alignment = 1 : i64} : !llvm.ptr<5> -> i256
+// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256
+// CHECK-NEXT:     %c0_i256_0 = arith.constant 0 : i256
+// CHECK-NEXT:     %2 = llvm.inttoptr %c0_i256_0 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:     llvm.store %arg0, %2 {alignment = 1 : i64} : i256, !llvm.ptr<1>
 // CHECK-NEXT:     %c32_i256 = arith.constant 32 : i256
 // CHECK-NEXT:     %3 = llvm.inttoptr %c32_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     llvm.store %c2_i256, %3 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:     llvm.store %c1_i256, %3 {alignment = 1 : i64} : i256, !llvm.ptr<1>
 // CHECK-NEXT:     %c64_i256 = arith.constant 64 : i256
-// CHECK-NEXT:     %4 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %4 = llvm.inttoptr %c0_i256_0 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:     %false = arith.constant false
 // CHECK-NEXT:     %5 = call @__sha3(%4, %c64_i256, %false) : (!llvm.ptr<1>, i256, i1) -> i256
 // CHECK-NEXT:     %6 = llvm.inttoptr %5 : i256 to !llvm.ptr<5>
 // CHECK-NEXT:     %7 = llvm.load %6 {alignment = 1 : i64} : !llvm.ptr<5> -> i256
-// CHECK-NEXT:     %c3_i256 = arith.constant 3 : i256
-// CHECK-NEXT:     %c0_i256_0 = arith.constant 0 : i256
-// CHECK-NEXT:     %8 = llvm.inttoptr %c0_i256_0 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256
+// CHECK-NEXT:     %c0_i256_1 = arith.constant 0 : i256
+// CHECK-NEXT:     %8 = llvm.inttoptr %c0_i256_1 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:     llvm.store %arg1, %8 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:     %c32_i256_1 = arith.constant 32 : i256
-// CHECK-NEXT:     %9 = llvm.inttoptr %c32_i256_1 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     llvm.store %c3_i256, %9 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:     %c64_i256_2 = arith.constant 64 : i256
-// CHECK-NEXT:     %10 = llvm.inttoptr %c0_i256_0 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     %false_3 = arith.constant false
-// CHECK-NEXT:     %11 = call @__sha3(%10, %c64_i256_2, %false_3) : (!llvm.ptr<1>, i256, i1) -> i256
-// CHECK-NEXT:     %c0_i256_4 = arith.constant 0 : i256
-// CHECK-NEXT:     %12 = llvm.inttoptr %c0_i256_4 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %c32_i256_2 = arith.constant 32 : i256
+// CHECK-NEXT:     %9 = llvm.inttoptr %c32_i256_2 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     llvm.store %c2_i256, %9 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:     %c64_i256_3 = arith.constant 64 : i256
+// CHECK-NEXT:     %10 = llvm.inttoptr %c0_i256_1 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %false_4 = arith.constant false
+// CHECK-NEXT:     %11 = call @__sha3(%10, %c64_i256_3, %false_4) : (!llvm.ptr<1>, i256, i1) -> i256
+// CHECK-NEXT:     %c0_i256_5 = arith.constant 0 : i256
+// CHECK-NEXT:     %12 = llvm.inttoptr %c0_i256_5 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:     llvm.store %arg0, %12 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:     %c32_i256_5 = arith.constant 32 : i256
-// CHECK-NEXT:     %13 = llvm.inttoptr %c32_i256_5 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %c32_i256_6 = arith.constant 32 : i256
+// CHECK-NEXT:     %13 = llvm.inttoptr %c32_i256_6 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:     llvm.store %11, %13 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:     %c64_i256_6 = arith.constant 64 : i256
-// CHECK-NEXT:     %14 = llvm.inttoptr %c0_i256_4 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     %false_7 = arith.constant false
-// CHECK-NEXT:     %15 = call @__sha3(%14, %c64_i256_6, %false_7) : (!llvm.ptr<1>, i256, i1) -> i256
+// CHECK-NEXT:     %c64_i256_7 = arith.constant 64 : i256
+// CHECK-NEXT:     %14 = llvm.inttoptr %c0_i256_5 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %false_8 = arith.constant false
+// CHECK-NEXT:     %15 = call @__sha3(%14, %c64_i256_7, %false_8) : (!llvm.ptr<1>, i256, i1) -> i256
 // CHECK-NEXT:     %16 = llvm.inttoptr %15 : i256 to !llvm.ptr<5>
 // CHECK-NEXT:     %17 = llvm.load %16 {alignment = 1 : i64} : !llvm.ptr<5> -> i256
 // CHECK-NEXT:     return

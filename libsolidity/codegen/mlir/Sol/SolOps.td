@@ -142,6 +142,11 @@ def Sol_PushOp : Sol_Op<"push"> {
   let arguments = (ins AnyType:$inp);
   // FIXME: AnyType -> Sol_PtrTy causes the asm printer to miss the prefix!
   let results = (outs AnyType:$addr);
+
+  let builders = [
+    OpBuilder<(ins "Value":$inp)>
+  ];
+
   let assemblyFormat = "$inp attr-dict `:` type($inp) `->` type($addr)";
 }
 

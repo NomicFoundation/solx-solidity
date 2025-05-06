@@ -470,7 +470,9 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
           if (!arrTy.isDynSized()) {
             // FIXME: Should this be done by the verifier?
             assert(constIdx.value() < arrTy.getSize());
-            unsigned stride = dataLoc == sol::DataLocation::Storage ? 1 : 32;
+            unsigned stride = dataLoc == sol::DataLocation::Storage
+                                  ? evm::getStorageSlotCount(eltTy)
+                                  : 32;
             addrAtIdx = r.create<arith::AddIOp>(
                 loc, remappedBaseAddr,
                 bExt.genI256Const(constIdx.value() * stride));
@@ -497,9 +499,10 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
           //
           // Generate the address.
           //
-          Value stride = dataLoc == sol::DataLocation::Storage
-                             ? bExt.genI256Const(1)
-                             : bExt.genI256Const(32);
+          Value stride =
+              dataLoc == sol::DataLocation::Storage
+                  ? bExt.genI256Const(evm::getStorageSlotCount(eltTy))
+                  : bExt.genI256Const(32);
           Value scaledIdx = r.create<arith::MulIOp>(loc, castedIdx, stride);
           if (arrTy.isDynSized()) {
             // Generate the address after the length-slot.

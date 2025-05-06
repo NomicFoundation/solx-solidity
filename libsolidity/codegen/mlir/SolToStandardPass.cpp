@@ -189,10 +189,10 @@ struct ConvertSolToStandard
     mod.walk([&](sol::ContractOp contr) {
       APInt slot(256, 0);
       contr.walk([&](sol::StateVarOp stateVar) {
-        unsigned numSlots = evm::getStorageSlotCount(stateVar.getType());
-        stateVar->setAttr("slot",
-                          IntegerAttr::get(IntegerType::get(&getContext(), 256),
-                                           slot += numSlots));
+        stateVar->setAttr(
+            "slot",
+            IntegerAttr::get(IntegerType::get(&getContext(), 256), slot));
+        slot += evm::getStorageSlotCount(stateVar.getType());
       });
     });
 

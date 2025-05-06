@@ -137,6 +137,22 @@ ParseResult AllocaOp::parse(OpAsmParser &parser, OperationState &result) {
 void AllocaOp::print(OpAsmPrinter &p) { printAllocationOp(*this, p); }
 
 //===----------------------------------------------------------------------===//
+// PushOp
+//===----------------------------------------------------------------------===//
+
+void PushOp::build(OpBuilder &odsBuilder, OperationState &odsState, Value inp) {
+  Type eltTy = getEltType(inp.getType());
+  Type resTy = sol::PointerType::get(odsBuilder.getContext(), eltTy,
+                                     sol::DataLocation::Storage);
+
+  // Don't generate pointers to reference types in storage.
+  if (sol::isNonPtrRefType(eltTy))
+    resTy = eltTy;
+
+  build(odsBuilder, odsState, resTy, inp);
+}
+
+//===----------------------------------------------------------------------===//
 // GepOp
 //===----------------------------------------------------------------------===//
 
@@ -154,8 +170,15 @@ void GepOp::build(OpBuilder &odsBuilder, OperationState &odsState,
     eltTy = getEltType(baseAddrTy);
   }
 
-  auto resTy = sol::PointerType::get(odsBuilder.getContext(), eltTy,
+  Type resTy = sol::PointerType::get(odsBuilder.getContext(), eltTy,
                                      getDataLocation(baseAddrTy));
+
+  // Don't generate pointers to reference types in storage.
+  if (auto eltArrTy = dyn_cast<ArrayType>(eltTy)) {
+    if (eltArrTy.getDataLocation() == sol::DataLocation::Storage)
+      resTy = eltTy;
+  }
+
   build(odsBuilder, odsState, resTy, baseAddr, idx);
 }
 
