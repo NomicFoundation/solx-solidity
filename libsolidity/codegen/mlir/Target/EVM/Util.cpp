@@ -322,6 +322,30 @@ Value evm::Builder::genDataAddrPtr(Value addr, sol::DataLocation dataLoc,
   llvm_unreachable("NYI");
 }
 
+Value evm::Builder::genAddrAtIdx(Value baseAddr, Value idx, Type ty,
+                                 sol::DataLocation dataLoc,
+                                 std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+  solidity::mlirgen::BuilderExt bExt(b, loc);
+
+  if (dataLoc == sol::DataLocation::Memory) {
+    Value memIdx = b.create<arith::MulIOp>(loc, idx, bExt.genI256Const(32));
+    return b.create<arith::AddIOp>(loc, baseAddr, memIdx);
+  }
+
+  if (dataLoc == sol::DataLocation::Storage) {
+    Value stride;
+    if (auto arrTy = dyn_cast<sol::ArrayType>(ty))
+      stride = bExt.genI256Const(evm::getStorageSlotCount(arrTy.getEltType()));
+    else if (isa<sol::StringType>(ty))
+      stride = bExt.genI256Const(1);
+    Value scaledIdx = b.create<arith::MulIOp>(loc, idx, stride);
+    return b.create<arith::AddIOp>(loc, baseAddr, scaledIdx);
+  }
+
+  llvm_unreachable("NYI");
+};
+
 Value evm::Builder::genLoad(Value addr, sol::DataLocation dataLoc,
                             std::optional<Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;
@@ -373,26 +397,13 @@ void evm::Builder::genStringStore(std::string const &str, Value addr,
 }
 
 void evm::Builder::genCopyLoop(Value srcAddr, Value dstAddr, Value sizeInWords,
+                               Type srcTy, Type dstTy,
                                sol::DataLocation srcDataLoc,
                                sol::DataLocation dstDataLoc,
                                std::optional<Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;
 
   solidity::mlirgen::BuilderExt bExt(b, loc);
-
-  auto genAddrAtIdx = [&](Value baseAddr, Value idx, sol::DataLocation dataLoc,
-                          Location loc) {
-    if (dataLoc == sol::DataLocation::Memory) {
-      Value memIdx = b.create<arith::MulIOp>(loc, idx, bExt.genI256Const(32));
-      return b.create<arith::AddIOp>(loc, baseAddr, memIdx);
-    }
-
-    if (dataLoc == sol::DataLocation::Storage) {
-      return b.create<arith::AddIOp>(loc, baseAddr, idx);
-    }
-
-    llvm_unreachable("NYI");
-  };
 
   b.create<scf::ForOp>(
       loc, /*lowerBound=*/bExt.genIdxConst(0),
@@ -403,9 +414,11 @@ void evm::Builder::genCopyLoop(Value srcAddr, Value dstAddr, Value sizeInWords,
       [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
         Value i256IndVar = bExt.genCastToI256(indVar);
 
-        Value srcAddrAtIdx = genAddrAtIdx(srcAddr, i256IndVar, srcDataLoc, loc);
+        Value srcAddrAtIdx =
+            genAddrAtIdx(srcAddr, i256IndVar, srcTy, srcDataLoc, loc);
         Value val = genLoad(srcAddrAtIdx, srcDataLoc, loc);
-        Value dstAddrAtIdx = genAddrAtIdx(dstAddr, i256IndVar, dstDataLoc, loc);
+        Value dstAddrAtIdx =
+            genAddrAtIdx(dstAddr, i256IndVar, dstTy, dstDataLoc, loc);
         genStore(val, dstAddrAtIdx, dstDataLoc, loc);
 
         b.create<scf::YieldOp>(loc);

@@ -154,6 +154,13 @@ public:
   genDataAddrPtr(mlir::Value addr, mlir::sol::DataLocation dataLoc,
                  std::optional<mlir::Location> locArg = std::nullopt);
 
+  /// Generates the address computation of the array or string at index.
+  // TODO: Data-location should be fetched from the type! Implement APIs to
+  // "clone" reference types with different data-locations.
+  mlir::Value genAddrAtIdx(mlir::Value baseAddr, mlir::Value idx, mlir::Type ty,
+                           mlir::sol::DataLocation dataLoc,
+                           std::optional<mlir::Location> locArg = std::nullopt);
+
   /// Generates a load from the low level integral type address.
   mlir::Value genLoad(mlir::Value addr, mlir::sol::DataLocation dataLoc,
                       std::optional<mlir::Location> locArg = std::nullopt);
@@ -170,7 +177,8 @@ public:
   /// Generates a loop to copy the data. This works for low level integral type
   /// addresses.
   void genCopyLoop(mlir::Value srcAddr, mlir::Value dstAddr,
-                   mlir::Value sizeInWords, mlir::sol::DataLocation srcDataLoc,
+                   mlir::Value sizeInWords, mlir::Type srcTy, mlir::Type dstTy,
+                   mlir::sol::DataLocation srcDataLoc,
                    mlir::sol::DataLocation dstDataLoc,
                    std::optional<mlir::Location> locArg = std::nullopt);
 

@@ -271,14 +271,16 @@ module {
 // CHECK-NEXT:     %c1 = arith.constant 1 : index
 // CHECK-NEXT:     scf.for %arg0 = %c0 to %16 step %c1 {
 // CHECK-NEXT:       %17 = arith.index_castui %arg0 : index to i256
-// CHECK-NEXT:       %18 = arith.addi %2, %17 : i256
-// CHECK-NEXT:       %19 = llvm.inttoptr %18 : i256 to !llvm.ptr<5>
-// CHECK-NEXT:       %20 = llvm.load %19 {alignment = 1 : i64} : !llvm.ptr<5> -> i256
+// CHECK-NEXT:       %c1_i256 = arith.constant 1 : i256
+// CHECK-NEXT:       %18 = arith.muli %17, %c1_i256 : i256
+// CHECK-NEXT:       %19 = arith.addi %2, %18 : i256
+// CHECK-NEXT:       %20 = llvm.inttoptr %19 : i256 to !llvm.ptr<5>
+// CHECK-NEXT:       %21 = llvm.load %20 {alignment = 1 : i64} : !llvm.ptr<5> -> i256
 // CHECK-NEXT:       %c32_i256_6 = arith.constant 32 : i256
-// CHECK-NEXT:       %21 = arith.muli %17, %c32_i256_6 : i256
-// CHECK-NEXT:       %22 = arith.addi %13, %21 : i256
-// CHECK-NEXT:       %23 = llvm.inttoptr %22 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       llvm.store %20, %23 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:       %22 = arith.muli %17, %c32_i256_6 : i256
+// CHECK-NEXT:       %23 = arith.addi %13, %22 : i256
+// CHECK-NEXT:       %24 = llvm.inttoptr %23 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       llvm.store %21, %24 {alignment = 1 : i64} : i256, !llvm.ptr<1>
 // CHECK-NEXT:     }
 // CHECK-NEXT:     return %9 : i256
 // CHECK-NEXT:   }
@@ -319,14 +321,16 @@ module {
 // CHECK-NEXT:     %c1 = arith.constant 1 : index
 // CHECK-NEXT:     scf.for %arg0 = %c0 to %16 step %c1 {
 // CHECK-NEXT:       %17 = arith.index_castui %arg0 : index to i256
-// CHECK-NEXT:       %18 = arith.addi %2, %17 : i256
-// CHECK-NEXT:       %19 = llvm.inttoptr %18 : i256 to !llvm.ptr<5>
-// CHECK-NEXT:       %20 = llvm.load %19 {alignment = 1 : i64} : !llvm.ptr<5> -> i256
+// CHECK-NEXT:       %c1_i256 = arith.constant 1 : i256
+// CHECK-NEXT:       %18 = arith.muli %17, %c1_i256 : i256
+// CHECK-NEXT:       %19 = arith.addi %2, %18 : i256
+// CHECK-NEXT:       %20 = llvm.inttoptr %19 : i256 to !llvm.ptr<5>
+// CHECK-NEXT:       %21 = llvm.load %20 {alignment = 1 : i64} : !llvm.ptr<5> -> i256
 // CHECK-NEXT:       %c32_i256_6 = arith.constant 32 : i256
-// CHECK-NEXT:       %21 = arith.muli %17, %c32_i256_6 : i256
-// CHECK-NEXT:       %22 = arith.addi %13, %21 : i256
-// CHECK-NEXT:       %23 = llvm.inttoptr %22 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       llvm.store %20, %23 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:       %22 = arith.muli %17, %c32_i256_6 : i256
+// CHECK-NEXT:       %23 = arith.addi %13, %22 : i256
+// CHECK-NEXT:       %24 = llvm.inttoptr %23 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       llvm.store %21, %24 {alignment = 1 : i64} : i256, !llvm.ptr<1>
 // CHECK-NEXT:     }
 // CHECK-NEXT:     return %9 : i256
 // CHECK-NEXT:   }

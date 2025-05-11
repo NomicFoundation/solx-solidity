@@ -30,14 +30,25 @@ contract C {
   }
   }
 
-  uint[3][] d2;
-  function f_d2() public returns (uint) {
-    d2.push()[0] = 1;
-    d2[0][1] = 2;
-    return d2[0][0] + d2[0][1];
+  uint[2][] d2;
+  function f_d2() public returns (uint[2][] memory) {
+    d2.push()[0] = 0x10;
+    d2[0][1] = 0x20;
+    d2.push();
+    d2[1][0] = 0x30;
+    return d2;
   }
+
+  // uint[] m;
+  // function f() public returns (uint[] memory) {
+  //   m.push() = 1;
+  //   // FIXME:
+  //   // m.push(2);
+  //   return m;
+  // }
 }
 
+// f() -> 0x20, 2, 1, 2
 // ====
 // compileViaMlir: true
 // ----
@@ -47,4 +58,4 @@ contract C {
 // f_d1(uint256): 1 -> 2
 // g_d1() -> 0
 // f_s2() -> 12
-// f_d2() -> 3
+// f_d2() -> 0x20, 2, 0x10, 0x20, 0x30, 0
