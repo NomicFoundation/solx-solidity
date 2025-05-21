@@ -122,8 +122,7 @@ evm::SolTypeConverter::SolTypeConverter() {
   addConversion([&](sol::PointerType ty) -> Type {
     switch (ty.getDataLocation()) {
     case sol::DataLocation::Stack: {
-      Type eltTy = convertType(ty.getPointeeType());
-      return LLVM::LLVMPointerType::get(eltTy);
+      return LLVM::LLVMPointerType::get(ty.getContext());
     }
 
     // Map to the 256 bit address in calldata/memory.

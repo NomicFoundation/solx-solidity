@@ -199,7 +199,7 @@ static void printAsm(llvm::Module &llvmMod, llvm::TargetMachine &tgtMach) {
   llvm::legacy::PassManager llvmPassMgr;
   tgtMach.addPassesToEmitFile(llvmPassMgr, llvm::outs(),
                               /*DwoOut=*/nullptr,
-                              llvm::CodeGenFileType::CGFT_AssemblyFile);
+                              llvm::CodeGenFileType::AssemblyFile);
   llvmPassMgr.run(llvmMod);
 }
 
@@ -282,7 +282,7 @@ static void genEraVMBytecode(llvm::Module &llvmMod,
   llvm::raw_svector_ostream outStream(outStreamData);
   tgtMach.addPassesToEmitFile(llvmPassMgr, outStream,
                               /*DwoOut=*/nullptr,
-                              llvm::CodeGenFileType::CGFT_ObjectFile);
+                              llvm::CodeGenFileType::ObjectFile);
   llvmPassMgr.run(llvmMod);
 
   LLVMMemoryBufferRef obj = LLVMCreateMemoryBufferWithMemoryRange(

@@ -12,8 +12,8 @@ object "Test" {
 // CHECK-NEXT:   sol.object @Test {
 // CHECK-NEXT:     %0 = sol.gas loc(#loc1)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc2)
-// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc3)
-// CHECK-NEXT:     llvm.store %0, %1 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc2)
+// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc3)
+// CHECK-NEXT:     llvm.store %0, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc2)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)

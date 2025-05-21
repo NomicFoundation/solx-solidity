@@ -523,7 +523,7 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
 
     // Is this a runtime object?
     // FIXME: Is there a better way to check this?
-    if (objName.endswith("_deployed")) {
+    if (objName.ends_with("_deployed")) {
       auto runtimeMod = r.create<ModuleOp>(loc, objName);
       moveObjToMod(obj, runtimeMod, r);
 

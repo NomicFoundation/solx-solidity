@@ -370,8 +370,8 @@ mlir::Value YulToMLIRPass::genExpr(Literal const &lit) {
 
 mlir::Value YulToMLIRPass::genExpr(Identifier const &id) {
   mlir::Value addr = getLocalVarAddr(id.name);
-  return b.create<mlir::LLVM::LoadOp>(getLoc(id.debugData), addr,
-                                      getDefAlign());
+  return b.create<mlir::LLVM::LoadOp>(
+      getLoc(id.debugData), /*resTy=*/getDefIntTy(), addr, getDefAlign());
 }
 
 mlir::SmallVector<mlir::Value>
@@ -480,8 +480,9 @@ void YulToMLIRPass::operator()(VariableDeclaration const &decl) {
   mlir::SmallVector<mlir::Value> rhsExprs = genDefTyExprs(*decl.value);
   for (auto [var, rhsExpr] : llvm::zip(decl.variables, rhsExprs)) {
     auto addr = b.create<mlir::LLVM::AllocaOp>(
-        getLoc(var.debugData), mlir::LLVM::LLVMPointerType::get(getDefIntTy()),
-        bExt.genI256Const(1), getDefAlign());
+        getLoc(var.debugData),
+        /*resTy=*/mlir::LLVM::LLVMPointerType::get(b.getContext()),
+        /*eltTy=*/getDefIntTy(), bExt.genI256Const(1), getDefAlign());
     trackLocalVarAddr(var.name, addr);
     b.create<mlir::LLVM::StoreOp>(loc, rhsExpr, addr, getDefAlign());
   }
@@ -609,15 +610,16 @@ void YulToMLIRPass::operator()(FunctionDefinition const &fn) {
     mlir::BlockArgument blkArg = entryBlk->addArgument(
         fnOp.getFunctionType().getInput(i++), getLoc(in.debugData));
     auto addr = b.create<mlir::LLVM::AllocaOp>(
-        blkArg.getLoc(), mlir::LLVM::LLVMPointerType::get(getDefIntTy()),
-        bExt.genI256Const(1), getDefAlign());
+        blkArg.getLoc(),
+        /*resTy=*/mlir::LLVM::LLVMPointerType::get(b.getContext()),
+        /*eltTy=*/getDefIntTy(), bExt.genI256Const(1), getDefAlign());
     trackLocalVarAddr(in.name, addr);
   }
   for (const NameWithDebugData &retVar : fn.returnVariables) {
     auto addr = b.create<mlir::LLVM::AllocaOp>(
         getLoc(retVar.debugData),
-        mlir::LLVM::LLVMPointerType::get(getDefIntTy()), bExt.genI256Const(1),
-        getDefAlign());
+        /*resTy=*/mlir::LLVM::LLVMPointerType::get(b.getContext()),
+        /*eltTy=*/getDefIntTy(), bExt.genI256Const(1), getDefAlign());
     trackLocalVarAddr(retVar.name, addr);
   }
 
@@ -627,7 +629,8 @@ void YulToMLIRPass::operator()(FunctionDefinition const &fn) {
   mlir::SmallVector<mlir::Value> retVarLds;
   for (const NameWithDebugData &retVar : fn.returnVariables) {
     auto ld = b.create<mlir::LLVM::LoadOp>(
-        getLoc(retVar.debugData), getLocalVarAddr(retVar.name), getDefAlign());
+        getLoc(retVar.debugData), /*resTy=*/getDefIntTy(),
+        getLocalVarAddr(retVar.name), getDefAlign());
     retVarLds.push_back(ld);
   }
   b.create<mlir::sol::ReturnOp>(loc, retVarLds);

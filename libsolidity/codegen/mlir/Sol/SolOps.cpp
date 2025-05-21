@@ -17,12 +17,14 @@
 
 #include "Sol.h"
 #include "mlir/Dialect/CommonFolders.h"
+#include "mlir/Dialect/UB/IR/UBOps.h"
 #include "mlir/IR/BuiltinAttributes.h"
-#include "mlir/IR/FunctionImplementation.h"
-#include "mlir/IR/FunctionInterfaces.h"
 #include "mlir/IR/IRMapping.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/ValueRange.h"
+#include "mlir/Interfaces/ControlFlowInterfaces.h"
+#include "mlir/Interfaces/FunctionImplementation.h"
+#include "mlir/Interfaces/FunctionInterfaces.h"
 #include "mlir/Support/LLVM.h"
 #include "llvm/ADT/MapVector.h"
 #include "llvm/ADT/STLExtras.h"
@@ -269,11 +271,10 @@ void EmitOp::print(OpAsmPrinter &p) {
 /// during the flow of control. `operands` is a set of optional attributes that
 /// correspond to a constant value for each operand, or null if that operand is
 /// not a constant.
-void IfOp::getSuccessorRegions(std::optional<unsigned> index,
-                               ArrayRef<Attribute> operands,
+void IfOp::getSuccessorRegions(RegionBranchPoint point,
                                SmallVectorImpl<RegionSuccessor> &regions) {
   // The "then" and the "else" region branch back to the parent operation.
-  if (index) {
+  if (!point.isParent()) {
     regions.push_back(RegionSuccessor());
     return;
   }
@@ -305,11 +306,10 @@ void IfOp::getSuccessorRegions(std::optional<unsigned> index,
 // SwitchOp
 //===----------------------------------------------------------------------===//
 
-void SwitchOp::getSuccessorRegions(std::optional<unsigned> index,
-                                   ArrayRef<Attribute> operands,
+void SwitchOp::getSuccessorRegions(RegionBranchPoint point,
                                    SmallVectorImpl<RegionSuccessor> &regions) {
   // All "case" regions branch back to the parent op.
-  if (index) {
+  if (!point.isParent()) {
     regions.push_back(RegionSuccessor());
     return;
   }
@@ -319,7 +319,7 @@ void SwitchOp::getSuccessorRegions(std::optional<unsigned> index,
 
 void SwitchOp::getRegionInvocationBounds(
     ArrayRef<Attribute> operands, SmallVectorImpl<InvocationBounds> &bounds) {
-  auto operandValue = operands.front().dyn_cast_or_null<IntegerAttr>();
+  auto operandValue = dyn_cast_or_null<IntegerAttr>(operands.front());
   if (!operandValue) {
     // All regions are invoked at most once.
     bounds.append(getNumRegions(), InvocationBounds(/*lb=*/0, /*ub=*/1));
@@ -391,8 +391,16 @@ ParseResult SwitchOp::parse(OpAsmParser &p, OperationState &result) {
 // ConditionOp
 //===----------------------------------------------------------------------===//
 
+void ConditionOp::getSuccessorRegions(
+    ArrayRef<Attribute> operands, SmallVectorImpl<RegionSuccessor> &regions) {
+  // Condition may branch to the body or to the parent op.
+  auto loopOp = cast<LoopOpInterface>(getOperation()->getParentOp());
+  regions.emplace_back(&loopOp.getBody(), loopOp.getBody().getArguments());
+  regions.emplace_back(loopOp->getResults());
+}
+
 MutableOperandRange
-ConditionOp::getMutableSuccessorOperands(std::optional<unsigned> index) {
+ConditionOp::getMutableSuccessorOperands(RegionBranchPoint point) {
   // No values are yielded to the successor region.
   return MutableOperandRange(getOperation(), 0, 0);
 }
@@ -402,32 +410,27 @@ ConditionOp::getMutableSuccessorOperands(std::optional<unsigned> index) {
 //===----------------------------------------------------------------------===//
 
 void LoopOpInterface::getLoopOpSuccessorRegions(
-    LoopOpInterface op, std::optional<unsigned> index,
+    LoopOpInterface op, RegionBranchPoint point,
     SmallVectorImpl<RegionSuccessor> &regions) {
-  auto getRegionOrNull = [&](std::optional<unsigned> index,
-                             Operation *op) -> Region * {
-    if (!index)
-      return nullptr;
-    return &op->getRegion(*index);
-  };
+  assert(point.isParent() || point.getRegionOrNull());
 
   // Branching to first region: go to condition or body (do-while).
-  if (!index) {
+  if (point.isParent()) {
     regions.emplace_back(&op.getEntry(), op.getEntry().getArguments());
   }
   // Branching from condition: go to body or exit.
-  else if (&op.getCond() == getRegionOrNull(index, op)) {
+  else if (&op.getCond() == point.getRegionOrNull()) {
     regions.emplace_back(RegionSuccessor(op->getResults()));
     regions.emplace_back(&op.getBody(), op.getBody().getArguments());
   }
   // Branching from body: go to step (for) or condition.
-  else if (&op.getBody() == getRegionOrNull(index, op)) {
+  else if (&op.getBody() == point.getRegionOrNull()) {
     // FIXME: Should we consider break/continue statements here?
     auto *afterBody = (op.maybeGetStep() ? op.maybeGetStep() : &op.getCond());
     regions.emplace_back(afterBody, afterBody->getArguments());
   }
   // Branching from step: go to condition.
-  else if (op.maybeGetStep() == getRegionOrNull(index, op)) {
+  else if (op.maybeGetStep() == point.getRegionOrNull()) {
     regions.emplace_back(&op.getCond(), op.getCond().getArguments());
   } else {
     llvm_unreachable("unexpected branch origin");
@@ -438,49 +441,45 @@ void LoopOpInterface::getLoopOpSuccessorRegions(
 // WhileOp
 //===----------------------------------------------------------------------===//
 
-void WhileOp::getSuccessorRegions(std::optional<unsigned> index,
-                                  ArrayRef<Attribute> operands,
+void WhileOp::getSuccessorRegions(RegionBranchPoint point,
                                   SmallVectorImpl<RegionSuccessor> &regions) {
-  LoopOpInterface::getLoopOpSuccessorRegions(*this, index, regions);
+  LoopOpInterface::getLoopOpSuccessorRegions(*this, point, regions);
 }
 
 //===----------------------------------------------------------------------===//
 // DoWhileOp
 //===----------------------------------------------------------------------===//
 
-void DoWhileOp::getSuccessorRegions(std::optional<unsigned> index,
-                                    ArrayRef<Attribute> operands,
+void DoWhileOp::getSuccessorRegions(RegionBranchPoint point,
                                     SmallVectorImpl<RegionSuccessor> &regions) {
-  LoopOpInterface::getLoopOpSuccessorRegions(*this, index, regions);
+  LoopOpInterface::getLoopOpSuccessorRegions(*this, point, regions);
 }
 
 //===----------------------------------------------------------------------===//
 // ForOp
 //===----------------------------------------------------------------------===//
 
-void ForOp::getSuccessorRegions(std::optional<unsigned> index,
-                                ArrayRef<Attribute> operands,
+void ForOp::getSuccessorRegions(RegionBranchPoint point,
                                 SmallVectorImpl<RegionSuccessor> &regions) {
-  LoopOpInterface::getLoopOpSuccessorRegions(*this, index, regions);
+  LoopOpInterface::getLoopOpSuccessorRegions(*this, point, regions);
 }
 
 //===----------------------------------------------------------------------===//
 // TryOp
 //===----------------------------------------------------------------------===//
 
-void TryOp::getSuccessorRegions(std::optional<unsigned> index,
-                                ArrayRef<Attribute> operands,
+void TryOp::getSuccessorRegions(RegionBranchPoint point,
                                 SmallVectorImpl<RegionSuccessor> &regions) {
   // All regions branch back to the parent op.
-  if (index) {
+  if (!point.isParent()) {
     regions.push_back(RegionSuccessor());
     return;
   }
 
   // TryOp can branch to any non-empty region.
   for (Region *region : getRegions()) {
-    if (region->empty())
-      regions.push_back(region);
+    if (!region->empty())
+      regions.push_back(RegionSuccessor(region));
   }
 }
 

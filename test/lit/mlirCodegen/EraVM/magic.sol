@@ -14,7 +14,7 @@ function addr() returns (address) {
 // CHECK-NEXT: module attributes {sol.evm_version = #Cancun} {
 // CHECK-NEXT:   func.func private @__personality() -> i32 attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
 // CHECK-NEXT:   func.func @msgSender_9() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
-// CHECK-NEXT:     %0 = "llvm.intrcall"() <{id = 3170 : i32, name = "eravm.caller"}> : () -> i256 loc(#loc2)
+// CHECK-NEXT:     %0 = "llvm.intrcall"() <{id = 3651 : i32, name = "eravm.caller"}> : () -> i256 loc(#loc2)
 // CHECK-NEXT:     return %0 : i256 loc(#loc3)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT:   func.func @addr_20() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {

@@ -65,7 +65,7 @@ static bool inRuntimeContext(Operation *op) {
   // If there's no parent FuncOp, check the parent ObjectOp
   auto parentObj = op->getParentOfType<sol::ObjectOp>();
   if (parentObj) {
-    return parentObj.getName().endswith("_deployed");
+    return parentObj.getName().ends_with("_deployed");
   }
 
   llvm_unreachable("op has no parent FuncOp or ObjectOp");
@@ -549,7 +549,7 @@ struct FuncOpLowering : public OpConversionPattern<sol::FuncOp> {
     for (NamedAttribute attr : op->getAttrs()) {
       StringRef attrName = attr.getName();
       if (attrName == "function_type" || attrName == "sym_name" ||
-          attrName.startswith("sol."))
+          attrName.starts_with("sol."))
         continue;
       if (attrName == "llvm.linkage")
         hasLinkageAttr = true;
@@ -658,7 +658,7 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
 
     // Is this a runtime object?
     // FIXME: Is there a better way to check this?
-    if (objOp.getName().endswith("_deployed")) {
+    if (objOp.getName().ends_with("_deployed")) {
       // Move the runtime object region under the __runtime function
       sol::FuncOp runtimeFunc = eraB.getOrInsertRuntimeFuncOp(
           "__runtime", r.getFunctionType({}, {}), mod);
@@ -711,8 +711,9 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
 
     // Store calldatasize[calldata abi arg] to the global ret data ptr and
     // active ptr
-    auto callDataSz = r.create<LLVM::LoadOp>(
-        loc, callDataSizeAddr, eravm::getAlignment(callDataSizeAddr));
+    auto callDataSz =
+        r.create<LLVM::LoadOp>(loc, /*resTy=*/i256Ty, callDataSizeAddr,
+                               eravm::getAlignment(callDataSizeAddr));
     auto retDataABIInitializer = r.create<LLVM::GEPOp>(
         loc,
         /*resultType=*/
@@ -793,7 +794,7 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
     // Move the runtime object getter under the ObjectOp public API
     for (auto const &op : *objOp.getEntryBlock()) {
       if (auto runtimeObj = dyn_cast<sol::ObjectOp>(&op)) {
-        assert(runtimeObj.getName().endswith("_deployed"));
+        assert(runtimeObj.getName().ends_with("_deployed"));
         assert(runtimeFuncRegion.empty());
         r.inlineRegionBefore(runtimeObj.getRegion(), runtimeFuncRegion,
                              runtimeFuncRegion.begin());

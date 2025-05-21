@@ -21,8 +21,8 @@ object "Test" {
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc5)
 // CHECK-NEXT:     %3 = sol.extcodesize %c0_i256 loc(#loc6)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc7)
-// CHECK-NEXT:     %4 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc8)
-// CHECK-NEXT:     llvm.store %3, %4 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc7)
+// CHECK-NEXT:     %4 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc8)
+// CHECK-NEXT:     llvm.store %3, %4 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc7)
 // CHECK-NEXT:     sol.object @Test_deployed {
 // CHECK-NEXT:     } loc(#loc)
 // CHECK-NEXT:   } loc(#loc)

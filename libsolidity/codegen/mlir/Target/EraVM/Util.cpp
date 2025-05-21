@@ -31,6 +31,7 @@
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/SymbolTable.h"
 #include "mlir/IR/Types.h"
 #include "mlir/IR/ValueRange.h"
 #include "mlir/Support/LLVM.h"
@@ -70,8 +71,11 @@ Value eravm::Builder::genCallDataPtr(Value addr, ModuleOp mod,
   Location loc = locArg ? *locArg : defLoc;
 
   LLVM::AddressOfOp callDataPtrAddr = genCallDataPtrAddr(mod, loc);
+  Type loadTy =
+      mod.lookupSymbol<LLVM::GlobalOp>(callDataPtrAddr.getGlobalName())
+          .getType();
   auto callDataPtr = b.create<LLVM::LoadOp>(
-      loc, callDataPtrAddr, eravm::getAlignment(callDataPtrAddr));
+      loc, loadTy, callDataPtrAddr, eravm::getAlignment(callDataPtrAddr));
 
   unsigned callDataPtrAddrSpace =
       cast<LLVM::LLVMPointerType>(callDataPtr.getType()).getAddressSpace();
@@ -164,7 +168,8 @@ Value eravm::Builder::genABIData(Value addr, Value size,
     // Generate the clamped value allocation and set it to max.
     auto maxVal = bExt.genConst(maxValLiteral, valTy.getWidth());
     auto clampedValAddr = b.create<LLVM::AllocaOp>(
-        loc, LLVM::LLVMPointerType::get(valTy), bExt.genConst(1),
+        loc, /*resTy=*/LLVM::LLVMPointerType::get(b.getContext()),
+        /*eltTy=*/valTy, bExt.genConst(1),
         eravm::getAlignment(AddrSpace_Stack));
     b.create<LLVM::StoreOp>(loc, maxVal, clampedValAddr,
                             eravm::getAlignment(AddrSpace_Stack));
@@ -178,7 +183,7 @@ Value eravm::Builder::genABIData(Value addr, Value size,
                           b.create<scf::YieldOp>(loc);
                         });
 
-    return b.create<LLVM::LoadOp>(loc, clampedValAddr,
+    return b.create<LLVM::LoadOp>(loc, /*resTy=*/valTy, clampedValAddr,
                                   eravm::getAlignment(AddrSpace_Stack));
   };
 
@@ -325,7 +330,9 @@ eravm::Builder::genCallDataSizeLoad(ModuleOp mod,
                                     std::optional<Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;
   LLVM::AddressOfOp addr = genCallDataSizeAddr(mod, loc);
-  return b.create<LLVM::LoadOp>(loc, addr, eravm::getAlignment(addr));
+  Type loadTy =
+      mod.lookupSymbol<LLVM::GlobalOp>(addr.getGlobalName()).getType();
+  return b.create<LLVM::LoadOp>(loc, loadTy, addr, eravm::getAlignment(addr));
 }
 
 LLVM::AddressOfOp
@@ -346,7 +353,10 @@ eravm::Builder::genCallDataPtrLoad(ModuleOp mod,
   Location loc = locArg ? *locArg : defLoc;
 
   LLVM::AddressOfOp callDataPtrAddr = genCallDataPtrAddr(mod, loc);
-  return b.create<LLVM::LoadOp>(loc, callDataPtrAddr,
+  Type loadTy =
+      mod.lookupSymbol<LLVM::GlobalOp>(callDataPtrAddr.getGlobalName())
+          .getType();
+  return b.create<LLVM::LoadOp>(loc, loadTy, callDataPtrAddr,
                                 eravm::getAlignment(callDataPtrAddr));
 }
 
@@ -367,5 +377,7 @@ eravm::Builder::genReturnDataSizeLoad(ModuleOp mod,
                                       std::optional<Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;
   LLVM::AddressOfOp addr = genReturnDataSizeAddr(mod, loc);
-  return b.create<LLVM::LoadOp>(loc, addr, eravm::getAlignment(addr));
+  Type loadTy =
+      mod.lookupSymbol<LLVM::GlobalOp>(addr.getGlobalName()).getType();
+  return b.create<LLVM::LoadOp>(loc, loadTy, addr, eravm::getAlignment(addr));
 }

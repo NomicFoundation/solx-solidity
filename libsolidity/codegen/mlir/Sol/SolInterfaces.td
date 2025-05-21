@@ -89,7 +89,7 @@ def LoopOpInterface : OpInterface<"LoopOpInterface", [
   let extraClassDeclaration = [{
     /// Generic method to retrieve the successors of a LoopOpInterface operation.
     static void getLoopOpSuccessorRegions(
-        sol::LoopOpInterface op, std::optional<unsigned> index,
+        sol::LoopOpInterface op, RegionBranchPoint point,
         SmallVectorImpl<RegionSuccessor> &regions);
   }];
 }

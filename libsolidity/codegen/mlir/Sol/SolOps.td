@@ -26,8 +26,8 @@ include "SolBase.td"
 include "SolInterfaces.td"
 include "mlir/Interfaces/CallInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
+include "mlir/Interfaces/FunctionInterfaces.td"
 include "mlir/IR/BuiltinAttributeInterfaces.td"
-include "mlir/IR/FunctionInterfaces.td"
 include "mlir/IR/OpAsmInterface.td"
 include "mlir/IR/SymbolInterfaces.td"
 
@@ -525,6 +525,9 @@ def CallOp : Sol_Op<"call", [CallOpInterface]> {
     operand_range getArgOperands() {
       return {operand_begin(), operand_end()};
     }
+    MutableOperandRange getArgOperandsMutable() {
+      return getOperandsMutable();
+    }
     CallInterfaceCallable getCallableForCallee() {
       return (*this)->getAttrOfType<SymbolRefAttr>("callee");
     }
@@ -558,6 +561,10 @@ def Sol_ExtCallOp : Sol_Op<"ext_call", [CallOpInterface]> {
     //===------------------------------------------------------------------===//
     operand_range getArgOperands() {
       return {operand_begin() + 1, operand_end()};
+    }
+    MutableOperandRange getArgOperandsMutable() {
+      return MutableOperandRange(getOperation(), /*start=*/1,
+          /*length=*/getNumOperands() - 1);
     }
     CallInterfaceCallable getCallableForCallee() {
       return (*this)->getAttrOfType<SymbolRefAttr>("callee");

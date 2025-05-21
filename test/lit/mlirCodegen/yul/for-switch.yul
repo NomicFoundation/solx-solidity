@@ -21,15 +21,15 @@ object "Test" {
 // CHECK-NEXT:   sol.object @Test {
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc1)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc2)
-// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr<i256> loc(#loc3)
-// CHECK-NEXT:     llvm.store %c0_i256, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc2)
+// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc3)
+// CHECK-NEXT:     llvm.store %c0_i256, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc2)
 // CHECK-NEXT:     sol.for cond {
-// CHECK-NEXT:       %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc5)
+// CHECK-NEXT:       %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc5)
 // CHECK-NEXT:       %c2_i256 = arith.constant 2 : i256 loc(#loc6)
 // CHECK-NEXT:       %2 = arith.cmpi ult, %1, %c2_i256 : i256 loc(#loc7)
 // CHECK-NEXT:       sol.condition %2 loc(#loc7)
 // CHECK-NEXT:     } body {
-// CHECK-NEXT:       %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc8)
+// CHECK-NEXT:       %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc8)
 // CHECK-NEXT:       sol.switch %1 : i256
 // CHECK-NEXT:       case 0 {
 // CHECK-NEXT:         sol.break loc(#loc10)
@@ -46,10 +46,10 @@ object "Test" {
 // CHECK-NEXT:       } loc(#loc9)
 // CHECK-NEXT:       sol.yield loc(#loc4)
 // CHECK-NEXT:     } step {
-// CHECK-NEXT:       %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc12)
+// CHECK-NEXT:       %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc12)
 // CHECK-NEXT:       %c1_i256_0 = arith.constant 1 : i256 loc(#loc13)
 // CHECK-NEXT:       %2 = arith.addi %1, %c1_i256_0 : i256 loc(#loc14)
-// CHECK-NEXT:       llvm.store %2, %0 {alignment = 32 : i64} : !llvm.ptr<i256> loc(#loc15)
+// CHECK-NEXT:       llvm.store %2, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc15)
 // CHECK-NEXT:       sol.yield loc(#loc4)
 // CHECK-NEXT:     } loc(#loc4)
 // CHECK-NEXT:   } loc(#loc)

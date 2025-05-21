@@ -24,12 +24,13 @@
 #include "libsolutil/FunctionSelector.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
+#include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/BuiltinAttributes.h"
-#include "mlir/IR/FunctionInterfaces.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/SymbolTable.h"
 #include "mlir/IR/Types.h"
+#include "mlir/Interfaces/FunctionInterfaces.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "llvm/Support/ErrorHandling.h"
 
@@ -326,8 +327,9 @@ struct AllocaOpLowering : public OpConversionPattern<sol::AllocaOp> {
 
     Type convertedEltTy = getTypeConverter()->convertType(op.getAllocType());
     AllocSize size = getTotalSize<1>(op.getAllocType());
-    r.replaceOpWithNewOp<LLVM::AllocaOp>(op, convertedEltTy,
-                                         bExt.genI256Const(size));
+    r.replaceOpWithNewOp<LLVM::AllocaOp>(
+        op, /*resTy=*/LLVM::LLVMPointerType::get(r.getContext()),
+        /*eltTy=*/convertedEltTy, bExt.genI256Const(size));
     return success();
   }
 };
@@ -597,9 +599,15 @@ struct LoadOpLowering : public OpConversionPattern<sol::LoadOp> {
     sol::DataLocation dataLoc = sol::getDataLocation(op.getAddr().getType());
 
     switch (dataLoc) {
-    case sol::DataLocation::Stack:
-      r.replaceOpWithNewOp<LLVM::LoadOp>(op, addr, evm::getAlignment(addr));
+    case sol::DataLocation::Stack: {
+      Type eltTy =
+          cast<sol::PointerType>(op.getAddr().getType()).getPointeeType();
+      Type loadTy = getTypeConverter()->convertType(eltTy);
+      assert(loadTy);
+      r.replaceOpWithNewOp<LLVM::LoadOp>(op, loadTy, addr,
+                                         evm::getAlignment(addr));
       return success();
+    }
     case sol::DataLocation::CallData:
     case sol::DataLocation::Memory: {
       auto addrTy = cast<sol::PointerType>(op.getAddr().getType());
@@ -1592,7 +1600,7 @@ struct FuncOpLowering : public OpConversionPattern<sol::FuncOp> {
     for (NamedAttribute attr : op->getAttrs()) {
       StringRef attrName = attr.getName();
       if (attrName == "function_type" || attrName == "sym_name" ||
-          attrName.startswith("sol."))
+          attrName.starts_with("sol."))
         continue;
       if (attrName == "llvm.linkage")
         hasLinkageAttr = true;

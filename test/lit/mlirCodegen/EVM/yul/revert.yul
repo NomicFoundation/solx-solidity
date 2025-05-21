@@ -16,7 +16,7 @@ object "Test" {
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc3)
 // CHECK-NEXT:     %0 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:     "llvm.intrcall"(%0, %c1_i256) <{id = 3257 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:     "llvm.intrcall"(%0, %c1_i256) <{id = 3737 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)
 // CHECK-NEXT:   } loc(#loc)

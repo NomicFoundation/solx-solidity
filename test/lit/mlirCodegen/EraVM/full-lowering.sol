@@ -143,51 +143,53 @@ contract C {
 // CHECK-NEXT:   store i256 0, ptr @call_flags, align 32
 // CHECK-NEXT:   store <10 x i256> zeroinitializer, ptr @extra_abi_data, align 512
 // CHECK-NEXT:   store ptr addrspace(3) %0, ptr @ptr_calldata, align 32
-// CHECK-NEXT:   store i256 and (i256 lshr (i256 ptrtoint (ptr @ptr_calldata to i256), i256 96), i256 4294967295), ptr @calldatasize, align 32
-// CHECK-NEXT:   %13 = load i256, ptr @calldatasize, align 32
-// CHECK-NEXT:   %14 = getelementptr i8, ptr addrspace(3) %0, i256 %13
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr @ptr_return_data, align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr @ptr_decommit, align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr @ptr_active, align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 1), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 2), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 3), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 4), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 5), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 6), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 7), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 8), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 9), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 10), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 11), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 12), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 13), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 14), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %14, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 15), align 32
+// CHECK-NEXT:   %13 = lshr i256 ptrtoint (ptr @ptr_calldata to i256), 96
+// CHECK-NEXT:   %14 = and i256 %13, 4294967295
+// CHECK-NEXT:   store i256 %14, ptr @calldatasize, align 32
+// CHECK-NEXT:   %15 = load i256, ptr @calldatasize, align 32
+// CHECK-NEXT:   %16 = getelementptr i8, ptr addrspace(3) %0, i256 %15
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr @ptr_return_data, align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr @ptr_decommit, align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr @ptr_active, align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 1), align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 2), align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 3), align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 4), align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 5), align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 6), align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 7), align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 8), align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 9), align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 10), align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 11), align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 12), align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 13), align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 14), align 32
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 15), align 32
 // CHECK-NEXT:   store i256 %1, ptr @call_flags, align 32
 // CHECK-NEXT:   store i256 %2, ptr @extra_abi_data, align 32
-// CHECK-NEXT:   store i256 %3, ptr getelementptr inbounds ([10 x i256], ptr @extra_abi_data, i32 0, i32 1), align 32
-// CHECK-NEXT:   store i256 %4, ptr getelementptr inbounds ([10 x i256], ptr @extra_abi_data, i32 0, i32 2), align 32
-// CHECK-NEXT:   store i256 %5, ptr getelementptr inbounds ([10 x i256], ptr @extra_abi_data, i32 0, i32 3), align 32
-// CHECK-NEXT:   store i256 %6, ptr getelementptr inbounds ([10 x i256], ptr @extra_abi_data, i32 0, i32 4), align 32
-// CHECK-NEXT:   store i256 %7, ptr getelementptr inbounds ([10 x i256], ptr @extra_abi_data, i32 0, i32 5), align 32
-// CHECK-NEXT:   store i256 %8, ptr getelementptr inbounds ([10 x i256], ptr @extra_abi_data, i32 0, i32 6), align 32
-// CHECK-NEXT:   store i256 %9, ptr getelementptr inbounds ([10 x i256], ptr @extra_abi_data, i32 0, i32 7), align 32
-// CHECK-NEXT:   store i256 %10, ptr getelementptr inbounds ([10 x i256], ptr @extra_abi_data, i32 0, i32 8), align 32
-// CHECK-NEXT:   store i256 %11, ptr getelementptr inbounds ([10 x i256], ptr @extra_abi_data, i32 0, i32 9), align 32
-// CHECK-NEXT:   %15 = and i256 %1, 1
-// CHECK-NEXT:   %16 = icmp eq i256 %15, 1
-// CHECK-NEXT:   br i1 %16, label %17, label %18
+// CHECK-NEXT:   store i256 %3, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 1), align 32
+// CHECK-NEXT:   store i256 %4, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 2), align 32
+// CHECK-NEXT:   store i256 %5, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 3), align 32
+// CHECK-NEXT:   store i256 %6, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 4), align 32
+// CHECK-NEXT:   store i256 %7, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 5), align 32
+// CHECK-NEXT:   store i256 %8, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 6), align 32
+// CHECK-NEXT:   store i256 %9, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 7), align 32
+// CHECK-NEXT:   store i256 %10, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 8), align 32
+// CHECK-NEXT:   store i256 %11, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 9), align 32
+// CHECK-NEXT:   %17 = and i256 %1, 1
+// CHECK-NEXT:   %18 = icmp eq i256 %17, 1
+// CHECK-NEXT:   br i1 %18, label %19, label %20
 // CHECK-EMPTY:
-// CHECK-NEXT: 17:                                               ; preds = %12
+// CHECK-NEXT: 19:                                               ; preds = %12
 // CHECK-NEXT:   call void @__deploy()
-// CHECK-NEXT:   br label %19
+// CHECK-NEXT:   br label %21
 // CHECK-EMPTY:
-// CHECK-NEXT: 18:                                               ; preds = %12
+// CHECK-NEXT: 20:                                               ; preds = %12
 // CHECK-NEXT:   call void @__runtime()
-// CHECK-NEXT:   br label %19
+// CHECK-NEXT:   br label %21
 // CHECK-EMPTY:
-// CHECK-NEXT: 19:                                               ; preds = %17, %18
+// CHECK-NEXT: 21:                                               ; preds = %19, %20
 // CHECK-NEXT:   unreachable
 // CHECK-NEXT: }
 // CHECK-EMPTY:
