@@ -117,15 +117,43 @@ struct BytesCastOpLowering : public OpConversionPattern<sol::BytesCastOp> {
   }
 };
 
-/// A templatized version of a conversion pattern for lowering arithmetic binary
+/// A templatized version of a conversion pattern for lowering add, sub and mul
 /// ops.
 template <typename SrcOpT, typename DstOpT>
-struct ArithBinOpConvPat : public OpConversionPattern<SrcOpT> {
+struct ArithBinOpLowering : public OpConversionPattern<SrcOpT> {
   using OpConversionPattern<SrcOpT>::OpConversionPattern;
 
   LogicalResult matchAndRewrite(SrcOpT op, typename SrcOpT::Adaptor adaptor,
                                 ConversionPatternRewriter &r) const override {
     r.replaceOpWithNewOp<DstOpT>(op, adaptor.getLhs(), adaptor.getRhs());
+    return success();
+  }
+};
+
+/// A templatized version of a conversion pattern for lowering div and mod ops.
+template <typename SolOp, typename ArithSignedOp, typename ArithUnsignedOp>
+struct DivOrModOpLowering : public OpConversionPattern<SolOp> {
+  using OpConversionPattern<SolOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(SolOp op, typename SolOp::Adaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+    evm::Builder evmB(r, loc);
+
+    auto ty = cast<IntegerType>(op.getType());
+    Value lhs = adaptor.getLhs();
+    Value rhs = adaptor.getRhs();
+
+    auto zero = bExt.genConst(0, ty.getWidth());
+    auto rhsEqZero =
+        r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq, rhs, zero);
+    evmB.genPanic(solidity::util::PanicCode::DivisionByZero, rhsEqZero);
+
+    if (ty.isSigned())
+      r.replaceOpWithNewOp<ArithSignedOp>(op, lhs, rhs);
+    else
+      r.replaceOpWithNewOp<ArithUnsignedOp>(op, lhs, rhs);
     return success();
   }
 };
@@ -239,6 +267,103 @@ struct CSubOpLowering : public OpConversionPattern<sol::CSubOp> {
     }
 
     r.replaceOp(op, diff);
+    return success();
+  }
+};
+
+struct CMulOpLowering : public OpConversionPattern<sol::CMulOp> {
+  using OpConversionPattern<sol::CMulOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::CMulOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+    evm::Builder evmB(r, loc);
+
+    auto ty = cast<IntegerType>(op.getType());
+    Value lhs = adaptor.getLhs();
+    Value rhs = adaptor.getRhs();
+
+    // See comments in sol.cadd lowering on why we don't have a different
+    // codegen for small ints.
+
+    Value product = r.create<arith::MulIOp>(loc, lhs, rhs);
+    auto zero = bExt.genConst(0, ty.getWidth());
+    if (ty.isSigned()) {
+      // (Copied from the yul codegen)
+      // underflow, if x < 0 and y == int.min
+      auto lhsLtZero =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, lhs, zero);
+      auto minVal = bExt.genConst(APInt::getSignedMinValue(ty.getWidth()));
+      auto rhsEqMin =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq, rhs, minVal);
+      evmB.genPanic(solidity::util::PanicCode::UnderOverflow,
+                    r.create<arith::AndIOp>(loc, lhsLtZero, rhsEqMin));
+
+      // over/underflow, if x != 0 and product/x != y
+      auto lhsNeqZero =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ne, lhs, zero);
+      auto quotient = r.create<arith::DivSIOp>(loc, product, lhs);
+      auto quotientNeqRhs =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ne, quotient, rhs);
+      evmB.genPanic(solidity::util::PanicCode::UnderOverflow,
+                    r.create<arith::AndIOp>(loc, lhsNeqZero, quotientNeqRhs));
+
+      // Unsigned case
+    } else {
+      // over/underflow, if x != 0 and product/x != y
+      auto lhsNeqZero =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ne, lhs, zero);
+      auto quotient = r.create<arith::DivUIOp>(loc, product, lhs);
+      auto quotientNeqRhs =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ne, quotient, rhs);
+      evmB.genPanic(solidity::util::PanicCode::UnderOverflow,
+                    r.create<arith::AndIOp>(loc, lhsNeqZero, quotientNeqRhs));
+    }
+
+    r.replaceOp(op, product);
+    return success();
+  }
+};
+
+struct CDivOpLowering : public OpConversionPattern<sol::CDivOp> {
+  using OpConversionPattern<sol::CDivOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::CDivOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+    evm::Builder evmB(r, loc);
+
+    auto ty = cast<IntegerType>(op.getType());
+    Value lhs = adaptor.getLhs();
+    Value rhs = adaptor.getRhs();
+
+    // See comments in sol.cadd lowering on why we don't have a different
+    // codegen for small ints.
+
+    auto zero = bExt.genConst(0, ty.getWidth());
+    auto rhsEqZero =
+        r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq, rhs, zero);
+    evmB.genPanic(solidity::util::PanicCode::DivisionByZero, rhsEqZero);
+
+    if (ty.isSigned()) {
+      // (Copied from the yul codegen)
+      // underflow, if x == int.min and y == -1
+      auto minVal = bExt.genConst(APInt::getSignedMinValue(ty.getWidth()));
+      auto lhsEqMin =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq, lhs, minVal);
+      auto minusOne = bExt.genConst(-1, ty.getWidth());
+      auto rhsEqMinusOne =
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq, rhs, minusOne);
+      evmB.genPanic(solidity::util::PanicCode::UnderOverflow,
+                    r.create<arith::AndIOp>(loc, lhsEqMin, rhsEqMinusOne));
+      r.replaceOpWithNewOp<arith::DivSIOp>(op, lhs, rhs);
+
+    } else {
+      r.replaceOpWithNewOp<arith::DivUIOp>(op, lhs, rhs);
+    }
+
     return success();
   }
 };
@@ -1945,15 +2070,18 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 
 void evm::populateArithPats(RewritePatternSet &pats, TypeConverter &tyConv) {
   pats.add<ConstantOpLowering, CastOpLowering, BytesCastOpLowering,
-           ArithBinOpConvPat<sol::AddOp, arith::AddIOp>,
-           ArithBinOpConvPat<sol::SubOp, arith::SubIOp>,
-           ArithBinOpConvPat<sol::MulOp, arith::MulIOp>, CmpOpLowering>(
-      tyConv, pats.getContext());
+           ArithBinOpLowering<sol::AddOp, arith::AddIOp>,
+           ArithBinOpLowering<sol::SubOp, arith::SubIOp>,
+           ArithBinOpLowering<sol::MulOp, arith::MulIOp>,
+           DivOrModOpLowering<sol::DivOp, arith::DivSIOp, arith::DivUIOp>,
+           DivOrModOpLowering<sol::ModOp, arith::RemSIOp, arith::RemUIOp>,
+           CmpOpLowering>(tyConv, pats.getContext());
 }
 
 void evm::populateCheckedArithPats(RewritePatternSet &pats,
                                    TypeConverter &tyConv) {
-  pats.add<CAddOpLowering, CSubOpLowering>(tyConv, pats.getContext());
+  pats.add<CAddOpLowering, CSubOpLowering, CMulOpLowering, CDivOpLowering>(
+      tyConv, pats.getContext());
 }
 
 void evm::populateMemPats(RewritePatternSet &pats, TypeConverter &tyConv) {

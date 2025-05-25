@@ -88,6 +88,10 @@ def Sol_CAddOp : Sol_IntBinaryOp<"cadd", [Commutative]>;
 
 def Sol_CSubOp : Sol_IntBinaryOp<"csub">;
 
+def Sol_CMulOp : Sol_IntBinaryOp<"cmul", [Commutative]>;
+
+def Sol_CDivOp : Sol_IntBinaryOp<"cdiv">;
+
 def Sol_AddOp : Sol_IntBinaryOp<"add", [Pure, Commutative]> {
   // TODO: folder, canonicalizer
 }
@@ -97,6 +101,14 @@ def Sol_SubOp : Sol_IntBinaryOp<"sub", [Pure]> {
 }
 
 def Sol_MulOp : Sol_IntBinaryOp<"mul", [Pure, Commutative]> {
+  // TODO: folder, canonicalizer
+}
+
+def Sol_DivOp : Sol_IntBinaryOp<"div"> {
+  // TODO: folder, canonicalizer
+}
+
+def Sol_ModOp : Sol_IntBinaryOp<"mod"> {
   // TODO: folder, canonicalizer
 }
 
