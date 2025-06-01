@@ -18,6 +18,7 @@
 #include "libsolidity/codegen/mlir/Passes.h"
 #include "libsolidity/codegen/mlir/Interface.h"
 #include "lld-c/LLDAsLibraryC.h"
+#include "mlir/Dialect/LLVMIR/Transforms/Passes.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
@@ -72,6 +73,10 @@ void solidity::mlirgen::addConversionPasses(mlir::PassManager &passMgr,
   default:
     llvm_unreachable("");
   }
+
+  // FIXME: UNREACHABLE executed at
+  // llvm/lib/Target/EVM/MCTargetDesc/EVMAsmBackend.cpp:112!
+  // passMgr.addPass(mlir::LLVM::createDIScopeForLLVMFuncOpPass());
 }
 
 std::unique_ptr<llvm::TargetMachine>
