@@ -55,7 +55,7 @@ std::unique_ptr<Pass> createConvertStandardToLLVMPass(StringRef triple,
 namespace solidity::mlirgen {
 
 /// Adds dialect conversion passes for the target.
-void addConversionPasses(mlir::PassManager &, Target tgt);
+void addConversionPasses(mlir::PassManager &, Target tgt, bool enableDI = true);
 
 /// Creates and return the llvm::TargetMachine for `tgt`
 std::unique_ptr<llvm::TargetMachine> createTargetMachine(Target tgt);

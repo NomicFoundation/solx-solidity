@@ -44,7 +44,7 @@
 // FIXME: Define an interface for targets!
 
 void solidity::mlirgen::addConversionPasses(mlir::PassManager &passMgr,
-                                            Target tgt) {
+                                            Target tgt, bool enableDI) {
   passMgr.addPass(mlir::createCanonicalizerPass());
   passMgr.addPass(mlir::sol::createModifierOpLoweringPass());
   passMgr.addPass(mlir::sol::createConvertSolToStandardPass(tgt));
@@ -74,9 +74,8 @@ void solidity::mlirgen::addConversionPasses(mlir::PassManager &passMgr,
     llvm_unreachable("");
   }
 
-  // FIXME: UNREACHABLE executed at
-  // llvm/lib/Target/EVM/MCTargetDesc/EVMAsmBackend.cpp:112!
-  // passMgr.addPass(mlir::LLVM::createDIScopeForLLVMFuncOpPass());
+  if (enableDI)
+    passMgr.addPass(mlir::LLVM::createDIScopeForLLVMFuncOpPass());
 }
 
 std::unique_ptr<llvm::TargetMachine>
@@ -410,7 +409,9 @@ bool solidity::mlirgen::doJob(JobSpec const &job, mlir::ModuleOp mod,
 
   case Action::GenObj: {
     // Convert the module's ir to llvm dialect.
-    addConversionPasses(passMgr, job.tgt);
+    // FIXME: enableDI UNREACHABLE executed at
+    // llvm/lib/Target/EVM/MCTargetDesc/EVMAsmBackend.cpp:112!
+    addConversionPasses(passMgr, job.tgt, /*enableDI=*/false);
     if (mlir::failed(passMgr.run(mod)))
       llvm_unreachable("Conversion to llvm dialect failed");
 

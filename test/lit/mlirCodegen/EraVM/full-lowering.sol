@@ -26,218 +26,218 @@ contract C {
 // CHECK-NEXT: @memory_pointer = private global i256 0
 // CHECK-EMPTY:
 // CHECK-NEXT: ; Function Attrs: nofree null_pointer_is_valid
-// CHECK-NEXT: define private void @.unreachable() #0 personality ptr @__personality {
-// CHECK-NEXT:   unreachable
+// CHECK-NEXT: define private void @.unreachable() #0 personality ptr @__personality !dbg !3 {
+// CHECK-NEXT:   unreachable, !dbg !6
 // CHECK-NEXT: }
 // CHECK-EMPTY:
 // CHECK-NEXT: ; Function Attrs: nofree null_pointer_is_valid
-// CHECK-NEXT: define private void @__deploy() #0 personality ptr @__personality {
-// CHECK-NEXT:   store i256 128, ptr addrspace(1) inttoptr (i256 64 to ptr addrspace(1)), align 1
-// CHECK-NEXT:   %1 = call i256 @llvm.eravm.getu128()
-// CHECK-NEXT:   %2 = icmp ne i256 %1, 0
-// CHECK-NEXT:   br i1 %2, label %3, label %4
+// CHECK-NEXT: define private void @__deploy() #0 personality ptr @__personality !dbg !7 {
+// CHECK-NEXT:   store i256 128, ptr addrspace(1) inttoptr (i256 64 to ptr addrspace(1)), align 1, !dbg !8
+// CHECK-NEXT:   %1 = call i256 @llvm.eravm.getu128(), !dbg !8
+// CHECK-NEXT:   %2 = icmp ne i256 %1, 0, !dbg !8
+// CHECK-NEXT:   br i1 %2, label %3, label %4, !dbg !8
 // CHECK-EMPTY:
 // CHECK-NEXT: 3:                                                ; preds = %0
-// CHECK-NEXT:   call void @__revert(i256 0, i256 0, i256 2)
-// CHECK-NEXT:   call void @.unreachable()
-// CHECK-NEXT:   br label %4
+// CHECK-NEXT:   call void @__revert(i256 0, i256 0, i256 2), !dbg !8
+// CHECK-NEXT:   call void @.unreachable(), !dbg !8
+// CHECK-NEXT:   br label %4, !dbg !8
 // CHECK-EMPTY:
 // CHECK-NEXT: 4:                                                ; preds = %3, %0
-// CHECK-NEXT:   %5 = load i256, ptr addrspace(1) inttoptr (i256 64 to ptr addrspace(1)), align 1
-// CHECK-NEXT:   %6 = inttoptr i256 %5 to ptr addrspace(1)
-// CHECK-NEXT:   %7 = load ptr addrspace(3), ptr @ptr_calldata, align 32
-// CHECK-NEXT:   call void @llvm.memcpy.p1.p3.i256(ptr addrspace(1) %6, ptr addrspace(3) %7, i256 0, i1 false)
-// CHECK-NEXT:   store i256 32, ptr addrspace(2) inttoptr (i256 256 to ptr addrspace(2)), align 1
-// CHECK-NEXT:   store i256 0, ptr addrspace(2) inttoptr (i256 288 to ptr addrspace(2)), align 1
-// CHECK-NEXT:   call void @__return(i256 256, i256 64, i256 2)
-// CHECK-NEXT:   call void @.unreachable()
-// CHECK-NEXT:   unreachable
+// CHECK-NEXT:   %5 = load i256, ptr addrspace(1) inttoptr (i256 64 to ptr addrspace(1)), align 1, !dbg !8
+// CHECK-NEXT:   %6 = inttoptr i256 %5 to ptr addrspace(1), !dbg !8
+// CHECK-NEXT:   %7 = load ptr addrspace(3), ptr @ptr_calldata, align 32, !dbg !8
+// CHECK-NEXT:   call void @llvm.memcpy.p1.p3.i256(ptr addrspace(1) %6, ptr addrspace(3) %7, i256 0, i1 false), !dbg !8
+// CHECK-NEXT:   store i256 32, ptr addrspace(2) inttoptr (i256 256 to ptr addrspace(2)), align 1, !dbg !8
+// CHECK-NEXT:   store i256 0, ptr addrspace(2) inttoptr (i256 288 to ptr addrspace(2)), align 1, !dbg !8
+// CHECK-NEXT:   call void @__return(i256 256, i256 64, i256 2), !dbg !8
+// CHECK-NEXT:   call void @.unreachable(), !dbg !8
+// CHECK-NEXT:   unreachable, !dbg !8
 // CHECK-NEXT: }
 // CHECK-EMPTY:
 // CHECK-NEXT: ; Function Attrs: nofree null_pointer_is_valid
-// CHECK-NEXT: define private void @__runtime() #0 personality ptr @__personality {
-// CHECK-NEXT:   store i256 128, ptr addrspace(1) inttoptr (i256 64 to ptr addrspace(1)), align 1
-// CHECK-NEXT:   %1 = load i256, ptr @calldatasize, align 32
-// CHECK-NEXT:   %2 = icmp uge i256 %1, 4
-// CHECK-NEXT:   br i1 %2, label %3, label %38
+// CHECK-NEXT: define private void @__runtime() #0 personality ptr @__personality !dbg !9 {
+// CHECK-NEXT:   store i256 128, ptr addrspace(1) inttoptr (i256 64 to ptr addrspace(1)), align 1, !dbg !10
+// CHECK-NEXT:   %1 = load i256, ptr @calldatasize, align 32, !dbg !10
+// CHECK-NEXT:   %2 = icmp uge i256 %1, 4, !dbg !10
+// CHECK-NEXT:   br i1 %2, label %3, label %38, !dbg !10
 // CHECK-EMPTY:
 // CHECK-NEXT: 3:                                                ; preds = %0
-// CHECK-NEXT:   %4 = load ptr addrspace(3), ptr @ptr_calldata, align 32
-// CHECK-NEXT:   %5 = load i256, ptr addrspace(3) %4, align 1
-// CHECK-NEXT:   %6 = lshr i256 %5, 224
-// CHECK-NEXT:   %7 = trunc i256 %6 to i32
+// CHECK-NEXT:   %4 = load ptr addrspace(3), ptr @ptr_calldata, align 32, !dbg !10
+// CHECK-NEXT:   %5 = load i256, ptr addrspace(3) %4, align 1, !dbg !10
+// CHECK-NEXT:   %6 = lshr i256 %5, 224, !dbg !10
+// CHECK-NEXT:   %7 = trunc i256 %6 to i32, !dbg !10
 // CHECK-NEXT:   switch i32 %7, label %36 [
 // CHECK-NEXT:     i32 -1518009227, label %8
 // CHECK-NEXT:     i32 -1031814395, label %16
-// CHECK-NEXT:   ]
+// CHECK-NEXT:   ], !dbg !10
 // CHECK-EMPTY:
 // CHECK-NEXT: 8:                                                ; preds = %3
-// CHECK-NEXT:   %9 = call i256 @llvm.eravm.getu128()
-// CHECK-NEXT:   %10 = icmp ne i256 %9, 0
-// CHECK-NEXT:   br i1 %10, label %11, label %12
+// CHECK-NEXT:   %9 = call i256 @llvm.eravm.getu128(), !dbg !10
+// CHECK-NEXT:   %10 = icmp ne i256 %9, 0, !dbg !10
+// CHECK-NEXT:   br i1 %10, label %11, label %12, !dbg !10
 // CHECK-EMPTY:
 // CHECK-NEXT: 11:                                               ; preds = %8
-// CHECK-NEXT:   call void @__revert(i256 0, i256 0, i256 0)
-// CHECK-NEXT:   call void @.unreachable()
-// CHECK-NEXT:   br label %12
+// CHECK-NEXT:   call void @__revert(i256 0, i256 0, i256 0), !dbg !10
+// CHECK-NEXT:   call void @.unreachable(), !dbg !10
+// CHECK-NEXT:   br label %12, !dbg !10
 // CHECK-EMPTY:
 // CHECK-NEXT: 12:                                               ; preds = %11, %8
-// CHECK-NEXT:   %13 = call i256 @f0_10()
-// CHECK-NEXT:   %14 = load i256, ptr addrspace(1) inttoptr (i256 64 to ptr addrspace(1)), align 1
-// CHECK-NEXT:   %15 = inttoptr i256 %14 to ptr addrspace(1)
-// CHECK-NEXT:   store i256 %13, ptr addrspace(1) %15, align 1
-// CHECK-NEXT:   call void @__return(i256 %14, i256 32, i256 0)
-// CHECK-NEXT:   call void @.unreachable()
-// CHECK-NEXT:   br label %37
+// CHECK-NEXT:   %13 = call i256 @f0_10(), !dbg !10
+// CHECK-NEXT:   %14 = load i256, ptr addrspace(1) inttoptr (i256 64 to ptr addrspace(1)), align 1, !dbg !10
+// CHECK-NEXT:   %15 = inttoptr i256 %14 to ptr addrspace(1), !dbg !10
+// CHECK-NEXT:   store i256 %13, ptr addrspace(1) %15, align 1, !dbg !10
+// CHECK-NEXT:   call void @__return(i256 %14, i256 32, i256 0), !dbg !10
+// CHECK-NEXT:   call void @.unreachable(), !dbg !10
+// CHECK-NEXT:   br label %37, !dbg !10
 // CHECK-EMPTY:
 // CHECK-NEXT: 16:                                               ; preds = %3
-// CHECK-NEXT:   %17 = call i256 @llvm.eravm.getu128()
-// CHECK-NEXT:   %18 = icmp ne i256 %17, 0
-// CHECK-NEXT:   br i1 %18, label %19, label %20
+// CHECK-NEXT:   %17 = call i256 @llvm.eravm.getu128(), !dbg !10
+// CHECK-NEXT:   %18 = icmp ne i256 %17, 0, !dbg !10
+// CHECK-NEXT:   br i1 %18, label %19, label %20, !dbg !10
 // CHECK-EMPTY:
 // CHECK-NEXT: 19:                                               ; preds = %16
-// CHECK-NEXT:   call void @__revert(i256 0, i256 0, i256 0)
-// CHECK-NEXT:   call void @.unreachable()
-// CHECK-NEXT:   br label %20
+// CHECK-NEXT:   call void @__revert(i256 0, i256 0, i256 0), !dbg !10
+// CHECK-NEXT:   call void @.unreachable(), !dbg !10
+// CHECK-NEXT:   br label %20, !dbg !10
 // CHECK-EMPTY:
 // CHECK-NEXT: 20:                                               ; preds = %19, %16
-// CHECK-NEXT:   %21 = call i256 @f1_18()
-// CHECK-NEXT:   %22 = load i256, ptr addrspace(1) inttoptr (i256 64 to ptr addrspace(1)), align 1
-// CHECK-NEXT:   %23 = add i256 %22, 32
-// CHECK-NEXT:   %24 = inttoptr i256 %22 to ptr addrspace(1)
-// CHECK-NEXT:   store i256 32, ptr addrspace(1) %24, align 1
-// CHECK-NEXT:   %25 = inttoptr i256 %21 to ptr addrspace(1)
-// CHECK-NEXT:   %26 = load i256, ptr addrspace(1) %25, align 1
-// CHECK-NEXT:   %27 = inttoptr i256 %23 to ptr addrspace(1)
-// CHECK-NEXT:   store i256 %26, ptr addrspace(1) %27, align 1
-// CHECK-NEXT:   %28 = add i256 %21, 32
-// CHECK-NEXT:   %29 = add i256 %22, 64
-// CHECK-NEXT:   %30 = inttoptr i256 %29 to ptr addrspace(1)
-// CHECK-NEXT:   %31 = inttoptr i256 %28 to ptr addrspace(1)
-// CHECK-NEXT:   call void @llvm.memmove.p1.p1.i256(ptr addrspace(1) %30, ptr addrspace(1) %31, i256 %26, i1 false)
-// CHECK-NEXT:   %32 = add i256 %26, 31
-// CHECK-NEXT:   %33 = and i256 %32, -32
-// CHECK-NEXT:   %34 = add i256 %29, %33
-// CHECK-NEXT:   %35 = sub i256 %34, %22
-// CHECK-NEXT:   call void @__return(i256 %22, i256 %35, i256 0)
-// CHECK-NEXT:   call void @.unreachable()
-// CHECK-NEXT:   br label %37
+// CHECK-NEXT:   %21 = call i256 @f1_18(), !dbg !10
+// CHECK-NEXT:   %22 = load i256, ptr addrspace(1) inttoptr (i256 64 to ptr addrspace(1)), align 1, !dbg !10
+// CHECK-NEXT:   %23 = add i256 %22, 32, !dbg !10
+// CHECK-NEXT:   %24 = inttoptr i256 %22 to ptr addrspace(1), !dbg !10
+// CHECK-NEXT:   store i256 32, ptr addrspace(1) %24, align 1, !dbg !10
+// CHECK-NEXT:   %25 = inttoptr i256 %21 to ptr addrspace(1), !dbg !10
+// CHECK-NEXT:   %26 = load i256, ptr addrspace(1) %25, align 1, !dbg !10
+// CHECK-NEXT:   %27 = inttoptr i256 %23 to ptr addrspace(1), !dbg !10
+// CHECK-NEXT:   store i256 %26, ptr addrspace(1) %27, align 1, !dbg !10
+// CHECK-NEXT:   %28 = add i256 %21, 32, !dbg !10
+// CHECK-NEXT:   %29 = add i256 %22, 64, !dbg !10
+// CHECK-NEXT:   %30 = inttoptr i256 %29 to ptr addrspace(1), !dbg !10
+// CHECK-NEXT:   %31 = inttoptr i256 %28 to ptr addrspace(1), !dbg !10
+// CHECK-NEXT:   call void @llvm.memmove.p1.p1.i256(ptr addrspace(1) %30, ptr addrspace(1) %31, i256 %26, i1 false), !dbg !10
+// CHECK-NEXT:   %32 = add i256 %26, 31, !dbg !10
+// CHECK-NEXT:   %33 = and i256 %32, -32, !dbg !10
+// CHECK-NEXT:   %34 = add i256 %29, %33, !dbg !10
+// CHECK-NEXT:   %35 = sub i256 %34, %22, !dbg !10
+// CHECK-NEXT:   call void @__return(i256 %22, i256 %35, i256 0), !dbg !10
+// CHECK-NEXT:   call void @.unreachable(), !dbg !10
+// CHECK-NEXT:   br label %37, !dbg !10
 // CHECK-EMPTY:
 // CHECK-NEXT: 36:                                               ; preds = %3
-// CHECK-NEXT:   br label %37
+// CHECK-NEXT:   br label %37, !dbg !10
 // CHECK-EMPTY:
 // CHECK-NEXT: 37:                                               ; preds = %36, %12, %20
-// CHECK-NEXT:   br label %38
+// CHECK-NEXT:   br label %38, !dbg !10
 // CHECK-EMPTY:
 // CHECK-NEXT: 38:                                               ; preds = %37, %0
-// CHECK-NEXT:   call void @__revert(i256 0, i256 0, i256 0)
-// CHECK-NEXT:   call void @.unreachable()
-// CHECK-NEXT:   unreachable
+// CHECK-NEXT:   call void @__revert(i256 0, i256 0, i256 0), !dbg !10
+// CHECK-NEXT:   call void @.unreachable(), !dbg !10
+// CHECK-NEXT:   unreachable, !dbg !10
 // CHECK-NEXT: }
 // CHECK-EMPTY:
 // CHECK-NEXT: ; Function Attrs: nofree null_pointer_is_valid
-// CHECK-NEXT: define i256 @__entry(ptr addrspace(3) %0, i256 %1, i256 %2, i256 %3, i256 %4, i256 %5, i256 %6, i256 %7, i256 %8, i256 %9, i256 %10, i256 %11) #0 personality ptr @__personality {
-// CHECK-NEXT:   store i256 0, ptr @memory_pointer, align 32
-// CHECK-NEXT:   store i256 0, ptr @calldatasize, align 32
-// CHECK-NEXT:   store i256 0, ptr @returndatasize, align 32
-// CHECK-NEXT:   store i256 0, ptr @call_flags, align 32
-// CHECK-NEXT:   store <10 x i256> zeroinitializer, ptr @extra_abi_data, align 512
-// CHECK-NEXT:   store ptr addrspace(3) %0, ptr @ptr_calldata, align 32
-// CHECK-NEXT:   %13 = lshr i256 ptrtoint (ptr @ptr_calldata to i256), 96
-// CHECK-NEXT:   %14 = and i256 %13, 4294967295
-// CHECK-NEXT:   store i256 %14, ptr @calldatasize, align 32
-// CHECK-NEXT:   %15 = load i256, ptr @calldatasize, align 32
-// CHECK-NEXT:   %16 = getelementptr i8, ptr addrspace(3) %0, i256 %15
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr @ptr_return_data, align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr @ptr_decommit, align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr @ptr_active, align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 1), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 2), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 3), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 4), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 5), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 6), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 7), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 8), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 9), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 10), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 11), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 12), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 13), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 14), align 32
-// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 15), align 32
-// CHECK-NEXT:   store i256 %1, ptr @call_flags, align 32
-// CHECK-NEXT:   store i256 %2, ptr @extra_abi_data, align 32
-// CHECK-NEXT:   store i256 %3, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 1), align 32
-// CHECK-NEXT:   store i256 %4, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 2), align 32
-// CHECK-NEXT:   store i256 %5, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 3), align 32
-// CHECK-NEXT:   store i256 %6, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 4), align 32
-// CHECK-NEXT:   store i256 %7, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 5), align 32
-// CHECK-NEXT:   store i256 %8, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 6), align 32
-// CHECK-NEXT:   store i256 %9, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 7), align 32
-// CHECK-NEXT:   store i256 %10, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 8), align 32
-// CHECK-NEXT:   store i256 %11, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 9), align 32
-// CHECK-NEXT:   %17 = and i256 %1, 1
-// CHECK-NEXT:   %18 = icmp eq i256 %17, 1
-// CHECK-NEXT:   br i1 %18, label %19, label %20
+// CHECK-NEXT: define i256 @__entry(ptr addrspace(3) %0, i256 %1, i256 %2, i256 %3, i256 %4, i256 %5, i256 %6, i256 %7, i256 %8, i256 %9, i256 %10, i256 %11) #0 personality ptr @__personality !dbg !11 {
+// CHECK-NEXT:   store i256 0, ptr @memory_pointer, align 32, !dbg !12
+// CHECK-NEXT:   store i256 0, ptr @calldatasize, align 32, !dbg !12
+// CHECK-NEXT:   store i256 0, ptr @returndatasize, align 32, !dbg !12
+// CHECK-NEXT:   store i256 0, ptr @call_flags, align 32, !dbg !12
+// CHECK-NEXT:   store <10 x i256> zeroinitializer, ptr @extra_abi_data, align 512, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %0, ptr @ptr_calldata, align 32, !dbg !12
+// CHECK-NEXT:   %13 = lshr i256 ptrtoint (ptr @ptr_calldata to i256), 96, !dbg !12
+// CHECK-NEXT:   %14 = and i256 %13, 4294967295, !dbg !12
+// CHECK-NEXT:   store i256 %14, ptr @calldatasize, align 32, !dbg !12
+// CHECK-NEXT:   %15 = load i256, ptr @calldatasize, align 32, !dbg !12
+// CHECK-NEXT:   %16 = getelementptr i8, ptr addrspace(3) %0, i256 %15, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr @ptr_return_data, align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr @ptr_decommit, align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr @ptr_active, align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 1), align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 2), align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 3), align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 4), align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 5), align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 6), align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 7), align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 8), align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 9), align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 10), align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 11), align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 12), align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 13), align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 14), align 32, !dbg !12
+// CHECK-NEXT:   store ptr addrspace(3) %16, ptr getelementptr ([16 x i256], ptr @ptr_active, i32 0, i32 15), align 32, !dbg !12
+// CHECK-NEXT:   store i256 %1, ptr @call_flags, align 32, !dbg !12
+// CHECK-NEXT:   store i256 %2, ptr @extra_abi_data, align 32, !dbg !12
+// CHECK-NEXT:   store i256 %3, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 1), align 32, !dbg !12
+// CHECK-NEXT:   store i256 %4, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 2), align 32, !dbg !12
+// CHECK-NEXT:   store i256 %5, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 3), align 32, !dbg !12
+// CHECK-NEXT:   store i256 %6, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 4), align 32, !dbg !12
+// CHECK-NEXT:   store i256 %7, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 5), align 32, !dbg !12
+// CHECK-NEXT:   store i256 %8, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 6), align 32, !dbg !12
+// CHECK-NEXT:   store i256 %9, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 7), align 32, !dbg !12
+// CHECK-NEXT:   store i256 %10, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 8), align 32, !dbg !12
+// CHECK-NEXT:   store i256 %11, ptr getelementptr ([10 x i256], ptr @extra_abi_data, i32 0, i32 9), align 32, !dbg !12
+// CHECK-NEXT:   %17 = and i256 %1, 1, !dbg !12
+// CHECK-NEXT:   %18 = icmp eq i256 %17, 1, !dbg !12
+// CHECK-NEXT:   br i1 %18, label %19, label %20, !dbg !12
 // CHECK-EMPTY:
 // CHECK-NEXT: 19:                                               ; preds = %12
-// CHECK-NEXT:   call void @__deploy()
-// CHECK-NEXT:   br label %21
+// CHECK-NEXT:   call void @__deploy(), !dbg !12
+// CHECK-NEXT:   br label %21, !dbg !12
 // CHECK-EMPTY:
 // CHECK-NEXT: 20:                                               ; preds = %12
-// CHECK-NEXT:   call void @__runtime()
-// CHECK-NEXT:   br label %21
+// CHECK-NEXT:   call void @__runtime(), !dbg !12
+// CHECK-NEXT:   br label %21, !dbg !12
 // CHECK-EMPTY:
 // CHECK-NEXT: 21:                                               ; preds = %19, %20
-// CHECK-NEXT:   unreachable
+// CHECK-NEXT:   unreachable, !dbg !12
 // CHECK-NEXT: }
 // CHECK-EMPTY:
 // CHECK-NEXT: ; Function Attrs: nofree null_pointer_is_valid
-// CHECK-NEXT: define private i256 @f0_10() #0 personality ptr @__personality {
-// CHECK-NEXT:   ret i256 42
+// CHECK-NEXT: define private i256 @f0_10() #0 personality ptr @__personality !dbg !13 {
+// CHECK-NEXT:   ret i256 42, !dbg !15
 // CHECK-NEXT: }
 // CHECK-EMPTY:
 // CHECK-NEXT: ; Function Attrs: nofree null_pointer_is_valid
-// CHECK-NEXT: define private i256 @f1_18() #0 personality ptr @__personality {
-// CHECK-NEXT:   store i256 0, ptr addrspace(1) null, align 1
-// CHECK-NEXT:   %1 = call i256 @__sha3(ptr addrspace(1) null, i256 32, i1 false)
-// CHECK-NEXT:   %2 = load i256, ptr addrspace(5) null, align 1
-// CHECK-NEXT:   %3 = add i256 %2, 31
-// CHECK-NEXT:   %4 = and i256 %3, -32
-// CHECK-NEXT:   %5 = add i256 %4, 32
-// CHECK-NEXT:   %6 = load i256, ptr addrspace(1) inttoptr (i256 64 to ptr addrspace(1)), align 1
-// CHECK-NEXT:   %7 = add i256 %6, %5
-// CHECK-NEXT:   store i256 %7, ptr addrspace(1) inttoptr (i256 64 to ptr addrspace(1)), align 1
-// CHECK-NEXT:   %8 = inttoptr i256 %6 to ptr addrspace(1)
-// CHECK-NEXT:   store i256 %2, ptr addrspace(1) %8, align 1
-// CHECK-NEXT:   %9 = add i256 %6, 32
-// CHECK-NEXT:   %10 = add i256 %2, 31
-// CHECK-NEXT:   %11 = and i256 %10, -32
-// CHECK-NEXT:   br label %12
+// CHECK-NEXT: define private i256 @f1_18() #0 personality ptr @__personality !dbg !16 {
+// CHECK-NEXT:   store i256 0, ptr addrspace(1) null, align 1, !dbg !17
+// CHECK-NEXT:   %1 = call i256 @__sha3(ptr addrspace(1) null, i256 32, i1 false), !dbg !17
+// CHECK-NEXT:   %2 = load i256, ptr addrspace(5) null, align 1, !dbg !17
+// CHECK-NEXT:   %3 = add i256 %2, 31, !dbg !17
+// CHECK-NEXT:   %4 = and i256 %3, -32, !dbg !17
+// CHECK-NEXT:   %5 = add i256 %4, 32, !dbg !17
+// CHECK-NEXT:   %6 = load i256, ptr addrspace(1) inttoptr (i256 64 to ptr addrspace(1)), align 1, !dbg !17
+// CHECK-NEXT:   %7 = add i256 %6, %5, !dbg !17
+// CHECK-NEXT:   store i256 %7, ptr addrspace(1) inttoptr (i256 64 to ptr addrspace(1)), align 1, !dbg !17
+// CHECK-NEXT:   %8 = inttoptr i256 %6 to ptr addrspace(1), !dbg !17
+// CHECK-NEXT:   store i256 %2, ptr addrspace(1) %8, align 1, !dbg !17
+// CHECK-NEXT:   %9 = add i256 %6, 32, !dbg !17
+// CHECK-NEXT:   %10 = add i256 %2, 31, !dbg !17
+// CHECK-NEXT:   %11 = and i256 %10, -32, !dbg !17
+// CHECK-NEXT:   br label %12, !dbg !17
 // CHECK-EMPTY:
 // CHECK-NEXT: 12:                                               ; preds = %15, %0
 // CHECK-NEXT:   %13 = phi i256 [ 0, %0 ], [ %22, %15 ]
-// CHECK-NEXT:   %14 = icmp slt i256 %13, %11
-// CHECK-NEXT:   br i1 %14, label %15, label %23
+// CHECK-NEXT:   %14 = icmp slt i256 %13, %11, !dbg !17
+// CHECK-NEXT:   br i1 %14, label %15, label %23, !dbg !17
 // CHECK-EMPTY:
 // CHECK-NEXT: 15:                                               ; preds = %12
-// CHECK-NEXT:   %16 = add i256 %1, %13
-// CHECK-NEXT:   %17 = inttoptr i256 %16 to ptr addrspace(5)
-// CHECK-NEXT:   %18 = load i256, ptr addrspace(5) %17, align 1
-// CHECK-NEXT:   %19 = mul i256 %13, 32
-// CHECK-NEXT:   %20 = add i256 %9, %19
-// CHECK-NEXT:   %21 = inttoptr i256 %20 to ptr addrspace(1)
-// CHECK-NEXT:   store i256 %18, ptr addrspace(1) %21, align 1
-// CHECK-NEXT:   %22 = add i256 %13, 1
-// CHECK-NEXT:   br label %12
+// CHECK-NEXT:   %16 = add i256 %1, %13, !dbg !17
+// CHECK-NEXT:   %17 = inttoptr i256 %16 to ptr addrspace(5), !dbg !17
+// CHECK-NEXT:   %18 = load i256, ptr addrspace(5) %17, align 1, !dbg !17
+// CHECK-NEXT:   %19 = mul i256 %13, 32, !dbg !17
+// CHECK-NEXT:   %20 = add i256 %9, %19, !dbg !17
+// CHECK-NEXT:   %21 = inttoptr i256 %20 to ptr addrspace(1), !dbg !17
+// CHECK-NEXT:   store i256 %18, ptr addrspace(1) %21, align 1, !dbg !17
+// CHECK-NEXT:   %22 = add i256 %13, 1, !dbg !17
+// CHECK-NEXT:   br label %12, !dbg !17
 // CHECK-EMPTY:
 // CHECK-NEXT: 23:                                               ; preds = %12
-// CHECK-NEXT:   ret i256 %6
+// CHECK-NEXT:   ret i256 %6, !dbg !18
 // CHECK-NEXT: }
 // CHECK-EMPTY:
 // CHECK-NEXT: ; Function Attrs: nofree null_pointer_is_valid
-// CHECK-NEXT: declare i32 @__personality() #0
+// CHECK-NEXT: declare !dbg !19 i32 @__personality() #0
 // CHECK-EMPTY:
 // CHECK-NEXT: ; Function Attrs: nounwind willreturn memory(none)
 // CHECK-NEXT: declare i256 @llvm.eravm.getu128() #1
@@ -350,8 +350,28 @@ contract C {
 // CHECK-NEXT: attributes #10 = { nofree null_pointer_is_valid memory(argmem: read) }
 // CHECK-EMPTY:
 // CHECK-NEXT: !llvm.module.flags = !{!0}
+// CHECK-NEXT: !llvm.dbg.cu = !{!1}
 // CHECK-EMPTY:
 // CHECK-NEXT: !0 = !{i32 2, !"Debug Info Version", i32 3}
+// CHECK-NEXT: !1 = distinct !DICompileUnit(language: DW_LANG_C, file: !2, producer: "MLIR", isOptimized: true, runtimeVersion: 0, emissionKind: LineTablesOnly)
+// CHECK-NEXT: !2 = !DIFile(filename: {{.*}}, directory: {{.*}})
+// CHECK-NEXT: !3 = distinct !DISubprogram(name: ".unreachable", linkageName: ".unreachable", scope: !2, file: !2, line: 1, type: !4, scopeLine: 1, spFlags: DISPFlagDefinition | DISPFlagOptimized, unit: !1)
+// CHECK-NEXT: !4 = !DISubroutineType(cc: DW_CC_normal, types: !5)
+// CHECK-NEXT: !5 = !{}
+// CHECK-NEXT: !6 = !DILocation(line: 3, scope: !3)
+// CHECK-NEXT: !7 = distinct !DISubprogram(name: "__deploy", linkageName: "__deploy", scope: !2, file: !2, line: 1, type: !4, scopeLine: 1, spFlags: DISPFlagDefinition | DISPFlagOptimized, unit: !1)
+// CHECK-NEXT: !8 = !DILocation(line: 3, scope: !7)
+// CHECK-NEXT: !9 = distinct !DISubprogram(name: "__runtime", linkageName: "__runtime", scope: !2, file: !2, line: 1, type: !4, scopeLine: 1, spFlags: DISPFlagDefinition | DISPFlagOptimized, unit: !1)
+// CHECK-NEXT: !10 = !DILocation(line: 3, scope: !9)
+// CHECK-NEXT: !11 = distinct !DISubprogram(name: "__entry", linkageName: "__entry", scope: !2, file: !2, line: 1, type: !4, scopeLine: 1, spFlags: DISPFlagDefinition | DISPFlagOptimized, unit: !1)
+// CHECK-NEXT: !12 = !DILocation(line: 3, scope: !11)
+// CHECK-NEXT: !13 = distinct !DISubprogram(name: "f0_10", linkageName: "f0_10", scope: !14, file: !14, line: 5, type: !4, scopeLine: 2, spFlags: DISPFlagDefinition | DISPFlagOptimized, unit: !1)
+// CHECK-NEXT: !14 = !DIFile(filename: {{.*}}, directory: {{.*}})
+// CHECK-NEXT: !15 = !DILocation(line: 5, column: 45, scope: !13)
+// CHECK-NEXT: !16 = distinct !DISubprogram(name: "f1_18", linkageName: "f1_18", scope: !14, file: !14, line: 6, type: !4, scopeLine: 2, spFlags: DISPFlagDefinition | DISPFlagOptimized, unit: !1)
+// CHECK-NEXT: !17 = !DILocation(line: 4, column: 2, scope: !16)
+// CHECK-NEXT: !18 = !DILocation(line: 7, column: 4, scope: !16)
+// CHECK-NEXT: !19 = !DISubprogram(name: "__personality", linkageName: "__personality", scope: !2, file: !2, line: 1, type: !4, scopeLine: 1, spFlags: DISPFlagOptimized)
 // CHECK-EMPTY:
 // ASM: 	.text
 // ASM-NEXT: 	incsp	33
@@ -362,21 +382,29 @@ contract C {
 // ASM-EMPTY:
 // ASM-NEXT: __deploy:
 // ASM-NEXT: .func_begin1:
+// ASM-NEXT: 	.file	{{.*}}
+// ASM-NEXT: 	.loc	1 1 0
 // ASM-NEXT: 	add	128, r0, r1
+// ASM-NEXT: .tmp0:
+// ASM-NEXT: 	.loc	1 3 0 prologue_end
 // ASM-NEXT: 	stm.h	64, r1
 // ASM-NEXT: 	ldvl	r1
 // ASM-NEXT: 	sub!	r1, r0, r1
 // ASM-NEXT: 	jump.eq	@.BB1_2
 // ASM-NEXT: 	jump	@.BB1_1
 // ASM-NEXT: .BB1_1:
+// ASM-NEXT: 	.loc	1 0 0 is_stmt 0
 // ASM-NEXT: 	add	2, r0, r3
+// ASM-NEXT: 	.loc	1 3 0
 // ASM-NEXT: 	add	r0, r0, r1
 // ASM-NEXT: 	add	r0, r0, r2
 // ASM-NEXT: 	call	r0, @__revert, @DEFAULT_UNWIND
 // ASM-NEXT: 	call	r0, @.unreachable, @DEFAULT_UNWIND
 // ASM-NEXT: 	jump	@.BB1_2
 // ASM-NEXT: .BB1_2:
+// ASM-NEXT: 	.loc	1 0 0
 // ASM-NEXT: 	add	32, r0, r1
+// ASM-NEXT: 	.loc	1 3 0
 // ASM-NEXT: 	stm.ah	256, r1
 // ASM-NEXT: 	stm.ah	288, r0
 // ASM-NEXT: 	add	256, r0, r1
@@ -384,12 +412,16 @@ contract C {
 // ASM-NEXT: 	add	2, r0, r3
 // ASM-NEXT: 	call	r0, @__return, @DEFAULT_UNWIND
 // ASM-NEXT: 	call	r0, @.unreachable, @DEFAULT_UNWIND
+// ASM-NEXT: .tmp1:
 // ASM-NEXT: .func_end1:
 // ASM-EMPTY:
 // ASM-NEXT: __runtime:
 // ASM-NEXT: .func_begin2:
+// ASM-NEXT: 	.loc	1 1 0 is_stmt 1
 // ASM-NEXT: 	incsp	18
 // ASM-NEXT: 	add	128, r0, r1
+// ASM-NEXT: .tmp2:
+// ASM-NEXT: 	.loc	1 3 0 prologue_end
 // ASM-NEXT: 	stm.h	64, r1
 // ASM-NEXT: 	add	stack[@calldatasize], r0, r1
 // ASM-NEXT: 	sub.s!	4, r1, r1
@@ -404,8 +436,10 @@ contract C {
 // ASM-NEXT: 	jump.eq	@.BB2_2
 // ASM-NEXT: 	jump	@.BB2_23
 // ASM-NEXT: .BB2_23:
+// ASM-NEXT: 	.loc	1 0 0 is_stmt 0
 // ASM-NEXT: 	add	stack-[18], r0, r1
 // ASM-NEXT: 	and	code[@CPI2_1], r1, r1
+// ASM-NEXT: 	.loc	1 3 0
 // ASM-NEXT: 	sub.s!	code[@CPI2_2], r1, r1
 // ASM-NEXT: 	jump.eq	@.BB2_5
 // ASM-NEXT: 	jump	@.BB2_20
@@ -474,6 +508,7 @@ contract C {
 // ASM-NEXT: 	jump.ge	@.BB2_12
 // ASM-NEXT: 	jump	@.BB2_8
 // ASM-NEXT: .BB2_8:
+// ASM-NEXT: 	.loc	1 0 0
 // ASM-NEXT: 	add	stack-[16], r0, r1
 // ASM-NEXT: 	and	1, r1, r1
 // ASM-NEXT: 	sub!	r1, r0, r1
@@ -557,6 +592,7 @@ contract C {
 // ASM-NEXT: 	stm.h	r1, r2
 // ASM-NEXT: 	jump	@.BB2_19
 // ASM-NEXT: .BB2_19:
+// ASM-NEXT: 	.loc	1 3 0
 // ASM-NEXT: 	add	stack-[9], r0, r1
 // ASM-NEXT: 	add	stack-[10], r0, r3
 // ASM-NEXT: 	add	31, r3, r3
@@ -577,11 +613,13 @@ contract C {
 // ASM-NEXT: 	add	r0, r0, r3
 // ASM-NEXT: 	call	r0, @__revert, @DEFAULT_UNWIND
 // ASM-NEXT: 	call	r0, @.unreachable, @DEFAULT_UNWIND
+// ASM-NEXT: .tmp3:
 // ASM-NEXT: .func_end2:
 // ASM-EMPTY:
 // ASM-NEXT: 	.globl	__entry
 // ASM-NEXT: __entry:
 // ASM-NEXT: .func_begin3:
+// ASM-NEXT: 	.loc	1 3 0 prologue_end is_stmt 1
 // ASM-NEXT: 	incsp	2
 // ASM-NEXT: 	addp	r1, r0, stack-[1]
 // ASM-NEXT: 	add	0, r0, stack[@memory_pointer]
@@ -643,17 +681,24 @@ contract C {
 // ASM-NEXT: .BB3_2:
 // ASM-NEXT: 	call	r0, @__runtime, @DEFAULT_UNWIND
 // ASM-NEXT: 	jump	@.BB3_3
+// ASM-NEXT: .tmp4:
 // ASM-NEXT: .BB3_3:
 // ASM-NEXT: .func_end3:
 // ASM-EMPTY:
 // ASM-NEXT: f0_10:
 // ASM-NEXT: .func_begin4:
+// ASM-NEXT: 	.file	{{.*}}
+// ASM-NEXT: 	.loc	2 2 0
 // ASM-NEXT: 	add	42, r0, r1
+// ASM-NEXT: .tmp5:
+// ASM-NEXT: 	.loc	2 5 45 prologue_end
 // ASM-NEXT: 	ret
+// ASM-NEXT: .tmp6:
 // ASM-NEXT: .func_end4:
 // ASM-EMPTY:
 // ASM-NEXT: f1_18:
 // ASM-NEXT: .func_begin5:
+// ASM-NEXT: 	.loc	2 4 2 prologue_end
 // ASM-NEXT: 	incsp	6
 // ASM-NEXT: 	stm.h	0, r0
 // ASM-NEXT: 	add	32, r0, r2
@@ -675,8 +720,10 @@ contract C {
 // ASM-NEXT: 	add	r0, r0, stack-[6]
 // ASM-NEXT: 	jump	@.BB5_1
 // ASM-NEXT: .BB5_1:
+// ASM-NEXT: 	.loc	2 0 2 is_stmt 0
 // ASM-NEXT: 	add	stack-[3], r0, r3
 // ASM-NEXT: 	add	stack-[6], r0, r1
+// ASM-NEXT: 	.loc	2 4 2
 // ASM-NEXT: 	add	r1, r0, stack-[1]
 // ASM-NEXT: 	sub!	r1, r3, r2
 // ASM-NEXT: 	add	r0, r0, r2
@@ -702,15 +749,19 @@ contract C {
 // ASM-NEXT: 	add	1, r1, stack-[6]
 // ASM-NEXT: 	jump	@.BB5_1
 // ASM-NEXT: .BB5_3:
+// ASM-NEXT: 	.loc	2 7 4 is_stmt 1
 // ASM-NEXT: 	add	stack-[4], r0, r1
 // ASM-NEXT: 	ret
+// ASM-NEXT: .tmp7:
 // ASM-NEXT: .func_end5:
 // ASM-EMPTY:
 // ASM-NEXT: __cxa_throw:
+// ASM-NEXT: .func_begin6:
 // ASM-NEXT: 	rev
+// ASM-NEXT: .func_end6:
 // ASM-EMPTY:
 // ASM-NEXT: __revert:
-// ASM-NEXT: .func_begin6:
+// ASM-NEXT: .func_begin7:
 // ASM-NEXT: 	incsp	1
 // ASM-NEXT: 	add	r3, r0, stack-[1]
 // ASM-NEXT: 	add	r2, r0, r3
@@ -725,10 +776,10 @@ contract C {
 // ASM-NEXT: 	or	r1, r3, r1
 // ASM-NEXT: 	or	r1, r2, r1
 // ASM-NEXT: 	revl	@DEFAULT_FAR_REVERT
-// ASM-NEXT: .func_end6:
+// ASM-NEXT: .func_end7:
 // ASM-EMPTY:
 // ASM-NEXT: __return:
-// ASM-NEXT: .func_begin7:
+// ASM-NEXT: .func_begin8:
 // ASM-NEXT: 	incsp	1
 // ASM-NEXT: 	add	r3, r0, stack-[1]
 // ASM-NEXT: 	add	r2, r0, r3
@@ -743,10 +794,10 @@ contract C {
 // ASM-NEXT: 	or	r1, r3, r1
 // ASM-NEXT: 	or	r1, r2, r1
 // ASM-NEXT: 	retl	@DEFAULT_FAR_RETURN
-// ASM-NEXT: .func_end7:
+// ASM-NEXT: .func_end8:
 // ASM-EMPTY:
 // ASM-NEXT: __sha3:
-// ASM-NEXT: .func_begin8:
+// ASM-NEXT: .func_begin9:
 // ASM-NEXT: 	incsp	3
 // ASM-NEXT: 	add	r3, r0, stack-[1]
 // ASM-NEXT: 	sub.s!	code[@CPI9_0], r1, r3
@@ -790,16 +841,16 @@ contract C {
 // ASM-NEXT: .BB9_4:
 // ASM-NEXT: 	add	r0, r0, r1
 // ASM-NEXT: 	rev
-// ASM-NEXT: .func_end8:
+// ASM-NEXT: .func_end9:
 // ASM-EMPTY:
 // ASM-NEXT: __staticcall:
-// ASM-NEXT: .func_begin9:
+// ASM-NEXT: .func_begin10:
 // ASM-NEXT: 	incsp	2
-// ASM-NEXT: .tmp0:
+// ASM-NEXT: .tmp8:
 // ASM-NEXT: 	callf.st	r1, r2, @.BB10_2
 // ASM-NEXT: 	addp	r1, r0, stack-[1]
 // ASM-NEXT: 	addp	stack-[1], r0, r1
-// ASM-NEXT: .tmp1:
+// ASM-NEXT: .tmp9:
 // ASM-NEXT: 	addp	r1, r0, stack-[2]
 // ASM-NEXT: 	jump	@.BB10_1
 // ASM-NEXT: .BB10_1:
@@ -807,10 +858,10 @@ contract C {
 // ASM-NEXT: 	add	1, r0, r2
 // ASM-NEXT: 	ret
 // ASM-NEXT: .BB10_2:
-// ASM-NEXT: .tmp2:
+// ASM-NEXT: .tmp10:
 // ASM-NEXT: 	add	r0, r0, r2
 // ASM-NEXT: 	ret
-// ASM-NEXT: .func_end9:
+// ASM-NEXT: .func_end10:
 // ASM-EMPTY:
 // ASM-NEXT: 	.data
 // ASM-NEXT: 	.p2align	5, 0x0
@@ -849,6 +900,45 @@ contract C {
 // ASM-NEXT: memory_pointer:
 // ASM-NEXT: 	.cell	0
 // ASM-EMPTY:
+// ASM-NEXT: 	.debug_abbrev
+// ASM-NEXT: 	.byte	1
+// ASM-NEXT: 	.byte	17
+// ASM-NEXT: 	.byte	0
+// ASM-NEXT: 	.byte	37
+// ASM-NEXT: 	.byte	14
+// ASM-NEXT: 	.byte	19
+// ASM-NEXT: 	.byte	5
+// ASM-NEXT: 	.byte	3
+// ASM-NEXT: 	.byte	14
+// ASM-NEXT: 	.byte	16
+// ASM-NEXT: 	.byte	23
+// ASM-NEXT: 	.byte	17
+// ASM-NEXT: 	.byte	1
+// ASM-NEXT: 	.byte	18
+// ASM-NEXT: 	.byte	6
+// ASM-NEXT: 	.byte	0
+// ASM-NEXT: 	.byte	0
+// ASM-NEXT: 	.byte	0
+// ASM-NEXT: 	.debug_info
+// ASM-NEXT: .cu_begin0:
+// ASM-NEXT: 	.long	@.debug_info_end0-@.debug_info_start0
+// ASM-NEXT: .debug_info_start0:
+// ASM-NEXT: 	.short	4
+// ASM-NEXT: 	.long	@.debug_abbrev
+// ASM-NEXT: 	.byte	4
+// ASM-NEXT: 	.byte	1
+// ASM-NEXT: 	.long	@.info_string0
+// ASM-NEXT: 	.short	2
+// ASM-NEXT: 	.long	@.info_string1
+// ASM-NEXT: 	.long	@.line_table_start0
+// ASM-NEXT: 	.long	@.func_begin0
+// ASM-NEXT: 	.long	@.func_end5-@.func_begin0
+// ASM-NEXT: .debug_info_end0:
+// ASM-NEXT: 	.debug_str
+// ASM-NEXT: .info_string0:
+// ASM-NEXT: 	.asciz	"MLIR"
+// ASM-NEXT: .info_string1:
+// ASM-NEXT: 	.asciz	"<unknown>"
 // ASM-NEXT: 	.rodata
 // ASM-NEXT: CPI2_0:
 // ASM-NEXT: 	.cell	2776958069
@@ -874,4 +964,6 @@ contract C {
 // ASM-NEXT: 	retl	@DEFAULT_FAR_RETURN
 // ASM-NEXT: DEFAULT_FAR_REVERT:
 // ASM-NEXT: 	revl	@DEFAULT_FAR_REVERT
+// ASM-NEXT: 	.debug_line
+// ASM-NEXT: .line_table_start0:
 // ASM-EMPTY:
