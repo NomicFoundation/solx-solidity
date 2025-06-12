@@ -353,7 +353,8 @@ Value evm::Builder::genLoad(Value addr, sol::DataLocation dataLoc,
   if (dataLoc == sol::DataLocation::CallData)
     return b.create<sol::CallDataLoadOp>(loc, addr);
 
-  if (dataLoc == sol::DataLocation::Memory)
+  if (dataLoc == sol::DataLocation::Memory ||
+      dataLoc == sol::DataLocation::Immutable)
     return b.create<sol::MLoadOp>(loc, addr);
 
   if (dataLoc == sol::DataLocation::Storage)
@@ -366,7 +367,8 @@ void evm::Builder::genStore(Value val, Value addr, sol::DataLocation dataLoc,
                             std::optional<Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;
 
-  if (dataLoc == sol::DataLocation::Memory) {
+  if (dataLoc == sol::DataLocation::Memory ||
+      dataLoc == sol::DataLocation::Immutable) {
     b.create<sol::MStoreOp>(loc, addr, val);
   } else if (dataLoc == sol::DataLocation::Storage) {
     b.create<sol::SStoreOp>(loc, addr, val);

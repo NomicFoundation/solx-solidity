@@ -372,6 +372,20 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
       auto currContr =
           b.getBlock()->getParentOp()->getParentOfType<mlir::sol::ContractOp>();
       assert(currContr);
+      if (var->immutable()) {
+        auto immOp =
+            currContr.lookupSymbol<mlir::sol::ImmutableOp>(var->name());
+        if (!currFunc->isConstructor())
+          return b.create<mlir::sol::LoadImmutableOp>(
+              immOp.getLoc(), immOp.getType(), immOp.getName());
+        assert(immOp);
+        assert(!mlir::sol::isNonPtrRefType(immOp.getType()));
+        mlir::Type addrTy =
+            mlir::sol::PointerType::get(b.getContext(), immOp.getType(),
+                                        mlir::sol::DataLocation::Immutable);
+        return b.create<mlir::sol::AddrOfOp>(immOp.getLoc(), addrTy,
+                                             immOp.getName());
+      }
       auto stateVarOp =
           currContr.lookupSymbol<mlir::sol::StateVarOp>(var->name());
       assert(stateVarOp);
@@ -1534,8 +1548,13 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
   b.setInsertionPointToStart(&op.getBodyRegion().emplaceBlock());
 
   for (VariableDeclaration const *stateVar : cont.stateVariables()) {
-    b.create<mlir::sol::StateVarOp>(getLoc(*stateVar), stateVar->name(),
-                                    getType(stateVar->type()));
+    if (stateVar->immutable())
+      b.create<mlir::sol::ImmutableOp>(getLoc(*stateVar), stateVar->name(),
+                                       getType(stateVar->type()),
+                                       stateVar->id());
+    else
+      b.create<mlir::sol::StateVarOp>(getLoc(*stateVar), stateVar->name(),
+                                      getType(stateVar->type()));
   }
 
   // Lower functions.

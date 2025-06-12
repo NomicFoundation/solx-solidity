@@ -64,7 +64,8 @@ def Sol_DataLocation : I32EnumAttr<"DataLocation",
                                    [I32EnumAttrCase<"Storage", 0>,
                                     I32EnumAttrCase<"CallData", 1>,
                                     I32EnumAttrCase<"Memory", 2>,
-                                    I32EnumAttrCase<"Stack", 3>]> {
+                                    I32EnumAttrCase<"Stack", 3>,
+                                    I32EnumAttrCase<"Immutable", 4>]> {
   let genSpecializedAttr = 0;
   let cppNamespace = "::mlir::sol";
 }

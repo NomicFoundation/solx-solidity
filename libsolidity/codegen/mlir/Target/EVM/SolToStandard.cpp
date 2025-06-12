@@ -542,12 +542,18 @@ struct AddrOfOpLowering : public OpRewritePattern<sol::AddrOfOp> {
     solidity::mlirgen::BuilderExt bExt(r, op.getLoc());
 
     auto parentContract = op->getParentOfType<sol::ContractOp>();
-    auto *stateVarSym = parentContract.lookupSymbol(op.getVar());
-    assert(stateVarSym);
-    auto stateVarOp = cast<sol::StateVarOp>(stateVarSym);
-    assert(stateVarOp->hasAttr("slot"));
-    IntegerAttr slot = cast<IntegerAttr>(stateVarOp->getAttr("slot"));
-    r.replaceOp(op, bExt.genI256Const(slot.getValue()));
+    auto *sym = parentContract.lookupSymbol(op.getVar());
+    assert(sym);
+    if (auto stateVarOp = dyn_cast<sol::StateVarOp>(sym)) {
+      assert(stateVarOp->hasAttr("slot"));
+      IntegerAttr slot = cast<IntegerAttr>(stateVarOp->getAttr("slot"));
+      r.replaceOp(op, bExt.genI256Const(slot.getValue()));
+      return success();
+    }
+    auto immOp = cast<sol::ImmutableOp>(sym);
+    assert(immOp->hasAttr("addr"));
+    IntegerAttr addr = cast<IntegerAttr>(immOp->getAttr("addr"));
+    r.replaceOp(op, bExt.genI256Const(addr.getValue()));
     return success();
   }
 };
@@ -734,6 +740,7 @@ struct LoadOpLowering : public OpConversionPattern<sol::LoadOp> {
       return success();
     }
     case sol::DataLocation::CallData:
+    case sol::DataLocation::Immutable:
     case sol::DataLocation::Memory: {
       auto addrTy = cast<sol::PointerType>(op.getAddr().getType());
       auto bytesEleTy = dyn_cast<sol::BytesType>(addrTy.getPointeeType());
@@ -777,6 +784,7 @@ struct StoreOpLowering : public OpConversionPattern<sol::StoreOp> {
                                 ConversionPatternRewriter &r) const override {
     Location loc = op.getLoc();
     solidity::mlirgen::BuilderExt bExt(r, loc);
+    evm::Builder evmB(r, loc);
 
     Value remappedVal = adaptor.getVal();
     Value remappedAddr = adaptor.getAddr();
@@ -786,6 +794,7 @@ struct StoreOpLowering : public OpConversionPattern<sol::StoreOp> {
       r.replaceOpWithNewOp<LLVM::StoreOp>(op, remappedVal, remappedAddr,
                                           evm::getAlignment(remappedAddr));
       return success();
+    case sol::DataLocation::Immutable:
     case sol::DataLocation::Memory: {
       Type addrTy = op.getAddr().getType();
       sol::DataLocation dataLoc = sol::getDataLocation(addrTy);
@@ -803,10 +812,12 @@ struct StoreOpLowering : public OpConversionPattern<sol::StoreOp> {
       if (auto intTy = dyn_cast<IntegerType>(op.getVal().getType())) {
         Value castedVal =
             bExt.genIntCast(/*width=*/256, intTy.isSigned(), remappedVal);
-        r.replaceOpWithNewOp<sol::MStoreOp>(op, remappedAddr, castedVal);
+        evmB.genStore(castedVal, remappedAddr, dataLoc);
+        r.eraseOp(op);
         return success();
       }
-      r.replaceOpWithNewOp<sol::MStoreOp>(op, remappedAddr, remappedVal);
+      evmB.genStore(remappedVal, remappedAddr, dataLoc);
+      r.eraseOp(op);
       return success();
     }
     case sol::DataLocation::Storage:
@@ -1774,20 +1785,21 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
   };
 
   /// Generate the free pointer initialization.
-  void genFreePtrInit(PatternRewriter &r, Location loc) const {
+  void genFreePtrInit(PatternRewriter &r, Location loc,
+                      size_t reservedMem = 0) const {
     solidity::mlirgen::BuilderExt bExt(r, loc);
     mlir::Value freeMem;
     if (/* TODO: op.memoryUnsafeInlineAssemblySeen */ false) {
       freeMem = bExt.genI256Const(
           solidity::frontend::CompilerUtils::generalPurposeMemoryStart +
-          /* TODO: op.getReservedMem() */ 0);
+          reservedMem);
     } else {
       freeMem = r.create<sol::MemGuardOp>(
           loc,
           r.getIntegerAttr(
               r.getIntegerType(256),
               solidity::frontend::CompilerUtils::generalPurposeMemoryStart +
-                  /* TODO: op.getReservedMem() */ 0));
+                  reservedMem));
     }
     r.create<sol::MStoreOp>(loc, bExt.genI256Const(64), freeMem);
   };
@@ -1918,15 +1930,28 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     auto runtimeObj =
         r.create<sol::ObjectOp>(loc, std::string(op.getName()) + "_deployed");
 
-    // Copy contained function to creation and runtime ObjectOp.
     std::vector<sol::FuncOp> funcs;
     sol::FuncOp ctor, receiveFn, fallbackFn;
-    for (Operation &i : op.getBody()->getOperations()) {
-      if (auto func = dyn_cast<sol::FuncOp>(i))
+    size_t reservedMemSize = 0;
+    SmallVector<sol::ImmutableOp, 2> immOps;
+
+    // Track functions, immutables (and reserved memory) etc; Remove state
+    // variables.
+    for (Operation &i :
+         llvm::make_early_inc_range(op.getBody()->getOperations())) {
+      if (auto func = dyn_cast<sol::FuncOp>(i)) {
         funcs.push_back(func);
-      else
+      } else if (auto immOp = dyn_cast<sol::ImmutableOp>(i)) {
+        reservedMemSize += evm::getCallDataHeadSize(immOp.getType());
+        immOps.push_back(immOp);
+      } else if (isa<sol::StateVarOp>(i)) {
+        r.eraseOp(&i);
+      } else {
         llvm_unreachable("NYI: Non function entities in contract");
+      }
     }
+
+    // Copy contained function to creation and runtime ObjectOp.
     for (sol::FuncOp fn : funcs) {
       auto fnKind = fn.getKind();
       if (!fnKind) {
@@ -1962,7 +1987,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 
     r.setInsertionPointToStart(creationObj.getEntryBlock());
 
-    genFreePtrInit(r, loc);
+    genFreePtrInit(r, loc, reservedMemSize);
 
     if (!ctor) {
       genCallValChk(r, loc);
@@ -1992,14 +2017,24 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
       r.create<sol::CallOp>(loc, ctor, decodedArgs);
     }
 
-    // Generate the codecopy of the runtime object to the free ptr.
+    // Generate the codecopy of the runtime object for the return from the
+    // creation object.
     auto freePtr = r.create<sol::MLoadOp>(loc, bExt.genI256Const(64));
     auto runtimeObjSym = FlatSymbolRefAttr::get(runtimeObj);
     auto runtimeObjOffset = r.create<sol::DataOffsetOp>(loc, runtimeObjSym);
     auto runtimeObjSize = r.create<sol::DataSizeOp>(loc, runtimeObjSym);
     r.create<sol::CodeCopyOp>(loc, freePtr, runtimeObjOffset, runtimeObjSize);
 
-    // TODO: Generate the setimmutable's.
+    // Generate setimmutable's and remove all sol.immutable ops.
+    for (sol::ImmutableOp immOp : llvm::make_early_inc_range(immOps)) {
+      assert(immOp->getAttr("addr"));
+      auto addr = bExt.genI256Const(
+          cast<IntegerAttr>(immOp->getAttr("addr")).getValue());
+      auto val = r.create<sol::MLoadOp>(loc, addr);
+      r.create<sol::SetImmutableOp>(loc, freePtr, std::to_string(immOp.getId()),
+                                    val);
+      r.eraseOp(immOp);
+    }
 
     // Generate the return for the creation context.
     r.create<sol::BuiltinRetOp>(loc, freePtr, runtimeObjSize);
@@ -2054,7 +2089,8 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
       r.create<sol::RevertOp>(loc, bExt.genI256Const(0), bExt.genI256Const(0));
     }
 
-    assert(op.getBody()->empty());
+    // TODO? Make sure op.getBody() is either empty or has only ops marked for
+    // deletion.
     r.eraseOp(op);
     // TODO: Subobjects
     return success();

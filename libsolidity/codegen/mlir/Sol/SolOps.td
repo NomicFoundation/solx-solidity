@@ -180,6 +180,12 @@ def Sol_StateVarOp : Sol_Op<"state_var", [Symbol]> {
   let assemblyFormat = "$sym_name attr-dict `:` $type";
 }
 
+def Sol_ImmutableOp : Sol_Op<"immutable", [Symbol]> {
+  let arguments = (ins SymbolNameAttr:$sym_name, TypeAttr:$type, I64Attr:$id);
+
+  let assemblyFormat = "$sym_name attr-dict `:` $type";
+}
+
 def Sol_AddrOfOp : Sol_Op<"addr_of"> {
   let arguments = (ins FlatSymbolRefAttr:$var);
   // FIXME: AnyType -> Sol_PtrTy causes the asm printer to miss the prefix!
@@ -239,6 +245,13 @@ def Sol_LoadOp : Sol_Op<"load"> {
   ];
 
   let assemblyFormat = "$addr attr-dict `:` type($addr) `,` type($out)";
+}
+
+def Sol_LoadImmutableOp : Sol_Op<"load_immutable", [Pure]> {
+  let arguments = (ins FlatSymbolRefAttr:$sym);
+  let results = (outs AnyType:$val);
+
+  let assemblyFormat = "$sym attr-dict `:` type($val)";
 }
 
 def Sol_StoreOp : Sol_Op<"store"> {
@@ -911,6 +924,12 @@ def Sol_LogOp : Sol_Op<"log"> {
   let arguments = (ins I256:$addr, I256:$size, Variadic<I256>:$topics);
   // FIXME: Trailing spaces with empty $topics.
   let assemblyFormat = "$addr `,` $size oilist(`topics` `(` $topics `)` ) attr-dict";
+}
+
+def Sol_SetImmutableOp : Sol_Op<"setimmutable"> {
+  let summary = "Represents the `setimmutable` call in yul";
+  let arguments = (ins I256:$addr, StrAttr:$name, I256:$val);
+  let assemblyFormat = "$addr `,` $name `,` $val attr-dict";
 }
 
 #endif // MLIR_SOL_SOLOPS_TD

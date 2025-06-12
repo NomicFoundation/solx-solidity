@@ -125,9 +125,10 @@ evm::SolTypeConverter::SolTypeConverter() {
       return LLVM::LLVMPointerType::get(ty.getContext());
     }
 
-    // Map to the 256 bit address in calldata/memory.
+    // Map to the 256 bit address in calldata/memory/immutable.
     case sol::DataLocation::CallData:
     case sol::DataLocation::Memory:
+    case sol::DataLocation::Immutable:
     // Map to the 256 bit slot offset.
     //
     // TODO: Can we get all storage types to be 32 byte aligned? If so, we can

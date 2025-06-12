@@ -191,20 +191,24 @@ struct ConvertSolToStandard
 
     // Assign slots to state variables.
     mod.walk([&](sol::ContractOp contr) {
-      APInt slot(256, 0);
+      // Slots start from 0 and immutables from address 128
+      APInt slot(256, 0), immAddr(256, 128);
       contr.walk([&](sol::StateVarOp stateVar) {
         stateVar->setAttr(
             "slot",
             IntegerAttr::get(IntegerType::get(&getContext(), 256), slot));
         slot += evm::getStorageSlotCount(stateVar.getType());
       });
+      contr.walk([&](sol::ImmutableOp immOp) {
+        immOp->setAttr(
+            "addr",
+            IntegerAttr::get(IntegerType::get(&getContext(), 256), immAddr));
+        immAddr += 32;
+      });
     });
 
     if (failed(applyPartialConversion(mod, convTgt, std::move(pats))))
       return failure();
-
-    // Remove all state variables.
-    mod.walk([](sol::StateVarOp op) { op.erase(); });
     return success();
   }
 
