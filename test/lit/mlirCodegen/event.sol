@@ -16,7 +16,7 @@ contract C {
 // CHECK-NEXT: #loc5 = loc({{.*}}:4:35)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   sol.contract @C_25 {
-// CHECK-NEXT:     sol.func @f_24(%arg0: ui256 loc({{.*}}:4:13), %arg1: ui256 loc({{.*}}:4:24), %arg2: ui256 loc({{.*}}:4:35)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @f_24(%arg0: ui256 loc({{.*}}:4:13), %arg1: ui256 loc({{.*}}:4:24), %arg2: ui256 loc({{.*}}:4:35)) attributes {selector = -1790387060 : i32, selector_fn_type = (ui256, ui256, ui256) -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc4)
@@ -29,7 +29,7 @@ contract C {
 // CHECK-NEXT:       sol.emit "E(address,address,uint256)" indexed = [%3, %4] non_indexed = [%5] : ui256, ui256, ui256 loc(#loc9)
 // CHECK-NEXT:       sol.return loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:   } {interface_fns = [{selector = -1790387060 : i32, sym = @f_24, type = (ui256, ui256, ui256) -> ()}], kind = #Contract} loc(#loc1)
+// CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)

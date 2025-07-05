@@ -103,7 +103,7 @@ contract C {
 // CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:       llvm.unreachable loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     func.func @f_24(%arg0: i256 loc({{.*}}:4:13), %arg1: i256 loc({{.*}}:4:24), %arg2: i256 loc({{.*}}:4:35)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], runtime, state_mutability = #NonPayable} {
+// CHECK-NEXT:     func.func @f_24(%arg0: i256 loc({{.*}}:4:13), %arg1: i256 loc({{.*}}:4:24), %arg2: i256 loc({{.*}}:4:35)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], runtime, selector = -1790387060 : i32, selector_fn_type = (ui256, ui256, ui256) -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       %c32_i256 = arith.constant 32 : i256 loc(#loc)
 // CHECK-NEXT:       %c64_i256 = arith.constant 64 : i256 loc(#loc)
 // CHECK-NEXT:       %c-8221849663638083512194660606707573152552498519683245605175914703537671859757_i256 = arith.constant -8221849663638083512194660606707573152552498519683245605175914703537671859757 : i256 loc(#loc)
@@ -126,7 +126,7 @@ contract C {
 // CHECK-NEXT:       return loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   func.func @f_24(%arg0: i256 loc({{.*}}:4:13), %arg1: i256 loc({{.*}}:4:24), %arg2: i256 loc({{.*}}:4:35)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @f_24(%arg0: i256 loc({{.*}}:4:13), %arg1: i256 loc({{.*}}:4:24), %arg2: i256 loc({{.*}}:4:35)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], selector = -1790387060 : i32, selector_fn_type = (ui256, ui256, ui256) -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c32_i256 = arith.constant 32 : i256 loc(#loc)
 // CHECK-NEXT:     %c64_i256 = arith.constant 64 : i256 loc(#loc)
 // CHECK-NEXT:     %c-8221849663638083512194660606707573152552498519683245605175914703537671859757_i256 = arith.constant -8221849663638083512194660606707573152552498519683245605175914703537671859757 : i256 loc(#loc)

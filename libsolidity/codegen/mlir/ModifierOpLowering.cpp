@@ -240,6 +240,8 @@ struct ModifierOpLowering
     b.insert(newCallerFn);
     callerFn.setSymName(
         getNearestUnusedSymFrom(callerFn, callerFn.getSymNameAttr()));
+    // Don't duplicate an interface function.
+    callerFn.removeSelectorAttr();
     b.setInsertionPointToStart(newCallerFn.addEntryBlock());
     // The sol.placeholder will be replaced with the first modifier. This
     // simplifies the placeholder replacement loop.

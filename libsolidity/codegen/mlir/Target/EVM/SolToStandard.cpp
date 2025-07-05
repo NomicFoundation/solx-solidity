@@ -1804,15 +1804,14 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     r.create<sol::MStoreOp>(loc, bExt.genI256Const(64), freeMem);
   };
 
-  /// Generates the dispatch to interface function of the contract op inside the
-  /// object op.
-  void genDispatch(sol::ContractOp contrOp, sol::ObjectOp objOp,
+  /// Generates the dispatch to interface functions.
+  void genDispatch(sol::ContractOp contrOp, SmallVector<uint32_t, 4> selectors,
+                   SmallVector<sol::FuncOp, 4> ifcFns,
                    PatternRewriter &r) const {
     Location loc = contrOp.getLoc();
 
-    ArrayAttr ifcFnsAttr = contrOp.getInterfaceFnsAttr();
     // Do nothing if there are no interface functions.
-    if (ifcFnsAttr.empty())
+    if (ifcFns.empty())
       return;
 
     solidity::mlirgen::BuilderExt bExt(r, loc);
@@ -1835,13 +1834,6 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     callDataSelector =
         r.create<arith::TruncIOp>(loc, r.getIntegerType(32), callDataSelector);
 
-    // Create an attribute to track all the selectors.
-    std::vector<uint32_t> selectors;
-    for (Attribute attr : ifcFnsAttr) {
-      DictionaryAttr ifcFnAttr = cast<DictionaryAttr>(attr);
-      selectors.push_back(
-          cast<IntegerAttr>(ifcFnAttr.get("selector")).getInt());
-    }
     auto selectorsAttr = mlir::DenseIntElementsAttr::get(
         mlir::RankedTensorType::get(static_cast<int64_t>(selectors.size()),
                                     r.getIntegerType(32)),
@@ -1859,18 +1851,10 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
       r.create<scf::YieldOp>(loc);
     }
 
-    for (auto [caseRegion, attr] :
-         llvm::zip(switchOp.getCaseRegions(), ifcFnsAttr)) {
-      DictionaryAttr ifcFnAttr = cast<DictionaryAttr>(attr);
-      auto ifcFnSym = cast<SymbolRefAttr>(ifcFnAttr.get("sym"));
-      sol::FuncOp ifcFnOp = objOp.lookupSymbol<sol::FuncOp>(ifcFnSym);
-      assert(ifcFnOp);
-      auto origIfcFnTy =
-          cast<FunctionType>(cast<TypeAttr>(ifcFnAttr.get("type")).getValue());
-
+    for (auto [caseRegion, ifcFnOp] :
+         llvm::zip(switchOp.getCaseRegions(), ifcFns)) {
       assert(ifcFnOp.getStateMutability());
       sol::StateMutability stateMutability = *ifcFnOp.getStateMutability();
-
       if (contrOp.getKind() == sol::ContractKind::Library) {
         assert(stateMutability != sol::StateMutability::Payable);
         if (stateMutability > sol::StateMutability::View) {
@@ -1888,6 +1872,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
       }
 
       // Decode the input parameters (if required).
+      FunctionType origIfcFnTy = *ifcFnOp.getSelectorFnType();
       std::vector<Value> decodedArgs;
       if (!origIfcFnTy.getInputs().empty()) {
         evmB.genABITupleDecoding(origIfcFnTy.getInputs(),
@@ -1934,6 +1919,8 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     sol::FuncOp ctor, receiveFn, fallbackFn;
     size_t reservedMemSize = 0;
     SmallVector<sol::ImmutableOp, 2> immOps;
+    SmallVector<uint32_t, 4> selectors;
+    SmallVector<sol::FuncOp, 4> ifcFns;
 
     // Track functions, immutables (and reserved memory) etc; Remove state
     // variables.
@@ -1941,6 +1928,10 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
          llvm::make_early_inc_range(op.getBody()->getOperations())) {
       if (auto func = dyn_cast<sol::FuncOp>(i)) {
         funcs.push_back(func);
+        if (auto selector = func.getSelector()) {
+          selectors.push_back(*selector);
+          ifcFns.push_back(func);
+        }
       } else if (auto immOp = dyn_cast<sol::ImmutableOp>(i)) {
         reservedMemSize += evm::getCallDataHeadSize(immOp.getType());
         immOps.push_back(immOp);
@@ -1953,6 +1944,12 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 
     // Copy contained function to creation and runtime ObjectOp.
     for (sol::FuncOp fn : funcs) {
+      if (fn.getRuntime()) {
+        fn->moveBefore(runtimeObj.getEntryBlock(),
+                       runtimeObj.getEntryBlock()->begin());
+        continue;
+      }
+
       auto fnKind = fn.getKind();
       if (!fnKind) {
         // Duplicate in both the creation and runtime objects.
@@ -2054,7 +2051,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     }
 
     // Generate the dispatch to interface functions.
-    genDispatch(op, runtimeObj, r);
+    genDispatch(op, selectors, ifcFns, r);
 
     // TODO: Handle ether recieve function.
 

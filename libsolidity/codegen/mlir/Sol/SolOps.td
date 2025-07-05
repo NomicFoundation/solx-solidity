@@ -624,6 +624,8 @@ def Sol_FuncOp : Sol_Op<"func", [AutomaticAllocationScope, CallableOpInterface,
                        TypeAttrOf<FunctionType>:$function_type,
                        OptionalAttr<DictArrayAttr>:$arg_attrs,
                        OptionalAttr<DictArrayAttr>:$res_attrs,
+                       OptionalAttr<I32Attr>:$selector,
+                       OptionalAttr<TypeAttrOf<FunctionType>>:$selector_fn_type,
                        UnitAttr:$runtime,
                        OptionalAttr<Sol_FunctionKindAttr>:$kind,
                        OptionalAttr<Sol_StateMutabilityAttr>:$state_mutability,
@@ -678,7 +680,6 @@ def Sol_ContractOp : Sol_Op<"contract", [Symbol, SymbolTable, SingleBlock,
   // - IRGenerationContext::memoryUnsafeInlineAssemblySeen
   // - IRGenerationContext::reservedMemory
   let arguments = (ins SymbolNameAttr:$sym_name, Sol_ContractKindAttr:$kind,
-                   ArrayAttr:$interface_fns,
                    // FIXME: This is a hack until sol.contract lowering happens
                    // during the legalization by SolTypeConverter. Also, if this
                    // is fixed, maybe we could track interface function

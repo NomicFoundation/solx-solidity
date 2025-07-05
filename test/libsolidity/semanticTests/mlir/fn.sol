@@ -1,5 +1,5 @@
 contract C {
-  uint s;
+  uint public s;
   function f() public { s = 42; }
   function g() public returns (uint) { return s; }
   function h() public returns (uint, uint) { return (s, 1); }
@@ -20,3 +20,4 @@ contract C {
 // b(bool): 0 -> false
 // i8(uint8): 255 -> 255
 // i8(uint8): 256 -> FAILURE
+// s() -> 42

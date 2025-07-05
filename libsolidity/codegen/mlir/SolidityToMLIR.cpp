@@ -103,6 +103,9 @@ private:
   /// Maps a local variable to its address.
   std::map<VariableDeclaration const *, mlir::Value> localVarAddrMap;
 
+  /// Maps an interface function or state variable getter to its selector.
+  std::map<Declaration const *, util::FixedHash<4>> selectorMap;
+
   /// Force generate unchecked arithmetic.
   bool forceUncheckedArith = false;
 
@@ -191,6 +194,12 @@ private:
     auto fn = b.create<mlir::sol::FuncOp>(
         loc, "get_" + getMangledName(stateVar), fnTy);
     fn.setRuntimeAttr(b.getUnitAttr());
+    assert(selectorMap.find(&stateVar) != selectorMap.end());
+    fn.setSelectorAttr(
+        b.getIntegerAttr(b.getIntegerType(32),
+                         mlir::APInt(32, selectorMap[&stateVar].hex(), 16)));
+    fn.setSelectorFnTypeAttr(mlir::TypeAttr::get(fnTy));
+    fn.setStateMutability(mlir::sol::StateMutability::NonPayable);
 
     b.setInsertionPointToStart(b.createBlock(&fn.getRegion()));
     mlir::Value stateVarRef =
@@ -200,10 +209,6 @@ private:
     b.create<mlir::sol::ReturnOp>(loc, stateVarLd);
     return fn;
   }
-
-  /// Returns the array attribute for tracking interface functions (symbol, type
-  /// and selector) in the contract.
-  mlir::ArrayAttr getInterfaceFnsAttr(ContractDefinition const &cont);
 
   /// Generates the ir to zero the allocation.
   void genZeroedVal(mlir::sol::AllocaOp addr);
@@ -425,28 +430,6 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
   }
 
   llvm_unreachable("NYI");
-}
-
-mlir::ArrayAttr
-SolidityToMLIRPass::getInterfaceFnsAttr(ContractDefinition const &cont) {
-  const auto &interfaceFnInfos = cont.interfaceFunctions();
-  std::vector<mlir::Attribute> interfaceFnAttrs;
-  interfaceFnAttrs.reserve(interfaceFnInfos.size());
-  for (const auto &i : interfaceFnInfos) {
-    auto fnSymAttr = mlir::SymbolRefAttr::get(
-        b.getContext(), getMangledName(i.second->declaration()));
-
-    mlir::FunctionType fnTy = mlir::cast<mlir::FunctionType>(getType(i.second));
-    auto fnTyAttr = mlir::TypeAttr::get(fnTy);
-
-    auto selectorAttr = b.getIntegerAttr(b.getIntegerType(32),
-                                         mlir::APInt(32, i.first.hex(), 16));
-
-    interfaceFnAttrs.push_back(b.getDictionaryAttr(
-        {b.getNamedAttr("sym", fnSymAttr), b.getNamedAttr("type", fnTyAttr),
-         b.getNamedAttr("selector", selectorAttr)}));
-  }
-  return b.getArrayAttr(interfaceFnAttrs);
 }
 
 void SolidityToMLIRPass::genZeroedVal(mlir::sol::AllocaOp addr) {
@@ -1471,6 +1454,13 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   auto op = b.create<mlir::sol::FuncOp>(getLoc(fn), getMangledName(fn), fnTy,
                                         getStateMutability(fn));
 
+  if (fn.isPartOfExternalInterface()) {
+    assert(selectorMap.find(&fn) != selectorMap.end());
+    op.setSelectorAttr(b.getIntegerAttr(
+        b.getIntegerType(32), mlir::APInt(32, selectorMap[&fn].hex(), 16)));
+    op.setSelectorFnType(fnTy);
+  }
+
   // Set function kind.
   if (fn.isConstructor()) {
     op.setKind(mlir::sol::FunctionKind::Constructor);
@@ -1558,11 +1548,14 @@ static mlir::sol::ContractKind getContractKind(ContractDefinition const &cont) {
 
 void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
   currContract = &cont;
+  const auto &interfaceFnInfos = cont.interfaceFunctions();
+  for (const auto &i : interfaceFnInfos)
+    selectorMap[&i.second->declaration()] = i.first;
 
   // Create the contract op.
   auto op = b.create<mlir::sol::ContractOp>(
       getLoc(cont), cont.name() + "_" + util::toString(cont.id()),
-      getContractKind(cont), getInterfaceFnsAttr(cont),
+      getContractKind(cont),
       /*ctorFnType=*/mlir::TypeAttr{});
   b.setInsertionPointToStart(&op.getBodyRegion().emplaceBlock());
 
@@ -1574,6 +1567,8 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
     else
       b.create<mlir::sol::StateVarOp>(getLoc(*stateVar), stateVar->name(),
                                       getType(stateVar->type()));
+    if (stateVar->isPartOfExternalInterface())
+      genGetter(*stateVar);
   }
 
   // Lower functions.

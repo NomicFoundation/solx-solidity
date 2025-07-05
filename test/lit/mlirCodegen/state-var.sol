@@ -68,7 +68,7 @@ contract C {
 // CHECK-NEXT:       sol.copy %2, %1 : !sol.string<Memory>, !sol.string<Storage> loc(#loc26)
 // CHECK-NEXT:       sol.return loc(#loc23)
 // CHECK-NEXT:     } loc(#loc23)
-// CHECK-NEXT:   } {interface_fns = [], kind = #Contract} loc(#loc1)
+// CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)

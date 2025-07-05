@@ -18,7 +18,7 @@ contract C {
 // CHECK-NEXT:     sol.state_var @simpleMapping : !sol.mapping<ui256, ui256> loc(#loc4)
 // CHECK-NEXT:     sol.state_var @nestedMapping : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc5)
 // CHECK-NEXT:     sol.state_var @str : !sol.string<Storage> loc(#loc6)
-// CHECK-NEXT:   } {interface_fns = [], kind = #Contract} loc(#loc1)
+// CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)

@@ -15,7 +15,7 @@ contract C {
 // CHECK-NEXT: #Receive = #sol<FunctionKind Receive>
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   sol.contract @C_13 {
-// CHECK-NEXT:     sol.func @f_4() attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @f_4() attributes {selector = 638722032 : i32, selector_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
 // CHECK-NEXT:     sol.func @_8() attributes {kind = #Receive, state_mutability = #Payable} {
@@ -24,7 +24,7 @@ contract C {
 // CHECK-NEXT:     sol.func @_12() attributes {kind = #Fallback, state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc4)
 // CHECK-NEXT:     } loc(#loc4)
-// CHECK-NEXT:   } {interface_fns = [{selector = 638722032 : i32, sym = @f_4, type = () -> ()}], kind = #Contract} loc(#loc1)
+// CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)

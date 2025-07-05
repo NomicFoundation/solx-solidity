@@ -58,7 +58,7 @@ contract C {
 // CHECK-NEXT:       sol.store %4, %3 : ui256, !sol.ptr<ui256, Stack> loc(#loc19)
 // CHECK-NEXT:       sol.return loc(#loc16)
 // CHECK-NEXT:     } loc(#loc16)
-// CHECK-NEXT:   } {interface_fns = [], kind = #Contract} loc(#loc1)
+// CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
