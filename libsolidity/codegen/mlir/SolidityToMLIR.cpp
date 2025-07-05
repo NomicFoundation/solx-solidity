@@ -149,6 +149,58 @@ private:
     return decl.name() + "_" + std::to_string(decl.id());
   }
 
+  mlir::Value genStateVarRef(VariableDeclaration const &var,
+                             bool inCreationContext) {
+    auto currContr =
+        b.getBlock()->getParentOp()->getParentOfType<mlir::sol::ContractOp>();
+    assert(currContr);
+
+    if (var.immutable()) {
+      auto immOp = currContr.lookupSymbol<mlir::sol::ImmutableOp>(var.name());
+      assert(immOp);
+      if (!inCreationContext)
+        return b.create<mlir::sol::LoadImmutableOp>(
+            immOp.getLoc(), immOp.getType(), immOp.getName());
+      assert(!mlir::sol::isNonPtrRefType(immOp.getType()));
+      mlir::Type addrTy = mlir::sol::PointerType::get(
+          b.getContext(), immOp.getType(), mlir::sol::DataLocation::Immutable);
+      return b.create<mlir::sol::AddrOfOp>(immOp.getLoc(), addrTy,
+                                           immOp.getName());
+    }
+
+    auto stateVarOp = currContr.lookupSymbol<mlir::sol::StateVarOp>(var.name());
+    assert(stateVarOp);
+    mlir::Type addrTy;
+    if (mlir::sol::isNonPtrRefType(stateVarOp.getType()))
+      addrTy = stateVarOp.getType();
+    else
+      addrTy = mlir::sol::PointerType::get(b.getContext(), stateVarOp.getType(),
+                                           mlir::sol::DataLocation::Storage);
+    // TODO: Should we use the state variable's location here?
+    return b.create<mlir::sol::AddrOfOp>(stateVarOp.getLoc(), addrTy,
+                                         stateVarOp.getName());
+  }
+
+  mlir::sol::FuncOp genGetter(VariableDeclaration const &stateVar) {
+    assert(stateVar.isStateVariable());
+    mlir::OpBuilder::InsertionGuard insertGuard(b);
+    mlir::Location loc = getLoc(stateVar);
+
+    mlir::FunctionType fnTy =
+        b.getFunctionType(/*inTys=*/{}, /*outTys=*/getType(stateVar.type()));
+    auto fn = b.create<mlir::sol::FuncOp>(
+        loc, "get_" + getMangledName(stateVar), fnTy);
+    fn.setRuntimeAttr(b.getUnitAttr());
+
+    b.setInsertionPointToStart(b.createBlock(&fn.getRegion()));
+    mlir::Value stateVarRef =
+        genStateVarRef(stateVar, /*inCreationContext=*/false);
+    mlir::Value stateVarLd = genRValExpr(stateVarRef, stateVarRef.getLoc());
+    assert(!mlir::sol::isNonPtrRefType(stateVarLd.getType()));
+    b.create<mlir::sol::ReturnOp>(loc, stateVarLd);
+    return fn;
+  }
+
   /// Returns the array attribute for tracking interface functions (symbol, type
   /// and selector) in the contract.
   mlir::ArrayAttr getInterfaceFnsAttr(ContractDefinition const &cont);
@@ -367,41 +419,8 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
   }
 
   if (const auto *var = dynamic_cast<VariableDeclaration const *>(decl)) {
-    // State variable.
-    if (var->isStateVariable()) {
-      auto currContr =
-          b.getBlock()->getParentOp()->getParentOfType<mlir::sol::ContractOp>();
-      assert(currContr);
-      if (var->immutable()) {
-        auto immOp =
-            currContr.lookupSymbol<mlir::sol::ImmutableOp>(var->name());
-        if (!currFunc->isConstructor())
-          return b.create<mlir::sol::LoadImmutableOp>(
-              immOp.getLoc(), immOp.getType(), immOp.getName());
-        assert(immOp);
-        assert(!mlir::sol::isNonPtrRefType(immOp.getType()));
-        mlir::Type addrTy =
-            mlir::sol::PointerType::get(b.getContext(), immOp.getType(),
-                                        mlir::sol::DataLocation::Immutable);
-        return b.create<mlir::sol::AddrOfOp>(immOp.getLoc(), addrTy,
-                                             immOp.getName());
-      }
-      auto stateVarOp =
-          currContr.lookupSymbol<mlir::sol::StateVarOp>(var->name());
-      assert(stateVarOp);
-      mlir::Type addrTy;
-      if (mlir::sol::isNonPtrRefType(stateVarOp.getType()))
-        addrTy = stateVarOp.getType();
-      else
-        addrTy =
-            mlir::sol::PointerType::get(b.getContext(), stateVarOp.getType(),
-                                        mlir::sol::DataLocation::Storage);
-      // TODO: Should we use the state variable's location here?
-      return b.create<mlir::sol::AddrOfOp>(stateVarOp.getLoc(), addrTy,
-                                           stateVarOp.getName());
-    }
-
-    // Local variable.
+    if (var->isStateVariable())
+      return genStateVarRef(*var, currFunc->isConstructor());
     return getLocalVarAddr(*var);
   }
 
