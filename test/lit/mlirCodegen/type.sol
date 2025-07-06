@@ -13,11 +13,11 @@ contract C {
 // CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   sol.contract @C_17 {
-// CHECK-NEXT:     sol.state_var @ui256 : ui256 loc(#loc2)
-// CHECK-NEXT:     sol.state_var @addr : ui256 loc(#loc3)
-// CHECK-NEXT:     sol.state_var @simpleMapping : !sol.mapping<ui256, ui256> loc(#loc4)
-// CHECK-NEXT:     sol.state_var @nestedMapping : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc5)
-// CHECK-NEXT:     sol.state_var @str : !sol.string<Storage> loc(#loc6)
+// CHECK-NEXT:     sol.state_var @ui256_2 : ui256 loc(#loc2)
+// CHECK-NEXT:     sol.state_var @addr_4 : ui256 loc(#loc3)
+// CHECK-NEXT:     sol.state_var @simpleMapping_8 : !sol.mapping<ui256, ui256> loc(#loc4)
+// CHECK-NEXT:     sol.state_var @nestedMapping_14 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc5)
+// CHECK-NEXT:     sol.state_var @str_16 : !sol.string<Storage> loc(#loc6)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)

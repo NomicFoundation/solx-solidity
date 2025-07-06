@@ -21,12 +21,12 @@ contract C {
 // CHECK-NEXT: #loc11 = loc({{.*}}:7:38)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   sol.contract @C_49 {
-// CHECK-NEXT:     sol.state_var @ui : ui256 loc(#loc2)
-// CHECK-NEXT:     sol.state_var @m1 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc3)
+// CHECK-NEXT:     sol.state_var @ui_2 : ui256 loc(#loc2)
+// CHECK-NEXT:     sol.state_var @m1_8 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc3)
 // CHECK-NEXT:     sol.func @f_ui_18(%arg0: ui256 loc({{.*}}:6:16)) attributes {state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc5)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc5)
-// CHECK-NEXT:       %1 = sol.addr_of @ui : !sol.ptr<ui256, Storage> loc(#loc2)
+// CHECK-NEXT:       %1 = sol.addr_of @ui_2 : !sol.ptr<ui256, Storage> loc(#loc2)
 // CHECK-NEXT:       %2 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc6)
 // CHECK-NEXT:       sol.store %2, %1 : ui256, !sol.ptr<ui256, Storage> loc(#loc7)
 // CHECK-NEXT:       sol.return loc(#loc4)
@@ -38,7 +38,7 @@ contract C {
 // CHECK-NEXT:       sol.store %arg1, %1 : ui256, !sol.ptr<ui256, Stack> loc(#loc10)
 // CHECK-NEXT:       %2 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc11)
 // CHECK-NEXT:       sol.store %arg2, %2 : ui256, !sol.ptr<ui256, Stack> loc(#loc11)
-// CHECK-NEXT:       %3 = sol.addr_of @m1 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc3)
+// CHECK-NEXT:       %3 = sol.addr_of @m1_8 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc3)
 // CHECK-NEXT:       %4 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc12)
 // CHECK-NEXT:       %5 = sol.map %3, %4 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>>, ui256, !sol.mapping<ui256, ui256> loc(#loc13)
 // CHECK-NEXT:       %6 = sol.load %1 : !sol.ptr<ui256, Stack>, ui256 loc(#loc14)
@@ -48,7 +48,7 @@ contract C {
 // CHECK-NEXT:       sol.return loc(#loc8)
 // CHECK-NEXT:     } loc(#loc8)
 // CHECK-NEXT:     sol.func @f_tuple_48() attributes {state_mutability = #NonPayable} {
-// CHECK-NEXT:       %0 = sol.addr_of @ui : !sol.ptr<ui256, Storage> loc(#loc2)
+// CHECK-NEXT:       %0 = sol.addr_of @ui_2 : !sol.ptr<ui256, Storage> loc(#loc2)
 // CHECK-NEXT:       %c1_ui8 = sol.constant 1 : ui8 loc(#loc17)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Storage>, ui256 loc(#loc18)
 // CHECK-NEXT:       %2 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc19)

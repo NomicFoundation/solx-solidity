@@ -160,7 +160,8 @@ private:
     assert(currContr);
 
     if (var.immutable()) {
-      auto immOp = currContr.lookupSymbol<mlir::sol::ImmutableOp>(var.name());
+      auto immOp =
+          currContr.lookupSymbol<mlir::sol::ImmutableOp>(getMangledName(var));
       assert(immOp);
       if (!inCreationContext)
         return b.create<mlir::sol::LoadImmutableOp>(
@@ -172,7 +173,8 @@ private:
                                            immOp.getName());
     }
 
-    auto stateVarOp = currContr.lookupSymbol<mlir::sol::StateVarOp>(var.name());
+    auto stateVarOp =
+        currContr.lookupSymbol<mlir::sol::StateVarOp>(getMangledName(var));
     assert(stateVarOp);
     mlir::Type addrTy;
     if (mlir::sol::isNonPtrRefType(stateVarOp.getType()))
@@ -1606,11 +1608,12 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
 
   for (VariableDeclaration const *stateVar : cont.stateVariables()) {
     if (stateVar->immutable())
-      b.create<mlir::sol::ImmutableOp>(getLoc(*stateVar), stateVar->name(),
-                                       getType(stateVar->type()),
-                                       stateVar->id());
+      b.create<mlir::sol::ImmutableOp>(
+          getLoc(*stateVar), getMangledName(*stateVar),
+          getType(stateVar->type()), stateVar->id());
     else
-      b.create<mlir::sol::StateVarOp>(getLoc(*stateVar), stateVar->name(),
+      b.create<mlir::sol::StateVarOp>(getLoc(*stateVar),
+                                      getMangledName(*stateVar),
                                       getType(stateVar->type()));
     if (stateVar->isPartOfExternalInterface())
       genGetter(*stateVar);

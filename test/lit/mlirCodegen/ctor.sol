@@ -15,11 +15,11 @@ contract C {
 // CHECK-NEXT: #loc4 = loc({{.*}}:4:14)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   sol.contract @C_13 {
-// CHECK-NEXT:     sol.state_var @m : ui256 loc(#loc2)
+// CHECK-NEXT:     sol.state_var @m_2 : ui256 loc(#loc2)
 // CHECK-NEXT:     sol.func @_12(%arg0: ui256 loc({{.*}}:4:14)) attributes {kind = #Constructor, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc4)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc4)
-// CHECK-NEXT:       %1 = sol.addr_of @m : !sol.ptr<ui256, Storage> loc(#loc2)
+// CHECK-NEXT:       %1 = sol.addr_of @m_2 : !sol.ptr<ui256, Storage> loc(#loc2)
 // CHECK-NEXT:       %2 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc5)
 // CHECK-NEXT:       sol.store %2, %1 : ui256, !sol.ptr<ui256, Storage> loc(#loc6)
 // CHECK-NEXT:       sol.return loc(#loc3)
