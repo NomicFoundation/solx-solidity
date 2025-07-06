@@ -28,6 +28,7 @@
 #include "libsolidity/ast/ASTEnums.h"
 #include "libsolidity/ast/ASTForward.h"
 #include "libsolidity/ast/ASTUtils.h"
+#include "libsolidity/ast/TypeProvider.h"
 #include "libsolidity/ast/Types.h"
 #include "libsolidity/codegen/mlir/Interface.h"
 #include "libsolidity/codegen/mlir/Passes.h"
@@ -189,8 +190,8 @@ private:
     mlir::OpBuilder::InsertionGuard insertGuard(b);
     mlir::Location loc = getLoc(stateVar);
 
-    mlir::FunctionType fnTy =
-        b.getFunctionType(/*inTys=*/{}, /*outTys=*/getType(stateVar.type()));
+    auto fnTy =
+        cast<mlir::FunctionType>(getType(TypeProvider::function(stateVar)));
     auto fn = b.create<mlir::sol::FuncOp>(
         loc, "get_" + getMangledName(stateVar), fnTy);
     fn.setRuntimeAttr(b.getUnitAttr());
@@ -201,12 +202,56 @@ private:
     fn.setSelectorFnTypeAttr(mlir::TypeAttr::get(fnTy));
     fn.setStateMutability(mlir::sol::StateMutability::NonPayable);
 
-    b.setInsertionPointToStart(b.createBlock(&fn.getRegion()));
+    mlir::Block *entryBlk = b.createBlock(&fn.getRegion());
+    b.setInsertionPointToStart(entryBlk);
     mlir::Value stateVarRef =
         genStateVarRef(stateVar, /*inCreationContext=*/false);
     mlir::Value stateVarLd = genRValExpr(stateVarRef, stateVarRef.getLoc());
-    assert(!mlir::sol::isNonPtrRefType(stateVarLd.getType()));
-    b.create<mlir::sol::ReturnOp>(loc, stateVarLd);
+
+    // Array type.
+    if (isa<mlir::sol::ArrayType>(stateVarLd.getType())) {
+      mlir::Value ret = stateVarLd;
+      for (auto inpTy : fnTy.getInputs()) {
+        mlir::BlockArgument blkArg = entryBlk->addArgument(inpTy, loc);
+        auto gep = b.create<mlir::sol::GepOp>(loc, ret, blkArg);
+        ret = genRValExpr(gep, loc);
+      }
+      b.create<mlir::sol::ReturnOp>(loc, ret);
+
+      // Mapping type.
+    } else if (auto mappingTy =
+                   dyn_cast<mlir::sol::MappingType>(stateVarLd.getType())) {
+      assert(fnTy.getInputs().size() == 1);
+      mlir::BlockArgument blkArg =
+          entryBlk->addArgument(mappingTy.getKeyType(), loc);
+      mlir::Type addrTy = mappingTy.getValType();
+      if (!mlir::sol::isNonPtrRefType(mappingTy.getValType()))
+        addrTy =
+            mlir::sol::PointerType::get(b.getContext(), mappingTy.getValType(),
+                                        mlir::sol::DataLocation::Storage);
+      auto map = b.create<mlir::sol::MapOp>(loc, addrTy, stateVarLd, blkArg);
+      b.create<mlir::sol::ReturnOp>(loc, genRValExpr(map, loc));
+
+      // Struct type.
+    } else if (auto structTy =
+                   dyn_cast<mlir::sol::StructType>(stateVarLd.getType())) {
+      mlir::SmallVector<mlir::Value, 4> tuple;
+      int64_t i = 0;
+      for (auto memTy : structTy.getMemberTypes()) {
+        if (mlir::sol::isNonPtrRefType(memTy))
+          llvm_unreachable("NYI");
+        auto gep = b.create<mlir::sol::GepOp>(
+            loc, stateVarLd, genUnsignedConst(i++, /*numBits=*/64, loc));
+        tuple.push_back(genRValExpr(gep, loc));
+      }
+
+      b.create<mlir::sol::ReturnOp>(loc, tuple);
+
+      // Scalar, string types etc.
+    } else {
+      b.create<mlir::sol::ReturnOp>(loc, stateVarLd);
+    }
+
     return fn;
   }
 

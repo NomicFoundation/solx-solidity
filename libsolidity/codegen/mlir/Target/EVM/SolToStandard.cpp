@@ -739,9 +739,7 @@ struct LoadOpLowering : public OpConversionPattern<sol::LoadOp> {
                                          evm::getAlignment(addr));
       return success();
     }
-    case sol::DataLocation::CallData:
-    case sol::DataLocation::Immutable:
-    case sol::DataLocation::Memory: {
+    default: {
       auto addrTy = cast<sol::PointerType>(op.getAddr().getType());
       auto bytesEleTy = dyn_cast<sol::BytesType>(addrTy.getPointeeType());
       // If loading from `bytes`, generate the low bits mask-off of the loaded
@@ -766,14 +764,7 @@ struct LoadOpLowering : public OpConversionPattern<sol::LoadOp> {
       r.replaceOp(op, ld);
       return success();
     }
-    case sol::DataLocation::Storage:
-      r.replaceOpWithNewOp<sol::SLoadOp>(op, addr);
-      return success();
-    default:
-      break;
     };
-
-    llvm_unreachable("NYI: Calldata data-location");
   }
 };
 

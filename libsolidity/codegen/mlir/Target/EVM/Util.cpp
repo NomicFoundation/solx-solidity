@@ -78,6 +78,13 @@ unsigned evm::getStorageSlotCount(Type ty) {
   if (auto arrTy = dyn_cast<sol::ArrayType>(ty))
     return arrTy.getSize() * getStorageSlotCount(arrTy.getEltType());
 
+  if (auto structTy = dyn_cast<sol::StructType>(ty)) {
+    int64_t sum = 0;
+    for (Type memTy : structTy.getMemberTypes())
+      sum += getStorageSlotCount(memTy);
+    return sum;
+  }
+
   llvm_unreachable("NYI: Other types");
 }
 

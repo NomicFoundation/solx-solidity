@@ -109,6 +109,7 @@ evm::SolTypeConverter::SolTypeConverter() {
     switch (ty.getDataLocation()) {
     case sol::DataLocation::CallData:
     case sol::DataLocation::Memory:
+    case sol::DataLocation::Storage:
       return IntegerType::get(ty.getContext(), 256,
                               IntegerType::SignednessSemantics::Signless);
     default:

@@ -1,5 +1,10 @@
 contract C {
   uint public s;
+  uint[2][2] public si2;
+
+  string public str;
+  constructor () {
+  }
   function f() public { s = 42; }
   function g() public returns (uint) { return s; }
   function h() public returns (uint, uint) { return (s, 1); }
