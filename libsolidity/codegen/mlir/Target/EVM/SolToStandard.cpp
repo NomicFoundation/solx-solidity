@@ -1721,21 +1721,11 @@ struct FuncOpLowering : public OpConversionPattern<sol::FuncOp> {
 
   LogicalResult matchAndRewrite(sol::FuncOp op, OpAdaptor adaptor,
                                 ConversionPatternRewriter &r) const override {
-    // Collect non-core attributes.
-    std::vector<NamedAttribute> attrs;
-    bool hasLinkageAttr = false;
-    for (NamedAttribute attr : op->getAttrs()) {
-      StringRef attrName = attr.getName();
-      if (attrName == "function_type" || attrName == "sym_name" ||
-          attrName.starts_with("sol."))
-        continue;
-      if (attrName == "llvm.linkage")
-        hasLinkageAttr = true;
-      attrs.push_back(attr);
-    }
-
     // Set llvm.linkage attribute to private if not explicitly specified.
-    if (!hasLinkageAttr)
+    std::vector<NamedAttribute> attrs;
+    if (auto linkageAttr = op->getAttr("llvm.linkage"))
+      attrs.push_back(r.getNamedAttr("llvm.linkage", linkageAttr));
+    else
       attrs.push_back(r.getNamedAttr(
           "llvm.linkage",
           LLVM::LinkageAttr::get(r.getContext(), LLVM::Linkage::Private)));
