@@ -197,7 +197,7 @@ contract C {
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)
-// CHECK-NEXT:   func.func @f_13.0(%arg0: i256 loc({{.*}}:3:13)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, selector = -60272102 : i32, selector_fn_type = (ui256) -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @f_13.0(%arg0: i256 loc({{.*}}:3:13)) attributes {llvm.linkage = #llvm.linkage<private>, orig_fn_type = (ui256) -> (), passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, selector = -60272102 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc3)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc3)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc3)
@@ -205,7 +205,7 @@ contract C {
 // CHECK-NEXT:     llvm.store %1, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc5)
 // CHECK-NEXT:     return loc(#loc2)
 // CHECK-NEXT:   } loc(#loc2)
-// CHECK-NEXT:   func.func @f_13(%arg0: i256 loc({{.*}}:3:13)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, selector = -60272102 : i32, selector_fn_type = (ui256) -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @f_13(%arg0: i256 loc({{.*}}:3:13)) attributes {llvm.linkage = #llvm.linkage<private>, orig_fn_type = (ui256) -> (), passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, selector = -60272102 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc3)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc3)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc3)

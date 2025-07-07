@@ -10,7 +10,7 @@ contract C {
 // CHECK-NEXT: #Pure = #sol<StateMutability Pure>
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   sol.contract @C_5 {
-// CHECK-NEXT:     sol.func @f_4() attributes {selector = 638722032 : i32, selector_fn_type = () -> (), state_mutability = #Pure} {
+// CHECK-NEXT:     sol.func @f_4() attributes {orig_fn_type = () -> (), selector = 638722032 : i32, state_mutability = #Pure} {
 // CHECK-NEXT:       sol.return loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)

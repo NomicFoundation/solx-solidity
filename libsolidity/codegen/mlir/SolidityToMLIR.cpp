@@ -201,7 +201,7 @@ private:
     fn.setSelectorAttr(
         b.getIntegerAttr(b.getIntegerType(32),
                          mlir::APInt(32, selectorMap[&stateVar].hex(), 16)));
-    fn.setSelectorFnTypeAttr(mlir::TypeAttr::get(fnTy));
+    fn.setOrigFnTypeAttr(mlir::TypeAttr::get(fnTy));
     fn.setStateMutability(mlir::sol::StateMutability::NonPayable);
 
     mlir::Block *entryBlk = b.createBlock(&fn.getRegion());
@@ -1505,16 +1505,13 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
     assert(selectorMap.find(&fn) != selectorMap.end());
     op.setSelectorAttr(b.getIntegerAttr(
         b.getIntegerType(32), mlir::APInt(32, selectorMap[&fn].hex(), 16)));
-    op.setSelectorFnType(fnTy);
+    op.setOrigFnType(fnTy);
   }
 
   // Set function kind.
   if (fn.isConstructor()) {
     op.setKind(mlir::sol::FunctionKind::Constructor);
-    auto currContr =
-        mlir::cast<mlir::sol::ContractOp>(b.getBlock()->getParentOp());
-    assert(currContr);
-    currContr.setCtorFnType(op.getFunctionType());
+    op.setOrigFnType(fnTy);
   } else if (fn.isReceive()) {
     op.setKind(mlir::sol::FunctionKind::Receive);
   } else if (fn.isFallback()) {
@@ -1602,8 +1599,7 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
   // Create the contract op.
   auto op = b.create<mlir::sol::ContractOp>(
       getLoc(cont), cont.name() + "_" + util::toString(cont.id()),
-      getContractKind(cont),
-      /*ctorFnType=*/mlir::TypeAttr{});
+      getContractKind(cont));
   b.setInsertionPointToStart(&op.getBodyRegion().emplaceBlock());
 
   for (VariableDeclaration const *stateVar : cont.stateVariables()) {

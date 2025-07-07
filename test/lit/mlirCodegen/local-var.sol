@@ -18,14 +18,14 @@ contract C {
 // CHECK-NEXT: #View = #sol<StateMutability View>
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   sol.contract @C_24 {
-// CHECK-NEXT:     sol.func @defInit_11() -> ui256 attributes {selector = -584775204 : i32, selector_fn_type = () -> ui256, state_mutability = #View} {
+// CHECK-NEXT:     sol.func @defInit_11() -> ui256 attributes {orig_fn_type = () -> ui256, selector = -584775204 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc3)
 // CHECK-NEXT:       sol.store %c0_ui256, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc4)
 // CHECK-NEXT:       sol.return %1 : ui256 loc(#loc5)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:     sol.func @init_23() -> ui256 attributes {selector = -507037398 : i32, selector_fn_type = () -> ui256, state_mutability = #View} {
+// CHECK-NEXT:     sol.func @init_23() -> ui256 attributes {orig_fn_type = () -> ui256, selector = -507037398 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %c42_ui8 = sol.constant 42 : ui8 loc(#loc7)
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc8)
 // CHECK-NEXT:       %1 = sol.cast %c42_ui8 : ui8 to ui256 loc(#loc7)

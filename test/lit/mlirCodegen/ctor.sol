@@ -16,7 +16,7 @@ contract C {
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   sol.contract @C_13 {
 // CHECK-NEXT:     sol.state_var @m_2 : ui256 loc(#loc2)
-// CHECK-NEXT:     sol.func @_12(%arg0: ui256 loc({{.*}}:4:14)) attributes {kind = #Constructor, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @_12(%arg0: ui256 loc({{.*}}:4:14)) attributes {kind = #Constructor, orig_fn_type = (ui256) -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc4)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc4)
 // CHECK-NEXT:       %1 = sol.addr_of @m_2 : !sol.ptr<ui256, Storage> loc(#loc2)
@@ -24,7 +24,7 @@ contract C {
 // CHECK-NEXT:       sol.store %2, %1 : ui256, !sol.ptr<ui256, Storage> loc(#loc6)
 // CHECK-NEXT:       sol.return loc(#loc3)
 // CHECK-NEXT:     } loc(#loc3)
-// CHECK-NEXT:   } {ctorFnType = (ui256) -> (), kind = #Contract} loc(#loc1)
+// CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)

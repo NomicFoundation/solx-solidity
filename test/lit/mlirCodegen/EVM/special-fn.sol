@@ -106,11 +106,11 @@ contract C {
 // CHECK-NEXT:     func.func @_8() attributes {kind = #Receive, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], state_mutability = #Payable} {
 // CHECK-NEXT:       return loc(#loc3)
 // CHECK-NEXT:     } loc(#loc3)
-// CHECK-NEXT:     func.func @f_4() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], runtime, selector = 638722032 : i32, selector_fn_type = () -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:     func.func @f_4() attributes {llvm.linkage = #llvm.linkage<private>, orig_fn_type = () -> (), passthrough = ["nofree", "null_pointer_is_valid"], runtime, selector = 638722032 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       return loc(#loc4)
 // CHECK-NEXT:     } loc(#loc4)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   func.func @f_4() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], selector = 638722032 : i32, selector_fn_type = () -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @f_4() attributes {llvm.linkage = #llvm.linkage<private>, orig_fn_type = () -> (), passthrough = ["nofree", "null_pointer_is_valid"], selector = 638722032 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:     return loc(#loc4)
 // CHECK-NEXT:   } loc(#loc4)
 // CHECK-NEXT: } loc(#loc)

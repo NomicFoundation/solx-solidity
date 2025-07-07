@@ -1863,7 +1863,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
       }
 
       // Decode the input parameters (if required).
-      FunctionType origIfcFnTy = *ifcFnOp.getSelectorFnType();
+      FunctionType origIfcFnTy = *ifcFnOp.getOrigFnType();
       std::vector<Value> decodedArgs;
       if (!origIfcFnTy.getInputs().empty()) {
         evmB.genABITupleDecoding(origIfcFnTy.getInputs(),
@@ -1993,8 +1993,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
       Value tupleStart = evmB.genMemAlloc(argSize);
       r.create<sol::CodeCopyOp>(loc, tupleStart, progSize, argSize);
       std::vector<Value> decodedArgs;
-      assert(op.getCtorFnType());
-      auto ctorFnTy = *op.getCtorFnType();
+      FunctionType ctorFnTy = *ctor.getOrigFnType();
       if (!ctorFnTy.getInputs().empty()) {
         evmB.genABITupleDecoding(
             ctorFnTy.getInputs(), tupleStart,

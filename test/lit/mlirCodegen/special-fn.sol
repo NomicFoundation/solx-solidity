@@ -15,7 +15,7 @@ contract C {
 // CHECK-NEXT: #Receive = #sol<FunctionKind Receive>
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   sol.contract @C_13 {
-// CHECK-NEXT:     sol.func @f_4() attributes {selector = 638722032 : i32, selector_fn_type = () -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @f_4() attributes {orig_fn_type = () -> (), selector = 638722032 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
 // CHECK-NEXT:     sol.func @_8() attributes {kind = #Receive, state_mutability = #Payable} {

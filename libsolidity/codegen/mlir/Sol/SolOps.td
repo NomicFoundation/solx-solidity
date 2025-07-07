@@ -625,7 +625,7 @@ def Sol_FuncOp : Sol_Op<"func", [AutomaticAllocationScope, CallableOpInterface,
                        OptionalAttr<DictArrayAttr>:$arg_attrs,
                        OptionalAttr<DictArrayAttr>:$res_attrs,
                        OptionalAttr<I32Attr>:$selector,
-                       OptionalAttr<TypeAttrOf<FunctionType>>:$selector_fn_type,
+                       OptionalAttr<TypeAttrOf<FunctionType>>:$orig_fn_type,
                        UnitAttr:$runtime,
                        OptionalAttr<Sol_FunctionKindAttr>:$kind,
                        OptionalAttr<Sol_StateMutabilityAttr>:$state_mutability,
@@ -679,12 +679,7 @@ def Sol_ContractOp : Sol_Op<"contract", [Symbol, SymbolTable, SingleBlock,
   // TODO: Represent the following for the lowering:
   // - IRGenerationContext::memoryUnsafeInlineAssemblySeen
   // - IRGenerationContext::reservedMemory
-  let arguments = (ins SymbolNameAttr:$sym_name, Sol_ContractKindAttr:$kind,
-                   // FIXME: This is a hack until sol.contract lowering happens
-                   // during the legalization by SolTypeConverter. Also, if this
-                   // is fixed, maybe we could track interface function
-                   // attributes in sol.func intead?
-                   OptionalAttr<TypeAttrOf<FunctionType>>:$ctorFnType);
+  let arguments = (ins SymbolNameAttr:$sym_name, Sol_ContractKindAttr:$kind);
   let regions = (region SizedRegion<1>:$bodyRegion);
 
   let assemblyFormat = "$sym_name $bodyRegion attr-dict";

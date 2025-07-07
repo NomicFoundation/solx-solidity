@@ -191,7 +191,7 @@ contract ERC20 {
 // CHECK-NEXT:     sol.state_var @_totalSupply_13 : ui256 loc(#loc4)
 // CHECK-NEXT:     sol.state_var @_name_15 : !sol.string<Storage> loc(#loc5)
 // CHECK-NEXT:     sol.state_var @_symbol_17 : !sol.string<Storage> loc(#loc6)
-// CHECK-NEXT:     sol.func @_49(%arg0: !sol.string<Memory> loc({{.*}}:16:14), %arg1: !sol.string<Memory> loc({{.*}}:16:35)) attributes {kind = #Constructor, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @_49(%arg0: !sol.string<Memory> loc({{.*}}:16:14), %arg1: !sol.string<Memory> loc({{.*}}:16:35)) attributes {kind = #Constructor, orig_fn_type = (!sol.string<Memory>, !sol.string<Memory>) -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc8)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc8)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc9)
@@ -209,27 +209,27 @@ contract ERC20 {
 // CHECK-NEXT:       %1 = sol.conv_cast %0 : i256 -> ui256 loc(#loc15)
 // CHECK-NEXT:       sol.return %1 : ui256 loc(#loc16)
 // CHECK-NEXT:     } loc(#loc14)
-// CHECK-NEXT:     sol.func @name_66() -> !sol.string<Memory> attributes {selector = 117300739 : i32, selector_fn_type = () -> !sol.string<Memory>, state_mutability = #View} {
+// CHECK-NEXT:     sol.func @name_66() -> !sol.string<Memory> attributes {orig_fn_type = () -> !sol.string<Memory>, selector = 117300739 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %0 = sol.addr_of @_name_15 : !sol.string<Storage> loc(#loc5)
 // CHECK-NEXT:       %1 = sol.data_loc_cast %0 : !sol.string<Storage>, !sol.string<Memory> loc(#loc5)
 // CHECK-NEXT:       sol.return %1 : !sol.string<Memory> loc(#loc18)
 // CHECK-NEXT:     } loc(#loc17)
-// CHECK-NEXT:     sol.func @symbol_74() -> !sol.string<Memory> attributes {selector = -1780966591 : i32, selector_fn_type = () -> !sol.string<Memory>, state_mutability = #View} {
+// CHECK-NEXT:     sol.func @symbol_74() -> !sol.string<Memory> attributes {orig_fn_type = () -> !sol.string<Memory>, selector = -1780966591 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %0 = sol.addr_of @_symbol_17 : !sol.string<Storage> loc(#loc6)
 // CHECK-NEXT:       %1 = sol.data_loc_cast %0 : !sol.string<Storage>, !sol.string<Memory> loc(#loc6)
 // CHECK-NEXT:       sol.return %1 : !sol.string<Memory> loc(#loc20)
 // CHECK-NEXT:     } loc(#loc19)
-// CHECK-NEXT:     sol.func @decimals_82() -> ui256 attributes {selector = 826074471 : i32, selector_fn_type = () -> ui256, state_mutability = #View} {
+// CHECK-NEXT:     sol.func @decimals_82() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 826074471 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %c18_ui8 = sol.constant 18 : ui8 loc(#loc22)
 // CHECK-NEXT:       %0 = sol.cast %c18_ui8 : ui8 to ui256 loc(#loc22)
 // CHECK-NEXT:       sol.return %0 : ui256 loc(#loc23)
 // CHECK-NEXT:     } loc(#loc21)
-// CHECK-NEXT:     sol.func @totalSupply_90() -> ui256 attributes {selector = 404098525 : i32, selector_fn_type = () -> ui256, state_mutability = #View} {
+// CHECK-NEXT:     sol.func @totalSupply_90() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 404098525 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %0 = sol.addr_of @_totalSupply_13 : !sol.ptr<ui256, Storage> loc(#loc4)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Storage>, ui256 loc(#loc25)
 // CHECK-NEXT:       sol.return %1 : ui256 loc(#loc26)
 // CHECK-NEXT:     } loc(#loc24)
-// CHECK-NEXT:     sol.func @balanceOf_102(%arg0: ui256 loc({{.*}}:41:21)) -> ui256 attributes {selector = 1889567281 : i32, selector_fn_type = (ui256) -> ui256, state_mutability = #View} {
+// CHECK-NEXT:     sol.func @balanceOf_102(%arg0: ui256 loc({{.*}}:41:21)) -> ui256 attributes {orig_fn_type = (ui256) -> ui256, selector = 1889567281 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc28)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc28)
 // CHECK-NEXT:       %1 = sol.addr_of @_balances_5 : !sol.mapping<ui256, ui256> loc(#loc2)
@@ -238,7 +238,7 @@ contract ERC20 {
 // CHECK-NEXT:       %4 = sol.load %3 : !sol.ptr<ui256, Storage>, ui256 loc(#loc30)
 // CHECK-NEXT:       sol.return %4 : ui256 loc(#loc31)
 // CHECK-NEXT:     } loc(#loc27)
-// CHECK-NEXT:     sol.func @transfer_121(%arg0: ui256 loc({{.*}}:45:20), %arg1: ui256 loc({{.*}}:45:39)) -> i1 attributes {selector = -1459249989 : i32, selector_fn_type = (ui256, ui256) -> i1, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @transfer_121(%arg0: ui256 loc({{.*}}:45:20), %arg1: ui256 loc({{.*}}:45:39)) -> i1 attributes {orig_fn_type = (ui256, ui256) -> i1, selector = -1459249989 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc33)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc33)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc34)
@@ -250,7 +250,7 @@ contract ERC20 {
 // CHECK-NEXT:       %true = sol.constant true loc(#loc39)
 // CHECK-NEXT:       sol.return %true : i1 loc(#loc40)
 // CHECK-NEXT:     } loc(#loc32)
-// CHECK-NEXT:     sol.func @allowance_137(%arg0: ui256 loc({{.*}}:50:21), %arg1: ui256 loc({{.*}}:50:36)) -> ui256 attributes {selector = -580719298 : i32, selector_fn_type = (ui256, ui256) -> ui256, state_mutability = #View} {
+// CHECK-NEXT:     sol.func @allowance_137(%arg0: ui256 loc({{.*}}:50:21), %arg1: ui256 loc({{.*}}:50:36)) -> ui256 attributes {orig_fn_type = (ui256, ui256) -> ui256, selector = -580719298 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc42)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc42)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc43)
@@ -263,7 +263,7 @@ contract ERC20 {
 // CHECK-NEXT:       %7 = sol.load %6 : !sol.ptr<ui256, Storage>, ui256 loc(#loc45)
 // CHECK-NEXT:       sol.return %7 : ui256 loc(#loc47)
 // CHECK-NEXT:     } loc(#loc41)
-// CHECK-NEXT:     sol.func @approve_156(%arg0: ui256 loc({{.*}}:54:19), %arg1: ui256 loc({{.*}}:54:36)) -> i1 attributes {selector = 157198259 : i32, selector_fn_type = (ui256, ui256) -> i1, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @approve_156(%arg0: ui256 loc({{.*}}:54:19), %arg1: ui256 loc({{.*}}:54:36)) -> i1 attributes {orig_fn_type = (ui256, ui256) -> i1, selector = 157198259 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc49)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc49)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc50)
@@ -275,7 +275,7 @@ contract ERC20 {
 // CHECK-NEXT:       %true = sol.constant true loc(#loc55)
 // CHECK-NEXT:       sol.return %true : i1 loc(#loc56)
 // CHECK-NEXT:     } loc(#loc48)
-// CHECK-NEXT:     sol.func @transferFrom_202(%arg0: ui256 loc({{.*}}:59:24), %arg1: ui256 loc({{.*}}:59:40), %arg2: ui256 loc({{.*}}:59:59)) -> i1 attributes {selector = 599290589 : i32, selector_fn_type = (ui256, ui256, ui256) -> i1, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @transferFrom_202(%arg0: ui256 loc({{.*}}:59:24), %arg1: ui256 loc({{.*}}:59:40), %arg2: ui256 loc({{.*}}:59:59)) -> i1 attributes {orig_fn_type = (ui256, ui256, ui256) -> i1, selector = 599290589 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc58)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc58)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc59)
@@ -307,7 +307,7 @@ contract ERC20 {
 // CHECK-NEXT:       %true = sol.constant true loc(#loc77)
 // CHECK-NEXT:       sol.return %true : i1 loc(#loc78)
 // CHECK-NEXT:     } loc(#loc57)
-// CHECK-NEXT:     sol.func @increaseAllowance_229(%arg0: ui256 loc({{.*}}:74:29), %arg1: ui256 loc({{.*}}:74:46)) -> i1 attributes {selector = 961581905 : i32, selector_fn_type = (ui256, ui256) -> i1, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @increaseAllowance_229(%arg0: ui256 loc({{.*}}:74:29), %arg1: ui256 loc({{.*}}:74:46)) -> i1 attributes {orig_fn_type = (ui256, ui256) -> i1, selector = 961581905 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc80)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc80)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc81)
@@ -326,7 +326,7 @@ contract ERC20 {
 // CHECK-NEXT:       %true = sol.constant true loc(#loc89)
 // CHECK-NEXT:       sol.return %true : i1 loc(#loc90)
 // CHECK-NEXT:     } loc(#loc79)
-// CHECK-NEXT:     sol.func @decreaseAllowance_267(%arg0: ui256 loc({{.*}}:83:29), %arg1: ui256 loc({{.*}}:83:46)) -> i1 attributes {selector = -1537752361 : i32, selector_fn_type = (ui256, ui256) -> i1, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @decreaseAllowance_267(%arg0: ui256 loc({{.*}}:83:29), %arg1: ui256 loc({{.*}}:83:46)) -> i1 attributes {orig_fn_type = (ui256, ui256) -> i1, selector = -1537752361 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc92)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc92)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc93)
@@ -352,7 +352,7 @@ contract ERC20 {
 // CHECK-NEXT:       %true = sol.constant true loc(#loc106)
 // CHECK-NEXT:       sol.return %true : i1 loc(#loc107)
 // CHECK-NEXT:     } loc(#loc91)
-// CHECK-NEXT:     sol.func @_transfer_332(%arg0: ui256 loc({{.*}}:96:21), %arg1: ui256 loc({{.*}}:96:37), %arg2: ui256 loc({{.*}}:96:56)) attributes {selector = 820017310 : i32, selector_fn_type = (ui256, ui256, ui256) -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @_transfer_332(%arg0: ui256 loc({{.*}}:96:21), %arg1: ui256 loc({{.*}}:96:37), %arg2: ui256 loc({{.*}}:96:56)) attributes {orig_fn_type = (ui256, ui256, ui256) -> (), selector = 820017310 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc109)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc109)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc110)
@@ -399,7 +399,7 @@ contract ERC20 {
 // CHECK-NEXT:       sol.emit "Transfer(address,address,uint256)" indexed = [%29, %30] non_indexed = [%31] : ui256, ui256, ui256 loc(#loc134)
 // CHECK-NEXT:       sol.return loc(#loc108)
 // CHECK-NEXT:     } loc(#loc108)
-// CHECK-NEXT:     sol.func @_mint_370(%arg0: ui256 loc({{.*}}:114:17), %arg1: ui256 loc({{.*}}:114:34)) attributes {selector = 1315881543 : i32, selector_fn_type = (ui256, ui256) -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @_mint_370(%arg0: ui256 loc({{.*}}:114:17), %arg1: ui256 loc({{.*}}:114:34)) attributes {orig_fn_type = (ui256, ui256) -> (), selector = 1315881543 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc136)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc136)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc137)
@@ -428,7 +428,7 @@ contract ERC20 {
 // CHECK-NEXT:       sol.emit "Transfer(address,address,uint256)" indexed = [%15, %16] non_indexed = [%17] : ui256, ui256, ui256 loc(#loc149)
 // CHECK-NEXT:       sol.return loc(#loc135)
 // CHECK-NEXT:     } loc(#loc135)
-// CHECK-NEXT:     sol.func @_burn_424(%arg0: ui256 loc({{.*}}:124:17), %arg1: ui256 loc({{.*}}:124:34)) attributes {selector = 1633807128 : i32, selector_fn_type = (ui256, ui256) -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @_burn_424(%arg0: ui256 loc({{.*}}:124:17), %arg1: ui256 loc({{.*}}:124:34)) attributes {orig_fn_type = (ui256, ui256) -> (), selector = 1633807128 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc151)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc151)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc152)
@@ -467,7 +467,7 @@ contract ERC20 {
 // CHECK-NEXT:       sol.emit "Transfer(address,address,uint256)" indexed = [%23, %24] non_indexed = [%25] : ui256, ui256, ui256 loc(#loc171)
 // CHECK-NEXT:       sol.return loc(#loc150)
 // CHECK-NEXT:     } loc(#loc150)
-// CHECK-NEXT:     sol.func @_approve_469(%arg0: ui256 loc({{.*}}:142:20), %arg1: ui256 loc({{.*}}:142:35), %arg2: ui256 loc({{.*}}:142:52)) attributes {selector = 273580543 : i32, selector_fn_type = (ui256, ui256, ui256) -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @_approve_469(%arg0: ui256 loc({{.*}}:142:20), %arg1: ui256 loc({{.*}}:142:35), %arg2: ui256 loc({{.*}}:142:52)) attributes {orig_fn_type = (ui256, ui256, ui256) -> (), selector = 273580543 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc173)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc173)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc174)
@@ -497,7 +497,7 @@ contract ERC20 {
 // CHECK-NEXT:       sol.emit "Approval(address,address,uint256)" indexed = [%15, %16] non_indexed = [%17] : ui256, ui256, ui256 loc(#loc189)
 // CHECK-NEXT:       sol.return loc(#loc172)
 // CHECK-NEXT:     } loc(#loc172)
-// CHECK-NEXT:   } {ctorFnType = (!sol.string<Memory>, !sol.string<Memory>) -> (), kind = #Contract} loc(#loc1)
+// CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:6:0)
