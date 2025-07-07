@@ -245,8 +245,8 @@ struct ModifierOpLowering
     b.setInsertionPointToStart(newCallerFn.addEntryBlock());
     // The sol.placeholder will be replaced with the first modifier. This
     // simplifies the placeholder replacement loop.
-    b.create<sol::PlaceholderOp>(b.getUnknownLoc());
-    b.create<sol::ReturnOp>(b.getUnknownLoc());
+    b.create<sol::PlaceholderOp>(callerFn.getLoc());
+    b.create<sol::ReturnOp>(callerFn.getLoc());
 
     // Generate the chain of calls of modifiers and the caller function by
     // replacing the sol.placeholders.

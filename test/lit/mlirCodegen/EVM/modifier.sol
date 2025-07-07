@@ -155,8 +155,8 @@ contract C {
 // CHECK-NEXT:       return loc(#loc14)
 // CHECK-NEXT:     } loc(#loc14)
 // CHECK-NEXT:     func.func @g_48(%arg0: i256 loc({{.*}}:8:2)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
-// CHECK-NEXT:       call @o_220(%arg0) : (i256) -> () loc(#loc)
-// CHECK-NEXT:       return loc(#loc)
+// CHECK-NEXT:       call @o_220(%arg0) : (i256) -> () loc(#loc14)
+// CHECK-NEXT:       return loc(#loc14)
 // CHECK-NEXT:     } loc(#loc14)
 // CHECK-NEXT:     func.func @f_360(%arg0: i256 loc({{.*}}:7:13)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       %c1_i256 = arith.constant 1 : i256 loc(#loc16)
@@ -184,8 +184,8 @@ contract C {
 // CHECK-NEXT:         func.call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:       } loc(#loc1)
 // CHECK-NEXT:       call @n_12(%0) : (i256) -> () loc(#loc18)
-// CHECK-NEXT:       call @f_360(%arg0) : (i256) -> () loc(#loc)
-// CHECK-NEXT:       return loc(#loc)
+// CHECK-NEXT:       call @f_360(%arg0) : (i256) -> () loc(#loc15)
+// CHECK-NEXT:       return loc(#loc15)
 // CHECK-NEXT:     } loc(#loc15)
 // CHECK-NEXT:   } loc(#loc2)
 // CHECK-NEXT:   func.func @f_36(%arg0: i256 loc({{.*}}:7:2)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
@@ -208,8 +208,8 @@ contract C {
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     call @n_12(%0) : (i256) -> () loc(#loc18)
-// CHECK-NEXT:     call @f_360(%arg0) : (i256) -> () loc(#loc)
-// CHECK-NEXT:     return loc(#loc)
+// CHECK-NEXT:     call @f_360(%arg0) : (i256) -> () loc(#loc15)
+// CHECK-NEXT:     return loc(#loc15)
 // CHECK-NEXT:   } loc(#loc15)
 // CHECK-NEXT:   func.func @f_360(%arg0: i256 loc({{.*}}:7:13)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc16)
@@ -218,8 +218,8 @@ contract C {
 // CHECK-NEXT:     return loc(#loc15)
 // CHECK-NEXT:   } loc(#loc15)
 // CHECK-NEXT:   func.func @g_48(%arg0: i256 loc({{.*}}:8:2)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
-// CHECK-NEXT:     call @o_220(%arg0) : (i256) -> () loc(#loc)
-// CHECK-NEXT:     return loc(#loc)
+// CHECK-NEXT:     call @o_220(%arg0) : (i256) -> () loc(#loc14)
+// CHECK-NEXT:     return loc(#loc14)
 // CHECK-NEXT:   } loc(#loc14)
 // CHECK-NEXT:   func.func @g_480(%arg0: i256 loc({{.*}}:8:13)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc4)
