@@ -203,22 +203,19 @@ contract C {
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)
-// CHECK-NEXT:   func.func @f_4.0() attributes {llvm.linkage = #llvm.linkage<private>, orig_fn_type = () -> (), passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, selector = 638722032 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @_8() attributes {kind = #Receive, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, state_mutability = #Payable} {
 // CHECK-NEXT:     return loc(#loc2)
 // CHECK-NEXT:   } loc(#loc2)
 // CHECK-NEXT:   func.func @f_4() attributes {llvm.linkage = #llvm.linkage<private>, orig_fn_type = () -> (), passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, selector = 638722032 : i32, state_mutability = #NonPayable} {
-// CHECK-NEXT:     return loc(#loc2)
-// CHECK-NEXT:   } loc(#loc2)
-// CHECK-NEXT:   func.func @_8() attributes {kind = #Receive, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #Payable} {
 // CHECK-NEXT:     return loc(#loc3)
 // CHECK-NEXT:   } loc(#loc3)
-// CHECK-NEXT:   func.func @_12() attributes {kind = #Fallback, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @_12() attributes {kind = #Fallback, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, state_mutability = #NonPayable} {
 // CHECK-NEXT:     return loc(#loc4)
 // CHECK-NEXT:   } loc(#loc4)
 // CHECK-NEXT:   func.func private @__personality() -> i32 attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
-// CHECK-NEXT: #loc2 = loc({{.*}}:3:2)
-// CHECK-NEXT: #loc3 = loc({{.*}}:4:2)
+// CHECK-NEXT: #loc2 = loc({{.*}}:4:2)
+// CHECK-NEXT: #loc3 = loc({{.*}}:3:2)
 // CHECK-NEXT: #loc4 = loc({{.*}}:5:2)
 // CHECK-EMPTY:

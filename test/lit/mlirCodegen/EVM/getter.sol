@@ -231,9 +231,11 @@ contract C {
 // CHECK-NEXT:       %4 = arith.trunci %3 : i256 to i8 loc(#loc3)
 // CHECK-NEXT:       return %1, %4 : i256, i8 loc(#loc3)
 // CHECK-NEXT:     } loc(#loc3)
-// CHECK-NEXT:     func.func @get_str_10() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
-// CHECK-NEXT:       %c5_i256 = arith.constant 5 : i256 loc(#loc4)
-// CHECK-NEXT:       return %c5_i256 : i256 loc(#loc4)
+// CHECK-NEXT:     func.func @get_i_2() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
+// CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc4)
+// CHECK-NEXT:       %0 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<5> loc(#loc4)
+// CHECK-NEXT:       %1 = llvm.load %0 {alignment = 1 : i64} : !llvm.ptr<5> -> i256 loc(#loc4)
+// CHECK-NEXT:       return %1 : i256 loc(#loc4)
 // CHECK-NEXT:     } loc(#loc4)
 // CHECK-NEXT:     func.func @get_i2_8(%arg0: i256 loc({{.*}}:4:2), %arg1: i256 loc({{.*}}:4:2)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       %c36_i256 = arith.constant 36 : i256 loc(#loc)
@@ -270,17 +272,15 @@ contract C {
 // CHECK-NEXT:       %6 = llvm.load %5 {alignment = 1 : i64} : !llvm.ptr<5> -> i256 loc(#loc5)
 // CHECK-NEXT:       return %6 : i256 loc(#loc5)
 // CHECK-NEXT:     } loc(#loc5)
-// CHECK-NEXT:     func.func @get_i_2() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
-// CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc6)
-// CHECK-NEXT:       %0 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<5> loc(#loc6)
-// CHECK-NEXT:       %1 = llvm.load %0 {alignment = 1 : i64} : !llvm.ptr<5> -> i256 loc(#loc6)
-// CHECK-NEXT:       return %1 : i256 loc(#loc6)
+// CHECK-NEXT:     func.func @get_str_10() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
+// CHECK-NEXT:       %c5_i256 = arith.constant 5 : i256 loc(#loc6)
+// CHECK-NEXT:       return %c5_i256 : i256 loc(#loc6)
 // CHECK-NEXT:     } loc(#loc6)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
 // CHECK-NEXT: #loc3 = loc({{.*}}:10:2)
-// CHECK-NEXT: #loc4 = loc({{.*}}:5:2)
-// CHECK-NEXT: #loc6 = loc({{.*}}:3:2)
+// CHECK-NEXT: #loc4 = loc({{.*}}:3:2)
+// CHECK-NEXT: #loc6 = loc({{.*}}:5:2)
 // CHECK-EMPTY:

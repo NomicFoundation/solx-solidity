@@ -30,6 +30,7 @@
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/SymbolTable.h"
 #include "mlir/IR/Types.h"
+#include "mlir/Interfaces/CallInterfaces.h"
 #include "mlir/Interfaces/FunctionInterfaces.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -1884,6 +1885,21 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     }
   }
 
+  /// Collects reachable function from `fn` in `reachableFns`.
+  void getReachableFuncs(sol::FuncOp fn,
+                         std::set<sol::FuncOp> &reachableFns) const {
+    reachableFns.insert(fn);
+    // FIXME! Handle indirect function references once we support it.
+    fn.walk([&](CallOpInterface callOp) {
+      auto calleeSym = cast<SymbolRefAttr>(callOp.getCallableForCallee());
+      auto callee = cast<sol::FuncOp>(
+          SymbolTable::lookupNearestSymbolFrom(fn, calleeSym));
+      if (reachableFns.contains(callee))
+        return;
+      getReachableFuncs(callee, reachableFns);
+    });
+  }
+
   LogicalResult matchAndRewrite(sol::ContractOp op,
                                 PatternRewriter &r) const override {
     mlir::Location loc = op.getLoc();
@@ -1896,67 +1912,82 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     auto runtimeObj =
         r.create<sol::ObjectOp>(loc, std::string(op.getName()) + "_deployed");
 
-    std::vector<sol::FuncOp> funcs;
+    std::set<sol::FuncOp> fnsToMove;
+    SmallVector<sol::FuncOp, 4> ifcFns;
     sol::FuncOp ctor, receiveFn, fallbackFn;
+    SmallVector<uint32_t, 4> selectors;
     size_t reservedMemSize = 0;
     SmallVector<sol::ImmutableOp, 2> immOps;
-    SmallVector<uint32_t, 4> selectors;
-    SmallVector<sol::FuncOp, 4> ifcFns;
 
-    // Track functions, immutables (and reserved memory) etc; Remove state
-    // variables.
+    // Track relevant types of functions (with selector, ctor, fallback,
+    // receive) immutables (and reserved memory) etc; Remove state variables.
     for (Operation &i :
          llvm::make_early_inc_range(op.getBody()->getOperations())) {
-      if (auto func = dyn_cast<sol::FuncOp>(i)) {
-        funcs.push_back(func);
-        if (auto selector = func.getSelector()) {
+      // Functions
+      if (auto fn = dyn_cast<sol::FuncOp>(i)) {
+        if (auto selector = fn.getSelector()) {
           selectors.push_back(*selector);
-          ifcFns.push_back(func);
+          ifcFns.push_back(fn);
         }
+        auto fnKind = fn.getKind();
+        if (fnKind) {
+          switch (*fnKind) {
+          case sol::FunctionKind::Constructor:
+            assert(!ctor);
+            ctor = fn;
+            break;
+          case sol::FunctionKind::Fallback:
+            assert(!fallbackFn);
+            fallbackFn = fn;
+            break;
+          case sol::FunctionKind::Receive:
+            assert(!receiveFn);
+            receiveFn = fn;
+            break;
+          default:
+            break;
+          }
+        }
+        fnsToMove.insert(fn);
+
+        // Immutables
       } else if (auto immOp = dyn_cast<sol::ImmutableOp>(i)) {
         reservedMemSize += evm::getCallDataHeadSize(immOp.getType());
         immOps.push_back(immOp);
+
+        // State variables
       } else if (isa<sol::StateVarOp>(i)) {
         r.eraseOp(&i);
+
       } else {
-        llvm_unreachable("NYI: Non function entities in contract");
+        llvm_unreachable("NYI");
       }
     }
 
-    // Copy contained function to creation and runtime ObjectOp.
-    for (sol::FuncOp fn : funcs) {
-      if (fn.getRuntime()) {
-        fn->moveBefore(runtimeObj.getEntryBlock(),
-                       runtimeObj.getEntryBlock()->begin());
-        continue;
+    if (ctor) {
+      // Clone functions reachable from the ctor to creation and runtime
+      // objects.
+      std::set<sol::FuncOp> reachableFns;
+      getReachableFuncs(ctor, reachableFns);
+      ctor->moveBefore(creationObj.getEntryBlock(),
+                       creationObj.getEntryBlock()->begin());
+      reachableFns.erase(ctor);
+      fnsToMove.erase(ctor);
+      for (auto reachableFn : reachableFns) {
+        // Clone in the creation object and move the original to runtime object.
+        r.clone(*reachableFn);
+        reachableFn->moveBefore(runtimeObj.getEntryBlock(),
+                                runtimeObj.getEntryBlock()->begin());
+        reachableFn.setRuntimeAttr(r.getUnitAttr());
+        fnsToMove.erase(reachableFn);
       }
+    }
 
-      auto fnKind = fn.getKind();
-      if (!fnKind) {
-        // Duplicate in both the creation and runtime objects.
-        r.clone(*fn);
-        fn->moveBefore(runtimeObj.getEntryBlock(),
-                       runtimeObj.getEntryBlock()->begin());
-        fn.setRuntimeAttr(r.getUnitAttr());
-        continue;
-      }
-      if (*fnKind == sol::FunctionKind::Constructor) {
-        assert(!ctor);
-        ctor = fn;
-        ctor->moveBefore(creationObj.getEntryBlock(),
-                         creationObj.getEntryBlock()->begin());
-
-      } else if (*fnKind == sol::FunctionKind::Fallback) {
-        assert(!fallbackFn);
-        fallbackFn = fn;
-        fallbackFn->moveBefore(runtimeObj.getEntryBlock(),
-                               runtimeObj.getEntryBlock()->begin());
-      } else if (*fnKind == sol::FunctionKind::Receive) {
-        assert(!receiveFn);
-        receiveFn = fn;
-        receiveFn->moveBefore(runtimeObj.getEntryBlock(),
-                              runtimeObj.getEntryBlock()->begin());
-      }
+    // Now fnsToMove will only have runtime context functions.
+    for (sol::FuncOp fn : fnsToMove) {
+      fn.setRuntimeAttr(r.getUnitAttr());
+      fn->moveBefore(runtimeObj.getEntryBlock(),
+                     runtimeObj.getEntryBlock()->begin());
     }
 
     //
