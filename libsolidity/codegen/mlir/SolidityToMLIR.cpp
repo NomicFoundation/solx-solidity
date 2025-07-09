@@ -202,7 +202,6 @@ private:
         cast<mlir::FunctionType>(getType(TypeProvider::function(stateVar)));
     auto fn = b.create<mlir::sol::FuncOp>(
         loc, "get_" + getMangledName(stateVar), fnTy);
-    fn.setRuntimeAttr(b.getUnitAttr());
     assert(selectorMap.find(&stateVar) != selectorMap.end());
     fn.setSelectorAttr(
         b.getIntegerAttr(b.getIntegerType(32),
