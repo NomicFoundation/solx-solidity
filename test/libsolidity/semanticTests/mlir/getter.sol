@@ -10,6 +10,8 @@ contract C {
   mapping(address => uint) public m;
   mapping(address => mapping(uint => uint)) public m2;
 
+  uint public constant ci = 7;
+
   constructor () {
     i = 1;
     i2[0][0] = 2;
@@ -31,3 +33,4 @@ contract C {
 // s() -> 3, 0
 // m(address): 0 -> 5
 // m2(address,uint256): 0, 0 -> 6
+// ci() -> 7

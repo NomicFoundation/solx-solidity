@@ -159,6 +159,11 @@ private:
         b.getBlock()->getParentOp()->getParentOfType<mlir::sol::ContractOp>();
     assert(currContr);
 
+    if (var.isConstant()) {
+      // TODO: Should we track the state variable name in the sol.constant?
+      return genRValExpr(*var.value(), getType(var.type()));
+    }
+
     if (var.immutable()) {
       auto immOp =
           currContr.lookupSymbol<mlir::sol::ImmutableOp>(getMangledName(var));
@@ -192,6 +197,7 @@ private:
     mlir::OpBuilder::InsertionGuard insertGuard(b);
     mlir::Location loc = getLoc(stateVar);
 
+    // Create the function.
     auto fnTy =
         cast<mlir::FunctionType>(getType(TypeProvider::function(stateVar)));
     auto fn = b.create<mlir::sol::FuncOp>(
@@ -206,11 +212,18 @@ private:
 
     mlir::Block *entryBlk = b.createBlock(&fn.getRegion());
     b.setInsertionPointToStart(entryBlk);
-    mlir::Value stateVarRef =
-        genStateVarRef(stateVar, /*inCreationContext=*/false);
-    mlir::Value stateVarLd = genRValExpr(stateVarRef, stateVarRef.getLoc());
 
-    // Array type.
+    // Load the state variable.
+    mlir::Value stateVarLd;
+    if (stateVar.isConstant()) {
+      stateVarLd = genRValExpr(*stateVar.value(), getType(stateVar.type()));
+    } else {
+      mlir::Value stateVarRef =
+          genStateVarRef(stateVar, /*inCreationContext=*/false);
+      stateVarLd = genRValExpr(stateVarRef, stateVarRef.getLoc());
+    }
+
+    // Array type
     if (isa<mlir::sol::ArrayType>(stateVarLd.getType())) {
       mlir::Value ret = stateVarLd;
       for (auto inpTy : fnTy.getInputs()) {
@@ -220,7 +233,7 @@ private:
       }
       b.create<mlir::sol::ReturnOp>(loc, ret);
 
-      // Mapping type.
+      // Mapping type
     } else if (auto mappingTy =
                    dyn_cast<mlir::sol::MappingType>(stateVarLd.getType())) {
       mlir::Value lastMap = stateVarLd;
@@ -237,7 +250,7 @@ private:
       }
       b.create<mlir::sol::ReturnOp>(loc, genRValExpr(lastMap, loc));
 
-      // Struct type.
+      // Struct type
     } else if (auto structTy =
                    dyn_cast<mlir::sol::StructType>(stateVarLd.getType())) {
       mlir::SmallVector<mlir::Value, 4> tuple;
@@ -1610,7 +1623,7 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
       b.create<mlir::sol::ImmutableOp>(
           getLoc(*stateVar), getMangledName(*stateVar),
           getType(stateVar->type()), stateVar->id());
-    else
+    else if (!stateVar->isConstant())
       b.create<mlir::sol::StateVarOp>(getLoc(*stateVar),
                                       getMangledName(*stateVar),
                                       getType(stateVar->type()));
