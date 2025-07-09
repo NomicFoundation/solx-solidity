@@ -223,16 +223,19 @@ private:
       // Mapping type.
     } else if (auto mappingTy =
                    dyn_cast<mlir::sol::MappingType>(stateVarLd.getType())) {
-      assert(fnTy.getInputs().size() == 1);
-      mlir::BlockArgument blkArg =
-          entryBlk->addArgument(mappingTy.getKeyType(), loc);
-      mlir::Type addrTy = mappingTy.getValType();
-      if (!mlir::sol::isNonPtrRefType(mappingTy.getValType()))
-        addrTy =
-            mlir::sol::PointerType::get(b.getContext(), mappingTy.getValType(),
-                                        mlir::sol::DataLocation::Storage);
-      auto map = b.create<mlir::sol::MapOp>(loc, addrTy, stateVarLd, blkArg);
-      b.create<mlir::sol::ReturnOp>(loc, genRValExpr(map, loc));
+      mlir::Value lastMap = stateVarLd;
+      for (auto inpTy : fnTy.getInputs()) {
+        auto lastMapTy = cast<mlir::sol::MappingType>(lastMap.getType());
+        mlir::Type addrTy = lastMapTy.getValType();
+        if (!mlir::sol::isNonPtrRefType(lastMapTy.getValType()))
+          addrTy = mlir::sol::PointerType::get(
+              b.getContext(), lastMapTy.getValType(),
+              mlir::sol::DataLocation::Storage);
+        mlir::BlockArgument blkArg = entryBlk->addArgument(inpTy, loc);
+        auto map = b.create<mlir::sol::MapOp>(loc, addrTy, lastMap, blkArg);
+        lastMap = genRValExpr(map, loc);
+      }
+      b.create<mlir::sol::ReturnOp>(loc, genRValExpr(lastMap, loc));
 
       // Struct type.
     } else if (auto structTy =

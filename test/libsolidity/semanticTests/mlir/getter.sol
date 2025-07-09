@@ -8,6 +8,7 @@ contract C {
   }
   S public s;
   mapping(address => uint) public m;
+  mapping(address => mapping(uint => uint)) public m2;
 
   constructor () {
     i = 1;
@@ -18,6 +19,7 @@ contract C {
     // `Opc != EVM::STACK_LOAD && Opc != EVM::STACK_STORE && "Unexpected stack memory instruction"' failed.
 	  // s.i8 = 4;
     m[address(0)] = 5;
+    m2[address(0)][0] = 6;
   }
 }
 
@@ -28,3 +30,4 @@ contract C {
 // i2(uint256,uint256): 0, 0 -> 2
 // s() -> 3, 0
 // m(address): 0 -> 5
+// m2(address,uint256): 0, 0 -> 6
