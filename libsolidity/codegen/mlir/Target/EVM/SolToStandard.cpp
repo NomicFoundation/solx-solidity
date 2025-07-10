@@ -1770,25 +1770,16 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
   void genFreePtrInit(PatternRewriter &r, Location loc,
                       size_t reservedMem = 0) const {
     solidity::mlirgen::BuilderExt bExt(r, loc);
-    mlir::Value freeMem;
-    if (/* TODO: op.memoryUnsafeInlineAssemblySeen */ false) {
-      freeMem = bExt.genI256Const(
-          solidity::frontend::CompilerUtils::generalPurposeMemoryStart +
-          reservedMem);
-    } else {
-      freeMem = r.create<sol::MemGuardOp>(
-          loc,
-          r.getIntegerAttr(
-              r.getIntegerType(256),
-              solidity::frontend::CompilerUtils::generalPurposeMemoryStart +
-                  reservedMem));
-    }
+    mlir::Value freeMem = bExt.genI256Const(
+        solidity::frontend::CompilerUtils::generalPurposeMemoryStart +
+        reservedMem);
     r.create<sol::MStoreOp>(loc, bExt.genI256Const(64), freeMem);
   };
 
   /// Generates the dispatch to interface functions.
-  void genDispatch(sol::ContractOp contrOp, SmallVector<uint32_t, 4> selectors,
-                   SmallVector<sol::FuncOp, 4> ifcFns,
+  void genDispatch(sol::ContractOp contrOp,
+                   SmallVector<uint32_t, 4> const &selectors,
+                   SmallVector<sol::FuncOp, 4> &ifcFns,
                    PatternRewriter &r) const {
     Location loc = contrOp.getLoc();
 

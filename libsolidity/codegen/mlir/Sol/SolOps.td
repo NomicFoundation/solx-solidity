@@ -676,9 +676,6 @@ def Sol_FuncOp : Sol_Op<"func", [AutomaticAllocationScope, CallableOpInterface,
 
 def Sol_ContractOp : Sol_Op<"contract", [Symbol, SymbolTable, SingleBlock,
                                          IsolatedFromAbove, NoTerminator]> {
-  // TODO: Represent the following for the lowering:
-  // - IRGenerationContext::memoryUnsafeInlineAssemblySeen
-  // - IRGenerationContext::reservedMemory
   let arguments = (ins SymbolNameAttr:$sym_name, Sol_ContractKindAttr:$kind);
   let regions = (region SizedRegion<1>:$bodyRegion);
 
