@@ -62,9 +62,8 @@ namespace solidity::frontend {
 
 class SolidityToMLIRPass {
 public:
-  explicit SolidityToMLIRPass(mlir::MLIRContext &ctx, CharStream const &stream,
-                              EVMVersion evmVersion)
-      : b(&ctx), stream(stream), evmVersion(evmVersion) {}
+  explicit SolidityToMLIRPass(mlir::MLIRContext &ctx, EVMVersion evmVersion)
+      : b(&ctx), evmVersion(evmVersion) {}
 
   /// Lowers the free functions in the source unit.
   void lowerFreeFuncs(SourceUnit const &);
@@ -73,7 +72,8 @@ public:
   void lower(ContractDefinition const &);
 
   /// Initializes (or resets) the module and the insertion-point.
-  void init() {
+  void init(std::shared_ptr<CharStream> s) {
+    stream = s;
     mod = mlir::ModuleOp::create(b.getUnknownLoc());
     mod->setAttr("sol.evm_version",
                  mlir::sol::EvmVersionAttr::get(
@@ -87,7 +87,7 @@ public:
 
 private:
   mlir::OpBuilder b;
-  CharStream const &stream;
+  std::shared_ptr<CharStream> stream;
   EVMVersion evmVersion;
   mlir::ModuleOp mod;
 
@@ -125,8 +125,8 @@ private:
     // linear offset)
     //
     // FIXME: Track loc.end as well.
-    LineColumn lineCol = stream.translatePositionToLineColumn(loc.start);
-    return mlir::FileLineColLoc::get(b.getStringAttr(stream.name()),
+    LineColumn lineCol = stream->translatePositionToLineColumn(loc.start);
+    return mlir::FileLineColLoc::get(b.getStringAttr(stream->name()),
                                      lineCol.line, lineCol.column);
   }
 
@@ -1651,14 +1651,12 @@ void SolidityToMLIRPass::lowerFreeFuncs(SourceUnit const &srcUnit) {
 }
 
 bool CompilerStack::runMlirPipeline() {
-  assert(m_sourceOrder.size() == 1 && "NYI");
-
   mlir::MLIRContext ctx;
   ctx.getOrLoadDialect<mlir::sol::SolDialect>();
   ctx.getOrLoadDialect<mlir::scf::SCFDialect>();
 
+  SolidityToMLIRPass gen(ctx, m_evmVersion);
   for (Source const *src : m_sourceOrder) {
-    SolidityToMLIRPass gen(ctx, *src->charStream, m_evmVersion);
 
     // Lower requested contracts.
     bool hasContract = false;
@@ -1666,7 +1664,7 @@ bool CompilerStack::runMlirPipeline() {
          ASTNode::filteredNodes<ContractDefinition>(src->ast->nodes())) {
       hasContract = true;
       if (isRequestedContract(*contr)) {
-        gen.init();
+        gen.init(src->charStream);
         // Lower free functions.
         gen.lowerFreeFuncs(*src->ast);
         gen.lower(*contr);
@@ -1685,7 +1683,7 @@ bool CompilerStack::runMlirPipeline() {
 
     if (!hasContract) {
       // Then lower free functions. This is handy in testing.
-      gen.init();
+      gen.init(src->charStream);
       gen.lowerFreeFuncs(*src->ast);
 
       mlir::ModuleOp mod = gen.getModule();
