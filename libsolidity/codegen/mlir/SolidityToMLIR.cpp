@@ -1677,9 +1677,9 @@ bool CompilerStack::runMlirPipeline() {
           return false;
         }
 
-        // TODO: Support lowering multiple contracts.
-        return doJob(m_mlirGenJob, mod,
-                     m_contracts.at(contr->fullyQualifiedName()).mlirPipeline);
+        if (!doJob(m_mlirGenJob, mod,
+                   m_contracts.at(contr->fullyQualifiedName()).mlirPipeline))
+          return false;
       }
     }
 
@@ -1699,7 +1699,7 @@ bool CompilerStack::runMlirPipeline() {
     }
   }
 
-  return false;
+  return true;
 }
 
 // TODO: Move the following functions somewhere else.
