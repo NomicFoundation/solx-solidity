@@ -68,8 +68,9 @@ public:
   /// Lowers the free functions in the source unit.
   void lowerFreeFuncs(SourceUnit const &);
 
-  /// Lowers the contract.
-  void lower(ContractDefinition const &);
+  /// Lowers the contract. Skips generating the contract op if `genContractOp`
+  /// is false.
+  void lower(ContractDefinition const &, bool genContractOp = true);
 
   /// Initializes (or resets) the module and the insertion-point.
   void init(std::shared_ptr<CharStream> s) {
@@ -1605,17 +1606,21 @@ static mlir::sol::ContractKind getContractKind(ContractDefinition const &cont) {
   }
 }
 
-void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
-  currContract = &cont;
+void SolidityToMLIRPass::lower(ContractDefinition const &cont,
+                               bool genContractOp) {
+  if (genContractOp)
+    currContract = &cont;
   const auto &interfaceFnInfos = cont.interfaceFunctions();
   for (const auto &i : interfaceFnInfos)
     selectorMap[&i.second->declaration()] = i.first;
 
   // Create the contract op.
-  auto op = b.create<mlir::sol::ContractOp>(
-      getLoc(cont), cont.name() + "_" + util::toString(cont.id()),
-      getContractKind(cont));
-  b.setInsertionPointToStart(&op.getBodyRegion().emplaceBlock());
+  if (genContractOp) {
+    auto op = b.create<mlir::sol::ContractOp>(
+        getLoc(cont), cont.name() + "_" + util::toString(cont.id()),
+        getContractKind(cont));
+    b.setInsertionPointToStart(&op.getBodyRegion().emplaceBlock());
+  }
 
   for (VariableDeclaration const *stateVar : cont.stateVariables()) {
     if (stateVar->immutable())
@@ -1640,7 +1645,11 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
     lower(*modifier);
   }
 
-  b.setInsertionPointAfter(op);
+  for (ContractDefinition const *baseContr :
+       cont.annotation().linearizedBaseContracts) {
+    if (baseContr != &cont)
+      lower(*baseContr, /*genContractOp=*/false);
+  }
 }
 
 void SolidityToMLIRPass::lowerFreeFuncs(SourceUnit const &srcUnit) {
