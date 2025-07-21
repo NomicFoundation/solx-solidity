@@ -1,6 +1,7 @@
 // RUN: solc --mlir-action=print-init --mmlir --mlir-print-debuginfo %s | FileCheck %s
 
 contract C1 {
+  uint public m;
   function f() public returns (uint) { return g(); }
   function g() internal virtual returns (uint) { return 0x11; }
 }
@@ -15,64 +16,78 @@ contract C0 is C1 {
 // CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
 // CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.contract @C1_18 {
-// CHECK-NEXT:     sol.func @f_9() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 638722032 : i32, state_mutability = #NonPayable} {
-// CHECK-NEXT:       %0 = sol.call @g_17() : () -> ui256 loc(#loc3)
-// CHECK-NEXT:       sol.return %0 : ui256 loc(#loc4)
+// CHECK-NEXT:   sol.contract @C1_20 {
+// CHECK-NEXT:     sol.state_var @m_2 : ui256 loc(#loc2)
+// CHECK-NEXT:     sol.func @get_m_2() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 1513021465 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0 = sol.addr_of @m_2 : !sol.ptr<ui256, Storage> loc(#loc2)
+// CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Storage>, ui256 loc(#loc2)
+// CHECK-NEXT:       sol.return %1 : ui256 loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:     sol.func @g_17() -> ui256 attributes {state_mutability = #NonPayable} {
-// CHECK-NEXT:       %c17_ui8 = sol.constant 17 : ui8 loc(#loc6)
-// CHECK-NEXT:       %0 = sol.cast %c17_ui8 : ui8 to ui256 loc(#loc6)
-// CHECK-NEXT:       sol.return %0 : ui256 loc(#loc7)
-// CHECK-NEXT:     } loc(#loc5)
+// CHECK-NEXT:     sol.func @f_11() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 638722032 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0 = sol.call @g_19() : () -> ui256 loc(#loc4)
+// CHECK-NEXT:       sol.return %0 : ui256 loc(#loc5)
+// CHECK-NEXT:     } loc(#loc3)
+// CHECK-NEXT:     sol.func @g_19() -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:       %c17_ui8 = sol.constant 17 : ui8 loc(#loc7)
+// CHECK-NEXT:       %0 = sol.cast %c17_ui8 : ui8 to ui256 loc(#loc7)
+// CHECK-NEXT:       sol.return %0 : ui256 loc(#loc8)
+// CHECK-NEXT:     } loc(#loc6)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
 // CHECK-NEXT: #loc2 = loc({{.*}}:3:2)
-// CHECK-NEXT: #loc3 = loc({{.*}}:3:46)
-// CHECK-NEXT: #loc4 = loc({{.*}}:3:39)
-// CHECK-NEXT: #loc5 = loc({{.*}}:4:2)
-// CHECK-NEXT: #loc6 = loc({{.*}}:4:56)
-// CHECK-NEXT: #loc7 = loc({{.*}}:4:49)
+// CHECK-NEXT: #loc3 = loc({{.*}}:4:2)
+// CHECK-NEXT: #loc4 = loc({{.*}}:4:46)
+// CHECK-NEXT: #loc5 = loc({{.*}}:4:39)
+// CHECK-NEXT: #loc6 = loc({{.*}}:5:2)
+// CHECK-NEXT: #loc7 = loc({{.*}}:5:56)
+// CHECK-NEXT: #loc8 = loc({{.*}}:5:49)
 // CHECK-NEXT: #Contract = #sol<ContractKind Contract>
 // CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
 // CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.contract @C0_38 {
-// CHECK-NEXT:     sol.func @g_29() -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.contract @C0_40 {
+// CHECK-NEXT:     sol.func @g_31() -> ui256 attributes {state_mutability = #NonPayable} {
 // CHECK-NEXT:       %c1_ui8 = sol.constant 1 : ui8 loc(#loc3)
 // CHECK-NEXT:       %0 = sol.cast %c1_ui8 : ui8 to ui256 loc(#loc3)
 // CHECK-NEXT:       sol.return %0 : ui256 loc(#loc4)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:     sol.func @h_37() -> ui256 attributes {orig_fn_type = () -> ui256, selector = -1194732699 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @h_39() -> ui256 attributes {orig_fn_type = () -> ui256, selector = -1194732699 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %c2_ui8 = sol.constant 2 : ui8 loc(#loc6)
 // CHECK-NEXT:       %0 = sol.cast %c2_ui8 : ui8 to ui256 loc(#loc6)
 // CHECK-NEXT:       sol.return %0 : ui256 loc(#loc7)
 // CHECK-NEXT:     } loc(#loc5)
-// CHECK-NEXT:     sol.func @f_9() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 638722032 : i32, state_mutability = #NonPayable} {
-// CHECK-NEXT:       %0 = sol.call @g_29() : () -> ui256 loc(#loc9)
-// CHECK-NEXT:       sol.return %0 : ui256 loc(#loc10)
+// CHECK-NEXT:     sol.state_var @m_2 : ui256 loc(#loc8)
+// CHECK-NEXT:     sol.func @get_m_2() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 1513021465 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0 = sol.addr_of @m_2 : !sol.ptr<ui256, Storage> loc(#loc8)
+// CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Storage>, ui256 loc(#loc8)
+// CHECK-NEXT:       sol.return %1 : ui256 loc(#loc8)
 // CHECK-NEXT:     } loc(#loc8)
-// CHECK-NEXT:     sol.func @g_17() -> ui256 attributes {state_mutability = #NonPayable} {
-// CHECK-NEXT:       %c17_ui8 = sol.constant 17 : ui8 loc(#loc12)
-// CHECK-NEXT:       %0 = sol.cast %c17_ui8 : ui8 to ui256 loc(#loc12)
-// CHECK-NEXT:       sol.return %0 : ui256 loc(#loc13)
-// CHECK-NEXT:     } loc(#loc11)
+// CHECK-NEXT:     sol.func @f_11() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 638722032 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0 = sol.call @g_31() : () -> ui256 loc(#loc10)
+// CHECK-NEXT:       sol.return %0 : ui256 loc(#loc11)
+// CHECK-NEXT:     } loc(#loc9)
+// CHECK-NEXT:     sol.func @g_19() -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:       %c17_ui8 = sol.constant 17 : ui8 loc(#loc13)
+// CHECK-NEXT:       %0 = sol.cast %c17_ui8 : ui8 to ui256 loc(#loc13)
+// CHECK-NEXT:       sol.return %0 : ui256 loc(#loc14)
+// CHECK-NEXT:     } loc(#loc12)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
-// CHECK-NEXT: #loc1 = loc({{.*}}:7:0)
-// CHECK-NEXT: #loc2 = loc({{.*}}:8:2)
-// CHECK-NEXT: #loc3 = loc({{.*}}:8:57)
-// CHECK-NEXT: #loc4 = loc({{.*}}:8:50)
-// CHECK-NEXT: #loc5 = loc({{.*}}:9:2)
-// CHECK-NEXT: #loc6 = loc({{.*}}:9:46)
-// CHECK-NEXT: #loc7 = loc({{.*}}:9:39)
+// CHECK-NEXT: #loc1 = loc({{.*}}:8:0)
+// CHECK-NEXT: #loc2 = loc({{.*}}:9:2)
+// CHECK-NEXT: #loc3 = loc({{.*}}:9:57)
+// CHECK-NEXT: #loc4 = loc({{.*}}:9:50)
+// CHECK-NEXT: #loc5 = loc({{.*}}:10:2)
+// CHECK-NEXT: #loc6 = loc({{.*}}:10:46)
+// CHECK-NEXT: #loc7 = loc({{.*}}:10:39)
 // CHECK-NEXT: #loc8 = loc({{.*}}:3:2)
-// CHECK-NEXT: #loc9 = loc({{.*}}:3:46)
-// CHECK-NEXT: #loc10 = loc({{.*}}:3:39)
-// CHECK-NEXT: #loc11 = loc({{.*}}:4:2)
-// CHECK-NEXT: #loc12 = loc({{.*}}:4:56)
-// CHECK-NEXT: #loc13 = loc({{.*}}:4:49)
+// CHECK-NEXT: #loc9 = loc({{.*}}:4:2)
+// CHECK-NEXT: #loc10 = loc({{.*}}:4:46)
+// CHECK-NEXT: #loc11 = loc({{.*}}:4:39)
+// CHECK-NEXT: #loc12 = loc({{.*}}:5:2)
+// CHECK-NEXT: #loc13 = loc({{.*}}:5:56)
+// CHECK-NEXT: #loc14 = loc({{.*}}:5:49)
 // CHECK-EMPTY:
