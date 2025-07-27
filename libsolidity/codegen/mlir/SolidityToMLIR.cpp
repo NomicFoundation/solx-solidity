@@ -330,6 +330,9 @@ private:
   mlir::Value genRValExpr(mlir::Value val, mlir::Location loc);
   mlir::SmallVector<mlir::Value> genRValExprs(Expression const &expr);
 
+  /// Generates an ir that assigns `rhs` to `lhs`.
+  void genAssign(mlir::Value lhs, mlir::Value rhs, mlir::Location loc);
+
   /// Lowers the expression statement.
   void lower(ExpressionStatement const &);
 
@@ -376,7 +379,7 @@ private:
   void lower(ModifierDefinition const &);
 
   /// Lowers the function definition.
-  void lower(FunctionDefinition const &);
+  mlir::sol::FuncOp lower(FunctionDefinition const &);
 };
 
 } // namespace solidity::frontend
@@ -1020,6 +1023,21 @@ SolidityToMLIRPass::genExprs(TupleExpression const &tuple) {
   return vals;
 }
 
+void SolidityToMLIRPass::genAssign(mlir::Value lhs, mlir::Value rhs,
+                                   mlir::Location loc) {
+  // Generate copy for assignment to storage reference types.
+  if (mlir::sol::isNonPtrRefType(rhs.getType()) &&
+      mlir::sol::getDataLocation(lhs.getType()) ==
+          mlir::sol::DataLocation::Storage) {
+    b.create<mlir::sol::CopyOp>(loc, rhs, lhs);
+  } else {
+    mlir::Value castedRhs = rhs;
+    if (mlir::isa<mlir::sol::PointerType>(lhs.getType()))
+      castedRhs = genCast(rhs, mlir::sol::getEltType(lhs.getType()));
+    b.create<mlir::sol::StoreOp>(loc, castedRhs, lhs);
+  }
+}
+
 void SolidityToMLIRPass::lower(Assignment const &asgnStmt) {
   mlir::Location loc = getLoc(asgnStmt);
 
@@ -1030,19 +1048,8 @@ void SolidityToMLIRPass::lower(Assignment const &asgnStmt) {
   assert(lhsVals.size() == rhsVals.size());
 
   if (asgnStmt.assignmentOperator() == Token::Assign) {
-    for (auto [lhsVal, rhsVal] : llvm::zip(lhsVals, rhsVals)) {
-      // Generate copy for assignment to storage reference types.
-      if (mlir::sol::isNonPtrRefType(rhsVal.getType()) &&
-          mlir::sol::getDataLocation(lhsVal.getType()) ==
-              mlir::sol::DataLocation::Storage) {
-        b.create<mlir::sol::CopyOp>(loc, rhsVal, lhsVal);
-      } else {
-        mlir::Value castedRhs = rhsVal;
-        if (mlir::isa<mlir::sol::PointerType>(lhsVal.getType()))
-          castedRhs = genCast(rhsVal, mlir::sol::getEltType(lhsVal.getType()));
-        b.create<mlir::sol::StoreOp>(loc, castedRhs, lhsVal);
-      }
-    }
+    for (auto [lhsVal, rhsVal] : llvm::zip(lhsVals, rhsVals))
+      genAssign(lhsVal, rhsVal, loc);
 
     // Compound assignment statement
   } else {
@@ -1499,7 +1506,7 @@ void SolidityToMLIRPass::lower(ModifierDefinition const &modifier) {
   b.setInsertionPointAfter(op);
 }
 
-void SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
+mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   currFunc = &fn;
 
   // Create the function type.
@@ -1525,10 +1532,7 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   }
 
   // Set function kind.
-  if (fn.isConstructor()) {
-    op.setKind(mlir::sol::FunctionKind::Constructor);
-    op.setOrigFnType(fnTy);
-  } else if (fn.isReceive()) {
+  if (fn.isReceive()) {
     op.setKind(mlir::sol::FunctionKind::Receive);
   } else if (fn.isFallback()) {
     op.setKind(mlir::sol::FunctionKind::Fallback);
@@ -1592,6 +1596,7 @@ void SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
     b.create<mlir::sol::ReturnOp>(getLoc(fn));
 
   b.setInsertionPointAfter(op);
+  return op;
 }
 
 /// Returns the mlir::sol::ContractKind of the contract
@@ -1614,10 +1619,13 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont,
   for (const auto &i : interfaceFnInfos)
     selectorMap[&i.second->declaration()] = i.first;
 
+  mlir::sol::ContractOp op;
+  mlir::Location loc = getLoc(cont);
+  mlir::sol::FuncOp ctorFn;
   // Create the contract op.
   if (genContractOp) {
-    auto op = b.create<mlir::sol::ContractOp>(
-        getLoc(cont), cont.name() + "_" + util::toString(cont.id()),
+    op = b.create<mlir::sol::ContractOp>(
+        loc, cont.name() + "_" + util::toString(cont.id()),
         getContractKind(cont));
     b.setInsertionPointToStart(&op.getBodyRegion().emplaceBlock());
   }
@@ -1631,13 +1639,40 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont,
       b.create<mlir::sol::StateVarOp>(getLoc(*stateVar),
                                       getMangledName(*stateVar),
                                       getType(stateVar->type()));
+
     if (stateVar->isPartOfExternalInterface())
       genGetter(*stateVar);
   }
 
+  // FIXME: Refactor this + support ctors in base contracts.
+  if (genContractOp) {
+    if (FunctionDefinition const *ctor = cont.constructor()) {
+      ctorFn = lower(*ctor);
+    } else {
+      mlir::OpBuilder::InsertionGuard insertGuard(b);
+      ctorFn = b.create<mlir::sol::FuncOp>(
+          loc, op.getName(), b.getFunctionType({}, {}),
+          mlir::sol::StateMutability::NonPayable);
+      b.setInsertionPointToStart(b.createBlock(&ctorFn.getRegion()));
+      b.create<mlir::sol::ReturnOp>(loc);
+    }
+
+    ctorFn.setKind(mlir::sol::FunctionKind::Constructor);
+    ctorFn.setOrigFnType(ctorFn.getFunctionType());
+    b.setInsertionPointToStart(&ctorFn.getBody().front());
+    for (VariableDeclaration const *stateVar : cont.stateVariables()) {
+      if (!stateVar->isConstant() && stateVar->value()) {
+        genAssign(genStateVarRef(*stateVar, /*inCreationContext=*/true),
+                  genRValExpr(*stateVar->value()), getLoc(*stateVar));
+      }
+    }
+    b.setInsertionPointAfter(ctorFn);
+  }
+
   // Lower functions.
   for (auto *f : cont.definedFunctions()) {
-    lower(*f);
+    if (!f->isConstructor())
+      lower(*f);
   }
 
   // Lower modifiers.
