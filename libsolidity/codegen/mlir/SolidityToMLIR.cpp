@@ -68,9 +68,8 @@ public:
   /// Lowers the free functions in the source unit.
   void lowerFreeFuncs(SourceUnit const &);
 
-  /// Lowers the contract. Skips generating the contract op if `genContractOp`
-  /// is false.
-  void lower(ContractDefinition const &, bool genContractOp = true);
+  /// Lowers the contract.
+  void lower(ContractDefinition const &);
 
   /// Initializes (or resets) the module and the insertion-point.
   void init(std::shared_ptr<CharStream> s) {
@@ -1611,79 +1610,101 @@ static mlir::sol::ContractKind getContractKind(ContractDefinition const &cont) {
   }
 }
 
-void SolidityToMLIRPass::lower(ContractDefinition const &cont,
-                               bool genContractOp) {
-  if (genContractOp)
-    currContract = &cont;
+void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
+  currContract = &cont;
+  mlir::Location loc = getLoc(cont);
+
+  // This function works on the full inheritance tree from `cont` but we only
+  // generate the sol.contract op for `cont`.
+
+  // Track selectors of interface functions.
   const auto &interfaceFnInfos = cont.interfaceFunctions();
   for (const auto &i : interfaceFnInfos)
     selectorMap[&i.second->declaration()] = i.first;
 
-  mlir::sol::ContractOp op;
-  mlir::Location loc = getLoc(cont);
-  mlir::sol::FuncOp ctorFn;
   // Create the contract op.
-  if (genContractOp) {
-    op = b.create<mlir::sol::ContractOp>(
-        loc, cont.name() + "_" + util::toString(cont.id()),
-        getContractKind(cont));
-    b.setInsertionPointToStart(&op.getBodyRegion().emplaceBlock());
-  }
+  mlir::sol::ContractOp contOp = b.create<mlir::sol::ContractOp>(
+      loc, cont.name() + "_" + util::toString(cont.id()),
+      getContractKind(cont));
+  b.setInsertionPointToStart(&contOp.getBodyRegion().emplaceBlock());
 
-  for (VariableDeclaration const *stateVar : cont.stateVariables()) {
-    if (stateVar->immutable())
-      b.create<mlir::sol::ImmutableOp>(
-          getLoc(*stateVar), getMangledName(*stateVar),
-          getType(stateVar->type()), stateVar->id());
-    else if (!stateVar->isConstant())
-      b.create<mlir::sol::StateVarOp>(getLoc(*stateVar),
-                                      getMangledName(*stateVar),
-                                      getType(stateVar->type()));
-
-    if (stateVar->isPartOfExternalInterface())
-      genGetter(*stateVar);
-  }
-
-  // FIXME: Refactor this + support ctors in base contracts.
-  if (genContractOp) {
-    if (FunctionDefinition const *ctor = cont.constructor()) {
-      ctorFn = lower(*ctor);
-    } else {
-      mlir::OpBuilder::InsertionGuard insertGuard(b);
-      ctorFn = b.create<mlir::sol::FuncOp>(
-          loc, op.getName(), b.getFunctionType({}, {}),
-          mlir::sol::StateMutability::NonPayable);
-      b.setInsertionPointToStart(b.createBlock(&ctorFn.getRegion()));
-      b.create<mlir::sol::ReturnOp>(loc);
-    }
-
-    ctorFn.setKind(mlir::sol::FunctionKind::Constructor);
-    ctorFn.setOrigFnType(ctorFn.getFunctionType());
-    b.setInsertionPointToStart(&ctorFn.getBody().front());
-    for (VariableDeclaration const *stateVar : cont.stateVariables()) {
-      if (!stateVar->isConstant() && stateVar->value()) {
-        genAssign(genStateVarRef(*stateVar, /*inCreationContext=*/true),
-                  genRValExpr(*stateVar->value()), getLoc(*stateVar));
-      }
-    }
-    b.setInsertionPointAfter(ctorFn);
-  }
-
-  // Lower functions.
-  for (auto *f : cont.definedFunctions()) {
-    if (!f->isConstructor())
-      lower(*f);
-  }
-
-  // Lower modifiers.
-  for (auto *modifier : cont.functionModifiers()) {
-    lower(*modifier);
-  }
-
-  for (ContractDefinition const *baseContr :
+  // Lower immutables and state variables; Generate getters
+  for (ContractDefinition const *baseCont :
        cont.annotation().linearizedBaseContracts) {
-    if (baseContr != &cont)
-      lower(*baseContr, /*genContractOp=*/false);
+    for (VariableDeclaration const *stateVar : baseCont->stateVariables()) {
+      if (stateVar->immutable())
+        b.create<mlir::sol::ImmutableOp>(
+            getLoc(*stateVar), getMangledName(*stateVar),
+            getType(stateVar->type()), stateVar->id());
+      else if (!stateVar->isConstant())
+        b.create<mlir::sol::StateVarOp>(getLoc(*stateVar),
+                                        getMangledName(*stateVar),
+                                        getType(stateVar->type()));
+
+      if (stateVar->isPartOfExternalInterface())
+        genGetter(*stateVar);
+    }
+  }
+
+  // Lower/generate ctor.
+  mlir::sol::FuncOp ctorFn;
+  if (FunctionDefinition const *ctor = cont.constructor()) {
+    ctorFn = lower(*ctor);
+  } else {
+    mlir::OpBuilder::InsertionGuard insertGuard(b);
+    ctorFn = b.create<mlir::sol::FuncOp>(
+        loc, contOp.getName(), b.getFunctionType({}, {}),
+        mlir::sol::StateMutability::NonPayable);
+    b.setInsertionPointToStart(b.createBlock(&ctorFn.getRegion()));
+    b.create<mlir::sol::ReturnOp>(loc);
+  }
+  ctorFn.setKind(mlir::sol::FunctionKind::Constructor);
+  ctorFn.setOrigFnType(ctorFn.getFunctionType());
+
+  // Generate state variable init in the ctor.
+  b.setInsertionPointToStart(&ctorFn.getBody().front());
+  for (auto &var :
+       ContractType(cont).linearizedStateVariables(DataLocation::Storage)) {
+    VariableDeclaration const *stateVar = std::get<0>(var);
+    if (!stateVar->isConstant() && stateVar->value()) {
+      genAssign(genStateVarRef(*stateVar, /*inCreationContext=*/true),
+                genRValExpr(*stateVar->value()), getLoc(*stateVar));
+    }
+  }
+
+  // Generate calls to the base ctor in the main ctor.
+  for (ContractDefinition const *baseCont :
+       cont.annotation().linearizedBaseContracts) {
+    if (baseCont == &cont)
+      continue;
+    if (baseCont->constructor()) {
+      mlir::sol::FuncOp ctor;
+      {
+        mlir::OpBuilder::InsertionGuard insertGuard(b);
+        b.setInsertionPointToStart(contOp.getBody());
+        ctor = lower(*baseCont->constructor());
+      }
+      b.create<mlir::sol::CallOp>(loc, ctor);
+    }
+  }
+
+  // Lower all other functions and modifiers.
+  b.setInsertionPointAfter(ctorFn);
+  auto lowerFnsAndMods = [&](ContractDefinition const &cont) {
+    // Lower functions.
+    for (auto *f : cont.definedFunctions()) {
+      if (!f->isConstructor())
+        lower(*f);
+    }
+
+    // Lower modifiers.
+    for (auto *modifier : cont.functionModifiers()) {
+      lower(*modifier);
+    }
+  };
+  for (ContractDefinition const *baseCont :
+       cont.annotation().linearizedBaseContracts) {
+    lowerFnsAndMods(*baseCont);
   }
 }
 
