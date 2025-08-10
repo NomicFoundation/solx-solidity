@@ -1520,7 +1520,8 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   auto fnTy = b.getFunctionType(inpTys, outTys);
 
   // Generate sol.func.
-  auto op = b.create<mlir::sol::FuncOp>(getLoc(fn), getMangledName(fn), fnTy,
+  mlir::Location fnLoc = getLoc(fn);
+  auto op = b.create<mlir::sol::FuncOp>(fnLoc, getMangledName(fn), fnTy,
                                         getStateMutability(fn));
 
   if (fn.isPartOfExternalInterface()) {
@@ -1542,6 +1543,16 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
 
   // Lower modifier invocations.
   for (const ASTPointer<ModifierInvocation> &modifier : fn.modifiers()) {
+    // FIXME: Handle lookup!
+    ModifierDefinition const *modifierDef =
+        dynamic_cast<ModifierDefinition const *>(
+            modifier->name().annotation().referencedDeclaration);
+    if (!modifierDef) {
+      assert(dynamic_cast<ContractDefinition const *>(
+          modifier->name().annotation().referencedDeclaration));
+      continue;
+    }
+
     mlir::Location loc = getLoc(*modifier);
 
     auto modifierCallBlk = b.create<mlir::sol::ModifierCallBlkOp>(loc);
@@ -1556,12 +1567,6 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
                         modifierCallBlk.getBody()->addArgument(inpTy, inpLoc));
 
     b.setInsertionPointToStart(modifierCallBlk.getBody());
-
-    ModifierDefinition const *modifierDef =
-        dynamic_cast<ModifierDefinition const *>(
-            modifier->name().annotation().referencedDeclaration);
-    assert(modifierDef);
-    // FIXME: Handle lookup!
 
     std::vector<mlir::Value> loweredArgs;
     if (modifier->arguments()) {
@@ -1585,6 +1590,38 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
                                             mlir::sol::DataLocation::Stack));
     trackLocalVarAddr(*param, addr);
     b.create<mlir::sol::StoreOp>(inpLoc, arg, addr);
+  }
+
+  // Generate the call to the next ctor (if any) if `fn` is a ctor.
+  if (fn.isConstructor()) {
+    // Get base contract of `currContract`
+    auto const &baseCont =
+        dynamic_cast<ContractDefinition const &>(*fn.scope());
+
+    if (FunctionDefinition const *nextCtor =
+            baseCont.nextConstructor(*currContract)) {
+      auto nextCtorArgsFound =
+          currContract->annotation().baseConstructorArguments.find(nextCtor);
+      mlir::SmallVector<mlir::Value> loweredArgs;
+      if (nextCtorArgsFound !=
+          currContract->annotation().baseConstructorArguments.end()) {
+        std::vector<ASTPointer<Expression>> const *nextCtorArgs = nullptr;
+        ASTNode const *argsNode =
+            currContract->annotation().baseConstructorArguments.at(nextCtor);
+        if (const auto *inheritanceSpec =
+                dynamic_cast<InheritanceSpecifier const *>(argsNode))
+          nextCtorArgs = inheritanceSpec->arguments();
+        else if (const auto *modifierInvoc =
+                     dynamic_cast<ModifierInvocation const *>(argsNode))
+          nextCtorArgs = modifierInvoc->arguments();
+        assert(nextCtorArgs);
+        for (ASTPointer<Expression> const &arg : *nextCtorArgs)
+          loweredArgs.push_back(
+              genRValExpr(*arg, getType(arg->annotation().type)));
+      }
+      b.create<mlir::sol::CallOp>(fnLoc, getMangledName(*nextCtor),
+                                  /*resTys=*/mlir::TypeRange{}, loweredArgs);
+    }
   }
 
   // Lower the body.
@@ -1646,7 +1683,8 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
     }
   }
 
-  // Lower/generate ctor.
+  // Lower/generate ctor. Note that lower() of functions generates the call to
+  // the next ctor.
   mlir::sol::FuncOp ctorFn;
   if (FunctionDefinition const *ctor = cont.constructor()) {
     ctorFn = lower(*ctor);
@@ -1656,6 +1694,10 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
         loc, contOp.getName(), b.getFunctionType({}, {}),
         mlir::sol::StateMutability::NonPayable);
     b.setInsertionPointToStart(b.createBlock(&ctorFn.getRegion()));
+    FunctionDefinition const *nextCtor = cont.nextConstructor(cont);
+    if (nextCtor)
+      b.create<mlir::sol::CallOp>(loc, getMangledName(*nextCtor),
+                                  /*resTys=*/mlir::TypeRange{});
     b.create<mlir::sol::ReturnOp>(loc);
   }
   ctorFn.setKind(mlir::sol::FunctionKind::Constructor);
@@ -1672,33 +1714,19 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
     }
   }
 
-  // Generate calls to the base ctor in the main ctor.
-  for (ContractDefinition const *baseCont :
-       cont.annotation().linearizedBaseContracts) {
-    if (baseCont == &cont)
-      continue;
-    if (baseCont->constructor()) {
-      mlir::sol::FuncOp ctor;
-      {
-        mlir::OpBuilder::InsertionGuard insertGuard(b);
-        b.setInsertionPointToStart(contOp.getBody());
-        ctor = lower(*baseCont->constructor());
-      }
-      b.create<mlir::sol::CallOp>(loc, ctor);
-    }
-  }
-
   // Lower all other functions and modifiers.
   b.setInsertionPointAfter(ctorFn);
-  auto lowerFnsAndMods = [&](ContractDefinition const &cont) {
+  auto lowerFnsAndMods = [&](ContractDefinition const &baseCont) {
     // Lower functions.
-    for (auto *f : cont.definedFunctions()) {
-      if (!f->isConstructor())
-        lower(*f);
+    for (auto *f : baseCont.definedFunctions()) {
+      // Skip the current contract's ctor since it is already lowered.
+      if (baseCont == *currContract && f->isConstructor())
+        continue;
+      lower(*f);
     }
 
     // Lower modifiers.
-    for (auto *modifier : cont.functionModifiers()) {
+    for (auto *modifier : baseCont.functionModifiers()) {
       lower(*modifier);
     }
   };
@@ -1736,6 +1764,7 @@ bool CompilerStack::runMlirPipeline() {
 
         mlir::ModuleOp mod = gen.getModule();
         if (failed(mlir::verify(mod))) {
+          mod.dump();
           mod.emitError("Module verification error");
           return false;
         }
@@ -1753,6 +1782,7 @@ bool CompilerStack::runMlirPipeline() {
 
       mlir::ModuleOp mod = gen.getModule();
       if (failed(mlir::verify(mod))) {
+        mod.dump();
         mod.emitError("Module verification error");
         return false;
       }
