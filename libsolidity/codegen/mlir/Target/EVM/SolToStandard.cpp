@@ -1878,7 +1878,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 
   /// Collects reachable function from `fn` in `reachableFns`.
   void getReachableFuncs(sol::FuncOp fn,
-                         std::set<sol::FuncOp> &reachableFns) const {
+                         llvm::SetVector<sol::FuncOp> &reachableFns) const {
     reachableFns.insert(fn);
     // FIXME! Handle indirect function references once we support it.
     fn.walk([&](CallOpInterface callOp) {
@@ -1903,7 +1903,6 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     auto runtimeObj =
         r.create<sol::ObjectOp>(loc, std::string(op.getName()) + "_deployed");
 
-    std::set<sol::FuncOp> fnsToMove;
     SmallVector<sol::FuncOp, 4> ifcFns;
     sol::FuncOp ctor, receiveFn, fallbackFn;
     SmallVector<uint32_t, 4> selectors;
@@ -1939,7 +1938,6 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
             break;
           }
         }
-        fnsToMove.insert(fn);
 
         // Immutables
       } else if (auto immOp = dyn_cast<sol::ImmutableOp>(i)) {
@@ -1958,24 +1956,23 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     if (ctor) {
       // Clone functions reachable from the ctor to creation and runtime
       // objects.
-      std::set<sol::FuncOp> reachableFns;
+      llvm::SetVector<sol::FuncOp> reachableFns;
       getReachableFuncs(ctor, reachableFns);
       ctor->moveBefore(creationObj.getEntryBlock(),
                        creationObj.getEntryBlock()->begin());
-      reachableFns.erase(ctor);
-      fnsToMove.erase(ctor);
       for (auto reachableFn : reachableFns) {
+        if (reachableFn == ctor)
+          continue;
         // Clone in the creation object and move the original to runtime object.
         r.clone(*reachableFn);
         reachableFn->moveBefore(runtimeObj.getEntryBlock(),
                                 runtimeObj.getEntryBlock()->begin());
         reachableFn.setRuntimeAttr(r.getUnitAttr());
-        fnsToMove.erase(reachableFn);
       }
     }
 
-    // Now fnsToMove will only have runtime context functions.
-    for (sol::FuncOp fn : fnsToMove) {
+    for (auto fn :
+         llvm::make_early_inc_range(op.getBody()->getOps<sol::FuncOp>())) {
       fn.setRuntimeAttr(r.getUnitAttr());
       fn->moveBefore(runtimeObj.getEntryBlock(),
                      runtimeObj.getEntryBlock()->begin());

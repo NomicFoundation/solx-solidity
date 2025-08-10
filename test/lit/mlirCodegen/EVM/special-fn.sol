@@ -111,20 +111,20 @@ contract C {
 // CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:       llvm.unreachable loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     func.func @_8() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
+// CHECK-NEXT:     func.func @_12() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       return loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:     func.func @f_4() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
+// CHECK-NEXT:     func.func @_8() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       return loc(#loc3)
 // CHECK-NEXT:     } loc(#loc3)
-// CHECK-NEXT:     func.func @_12() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
+// CHECK-NEXT:     func.func @f_4() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       return loc(#loc4)
 // CHECK-NEXT:     } loc(#loc4)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
-// CHECK-NEXT: #loc2 = loc({{.*}}:4:2)
-// CHECK-NEXT: #loc3 = loc({{.*}}:3:2)
-// CHECK-NEXT: #loc4 = loc({{.*}}:5:2)
+// CHECK-NEXT: #loc2 = loc({{.*}}:5:2)
+// CHECK-NEXT: #loc3 = loc({{.*}}:4:2)
+// CHECK-NEXT: #loc4 = loc({{.*}}:3:2)
 // CHECK-EMPTY:
