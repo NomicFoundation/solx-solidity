@@ -60,12 +60,9 @@ using namespace solidity::yul;
 namespace solidity::mlirgen {
 
 class YulToMLIRPass : public ASTWalker {
-  mlir::OpBuilder b;
-  mlir::ModuleOp mod;
-  mlir::sol::ObjectOp currObj;
+  mlir::OpBuilder &b;
   CharStream const &stream;
   Dialect const &yulDialect;
-  EVMVersion evmVersion;
   std::map<YulName, mlir::Value> localVarAddrMap;
   std::map<std::string,
            std::function<mlir::SmallVector<mlir::Value>(
@@ -73,20 +70,14 @@ class YulToMLIRPass : public ASTWalker {
       builtinGenMap;
 
 public:
-  mlir::ModuleOp getModule() { return mod; }
-
-  explicit YulToMLIRPass(mlir::MLIRContext &ctx, CharStream const &stream,
-                         Dialect const &yulDialect, EVMVersion evmVersion)
-      : b(&ctx), stream(stream), yulDialect(yulDialect),
-        evmVersion(evmVersion) {
-    mod = mlir::ModuleOp::create(b.getUnknownLoc());
-    mod->setAttr("sol.evm_version",
-                 mlir::sol::EvmVersionAttr::get(
-                     b.getContext(), *mlir::sol::symbolizeEvmVersion(
-                                         evmVersion.getVersionAsInt())));
-    b.setInsertionPointToEnd(mod.getBody());
+  explicit YulToMLIRPass(mlir::OpBuilder &b, CharStream const &stream,
+                         Dialect const &yulDialect)
+      : b(b), stream(stream), yulDialect(yulDialect) {
     populateBuiltinGenMap();
   }
+
+  /// Lowers a block.
+  void lowerBlk(Block const &);
 
   /// Lowers a subobject
   void lowerObj(Object const &obj);
@@ -131,15 +122,10 @@ private:
   /// Returns the address of the local variable.
   mlir::Value getLocalVarAddr(YulName var);
 
-  /// Returns the symbol of type `T` in the current scope
   template <typename T>
   T lookupSymbol(llvm::StringRef name) {
-    if (!currObj) {
-      assert(mod);
-      return mod.lookupSymbol<T>(name);
-    }
-    // FIXME: We should lookup in the current block and its ancestors
-    return currObj.lookupSymbol<T>(name);
+    return mlir::SymbolTable::lookupNearestSymbolFrom<T>(
+        b.getBlock()->getParentOp(), b.getStringAttr(name));
   }
 
   /// Defines a simple builtin codegen map.
@@ -636,7 +622,9 @@ void YulToMLIRPass::operator()(FunctionDefinition const &fn) {
   b.create<mlir::sol::ReturnOp>(loc, retVarLds);
 }
 
-void YulToMLIRPass::operator()(Block const &blk) {
+void YulToMLIRPass::operator()(Block const &blk) { lowerBlk(blk); }
+
+void YulToMLIRPass::lowerBlk(Block const &blk) {
   // "Forward declare" FuncOps (i.e. create them with an empty region) at this
   // block so that we can lower calls before lowering the functions. The
   // function lowering is expected to lookup the FuncOp without creating it.
@@ -661,12 +649,12 @@ void YulToMLIRPass::operator()(Block const &blk) {
 
 void YulToMLIRPass::lowerObj(Object const &obj) {
   // Lookup ObjectOp (should be declared by the top level object lowering)
-  currObj = lookupSymbol<mlir::sol::ObjectOp>(obj.name);
-  assert(currObj);
+  auto op = lookupSymbol<mlir::sol::ObjectOp>(obj.name);
+  assert(op);
 
-  b.setInsertionPointToStart(currObj.getEntryBlock());
+  b.setInsertionPointToStart(op.getEntryBlock());
   // TODO? Do we need a separate op for the `code` block?
-  operator()(obj.code()->root());
+  lowerBlk(obj.code()->root());
 }
 
 void YulToMLIRPass::lowerTopLevelObj(Object const &obj) {
@@ -699,6 +687,13 @@ void YulToMLIRPass::lowerTopLevelObj(Object const &obj) {
 
 } // namespace solidity::mlirgen
 
+void solidity::mlirgen::runYulToMLIRPass(yul::AST const &ast,
+                                         CharStream const &stream,
+                                         mlir::OpBuilder &b) {
+  solidity::mlirgen::YulToMLIRPass yulToMLIR(b, stream, ast.dialect());
+  yulToMLIR.lowerBlk(ast.root());
+}
+
 bool solidity::mlirgen::runYulToMLIRPass(Object const &obj,
                                          CharStream const &stream,
                                          Dialect const &yulDialect,
@@ -709,11 +704,17 @@ bool solidity::mlirgen::runYulToMLIRPass(Object const &obj,
   ctx.getOrLoadDialect<mlir::arith::ArithDialect>();
   ctx.getOrLoadDialect<mlir::scf::SCFDialect>();
   ctx.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
-  solidity::mlirgen::YulToMLIRPass yulToMLIR(ctx, stream, yulDialect,
-                                             evmVersion);
+
+  mlir::OpBuilder b(&ctx);
+  mlir::ModuleOp mod = mlir::ModuleOp::create(b.getUnknownLoc());
+  mod->setAttr("sol.evm_version",
+               mlir::sol::EvmVersionAttr::get(
+                   b.getContext(), *mlir::sol::symbolizeEvmVersion(
+                                       evmVersion.getVersionAsInt())));
+  b.setInsertionPointToEnd(mod.getBody());
+  solidity::mlirgen::YulToMLIRPass yulToMLIR(b, stream, yulDialect);
   yulToMLIR.lowerTopLevelObj(obj);
 
-  mlir::ModuleOp mod = yulToMLIR.getModule();
   if (failed(mlir::verify(mod))) {
     mod.print(llvm::errs());
     mod.emitError("Module verification error");

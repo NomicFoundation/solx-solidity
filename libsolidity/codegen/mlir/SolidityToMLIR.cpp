@@ -368,6 +368,9 @@ private:
   /// Lowers the try statement.
   void lower(TryStatement const &);
 
+  /// Lowers the inline asm statement.
+  void lower(InlineAssembly const &);
+
   /// Lower the statement.
   void lower(Statement const &);
 
@@ -1396,6 +1399,13 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
   }
 }
 
+void SolidityToMLIRPass::lower(InlineAssembly const &inAsm) {
+  auto op = b.create<mlir::sol::InlineAsmOp>(getLoc(inAsm.location()));
+  b.setInsertionPointToStart(op.getBody());
+  solidity::mlirgen::runYulToMLIRPass(inAsm.operations(), *stream, b);
+  b.setInsertionPointAfter(op);
+}
+
 void SolidityToMLIRPass::lower(Statement const &stmt) {
   // Expression
   if (const auto *exprStmt = dynamic_cast<ExpressionStatement const *>(&stmt))
@@ -1442,6 +1452,10 @@ void SolidityToMLIRPass::lower(Statement const &stmt) {
   // Try
   else if (const auto *tryStmt = dynamic_cast<TryStatement const *>(&stmt))
     lower(*tryStmt);
+
+  // Inline assembly
+  else if (const auto *inAsm = dynamic_cast<InlineAssembly const *>(&stmt))
+    lower(*inAsm);
 
   // Block
   else if (const auto *blk = dynamic_cast<Block const *>(&stmt))
