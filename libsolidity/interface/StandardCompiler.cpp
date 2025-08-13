@@ -850,11 +850,6 @@ std::variant<StandardCompiler::InputsAndSettings, Json> StandardCompiler::parseI
 		ret.mlirJobSpec.tgt = mlirgen::strToTarget(settings["target"].get<std::string>());
 	}
 
-	if ((settings.contains("codegen") && !settings.contains("target"))
-		|| (!settings.contains("codegen") && settings.contains("target")))
-		return formatFatalError(
-			Error::Type::JSONError, "\"settings.codegen\" and \"settings.target\" depend on each other.");
-
 	if (settings.contains("evmVersion"))
 	{
 		if (!settings["evmVersion"].is_string())

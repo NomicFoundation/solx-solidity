@@ -74,7 +74,7 @@ Target strToTarget(std::string const &str);
 struct JobSpec {
   // TODO: Add other codegen info like debug info, output file?
   Action action = Action::Undefined;
-  Target tgt = Target::Undefined;
+  Target tgt = Target::EVM;
   char optLevel = '0';
 };
 

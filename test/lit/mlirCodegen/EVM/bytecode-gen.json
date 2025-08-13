@@ -12,7 +12,6 @@
   },
   "settings": {
     "codegen": "mlir",
-    "target": "evm",
     "optimizer": {
       "mode": "3"
     },
