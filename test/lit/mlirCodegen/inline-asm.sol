@@ -11,18 +11,15 @@ function f() {
 // CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   sol.func @f_5() attributes {state_mutability = #NonPayable} {
-// CHECK-NEXT:     sol.inline_asm {
-// CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc3)
-// CHECK-NEXT:       %c0_i256_0 = arith.constant 0 : i256 loc(#loc4)
-// CHECK-NEXT:       sol.mstore %c0_i256, %c0_i256_0 loc(#loc5)
-// CHECK-NEXT:     } loc(#loc2)
+// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc2)
+// CHECK-NEXT:     %c0_i256_0 = arith.constant 0 : i256 loc(#loc3)
+// CHECK-NEXT:     sol.mstore %c0_i256, %c0_i256_0 loc(#loc4)
 // CHECK-NEXT:     sol.return loc(#loc1)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
-// CHECK-NEXT: #loc2 = loc({{.*}}:3:2)
-// CHECK-NEXT: #loc3 = loc({{.*}}:4:11)
-// CHECK-NEXT: #loc4 = loc({{.*}}:4:14)
-// CHECK-NEXT: #loc5 = loc({{.*}}:4:4)
+// CHECK-NEXT: #loc2 = loc({{.*}}:4:11)
+// CHECK-NEXT: #loc3 = loc({{.*}}:4:14)
+// CHECK-NEXT: #loc4 = loc({{.*}}:4:4)
 // CHECK-EMPTY:

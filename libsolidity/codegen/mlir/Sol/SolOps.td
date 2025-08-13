@@ -444,19 +444,6 @@ def Sol_TryOp : Sol_Op<"try",
   }];
 }
 
-// Note: The function symbols inside are part of the sol.contract's symbol table
-// so there won't be any conflict during flattening.
-def Sol_InlineAsmOp : Sol_Op<"inline_asm", [SingleBlock, NoTerminator]> {
-  let regions = (region SizedRegion<1>:$bodyRegion);
-
-  let builders = [
-    OpBuilder<(ins), [{ $_state.addRegion()->emplaceBlock(); }]>
-  ];
-  let skipDefaultBuilders = 1;
-
-  let assemblyFormat = "$bodyRegion attr-dict";
-}
-
 // TODO: We need a trait like "HasAncestor<ModifierOp>".
 def Sol_PlaceholderOp : Sol_Op<"placeholder"> {
   let assemblyFormat = "attr-dict";

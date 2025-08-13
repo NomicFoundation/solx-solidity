@@ -50,6 +50,7 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
+#include <functional>
 #include <memory>
 #include <optional>
 #include <variant>
@@ -68,11 +69,14 @@ class YulToMLIRPass : public ASTWalker {
            std::function<mlir::SmallVector<mlir::Value>(
                std::vector<Expression> const &args, mlir::Location loc)>>
       builtinGenMap;
+  std::function<mlir::Value(Identifier const *)> externalRefResolver;
 
 public:
-  explicit YulToMLIRPass(mlir::OpBuilder &b, CharStream const &stream,
-                         Dialect const &yulDialect)
-      : b(b), stream(stream), yulDialect(yulDialect) {
+  explicit YulToMLIRPass(
+      mlir::OpBuilder &b, CharStream const &stream, Dialect const &yulDialect,
+      std::function<mlir::Value(Identifier const *)> externalRefResolver = {})
+      : b(b), stream(stream), yulDialect(yulDialect),
+        externalRefResolver(std::move(externalRefResolver)) {
     populateBuiltinGenMap();
   }
 
@@ -121,6 +125,14 @@ private:
 
   /// Returns the address of the local variable.
   mlir::Value getLocalVarAddr(YulName var);
+  mlir::Value getLocalVarAddr(Identifier const &var) {
+    if (externalRefResolver) {
+      mlir::Value externalRef = externalRefResolver(&var);
+      if (externalRef)
+        return externalRef;
+    }
+    return getLocalVarAddr(var.name);
+  }
 
   template <typename T>
   T lookupSymbol(llvm::StringRef name) {
@@ -355,7 +367,7 @@ mlir::Value YulToMLIRPass::genExpr(Literal const &lit) {
 }
 
 mlir::Value YulToMLIRPass::genExpr(Identifier const &id) {
-  mlir::Value addr = getLocalVarAddr(id.name);
+  mlir::Value addr = getLocalVarAddr(id);
   return b.create<mlir::LLVM::LoadOp>(
       getLoc(id.debugData), /*resTy=*/getDefIntTy(), addr, getDefAlign());
 }
@@ -454,7 +466,7 @@ void YulToMLIRPass::operator()(Assignment const &asgn) {
   assert(asgn.variableNames.size() == rhsExprs.size());
 
   for (auto [lhs, rhsExpr] : llvm::zip(asgn.variableNames, rhsExprs)) {
-    b.create<mlir::LLVM::StoreOp>(loc, rhsExpr, getLocalVarAddr(lhs.name),
+    b.create<mlir::LLVM::StoreOp>(loc, rhsExpr, getLocalVarAddr(lhs),
                                   getDefAlign());
   }
 }
@@ -687,10 +699,12 @@ void YulToMLIRPass::lowerTopLevelObj(Object const &obj) {
 
 } // namespace solidity::mlirgen
 
-void solidity::mlirgen::runYulToMLIRPass(yul::AST const &ast,
-                                         CharStream const &stream,
-                                         mlir::OpBuilder &b) {
-  solidity::mlirgen::YulToMLIRPass yulToMLIR(b, stream, ast.dialect());
+void solidity::mlirgen::runYulToMLIRPass(
+    yul::AST const &ast, CharStream const &stream,
+    std::function<mlir::Value(Identifier const *)> const &externalRefResolver,
+    mlir::OpBuilder &b) {
+  solidity::mlirgen::YulToMLIRPass yulToMLIR(b, stream, ast.dialect(),
+                                             externalRefResolver);
   yulToMLIR.lowerBlk(ast.root());
 }
 

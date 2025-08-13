@@ -33,11 +33,13 @@ namespace solidity::yul {
 class Dialect;
 class Object;
 class AST;
+struct Identifier;
 }; // namespace solidity::yul
 
 namespace mlir {
+class Value;
 class OpBuilder;
-};
+}; // namespace mlir
 
 namespace solidity::mlirgen {
 
@@ -87,8 +89,10 @@ extern void registerMLIRCLOpts();
 /// Parses command line options in `argv` for the MLIR framework
 extern bool parseMLIROpts(std::vector<const char *> &argv);
 
-extern void runYulToMLIRPass(yul::AST const &, langutil::CharStream const &,
-                             mlir::OpBuilder &);
+extern void
+runYulToMLIRPass(yul::AST const &, langutil::CharStream const &,
+                 std::function<mlir::Value(yul::Identifier const *)> const &,
+                 mlir::OpBuilder &);
 extern bool runYulToMLIRPass(yul::Object const &, langutil::CharStream const &,
                              yul::Dialect const &, JobSpec const &,
                              langutil::EVMVersion);

@@ -36,6 +36,7 @@
 #include "libsolidity/codegen/mlir/Util.h"
 #include "libsolidity/interface/CompilerStack.h"
 #include "libsolutil/CommonIO.h"
+#include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/AsmState.h"
 #include "mlir/IR/Builders.h"
@@ -1400,10 +1401,24 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
 }
 
 void SolidityToMLIRPass::lower(InlineAssembly const &inAsm) {
-  auto op = b.create<mlir::sol::InlineAsmOp>(getLoc(inAsm.location()));
-  b.setInsertionPointToStart(op.getBody());
-  solidity::mlirgen::runYulToMLIRPass(inAsm.operations(), *stream, b);
-  b.setInsertionPointAfter(op);
+  mlir::Location loc = getLoc(inAsm.location());
+  std::function<mlir::Value(yul::Identifier const *)> externalRefResolver =
+      [&](yul::Identifier const *id) -> mlir::Value {
+    auto it = inAsm.annotation().externalReferences.find(id);
+    if (it == inAsm.annotation().externalReferences.end())
+      return {};
+    auto decl =
+        dynamic_cast<VariableDeclaration const *>(it->second.declaration);
+    assert(decl);
+    mlir::Value localVarAddr = getLocalVarAddr(*decl);
+    return b.create<mlir::sol::ConvCastOp>(
+        loc, mlir::LLVM::LLVMPointerType::get(b.getContext()), localVarAddr);
+  };
+
+  // TODO: YulToMLIRPass has an expensive ctor (Due to things like
+  // populateBuiltinGenMap() etc.). Can we ctor once?
+  solidity::mlirgen::runYulToMLIRPass(inAsm.operations(), *stream,
+                                      externalRefResolver, b);
 }
 
 void SolidityToMLIRPass::lower(Statement const &stmt) {
@@ -1759,8 +1774,12 @@ void SolidityToMLIRPass::lowerFreeFuncs(SourceUnit const &srcUnit) {
 
 bool CompilerStack::runMlirPipeline() {
   mlir::MLIRContext ctx;
+
   ctx.getOrLoadDialect<mlir::sol::SolDialect>();
+  // For lowering yul in inline-asm.
+  ctx.getOrLoadDialect<mlir::arith::ArithDialect>();
   ctx.getOrLoadDialect<mlir::scf::SCFDialect>();
+  ctx.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
 
   SolidityToMLIRPass gen(ctx, m_evmVersion);
   for (Source const *src : m_sourceOrder) {
