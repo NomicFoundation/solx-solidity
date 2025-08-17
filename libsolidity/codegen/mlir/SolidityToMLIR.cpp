@@ -54,6 +54,7 @@
 #include "range/v3/view/zip.hpp"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/ThreadPool.h"
 #include <string>
 
 using namespace solidity::langutil;
@@ -1802,9 +1803,11 @@ bool CompilerStack::runMlirPipeline() {
           return false;
         }
 
-        if (!doJob(m_mlirGenJob, mod,
-                   m_contracts.at(contr->fullyQualifiedName()).mlirPipeline))
-          return false;
+        if (m_mlirGenJob.action == solidity::mlirgen::Action::GenObj)
+          m_contracts.at(contr->fullyQualifiedName()).mlirPipeline =
+              bytecodeJob(m_mlirGenJob, mod);
+        else
+          llvm::outs() << mlirgen::printJob(m_mlirGenJob, mod);
       }
     }
 
@@ -1820,8 +1823,8 @@ bool CompilerStack::runMlirPipeline() {
         return false;
       }
 
-      solidity::mlirgen::Output out;
-      return doJob(m_mlirGenJob, mod, out);
+      assert(m_mlirGenJob.action != solidity::mlirgen::Action::GenObj);
+      llvm::outs() << mlirgen::printJob(m_mlirGenJob, mod);
     }
   }
 

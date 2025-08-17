@@ -735,6 +735,8 @@ bool solidity::mlirgen::runYulToMLIRPass(Object const &obj,
     return false;
   }
 
-  solidity::mlirgen::Output out;
-  return doJob(job, mod, out);
+  // FIXME:
+  assert(job.action != solidity::mlirgen::Action::GenObj);
+  llvm::outs() << mlirgen::printJob(job, mod);
+  return true;
 }
