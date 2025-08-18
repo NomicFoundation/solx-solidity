@@ -6,6 +6,11 @@ Language Features:
 Compiler Features:
 * ethdebug: Experimental support for instructions and source locations under EOF.
 * EVM: Set default EVM Version to `osaka`.
+* DocString Parser: Warn about deprecation of inline assembly special comment `memory-safe-assembly`.
+* Syntax Checker: Warn about deprecation of ABI coder v1.
+* Syntax Checker: Warn about deprecation of virtual modifiers.
+* Type Checker: Warn about deprecation of `send` and `transfer` functions on instances of `address`.
+* Type Checker: Warn about deprecation of comparisons between variables of contract types.
 
 Bugfixes:
 * Assembler: Fix not using a fixed-width type for IDs being assigned to subassemblies nested more than one level away, resulting in inconsistent `--asm-json` output between target architectures.
