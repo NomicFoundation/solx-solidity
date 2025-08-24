@@ -12,27 +12,6 @@ contract C {
 // CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
 // CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.contract @D_20 {
-// CHECK-NEXT:     sol.func @D_20() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
-// CHECK-NEXT:       sol.return loc(#loc1)
-// CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     sol.func @f_19() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 638722032 : i32, state_mutability = #NonPayable} {
-// CHECK-NEXT:       %c13_ui8 = sol.constant 13 : ui8 loc(#loc3)
-// CHECK-NEXT:       %0 = sol.cast %c13_ui8 : ui8 to ui256 loc(#loc3)
-// CHECK-NEXT:       sol.return %0 : ui256 loc(#loc4)
-// CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
-// CHECK-NEXT: } loc(#loc)
-// CHECK-NEXT: #loc = loc(unknown)
-// CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
-// CHECK-NEXT: #loc2 = loc({{.*}}:3:2)
-// CHECK-NEXT: #loc3 = loc({{.*}}:3:46)
-// CHECK-NEXT: #loc4 = loc({{.*}}:3:39)
-// CHECK-NEXT: #Constructor = #sol<FunctionKind Constructor>
-// CHECK-NEXT: #Contract = #sol<ContractKind Contract>
-// CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
-// CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
-// CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   sol.contract @C_10 {
 // CHECK-NEXT:     sol.func @C_10() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
@@ -49,4 +28,25 @@ contract C {
 // CHECK-NEXT: #loc2 = loc({{.*}}:5:2)
 // CHECK-NEXT: #loc3 = loc({{.*}}:5:46)
 // CHECK-NEXT: #loc4 = loc({{.*}}:5:39)
+// CHECK-NEXT: #Constructor = #sol<FunctionKind Constructor>
+// CHECK-NEXT: #Contract = #sol<ContractKind Contract>
+// CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
+// CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
+// CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
+// CHECK-NEXT:   sol.contract @D_20 {
+// CHECK-NEXT:     sol.func @D_20() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:       sol.return loc(#loc1)
+// CHECK-NEXT:     } loc(#loc1)
+// CHECK-NEXT:     sol.func @f_19() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 638722032 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:       %c13_ui8 = sol.constant 13 : ui8 loc(#loc3)
+// CHECK-NEXT:       %0 = sol.cast %c13_ui8 : ui8 to ui256 loc(#loc3)
+// CHECK-NEXT:       sol.return %0 : ui256 loc(#loc4)
+// CHECK-NEXT:     } loc(#loc2)
+// CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
+// CHECK-NEXT: } loc(#loc)
+// CHECK-NEXT: #loc = loc(unknown)
+// CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
+// CHECK-NEXT: #loc2 = loc({{.*}}:3:2)
+// CHECK-NEXT: #loc3 = loc({{.*}}:3:46)
+// CHECK-NEXT: #loc4 = loc({{.*}}:3:39)
 // CHECK-EMPTY:

@@ -79,6 +79,8 @@ void solidity::mlirgen::addConversionPasses(mlir::PassManager &passMgr,
     passMgr.addPass(mlir::LLVM::createDIScopeForLLVMFuncOpPass());
 }
 
+static std::mutex tgtMachMtx;
+
 std::unique_ptr<llvm::TargetMachine>
 solidity::mlirgen::createTargetMachine(Target tgt) {
   static std::once_flag initTargetOnceFlag;
@@ -102,6 +104,7 @@ solidity::mlirgen::createTargetMachine(Target tgt) {
 
     // Create and return the llvm::TargetMachine.
     llvm::TargetOptions options;
+    std::lock_guard<std::mutex> l(tgtMachMtx);
     return std::unique_ptr<llvm::TargetMachine>(
         llvmTgt->createTargetMachine("evm", /*CPU=*/"", /*Features=*/"",
                                      options, /*Reloc::Model=*/std::nullopt));
@@ -127,6 +130,7 @@ solidity::mlirgen::createTargetMachine(Target tgt) {
 
     // Create and return the llvm::TargetMachine.
     llvm::TargetOptions options;
+    std::lock_guard<std::mutex> l(tgtMachMtx);
     return std::unique_ptr<llvm::TargetMachine>(
         llvmTgt->createTargetMachine("eravm", /*CPU=*/"", /*Features=*/"",
                                      options, /*Reloc::Model=*/std::nullopt));
@@ -159,7 +163,8 @@ void solidity::mlirgen::setTgtSpecificInfoInModule(
 }
 
 /// Sets the optimization level of the llvm::TargetMachine.
-static void setTgtMachOpt(llvm::TargetMachine *tgtMach, char levelChar) {
+void solidity::mlirgen::setTgtMachOpt(llvm::TargetMachine *tgtMach,
+                                      char levelChar) {
   // Set level to 2 if size optimization is specified.
   if (levelChar == 's' || levelChar == 'z')
     levelChar = '2';
@@ -226,67 +231,68 @@ static mlir::ModuleOp extractRuntimeModule(mlir::ModuleOp creationMod) {
 
 DEFINE_SIMPLE_CONVERSION_FUNCTIONS(llvm::TargetMachine, LLVMTargetMachineRef)
 
-static solidity::mlirgen::Output genEvmBytecode(llvm::Module &creationMod,
-                                                llvm::Module &runtimeMod,
-                                                llvm::StringRef creationObjName,
-                                                llvm::StringRef runtimeObjName,
-                                                llvm::TargetMachine &tgtMach) {
+static LLVMMemoryBufferRef genObj(llvm::Module &mod,
+                                  llvm::TargetMachine &tgtMach) {
   LLVMTargetMachineRef tgtMachWrapped = wrap(&tgtMach);
+  LLVMModuleRef modWrapped = wrap(&mod);
+
+  char *errMsg = nullptr;
+  LLVMMemoryBufferRef obj;
+  if (LLVMTargetMachineEmitToMemoryBuffer(tgtMachWrapped, modWrapped,
+                                          LLVMObjectFile, &errMsg, &obj))
+    llvm_unreachable(errMsg);
+  return obj;
+}
+
+solidity::mlirgen::Bytecode
+solidity::mlirgen::genEvmBytecode(solidity::mlirgen::EvmObj const &obj) {
   LLVMMemoryBufferRef objs[2];
   const char *objIds[2];
   char *errMsg = nullptr;
 
-  // Generate creation obj.
-  LLVMModuleRef creationModWrapped = wrap(&creationMod);
-  if (LLVMTargetMachineEmitToMemoryBuffer(tgtMachWrapped, creationModWrapped,
-                                          LLVMObjectFile, &errMsg, &objs[0]))
-    llvm_unreachable(errMsg);
-  objIds[0] = creationObjName.data();
+  objs[0] = obj.creationPart;
+  objIds[0] = obj.creationId.data();
+  objs[1] = obj.runtimePart;
+  objIds[1] = obj.runtimeId.data();
 
-  // Generate runtime obj.
-  LLVMModuleRef runtimeModWrapped = wrap(&runtimeMod);
-  if (LLVMTargetMachineEmitToMemoryBuffer(tgtMachWrapped, runtimeModWrapped,
-                                          LLVMObjectFile, &errMsg, &objs[1]))
-    llvm_unreachable(errMsg);
-  objIds[1] = runtimeObjName.data();
-
-  // "Assemble" (see comments in LLVMAssembleEVM) them.
-  LLVMMemoryBufferRef creationObj, runtimeObj;
+  LLVMMemoryBufferRef creationAssembled, runtimeAssembled;
   if (LLVMAssembleEVM(/*codeSegment=*/0, /*inBuffers=*/objs,
                       /*inBuffersIDs=*/objIds, /*inBuffersNum=*/2,
-                      /*outBuffer=*/&creationObj, /*errorMessage=*/&errMsg))
+                      /*outBuffer=*/&creationAssembled,
+                      /*errorMessage=*/&errMsg))
     llvm_unreachable(errMsg);
   if (LLVMAssembleEVM(/*codeSegment=*/1, /*inBuffers=*/&objs[1],
                       /*inBuffersIDs=*/&objIds[1], /*inBuffersNum=*/1,
-                      /*outBuffer=*/&runtimeObj, /*errorMessage=*/&errMsg))
+                      /*outBuffer=*/&runtimeAssembled,
+                      /*errorMessage=*/&errMsg))
     llvm_unreachable(errMsg);
 
   // Generate bytecode.
   LLVMMemoryBufferRef creationBytecode, runtimeBytecode;
-  if (LLVMLinkEVM(/*inBuffer=*/creationObj, /*outBuffer=*/&creationBytecode,
+  if (LLVMLinkEVM(/*inBuffer=*/creationAssembled,
+                  /*outBuffer=*/&creationBytecode,
                   /*linkerSymbolNames=*/nullptr, /*linkerSymbolValues=*/nullptr,
                   /*numLinkerSymbols=*/0, &errMsg))
     llvm_unreachable(errMsg);
-  if (LLVMLinkEVM(/*inBuffer=*/runtimeObj, /*outBuffer=*/&runtimeBytecode,
+  if (LLVMLinkEVM(/*inBuffer=*/runtimeAssembled, /*outBuffer=*/&runtimeBytecode,
                   /*linkerSymbolNames=*/nullptr, /*linkerSymbolValues=*/nullptr,
                   /*numLinkerSymbols=*/0, &errMsg))
     llvm_unreachable(errMsg);
 
-  solidity::mlirgen::Output ret;
-  ret.creationBytecode = llvm::unwrap(creationBytecode)->getBuffer();
-  ret.runtimeBytecode = llvm::unwrap(runtimeBytecode)->getBuffer();
+  LLVMDisposeMemoryBuffer(creationAssembled);
+  LLVMDisposeMemoryBuffer(runtimeAssembled);
 
-  LLVMDisposeMemoryBuffer(objs[0]);
-  LLVMDisposeMemoryBuffer(objs[1]);
-  LLVMDisposeMemoryBuffer(creationObj);
-  LLVMDisposeMemoryBuffer(runtimeObj);
+  solidity::mlirgen::Bytecode ret;
+  ret.creation = llvm::unwrap(creationBytecode)->getBuffer();
+  ret.runtime = llvm::unwrap(runtimeBytecode)->getBuffer();
+
   LLVMDisposeMemoryBuffer(creationBytecode);
   LLVMDisposeMemoryBuffer(runtimeBytecode);
 
   return ret;
 }
 
-static solidity::mlirgen::Output
+static solidity::mlirgen::Bytecode
 genEraVMBytecode(llvm::Module &llvmMod, llvm::TargetMachine &tgtMach) {
   llvm::legacy::PassManager llvmPassMgr;
   llvm::SmallString<0> outStreamData;
@@ -308,9 +314,9 @@ genEraVMBytecode(llvm::Module &llvmMod, llvm::TargetMachine &tgtMach) {
                     /*numFactoryDependencySymbols=*/0, &errMsg))
     llvm_unreachable(errMsg);
 
-  solidity::mlirgen::Output ret;
-  ret.creationBytecode = llvm::unwrap(bytecode)->getBuffer();
-  ret.runtimeBytecode = ret.creationBytecode;
+  solidity::mlirgen::Bytecode ret;
+  ret.creation = llvm::unwrap(bytecode)->getBuffer();
+  ret.runtime = ret.creation;
 
   LLVMDisposeMemoryBuffer(obj);
   LLVMDisposeMemoryBuffer(bytecode);
@@ -359,7 +365,6 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
       mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
       assert(runtimeMod);
 
-      // TODO: Run in parallel?
       std::unique_ptr<llvm::Module> creationLlvmMod =
           genLLVMIR(creationMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
       std::unique_ptr<llvm::Module> runtimeLlvmMod =
@@ -397,7 +402,6 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
       mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
       assert(runtimeMod);
 
-      // TODO: Run in parallel?
       std::unique_ptr<llvm::Module> creationLlvmMod =
           genLLVMIR(creationMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
       std::unique_ptr<llvm::Module> runtimeLlvmMod =
@@ -424,47 +428,31 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
   llvm_unreachable("Undefined action/target");
 }
 
-solidity::mlirgen::Output solidity::mlirgen::bytecodeJob(JobSpec const &job,
-                                                         mlir::ModuleOp mod) {
-  assert(job.action == Action::GenObj);
-
+solidity::mlirgen::EvmObj
+solidity::mlirgen::genEvmObj(mlir::ModuleOp mod, char optLevel,
+                             llvm::TargetMachine &tgtMach) {
   mlir::PassManager passMgr(mod.getContext());
   llvm::LLVMContext llvmCtx;
 
   // Convert the module's ir to llvm dialect.
   // FIXME: enableDI UNREACHABLE executed at
   // llvm/lib/Target/EVM/MCTargetDesc/EVMAsmBackend.cpp:112!
-  addConversionPasses(passMgr, job.tgt, /*enableDI=*/false);
+  addConversionPasses(passMgr, Target::EVM, /*enableDI=*/false);
   if (mlir::failed(passMgr.run(mod)))
     llvm_unreachable("Conversion to llvm dialect failed");
 
-  std::unique_ptr<llvm::TargetMachine> tgtMach = createTargetMachine(job.tgt);
-  setTgtMachOpt(tgtMach.get(), job.optLevel);
+  auto creationMod = mod;
+  mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
+  assert(runtimeMod);
 
-  switch (job.tgt) {
-  case Target::EVM: {
-    auto creationMod = mod;
-    mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
-    assert(runtimeMod);
+  std::unique_ptr<llvm::Module> creationLlvmMod =
+      genLLVMIR(creationMod, Target::EVM, optLevel, tgtMach, llvmCtx);
+  std::unique_ptr<llvm::Module> runtimeLlvmMod =
+      genLLVMIR(runtimeMod, Target::EVM, optLevel, tgtMach, llvmCtx);
 
-    // TODO: Run in parallel?
-    std::unique_ptr<llvm::Module> creationLlvmMod =
-        genLLVMIR(creationMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
-    std::unique_ptr<llvm::Module> runtimeLlvmMod =
-        genLLVMIR(runtimeMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
-
-    assert(creationMod.getName() && runtimeMod.getName());
-    return genEvmBytecode(*creationLlvmMod, *runtimeLlvmMod,
-                          *creationMod.getName(), *runtimeMod.getName(),
-                          *tgtMach);
-  }
-  case Target::EraVM: {
-    std::unique_ptr<llvm::Module> llvmMod =
-        genLLVMIR(mod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
-    return genEraVMBytecode(*llvmMod, *tgtMach);
-  }
-  default:
-    break;
-  };
-  llvm_unreachable("Invalid target");
+  assert(creationMod.getName() && runtimeMod.getName());
+  LLVMMemoryBufferRef creationObj = genObj(*creationLlvmMod, tgtMach);
+  LLVMMemoryBufferRef runtimeObj = genObj(*runtimeLlvmMod, tgtMach);
+  return {creationObj, runtimeObj, creationMod.getName()->str(),
+          runtimeMod.getName()->str()};
 }

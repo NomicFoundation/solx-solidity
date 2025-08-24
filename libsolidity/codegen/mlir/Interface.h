@@ -78,9 +78,9 @@ struct JobSpec {
   char optLevel = '0';
 };
 
-struct Output {
-  std::string creationBytecode;
-  std::string runtimeBytecode;
+struct Bytecode {
+  std::string creation;
+  std::string runtime;
 };
 
 /// Registers required command line options in the MLIR framework

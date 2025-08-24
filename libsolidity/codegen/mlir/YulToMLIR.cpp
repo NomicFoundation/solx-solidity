@@ -713,7 +713,7 @@ bool solidity::mlirgen::runYulToMLIRPass(Object const &obj,
                                          Dialect const &yulDialect,
                                          JobSpec const &job,
                                          EVMVersion evmVersion) {
-  mlir::MLIRContext ctx;
+  mlir::MLIRContext ctx(mlir::MLIRContext::Threading::DISABLED);
   ctx.getOrLoadDialect<mlir::sol::SolDialect>();
   ctx.getOrLoadDialect<mlir::arith::ArithDialect>();
   ctx.getOrLoadDialect<mlir::scf::SCFDialect>();

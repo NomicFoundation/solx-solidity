@@ -478,7 +478,7 @@ private:
 		util::LazyInit<Json const> devDocumentation;
 		mutable std::optional<std::string const> sourceMapping;
 		mutable std::optional<std::string const> runtimeSourceMapping;
-		mlirgen::Output mlirPipeline;
+		mlirgen::Bytecode mlirPipeline;
 	};
 
 	void createAndAssignCallGraphs();

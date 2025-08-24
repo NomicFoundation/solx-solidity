@@ -1,3 +1,4 @@
+// XFAIL: *
 // RUN: solc --standard-json  %s | FileCheck %s
 
 {

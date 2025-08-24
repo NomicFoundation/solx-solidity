@@ -28,7 +28,6 @@
 #include "libsolidity/ast/ASTEnums.h"
 #include "libsolidity/ast/ASTForward.h"
 #include "libsolidity/ast/ASTUtils.h"
-#include "libsolidity/ast/TypeProvider.h"
 #include "libsolidity/ast/Types.h"
 #include "libsolidity/codegen/mlir/Interface.h"
 #include "libsolidity/codegen/mlir/Passes.h"
@@ -52,9 +51,12 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Support/LLVM.h"
 #include "range/v3/view/zip.hpp"
+#include "llvm-c/Core.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/SaveAndRestore.h"
 #include "llvm/Support/ThreadPool.h"
+#include <mutex>
 #include <string>
 
 using namespace solidity::langutil;
@@ -75,7 +77,7 @@ public:
 
   /// Initializes (or resets) the module and the insertion-point.
   void init(std::shared_ptr<CharStream> s) {
-    stream = s;
+    stream = std::move(s);
     mod = mlir::ModuleOp::create(b.getUnknownLoc());
     mod->setAttr("sol.evm_version",
                  mlir::sol::EvmVersionAttr::get(
@@ -93,13 +95,6 @@ private:
   EVMVersion evmVersion;
   mlir::ModuleOp mod;
 
-  // TODO: Remove this?
-  /// The block being lowered.
-  Block const *currBlk;
-
-  /// The function being lowered.
-  FunctionDefinition const *currFunc;
-
   /// The contract being lowered.
   ContractDefinition const *currContract;
 
@@ -109,16 +104,11 @@ private:
   /// Maps an interface function or state variable getter to its selector.
   std::map<Declaration const *, util::FixedHash<4>> selectorMap;
 
-  /// Force generate unchecked arithmetic.
-  bool forceUncheckedArith = false;
+  /// True if the current block is unchecked.
+  bool inUnchecked = false;
 
-  // FIXME: Change this to check for the "arithmetic mode" without depending on
-  // the current block.
-  /// Returns true if the current block is unchecked.
-  bool inUncheckedBlk() {
-    assert(currBlk);
-    return forceUncheckedArith ? true : currBlk->unchecked();
-  }
+  /// Tracks if the codegen is generating a constructor.
+  bool inCtor = false;
 
   /// Returns the mlir location for the solidity source location `loc`
   mlir::Location getLoc(SourceLocation const &loc) {
@@ -200,8 +190,8 @@ private:
     mlir::Location loc = getLoc(stateVar);
 
     // Create the function.
-    auto fnTy =
-        cast<mlir::FunctionType>(getType(TypeProvider::function(stateVar)));
+    auto astFnTy = FunctionType(stateVar);
+    auto fnTy = cast<mlir::FunctionType>(getType(&astFnTy));
     auto fn = b.create<mlir::sol::FuncOp>(
         loc, "get_" + getMangledName(stateVar), fnTy);
     assert(selectorMap.find(&stateVar) != selectorMap.end());
@@ -495,7 +485,7 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
 
   if (const auto *var = dynamic_cast<VariableDeclaration const *>(decl)) {
     if (var->isStateVariable())
-      return genStateVarRef(*var, currFunc->isConstructor());
+      return genStateVarRef(*var, inCtor);
     return getLocalVarAddr(*var);
   }
 
@@ -588,22 +578,22 @@ mlir::Value SolidityToMLIRPass::genBinExpr(Token op, mlir::Value lhs,
                                            mlir::Location loc) {
   switch (op) {
   case Token::Add:
-    if (inUncheckedBlk())
+    if (inUnchecked)
       return b.create<mlir::sol::AddOp>(loc, lhs, rhs);
     else
       return b.create<mlir::sol::CAddOp>(loc, lhs, rhs);
   case Token::Sub:
-    if (inUncheckedBlk())
+    if (inUnchecked)
       return b.create<mlir::sol::SubOp>(loc, lhs, rhs);
     else
       return b.create<mlir::sol::CSubOp>(loc, lhs, rhs);
   case Token::Mul:
-    if (inUncheckedBlk())
+    if (inUnchecked)
       return b.create<mlir::sol::MulOp>(loc, lhs, rhs);
     else
       return b.create<mlir::sol::CMulOp>(loc, lhs, rhs);
   case Token::Div:
-    if (inUncheckedBlk())
+    if (inUnchecked)
       return b.create<mlir::sol::DivOp>(loc, lhs, rhs);
     else
       return b.create<mlir::sol::CDivOp>(loc, lhs, rhs);
@@ -1222,18 +1212,20 @@ void SolidityToMLIRPass::lower(PlaceholderStatement const &placeholder) {
 }
 
 void SolidityToMLIRPass::lower(Return const &ret) {
-  auto currFuncResTys =
-      currFunc->functionType(/*FIXME*/ true)->returnParameterTypes();
+  TypePointers fnResTys;
+  for (ASTPointer<VariableDeclaration> const &retParam :
+       ret.annotation().function->returnParameters())
+    fnResTys.push_back(retParam->type());
 
   // The function generator emits `ReturnOp` for empty result
-  if (currFuncResTys.empty())
+  if (fnResTys.empty())
     return;
 
   Expression const *astExpr = ret.expression();
   assert(astExpr);
   mlir::SmallVector<mlir::Value> exprs = genRValExprs(*astExpr);
   mlir::SmallVector<mlir::Value> castedExprs;
-  for (auto [expr, dstTy] : llvm::zip(exprs, currFuncResTys)) {
+  for (auto [expr, dstTy] : llvm::zip(exprs, fnResTys)) {
     castedExprs.push_back(genCast(expr, getType(dstTy)));
   }
   b.create<mlir::sol::ReturnOp>(getLoc(ret), castedExprs);
@@ -1297,9 +1289,8 @@ void SolidityToMLIRPass::lower(ForStatement const &forStmt) {
   // Lower loop expression.
   if (forStmt.loopExpression()) {
     b.setInsertionPointToStart(&forOp.getStep().emplaceBlock());
-    forceUncheckedArith = true;
+    llvm::SaveAndRestore<bool> g(inUnchecked, true);
     lower(*forStmt.loopExpression());
-    forceUncheckedArith = false;
     b.create<mlir::sol::YieldOp>(forOp.getLoc());
   }
 }
@@ -1408,7 +1399,7 @@ void SolidityToMLIRPass::lower(InlineAssembly const &inAsm) {
     auto it = inAsm.annotation().externalReferences.find(id);
     if (it == inAsm.annotation().externalReferences.end())
       return {};
-    auto decl =
+    auto const *decl =
         dynamic_cast<VariableDeclaration const *>(it->second.declaration);
     assert(decl);
     mlir::Value localVarAddr = getLocalVarAddr(*decl);
@@ -1418,8 +1409,8 @@ void SolidityToMLIRPass::lower(InlineAssembly const &inAsm) {
 
   // TODO: YulToMLIRPass has an expensive ctor (Due to things like
   // populateBuiltinGenMap() etc.). Can we ctor once?
-  solidity::mlirgen::runYulToMLIRPass(inAsm.operations(), *stream,
-                                      externalRefResolver, b);
+  mlirgen::runYulToMLIRPass(inAsm.operations(), *stream, externalRefResolver,
+                            b);
 }
 
 void SolidityToMLIRPass::lower(Statement const &stmt) {
@@ -1482,12 +1473,9 @@ void SolidityToMLIRPass::lower(Statement const &stmt) {
 }
 
 void SolidityToMLIRPass::lower(Block const &blk) {
-  Block const *parentBlk = currBlk;
-  currBlk = &blk;
-  for (const ASTPointer<Statement> &stmt : blk.statements()) {
+  llvm::SaveAndRestore<bool> g(inUnchecked, blk.unchecked());
+  for (const ASTPointer<Statement> &stmt : blk.statements())
     lower(*stmt);
-  }
-  currBlk = parentBlk;
 }
 
 /// Returns the mlir::sol::StateMutability of the function
@@ -1536,8 +1524,6 @@ void SolidityToMLIRPass::lower(ModifierDefinition const &modifier) {
 }
 
 mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
-  currFunc = &fn;
-
   // Create the function type.
   std::vector<mlir::Type> inpTys, outTys;
   std::vector<mlir::Location> inpLocs;
@@ -1716,6 +1702,7 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
   // Lower/generate ctor. Note that lower() of functions generates the call to
   // the next ctor.
   mlir::sol::FuncOp ctorFn;
+  inCtor = true;
   if (FunctionDefinition const *ctor = cont.constructor()) {
     ctorFn = lower(*ctor);
   } else {
@@ -1743,6 +1730,7 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
                 genRValExpr(*stateVar->value()), getLoc(*stateVar));
     }
   }
+  inCtor = false;
 
   // Lower all other functions and modifiers.
   b.setInsertionPointAfter(ctorFn);
@@ -1773,58 +1761,117 @@ void SolidityToMLIRPass::lowerFreeFuncs(SourceUnit const &srcUnit) {
   }
 }
 
-bool CompilerStack::runMlirPipeline() {
-  mlir::MLIRContext ctx;
-
+static void loadDialects(mlir::MLIRContext &ctx) {
   ctx.getOrLoadDialect<mlir::sol::SolDialect>();
   // For lowering yul in inline-asm.
   ctx.getOrLoadDialect<mlir::arith::ArithDialect>();
   ctx.getOrLoadDialect<mlir::scf::SCFDialect>();
   ctx.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
+}
 
-  SolidityToMLIRPass gen(ctx, m_evmVersion);
+bool CompilerStack::runMlirPipeline() {
+  llvm::StdThreadPool threadPool;
+  // For sync'ing the output collection.
+  std::mutex outMtx;
+  // For sync'ing the error printing.
+  std::mutex errMtx;
+  // Tracks if any thread had an error.
+  std::atomic<bool> hadError{false};
+
+  // Maps contract ast to requested output. Updates are sync'ed by `outMtx`.
+  std::map<ContractDefinition const *, std::string, ASTNode::CompareByID>
+      outputMap;
+  std::map<ContractDefinition const *, mlirgen::EvmObj, ASTNode::CompareByID>
+      objMap;
+
   for (Source const *src : m_sourceOrder) {
-
-    // Lower requested contracts.
+    // Lower requested contracts per thread.
     bool hasContract = false;
     for (const auto *contr :
          ASTNode::filteredNodes<ContractDefinition>(src->ast->nodes())) {
       hasContract = true;
       if (isRequestedContract(*contr)) {
-        gen.init(src->charStream);
-        // Lower free functions.
-        gen.lowerFreeFuncs(*src->ast);
-        gen.lower(*contr);
+        threadPool.async([&, src, contr]() {
+          // Create the mlir context.
+          mlir::MLIRContext ctx(mlir::MLIRContext::Threading::DISABLED);
+          loadDialects(ctx);
 
-        mlir::ModuleOp mod = gen.getModule();
-        if (failed(mlir::verify(mod))) {
-          mod.dump();
-          mod.emitError("Module verification error");
-          return false;
-        }
+          // Run the ast lowering pass.
+          SolidityToMLIRPass gen(ctx, m_evmVersion);
+          gen.init(src->charStream);
+          // Lower free functions.
+          gen.lowerFreeFuncs(*src->ast);
+          gen.lower(*contr);
+          mlir::ModuleOp mod = gen.getModule();
 
-        if (m_mlirGenJob.action == solidity::mlirgen::Action::GenObj)
-          m_contracts.at(contr->fullyQualifiedName()).mlirPipeline =
-              bytecodeJob(m_mlirGenJob, mod);
-        else
-          llvm::outs() << mlirgen::printJob(m_mlirGenJob, mod);
+          // Verify the module.
+          if (failed(mlir::verify(mod))) {
+            hadError.store(true, std::memory_order_relaxed);
+            std::lock_guard<std::mutex> g(errMtx);
+            mod.dump();
+            mod.emitError("Module verification error");
+            return;
+          }
+
+          if (m_mlirGenJob.action == mlirgen::Action::GenObj) {
+            // Create the llvm target machine.
+            std::unique_ptr<llvm::TargetMachine> tgtMach =
+                createTargetMachine(m_mlirGenJob.tgt);
+            mlirgen::setTgtMachOpt(tgtMach.get(), m_mlirGenJob.optLevel);
+
+            // Generate the object.
+            mlirgen::EvmObj obj =
+                mlirgen::genEvmObj(mod, m_mlirGenJob.optLevel, *tgtMach);
+            std::lock_guard<std::mutex> g(outMtx);
+            objMap[contr] = obj;
+
+          } else {
+            // Generate the print output.
+            std::string out = mlirgen::printJob(m_mlirGenJob, mod);
+            std::lock_guard<std::mutex> g(outMtx);
+            outputMap[contr] = out;
+          }
+        });
       }
     }
 
     if (!hasContract) {
+      mlir::MLIRContext ctx(mlir::MLIRContext::Threading::DISABLED);
+      loadDialects(ctx);
+
+      SolidityToMLIRPass gen(ctx, m_evmVersion);
       // Then lower free functions. This is handy in testing.
       gen.init(src->charStream);
       gen.lowerFreeFuncs(*src->ast);
 
       mlir::ModuleOp mod = gen.getModule();
       if (failed(mlir::verify(mod))) {
+        std::lock_guard<std::mutex> g(errMtx);
         mod.dump();
         mod.emitError("Module verification error");
         return false;
       }
 
-      assert(m_mlirGenJob.action != solidity::mlirgen::Action::GenObj);
+      assert(m_mlirGenJob.action != mlirgen::Action::GenObj);
+      std::lock_guard<std::mutex> g(outMtx);
       llvm::outs() << mlirgen::printJob(m_mlirGenJob, mod);
+    }
+  }
+
+  threadPool.wait();
+  if (hadError)
+    return false;
+
+  // Combine all the outputs.
+  if (m_mlirGenJob.action != mlirgen::Action::GenObj) {
+    for (auto const &i : outputMap)
+      llvm::outs() << i.second;
+  } else {
+    for (auto const &i : objMap) {
+      m_contracts.at(i.first->fullyQualifiedName()).mlirPipeline =
+          mlirgen::genEvmBytecode(i.second);
+      LLVMDisposeMemoryBuffer(i.second.creationPart);
+      LLVMDisposeMemoryBuffer(i.second.runtimePart);
     }
   }
 

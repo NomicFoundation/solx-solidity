@@ -1063,7 +1063,7 @@ std::string const& CompilerStack::creationBytecodeFromMlirPipeline(std::string c
 	if (m_stackState != CompilationSuccessful)
 		solThrow(CompilerError, "Compilation was not successful.");
 
-	return contract(_contractName).mlirPipeline.creationBytecode;
+	return contract(_contractName).mlirPipeline.creation;
 }
 
 std::string const& CompilerStack::runtimeBytecodeFromMlirPipeline(std::string const& _contractName) const
@@ -1071,7 +1071,7 @@ std::string const& CompilerStack::runtimeBytecodeFromMlirPipeline(std::string co
 	if (m_stackState != CompilationSuccessful)
 		solThrow(CompilerError, "Compilation was not successful.");
 
-	return contract(_contractName).mlirPipeline.runtimeBytecode;
+	return contract(_contractName).mlirPipeline.runtime;
 }
 
 /// TODO: cache this string

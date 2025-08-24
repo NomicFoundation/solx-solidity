@@ -20,6 +20,7 @@
 #include <libsolidity/ast/TypeProvider.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <mutex>
 
 using namespace solidity;
 using namespace solidity::frontend;
@@ -174,8 +175,11 @@ inline void clearCaches(Container& container)
 		clearCache(e);
 }
 
+static std::mutex mtx;
+
 void TypeProvider::reset()
 {
+	std::lock_guard<std::mutex> g(mtx);
 	clearCache(m_boolean);
 	clearCache(m_inaccessibleDynamic);
 	clearCache(m_bytesStorage);
@@ -200,7 +204,9 @@ void TypeProvider::reset()
 template <typename T, typename... Args>
 inline T const* TypeProvider::createAndGet(Args&& ... _args)
 {
-	instance().m_generalTypes.emplace_back(std::make_unique<T>(std::forward<Args>(_args)...));
+	auto type = std::make_unique<T>(std::forward<Args>(_args)...);
+	std::lock_guard<std::mutex> g(mtx);
+	instance().m_generalTypes.push_back(std::move(type));
 	return static_cast<T const*>(instance().m_generalTypes.back().get());
 }
 
@@ -382,7 +388,10 @@ StringLiteralType const* TypeProvider::stringLiteral(std::string const& literal)
 	if (i != instance().m_stringLiteralTypes.end())
 		return i->second.get();
 	else
+	{
+		std::lock_guard<std::mutex> g(mtx);
 		return instance().m_stringLiteralTypes.emplace(literal, std::make_unique<StringLiteralType>(literal)).first->second.get();
+	}
 }
 
 FixedPointType const* TypeProvider::fixedPoint(unsigned m, unsigned n, FixedPointType::Modifier _modifier)
@@ -393,6 +402,7 @@ FixedPointType const* TypeProvider::fixedPoint(unsigned m, unsigned n, FixedPoin
 	if (i != map.end())
 		return i->second.get();
 
+	std::lock_guard<std::mutex> g(mtx);
 	return map.emplace(
 		std::make_pair(m, n),
 		std::make_unique<FixedPointType>(m, n, _modifier)
@@ -412,7 +422,9 @@ ReferenceType const* TypeProvider::withLocation(ReferenceType const* _type, Data
 	if (_type->location() == _location && _type->isPointer() == _isPointer)
 		return _type;
 
-	instance().m_generalTypes.emplace_back(_type->copyForLocation(_location, _isPointer));
+	auto typeCopy = _type->copyForLocation(_location, _isPointer);
+	std::lock_guard<std::mutex> g(mtx);
+	instance().m_generalTypes.emplace_back(std::move(typeCopy));
 	return static_cast<ReferenceType const*>(instance().m_generalTypes.back().get());
 }
 

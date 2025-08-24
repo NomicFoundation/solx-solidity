@@ -54,20 +54,34 @@ std::unique_ptr<Pass> createConvertStandardToLLVMPass(StringRef triple,
 
 namespace solidity::mlirgen {
 
+struct EvmObj {
+  LLVMMemoryBufferRef creationPart;
+  LLVMMemoryBufferRef runtimePart;
+  std::string creationId;
+  std::string runtimeId;
+};
+
 /// Adds dialect conversion passes for the target.
 void addConversionPasses(mlir::PassManager &, Target tgt, bool enableDI = true);
 
+/// Performs the JobSpec of ir/asm printing.
+std::string printJob(JobSpec const &, mlir::ModuleOp);
+
 /// Creates and return the llvm::TargetMachine for `tgt`
 std::unique_ptr<llvm::TargetMachine> createTargetMachine(Target tgt);
+
+void setTgtMachOpt(llvm::TargetMachine *tgtMach, char levelChar);
 
 /// Sets target specific info in `llvmMod` from `tgt`
 void setTgtSpecificInfoInModule(Target tgt, llvm::Module &llvmMod,
                                 llvm::TargetMachine const &tgtMach);
 
-/// Performs the JobSpec of bytecode generation.
-mlirgen::Output bytecodeJob(JobSpec const &, mlir::ModuleOp);
+/// Lowers the module and returns the evm object.
+EvmObj genEvmObj(mlir::ModuleOp, char optLevel, llvm::TargetMachine &tgtMach);
 
-/// Performs the JobSpec of ir/asm printing.
-std::string printJob(JobSpec const &, mlir::ModuleOp);
+/// Returns the bytecode of `obj` for evm.  This function is not thread-safe
+/// across LLVM threads.  It calls into lld, which mutates global llvm state
+/// internally.
+solidity::mlirgen::Bytecode genEvmBytecode(EvmObj const &obj);
 
 } // namespace solidity::mlirgen
