@@ -127,6 +127,15 @@ another.  mlir provides a dialect conversion infrastructure which allows you to
 write pattern rewrites in C++ or in `pdll <https://mlir.llvm.org/docs/PDLL/>`_,
 and optionally a type-converter that's responsible for legalizing types.
 
+Reuse across frontends
+----------------------
+For example, we could lower vyper into a dedicated vyper mlir dialect and then
+translate it into the sol dialect, thereby reusing all existing optimizations
+and lowering passes. This might require introducing additional intermediate
+dialects or further generalizing the sol dialect. With the right abstraction
+boundaries, however, we avoid starting from scratch for each new solidity-like
+language.
+
 Out of the box support for llvm
 -------------------------------
 Upstream mlir provides the llvm dialect which is more or less the llvm-ir in the
