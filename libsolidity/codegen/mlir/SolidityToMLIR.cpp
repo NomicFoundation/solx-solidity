@@ -66,8 +66,9 @@ namespace solidity::frontend {
 
 class SolidityToMLIRPass {
 public:
-  explicit SolidityToMLIRPass(mlir::MLIRContext &ctx, EVMVersion evmVersion)
-      : b(&ctx), evmVersion(evmVersion) {}
+  explicit SolidityToMLIRPass(mlir::MLIRContext &ctx, EVMVersion evmVersion,
+                              bool genUnkLoc)
+      : b(&ctx), evmVersion(evmVersion), genUnkLoc(genUnkLoc) {}
 
   /// Lowers the free functions in the source unit.
   void lowerFreeFuncs(SourceUnit const &);
@@ -110,8 +111,14 @@ private:
   /// Tracks if the codegen is generating a constructor.
   bool inCtor = false;
 
+  /// Forces generated locations to be unknown. FIXME: This is to avoid the slow
+  /// translatePositionToLineColumn
+  bool genUnkLoc;
+
   /// Returns the mlir location for the solidity source location `loc`
   mlir::Location getLoc(SourceLocation const &loc) {
+    if (genUnkLoc)
+      return b.getUnknownLoc();
     // TODO: Cache the translatePositionToLineColumn results. (Ideally, the
     // lexer + parser should record this instead-of/along-with the existing
     // linear offset)
@@ -1797,7 +1804,9 @@ bool CompilerStack::runMlirPipeline() {
           loadDialects(ctx);
 
           // Run the ast lowering pass.
-          SolidityToMLIRPass gen(ctx, m_evmVersion);
+          SolidityToMLIRPass gen(ctx, m_evmVersion,
+                                 /*genUnkLoc=*/m_mlirGenJob.action ==
+                                     mlirgen::Action::GenObj);
           gen.init(src->charStream);
           // Lower free functions.
           gen.lowerFreeFuncs(*src->ast);
@@ -1839,7 +1848,9 @@ bool CompilerStack::runMlirPipeline() {
       mlir::MLIRContext ctx(mlir::MLIRContext::Threading::DISABLED);
       loadDialects(ctx);
 
-      SolidityToMLIRPass gen(ctx, m_evmVersion);
+      SolidityToMLIRPass gen(ctx, m_evmVersion,
+                             /*genUnkLoc=*/m_mlirGenJob.action ==
+                                 mlirgen::Action::GenObj);
       // Then lower free functions. This is handy in testing.
       gen.init(src->charStream);
       gen.lowerFreeFuncs(*src->ast);
