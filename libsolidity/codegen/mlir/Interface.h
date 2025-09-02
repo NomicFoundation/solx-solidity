@@ -75,7 +75,7 @@ struct JobSpec {
   // TODO: Add other codegen info like debug info, output file?
   Action action = Action::Undefined;
   Target tgt = Target::EVM;
-  char optLevel = '0';
+  char optLevel = '3';
 };
 
 struct Bytecode {

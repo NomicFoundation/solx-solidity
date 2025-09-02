@@ -1,5 +1,5 @@
-// RUN: solc --mlir-action=print-llvm-ir --mlir-target=eravm %s | FileCheck %s
-// RUN: solc --mlir-action=print-asm --mlir-target=eravm %s | FileCheck --check-prefix=ASM %s
+// RUN: solc --mlir-action=print-llvm-ir --mlir-target=eravm --mlir-opt=0 %s | FileCheck %s
+// RUN: solc --mlir-action=print-asm --mlir-target=eravm --mlir-opt=0 %s | FileCheck --check-prefix=ASM %s
 
 contract C {
   string m;
