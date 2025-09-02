@@ -109,6 +109,8 @@ SemanticTest::SemanticTest(
 	m_testCaseWantsMlirRun = util::contains(mlirRunTriggers, compileViaMlir);
 	m_testCaseWantsYulRun = util::contains(yulRunTriggers, compileViaYul);
 	m_testCaseWantsLegacyRun = util::contains(legacyRunTriggers, compileViaYul);
+	if (m_testCaseWantsMlirRun)
+		m_testCaseWantsYulRun = m_testCaseWantsLegacyRun = false;
 
 	auto revertStrings = revertStringsFromString(m_reader.stringSetting("revertStrings", "default"));
 	soltestAssert(revertStrings, "Invalid revertStrings setting.");
@@ -324,7 +326,7 @@ TestCase::TestResult SemanticTest::run(std::ostream& _stream, std::string const&
 {
 	TestResult result = TestResult::Success;
 
-	if (m_testCaseWantsLegacyRun && !m_eofVersion.has_value())
+	if (m_testCaseWantsMlirRun || (m_testCaseWantsLegacyRun && !m_eofVersion.has_value()))
 		result = runTest(_stream, _linePrefix, _formatted, false /* _isYulRun */);
 
 	if (m_testCaseWantsYulRun && result == TestResult::Success)
