@@ -1531,6 +1531,7 @@ void SolidityToMLIRPass::lower(ModifierDefinition const &modifier) {
 }
 
 mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
+  assert(fn.isImplemented());
   // Create the function type.
   std::vector<mlir::Type> inpTys, outTys;
   std::vector<mlir::Location> inpLocs;
@@ -1747,7 +1748,8 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
       // Skip the current contract's ctor since it is already lowered.
       if (baseCont == *currContract && f->isConstructor())
         continue;
-      lower(*f);
+      if (f->isImplemented())
+        lower(*f);
     }
 
     // Lower modifiers.
@@ -1796,6 +1798,8 @@ bool CompilerStack::runMlirPipeline() {
     bool hasContract = false;
     for (const auto *contr :
          ASTNode::filteredNodes<ContractDefinition>(src->ast->nodes())) {
+      if (!contr->canBeDeployed())
+        continue;
       hasContract = true;
       if (isRequestedContract(*contr)) {
         threadPool.async([&, src, contr]() {
@@ -1863,9 +1867,10 @@ bool CompilerStack::runMlirPipeline() {
         return false;
       }
 
-      assert(m_mlirGenJob.action != mlirgen::Action::GenObj);
-      std::lock_guard<std::mutex> g(outMtx);
-      llvm::outs() << mlirgen::printJob(m_mlirGenJob, mod);
+      if (m_mlirGenJob.action != mlirgen::Action::GenObj) {
+        std::lock_guard<std::mutex> g(outMtx);
+        llvm::outs() << mlirgen::printJob(m_mlirGenJob, mod);
+      }
     }
   }
 

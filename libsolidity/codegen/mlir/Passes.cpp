@@ -400,16 +400,15 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
     case Target::EVM: {
       auto creationMod = mod;
       mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
-      assert(runtimeMod);
-
-      std::unique_ptr<llvm::Module> creationLlvmMod =
-          genLLVMIR(creationMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
-      std::unique_ptr<llvm::Module> runtimeLlvmMod =
-          genLLVMIR(runtimeMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
 
       std::string ret;
-      ret = getAsm(*creationLlvmMod, *tgtMach);
-      ret += getAsm(*runtimeLlvmMod, *tgtMach);
+      ret = getAsm(
+          *genLLVMIR(creationMod, job.tgt, job.optLevel, *tgtMach, llvmCtx),
+          *tgtMach);
+      if (runtimeMod)
+        ret += getAsm(
+            *genLLVMIR(runtimeMod, job.tgt, job.optLevel, *tgtMach, llvmCtx),
+            *tgtMach);
       return ret;
     }
     case Target::EraVM: {
