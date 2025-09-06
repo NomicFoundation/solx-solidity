@@ -65,6 +65,7 @@ evm::SolTypeConverter::SolTypeConverter() {
     }
 
     // Map to the 256 bit address in calldata/memory.
+    // FIXME: Generate fat pointer for calldata!
     case sol::DataLocation::CallData:
     case sol::DataLocation::Memory:
     // Map to the 256 bit slot offset.

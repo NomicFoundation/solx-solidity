@@ -724,6 +724,8 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
       return b.create<mlir::sol::ConvCastOp>(
           loc, b.getIntegerType(256, /*isSigned=*/false), callerOp);
     }
+    if (memberName == "data")
+      return b.create<mlir::sol::GetCallDataOp>(loc);
     break;
 
   case Type::Category::Contract:

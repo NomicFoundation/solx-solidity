@@ -485,6 +485,17 @@ struct ArrayLitOpLowering : public OpConversionPattern<sol::ArrayLitOp> {
   }
 };
 
+struct GetCallDataOpLowering : public OpConversionPattern<sol::GetCallDataOp> {
+  using OpConversionPattern<sol::GetCallDataOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::GetCallDataOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    solidity::mlirgen::BuilderExt bExt(r, op.getLoc());
+    r.replaceOp(op, bExt.genI256Const(0));
+    return success();
+  }
+};
+
 struct PushOpLowering : public OpConversionPattern<sol::PushOp> {
   using OpConversionPattern<sol::PushOp>::OpConversionPattern;
 
@@ -2118,9 +2129,10 @@ void evm::populateCheckedArithPats(RewritePatternSet &pats,
 
 void evm::populateMemPats(RewritePatternSet &pats, TypeConverter &tyConv) {
   pats.add<AllocaOpLowering, MallocOpLowering, ArrayLitOpLowering,
-           PushOpLowering, PopOpLowering, GepOpLowering, MapOpLowering,
-           LoadOpLowering, StoreOpLowering, DataLocCastOpLowering,
-           LengthOpLowering, CopyOpLowering>(tyConv, pats.getContext());
+           GetCallDataOpLowering, PushOpLowering, PopOpLowering, GepOpLowering,
+           MapOpLowering, LoadOpLowering, StoreOpLowering,
+           DataLocCastOpLowering, LengthOpLowering, CopyOpLowering>(
+      tyConv, pats.getContext());
   pats.add<AddrOfOpLowering>(pats.getContext());
 }
 

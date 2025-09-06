@@ -150,6 +150,19 @@ def Sol_MallocOp : Sol_Op<"malloc"> {
   }];
 }
 
+def Sol_GetCallDataOp : Sol_Op<"get_calldata"> {
+  let results = (outs Sol_AggType:$addr);
+  let assemblyFormat = [{ attr-dict `:` type($addr) }];
+
+  let builders = [
+    OpBuilder<(ins), [{
+      $_state.addTypes(sol::StringType::get($_builder.getContext(),
+                                            sol::DataLocation::CallData));
+    }]>
+  ];
+  let skipDefaultBuilders = 1;
+}
+
 def Sol_PushOp : Sol_Op<"push"> {
   let arguments = (ins AnyType:$inp);
   // FIXME: AnyType -> Sol_PtrTy causes the asm printer to miss the prefix!
