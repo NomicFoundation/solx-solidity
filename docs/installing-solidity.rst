@@ -320,6 +320,8 @@ Prerequisites - All Operating Systems
 
 The following are dependencies for all builds of Solidity:
 
+.. Note: This has to be kept in sync with `scripts/ci/install_and_check_minimum_requirements.sh`.
+
 +-----------------------------------+-------------------------------------------------------+
 | Software                          | Notes                                                 |
 +===================================+=======================================================+
@@ -327,7 +329,7 @@ The following are dependencies for all builds of Solidity:
 | Windows, 3.13+ otherwise)         |                                                       |
 +-----------------------------------+-------------------------------------------------------+
 | `Boost`_ (version 1.77+ on        | C++ libraries.                                        |
-| Windows, 1.70+ otherwise)         |                                                       |
+| Windows, 1.83+ otherwise)         |                                                       |
 +-----------------------------------+-------------------------------------------------------+
 | `Git`_                            | Command-line tool for retrieving source code.         |
 +-----------------------------------+-------------------------------------------------------+
@@ -372,8 +374,10 @@ Minimum Compiler Versions
 
 The following C++ compilers and their minimum versions can build the Solidity codebase:
 
-- `GCC <https://gcc.gnu.org>`_, version 11+
-- `Clang <https://clang.llvm.org/>`_, version 14+
+.. Note: Minimum versions for GCC and Clang are based on availability in Ubuntu 24.04.
+
+- `GCC <https://gcc.gnu.org>`_, version 13.3+
+- `Clang <https://clang.llvm.org/>`_, version 18.1.3+
 - `MSVC <https://visualstudio.microsoft.com/vs/>`_, version 2019+
 
 Prerequisites - macOS

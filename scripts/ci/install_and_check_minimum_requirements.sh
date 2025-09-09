@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# These versions must be kept in sync with the docs in `docs/installing-solidity.rst#building-from-source`.
+
 # minimum boost version
 BOOST_VERSION=1.83
 
