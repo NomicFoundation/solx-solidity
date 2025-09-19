@@ -1793,13 +1793,22 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
                    SmallVector<sol::FuncOp, 4> &ifcFns,
                    PatternRewriter &r) const {
     Location loc = contrOp.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+    evm::Builder evmB(r, loc);
+
+    Value notDelegateCallCond;
+    if (contrOp.getKind() == sol::ContractKind::Library) {
+      auto libAddr = r.create<sol::LoadImmutableOp>(
+          loc, r.getIntegerType(256),
+          FlatSymbolRefAttr::get(r.getContext(), "library_deploy_address"));
+      auto currAddr = r.create<sol::AddressOp>(loc);
+      notDelegateCallCond = r.create<arith::CmpIOp>(
+          loc, arith::CmpIPredicate::eq, libAddr, currAddr);
+    }
 
     // Do nothing if there are no interface functions.
     if (ifcFns.empty())
       return;
-
-    solidity::mlirgen::BuilderExt bExt(r, loc);
-    evm::Builder evmB(r, loc);
 
     // Generate `if iszero(lt(calldatasize(), 4))` and set the insertion point
     // to its then block.
@@ -1837,18 +1846,19 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 
     for (auto [caseRegion, ifcFnOp] :
          llvm::zip(switchOp.getCaseRegions(), ifcFns)) {
+      OpBuilder::InsertionGuard insertGuard(r);
+      mlir::Block *caseBlk = r.createBlock(&caseRegion);
+      r.setInsertionPointToStart(caseBlk);
+
       assert(ifcFnOp.getStateMutability());
       sol::StateMutability stateMutability = *ifcFnOp.getStateMutability();
       if (contrOp.getKind() == sol::ContractKind::Library) {
         assert(stateMutability != sol::StateMutability::Payable);
         if (stateMutability > sol::StateMutability::View) {
-          assert(false && "NYI: Delegate call check");
+          assert(notDelegateCallCond);
+          evmB.genRevert(notDelegateCallCond);
         }
       }
-
-      OpBuilder::InsertionGuard insertGuard(r);
-      mlir::Block *caseBlk = r.createBlock(&caseRegion);
-      r.setInsertionPointToStart(caseBlk);
 
       if (contrOp.getKind() != sol::ContractKind::Library &&
           stateMutability != sol::StateMutability::Payable) {
@@ -2056,14 +2066,8 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     // TODO: Confirm if this should be the same as in the creation context.
     genFreePtrInit(r, loc);
 
-    if (op.getKind() == sol::ContractKind::Library) {
-      // TODO: called_via_delegatecall
-    }
-
     // Generate the dispatch to interface functions.
     genDispatch(op, selectors, ifcFns, r);
-
-    // TODO: Handle ether recieve function.
 
     // Generate receive function.
     if (receiveFn) {

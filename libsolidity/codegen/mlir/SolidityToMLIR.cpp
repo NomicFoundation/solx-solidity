@@ -1709,41 +1709,43 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
     }
   }
 
-  // Lower/generate ctor. Note that lower() of functions generates the call to
-  // the next ctor.
-  mlir::sol::FuncOp ctorFn;
-  inCtor = true;
-  if (FunctionDefinition const *ctor = cont.constructor()) {
-    ctorFn = lower(*ctor);
-  } else {
-    mlir::OpBuilder::InsertionGuard insertGuard(b);
-    ctorFn = b.create<mlir::sol::FuncOp>(
-        loc, contOp.getName(), b.getFunctionType({}, {}),
-        mlir::sol::StateMutability::NonPayable);
-    b.setInsertionPointToStart(b.createBlock(&ctorFn.getRegion()));
-    FunctionDefinition const *nextCtor = cont.nextConstructor(cont);
-    if (nextCtor)
-      b.create<mlir::sol::CallOp>(loc, getMangledName(*nextCtor),
-                                  /*resTys=*/mlir::TypeRange{});
-    b.create<mlir::sol::ReturnOp>(loc);
-  }
-  ctorFn.setKind(mlir::sol::FunctionKind::Constructor);
-  ctorFn.setOrigFnType(ctorFn.getFunctionType());
-
-  // Generate state variable init in the ctor.
-  b.setInsertionPointToStart(&ctorFn.getBody().front());
-  for (auto &var :
-       ContractType(cont).linearizedStateVariables(DataLocation::Storage)) {
-    VariableDeclaration const *stateVar = std::get<0>(var);
-    if (!stateVar->isConstant() && stateVar->value()) {
-      genAssign(genStateVarRef(*stateVar, /*inCreationContext=*/true),
-                genRValExpr(*stateVar->value()), getLoc(*stateVar));
+  // Lower/generate ctor if not library. Note that lower() of functions
+  // generates the call to the next ctor.
+  if (!cont.isLibrary()) {
+    mlir::sol::FuncOp ctorFn;
+    inCtor = true;
+    if (FunctionDefinition const *ctor = cont.constructor()) {
+      ctorFn = lower(*ctor);
+    } else {
+      mlir::OpBuilder::InsertionGuard insertGuard(b);
+      ctorFn = b.create<mlir::sol::FuncOp>(
+          loc, contOp.getName(), b.getFunctionType({}, {}),
+          mlir::sol::StateMutability::NonPayable);
+      b.setInsertionPointToStart(b.createBlock(&ctorFn.getRegion()));
+      FunctionDefinition const *nextCtor = cont.nextConstructor(cont);
+      if (nextCtor)
+        b.create<mlir::sol::CallOp>(loc, getMangledName(*nextCtor),
+                                    /*resTys=*/mlir::TypeRange{});
+      b.create<mlir::sol::ReturnOp>(loc);
     }
+    ctorFn.setKind(mlir::sol::FunctionKind::Constructor);
+    ctorFn.setOrigFnType(ctorFn.getFunctionType());
+
+    // Generate state variable init in the ctor.
+    b.setInsertionPointToStart(&ctorFn.getBody().front());
+    for (auto &var :
+         ContractType(cont).linearizedStateVariables(DataLocation::Storage)) {
+      VariableDeclaration const *stateVar = std::get<0>(var);
+      if (!stateVar->isConstant() && stateVar->value()) {
+        genAssign(genStateVarRef(*stateVar, /*inCreationContext=*/true),
+                  genRValExpr(*stateVar->value()), getLoc(*stateVar));
+      }
+    }
+    b.setInsertionPointAfter(ctorFn);
+    inCtor = false;
   }
-  inCtor = false;
 
   // Lower all other functions and modifiers.
-  b.setInsertionPointAfter(ctorFn);
   auto lowerFnsAndMods = [&](ContractDefinition const &baseCont) {
     // Lower functions.
     for (auto *f : baseCont.definedFunctions()) {
