@@ -97,7 +97,7 @@ private:
   mlir::ModuleOp mod;
 
   /// The contract being lowered.
-  ContractDefinition const *currContract;
+  ContractDefinition const *currContract = nullptr;
 
   /// Maps a local variable to its address.
   std::map<VariableDeclaration const *, mlir::Value> localVarAddrMap;
@@ -777,10 +777,26 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
   // Internal call
   case FunctionType::Kind::Internal: {
     // Get callee.
-    assert(currContract);
-    FunctionDefinition const *callee =
-        ASTNode::resolveFunctionCall(call, currContract);
+    FunctionDefinition const *callee = nullptr;
+    if (currContract)
+      callee = ASTNode::resolveFunctionCall(call, currContract);
+    else
+      callee = dynamic_cast<FunctionDefinition const *>(
+          ASTNode::referencedDeclaration(call.expression()));
     assert(callee && "NYI: Internal function dispatch");
+    bool calleeInLib = callee->annotation().contract &&
+                       callee->annotation().contract->isLibrary();
+    bool currContrNotInLib = !currContract || !currContract->isLibrary();
+    bool freeCallee = !callee->annotation().contract;
+    if ((calleeInLib && currContrNotInLib) || (freeCallee && currContract)) {
+      mlir::OpBuilder::InsertionGuard insertGuard(b);
+      auto parentOp = b.getInsertionBlock()->getParentOp();
+      if (!mlir::isa<mlir::sol::FuncOp>(parentOp))
+        parentOp = parentOp->getParentOfType<mlir::sol::FuncOp>();
+      assert(parentOp);
+      b.setInsertionPoint(parentOp);
+      lower(*callee);
+    }
 
     // Lower args.
     std::vector<mlir::Value> args;
