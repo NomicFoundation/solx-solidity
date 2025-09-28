@@ -780,6 +780,31 @@ struct LoadOpLowering : public OpConversionPattern<sol::LoadOp> {
   }
 };
 
+struct LoadImmutableOpLowering
+    : public OpConversionPattern<sol::LoadImmutableOp> {
+  using OpConversionPattern<sol::LoadImmutableOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::LoadImmutableOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    // Track the "addr" attribute from the referenced sol.immutable op.
+    SmallVector<NamedAttribute> attrs = llvm::to_vector(op->getAttrs());
+    auto parentContract = op->getParentOfType<sol::ContractOp>();
+    Operation *sym = parentContract.lookupSymbol(op.getName());
+    auto immOp = cast<sol::ImmutableOp>(sym);
+    attrs.push_back(
+        r.getNamedAttr("addr", immOp->getAttrOfType<IntegerAttr>("addr")));
+
+    // Legalize result types and add the "addr" attribute.
+    SmallVector<Type> newResTys;
+    if (failed(this->getTypeConverter()->convertTypes(op->getResultTypes(),
+                                                      newResTys)))
+      return failure();
+    r.replaceOpWithNewOp<sol::LoadImmutableOp>(op, newResTys,
+                                               adaptor.getOperands(), attrs);
+    return success();
+  }
+};
+
 struct StoreOpLowering : public OpConversionPattern<sol::StoreOp> {
   using OpConversionPattern<sol::StoreOp>::OpConversionPattern;
 
@@ -1798,9 +1823,8 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 
     Value notDelegateCallCond;
     if (contrOp.getKind() == sol::ContractKind::Library) {
-      auto libAddr = r.create<sol::LoadImmutableOp>(
-          loc, r.getIntegerType(256),
-          FlatSymbolRefAttr::get(r.getContext(), "library_deploy_address"));
+      auto libAddr = r.create<sol::LoadImmutable2Op>(loc, r.getIntegerType(256),
+                                                     "library_deploy_address");
       auto currAddr = r.create<sol::AddressOp>(loc);
       notDelegateCallCond = r.create<arith::CmpIOp>(
           loc, arith::CmpIPredicate::eq, libAddr, currAddr);
@@ -2134,9 +2158,9 @@ void evm::populateCheckedArithPats(RewritePatternSet &pats,
 void evm::populateMemPats(RewritePatternSet &pats, TypeConverter &tyConv) {
   pats.add<AllocaOpLowering, MallocOpLowering, ArrayLitOpLowering,
            GetCallDataOpLowering, PushOpLowering, PopOpLowering, GepOpLowering,
-           MapOpLowering, LoadOpLowering, StoreOpLowering,
-           DataLocCastOpLowering, LengthOpLowering, CopyOpLowering>(
-      tyConv, pats.getContext());
+           MapOpLowering, LoadOpLowering, LoadImmutableOpLowering,
+           StoreOpLowering, DataLocCastOpLowering, LengthOpLowering,
+           CopyOpLowering>(tyConv, pats.getContext());
   pats.add<AddrOfOpLowering>(pats.getContext());
 }
 

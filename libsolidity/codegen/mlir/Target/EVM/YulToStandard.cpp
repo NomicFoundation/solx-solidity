@@ -315,6 +315,52 @@ struct MLoadOpLowering : public OpRewritePattern<sol::MLoadOp> {
   }
 };
 
+struct LoadImmutable2OpLowering
+    : public OpRewritePattern<sol::LoadImmutable2Op> {
+  using OpRewritePattern<sol::LoadImmutable2Op>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::LoadImmutable2Op op,
+                                PatternRewriter &r) const override {
+    evm::Builder evmB(r, op->getLoc());
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(
+        op, llvm::Intrinsic::evm_loadimmutable,
+        /*resTy=*/r.getIntegerType(256),
+        /*name=*/r.getStrArrayAttr(op.getName()), "evm.loadimmutable");
+    return success();
+  }
+};
+
+struct LoadImmutableOpLowering
+    : public OpConversionPattern<sol::LoadImmutableOp> {
+  using OpConversionPattern<sol::LoadImmutableOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::LoadImmutableOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+
+    bool inRuntime = op->getParentOfType<sol::FuncOp>().getRuntime();
+    Value repl;
+    if (inRuntime) {
+      repl = r.create<sol::LoadImmutable2Op>(loc, op.getName());
+    } else {
+      assert(op->hasAttr("addr"));
+      IntegerAttr addr = cast<IntegerAttr>(op->getAttr("addr"));
+      repl = r.create<sol::MLoadOp>(loc, bExt.genI256Const(addr.getValue()));
+    }
+
+    if (auto intTy = dyn_cast<IntegerType>(op.getType())) {
+      Value castedRepl =
+          bExt.genIntCast(intTy.getWidth(), intTy.isSigned(), repl);
+      r.replaceOp(op, castedRepl);
+      return success();
+    }
+
+    r.replaceOp(op, repl);
+    return success();
+  }
+};
+
 struct MStoreOpLowering : public OpRewritePattern<sol::MStoreOp> {
   using OpRewritePattern<sol::MStoreOp>::OpRewritePattern;
 
@@ -565,6 +611,8 @@ void evm::populateYulPats(RewritePatternSet &pats) {
       CodeCopyOpLowering,
       ExtCodeSizeOpLowering,
       MLoadOpLowering,
+      LoadImmutableOpLowering,
+      LoadImmutable2OpLowering,
       MStoreOpLowering,
       MStore8OpLowering,
       ByteOpLowering,

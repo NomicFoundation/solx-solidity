@@ -167,10 +167,10 @@ private:
       auto immOp =
           currContr.lookupSymbol<mlir::sol::ImmutableOp>(getMangledName(var));
       assert(immOp);
+      assert(!mlir::sol::isNonPtrRefType(immOp.getType()));
       if (!inCreationContext)
         return b.create<mlir::sol::LoadImmutableOp>(
             immOp.getLoc(), immOp.getType(), immOp.getName());
-      assert(!mlir::sol::isNonPtrRefType(immOp.getType()));
       mlir::Type addrTy = mlir::sol::PointerType::get(
           b.getContext(), immOp.getType(), mlir::sol::DataLocation::Immutable);
       return b.create<mlir::sol::AddrOfOp>(immOp.getLoc(), addrTy,

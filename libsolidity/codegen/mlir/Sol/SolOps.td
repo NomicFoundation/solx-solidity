@@ -261,10 +261,10 @@ def Sol_LoadOp : Sol_Op<"load"> {
 }
 
 def Sol_LoadImmutableOp : Sol_Op<"load_immutable", [Pure]> {
-  let arguments = (ins FlatSymbolRefAttr:$sym);
+  let arguments = (ins FlatSymbolRefAttr:$name);
   let results = (outs AnyType:$val);
 
-  let assemblyFormat = "$sym attr-dict `:` type($val)";
+  let assemblyFormat = "$name attr-dict `:` type($val)";
 }
 
 def Sol_StoreOp : Sol_Op<"store"> {
@@ -936,6 +936,13 @@ def Sol_SetImmutableOp : Sol_Op<"setimmutable"> {
   let summary = "Represents the `setimmutable` call in yul";
   let arguments = (ins I256:$addr, StrAttr:$name, I256:$val);
   let assemblyFormat = "$addr `,` $name `,` $val attr-dict";
+}
+
+def Sol_LoadImmutable2Op : Sol_Op<"loadimmutable"> {
+  let summary = "Represents the `loadimmutable` call in yul";
+  let arguments = (ins StrAttr:$name);
+  let results = (outs I256:$out);
+  let assemblyFormat = "$name attr-dict";
 }
 
 #endif // MLIR_SOL_SOLOPS_TD

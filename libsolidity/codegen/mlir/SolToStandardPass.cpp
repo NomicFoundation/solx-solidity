@@ -48,7 +48,6 @@ struct GenericTypeConversion : public OpConversionPattern<OpT> {
                                                       retTys)))
       return failure();
 
-    // TODO: Use updateRootInPlace instead?
     r.replaceOpWithNewOp<OpT>(op, retTys, adaptor.getOperands(),
                               op->getAttrs());
     return success();
@@ -170,7 +169,8 @@ struct ConvertSolToStandard
     convTgt.addDynamicallyLegalOp<sol::FuncOp>([&](sol::FuncOp op) {
       return tyConv.isSignatureLegal(op.getFunctionType());
     });
-    convTgt.addDynamicallyLegalOp<sol::CallOp, sol::ReturnOp>(
+    convTgt.addDynamicallyLegalOp<sol::CallOp, sol::ReturnOp,
+                                  sol::LoadImmutableOp>(
         [&](Operation *op) { return tyConv.isLegal(op); });
 
     RewritePatternSet pats(&getContext());
