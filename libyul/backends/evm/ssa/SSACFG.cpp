@@ -16,9 +16,9 @@
 */
 // SPDX-License-Identifier: GPL-3.0
 
-#include <libyul/backends/evm/SSAControlFlowGraph.h>
+#include <libyul/backends/evm/ssa/SSACFG.h>
 
-#include <libyul/backends/evm/SSACFGLiveness.h>
+#include <libyul/backends/evm/ssa/LivenessAnalysis.h>
 
 #include <libsolutil/StringUtils.h>
 #include <libsolutil/Visitor.h>
@@ -33,18 +33,19 @@
 using namespace solidity;
 using namespace solidity::util;
 using namespace solidity::yul;
+using namespace solidity::yul::ssa;
 
 namespace
 {
 class SSACFGPrinter
 {
 public:
-	SSACFGPrinter(SSACFG const& _cfg, SSACFG::BlockId _blockId, SSACFGLiveness const* _liveness):
+	SSACFGPrinter(SSACFG const& _cfg, SSACFG::BlockId _blockId, LivenessAnalysis const* _liveness):
 		m_cfg(_cfg), m_functionIndex(0), m_liveness(_liveness)
 	{
 		printBlock(_blockId);
 	}
-	SSACFGPrinter(SSACFG const& _cfg, size_t _functionIndex, Scope::Function const& _function, SSACFGLiveness const* _liveness):
+	SSACFGPrinter(SSACFG const& _cfg, size_t _functionIndex, Scope::Function const& _function, LivenessAnalysis const* _liveness):
 		m_cfg(_cfg), m_functionIndex(_functionIndex), m_liveness(_liveness)
 	{
 		printFunction(_function);
@@ -291,7 +292,7 @@ private:
 
 	SSACFG const& m_cfg;
 	size_t m_functionIndex;
-	SSACFGLiveness const* m_liveness;
+	LivenessAnalysis const* m_liveness;
 	std::stringstream m_result{};
 };
 }
@@ -299,7 +300,7 @@ private:
 std::string SSACFG::toDot(
 	bool _includeDiGraphDefinition,
 	std::optional<size_t> _functionIndex,
-	SSACFGLiveness const* _liveness
+	LivenessAnalysis const* _liveness
 ) const
 {
 	std::ostringstream output;

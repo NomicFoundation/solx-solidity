@@ -18,25 +18,25 @@
 
 #pragma once
 
-#include <libyul/backends/evm/SSACFGLoopNestingForest.h>
-#include <libyul/backends/evm/SSACFGTopologicalSort.h>
-#include <libyul/backends/evm/SSAControlFlowGraph.h>
+#include <libyul/backends/evm/ssa/SSACFGTopologicalSort.h>
+#include <libyul/backends/evm/ssa/SSACFG.h>
+#include <libyul/backends/evm/ssa/SSACFGLoopNestingForest.h>
 
 #include <cstddef>
 #include <set>
 #include <vector>
 
-namespace solidity::yul
+namespace solidity::yul::ssa
 {
 
 /// Performs liveness analysis on a reducible SSA CFG following Algorithm 9.1 in [1].
 ///
 /// [1] Rastello, Fabrice, and Florent Bouchez Tichadou, eds. SSA-based Compiler Design. Springer, 2022.
-class SSACFGLiveness
+class LivenessAnalysis
 {
 public:
 	using LivenessData = std::set<SSACFG::ValueId>;
-	explicit SSACFGLiveness(SSACFG const& _cfg);
+	explicit LivenessAnalysis(SSACFG const& _cfg);
 
 	LivenessData const& liveIn(SSACFG::BlockId _blockId) const { return m_liveIns[_blockId.value]; }
 	LivenessData const& liveOut(SSACFG::BlockId _blockId) const { return m_liveOuts[_blockId.value]; }

@@ -16,7 +16,7 @@
 */
 // SPDX-License-Identifier: GPL-3.0
 
-#include <libyul/backends/evm/SSACFGLiveness.h>
+#include <libyul/backends/evm/ssa/LivenessAnalysis.h>
 
 #include <libsolutil/Visitor.h>
 
@@ -24,7 +24,7 @@
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/reverse.hpp>
 
-using namespace solidity::yul;
+using namespace solidity::yul::ssa;
 
 namespace
 {
@@ -37,7 +37,7 @@ constexpr auto literalsFilter(SSACFG const& _cfg)
 }
 }
 
-std::set<SSACFG::ValueId> SSACFGLiveness::blockExitValues(SSACFG::BlockId const& _blockId) const
+std::set<SSACFG::ValueId> LivenessAnalysis::blockExitValues(SSACFG::BlockId const& _blockId) const
 {
 	std::set<SSACFG::ValueId> result;
 	util::GenericVisitor exitVisitor {
@@ -60,7 +60,7 @@ std::set<SSACFG::ValueId> SSACFGLiveness::blockExitValues(SSACFG::BlockId const&
 	return result;
 }
 
-SSACFGLiveness::SSACFGLiveness(SSACFG const& _cfg):
+LivenessAnalysis::LivenessAnalysis(SSACFG const& _cfg):
 	m_cfg(_cfg),
 	m_topologicalSort(_cfg),
 	m_loopNestingForest(m_topologicalSort),
@@ -75,7 +75,7 @@ SSACFGLiveness::SSACFGLiveness(SSACFG const& _cfg):
 	fillOperationsLiveOut();
 }
 
-void SSACFGLiveness::runDagDfs()
+void LivenessAnalysis::runDagDfs()
 {
 	// SSA Book, Algorithm 9.2
 	for (auto const blockIdValue: m_topologicalSort.postOrder())
@@ -137,7 +137,7 @@ void SSACFGLiveness::runDagDfs()
 	}
 }
 
-void SSACFGLiveness::runLoopTreeDfs(size_t const _loopHeader)
+void LivenessAnalysis::runLoopTreeDfs(size_t const _loopHeader)
 {
 	// SSA Book, Algorithm 9.3
 	if (m_loopNestingForest.loopNodes().count(_loopHeader) > 0)
@@ -161,7 +161,7 @@ void SSACFGLiveness::runLoopTreeDfs(size_t const _loopHeader)
 	}
 }
 
-void SSACFGLiveness::fillOperationsLiveOut()
+void LivenessAnalysis::fillOperationsLiveOut()
 {
 	for (size_t blockIdValue = 0; blockIdValue < m_cfg.numBlocks(); ++blockIdValue)
 	{
