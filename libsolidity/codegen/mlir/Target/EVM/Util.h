@@ -66,6 +66,13 @@ int64_t getMallocSize(mlir::Type ty);
 /// MLIR version of solidity ast's Type::storageSize().
 unsigned getStorageSlotCount(mlir::Type ty);
 
+/// Lowers the llvm.setimmutable ops (within llvm dialect).
+void lowerSetImmutables(mlir::ModuleOp mod,
+                        llvm::StringMap<mlir::SmallVector<uint64_t>> immMap);
+
+/// Removes llvm.setimmutable ops.
+void removeSetImmutables(mlir::ModuleOp mod);
+
 /// IR Builder for EVM specific lowering.
 class Builder {
   // It's possible to provide a mlirgen::BuilderHelper member with same default

@@ -391,6 +391,17 @@ struct MStore8OpLowering : public OpRewritePattern<sol::MStore8Op> {
   }
 };
 
+struct SetImmutableOpLowering : public OpRewritePattern<sol::SetImmutableOp> {
+  using OpRewritePattern<sol::SetImmutableOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::SetImmutableOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::SetImmutableOp>(op, op.getAddr(), op.getName(),
+                                               op.getVal());
+    return success();
+  }
+};
+
 struct ByteOpLowering : public OpRewritePattern<sol::ByteOp> {
   using OpRewritePattern<sol::ByteOp>::OpRewritePattern;
 
@@ -615,6 +626,7 @@ void evm::populateYulPats(RewritePatternSet &pats) {
       LoadImmutable2OpLowering,
       MStoreOpLowering,
       MStore8OpLowering,
+      SetImmutableOpLowering,
       ByteOpLowering,
       MCopyOpLowering,
       MemGuardOpLowering,

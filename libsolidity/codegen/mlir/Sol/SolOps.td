@@ -194,7 +194,7 @@ def Sol_StateVarOp : Sol_Op<"state_var", [Symbol]> {
 }
 
 def Sol_ImmutableOp : Sol_Op<"immutable", [Symbol]> {
-  let arguments = (ins SymbolNameAttr:$sym_name, TypeAttr:$type, I64Attr:$id);
+  let arguments = (ins SymbolNameAttr:$sym_name, TypeAttr:$type);
 
   let assemblyFormat = "$sym_name attr-dict `:` $type";
 }

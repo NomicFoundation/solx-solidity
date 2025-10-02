@@ -1712,9 +1712,9 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
        cont.annotation().linearizedBaseContracts) {
     for (VariableDeclaration const *stateVar : baseCont->stateVariables()) {
       if (stateVar->immutable())
-        b.create<mlir::sol::ImmutableOp>(
-            getLoc(*stateVar), getMangledName(*stateVar),
-            getType(stateVar->type()), stateVar->id());
+        b.create<mlir::sol::ImmutableOp>(getLoc(*stateVar),
+                                         getMangledName(*stateVar),
+                                         getType(stateVar->type()));
       else if (!stateVar->isConstant())
         b.create<mlir::sol::StateVarOp>(getLoc(*stateVar),
                                         getMangledName(*stateVar),

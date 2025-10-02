@@ -17,6 +17,7 @@
 
 #include "libsolidity/codegen/mlir/Passes.h"
 #include "libsolidity/codegen/mlir/Interface.h"
+#include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "lld-c/LLDAsLibraryC.h"
 #include "mlir/Dialect/LLVMIR/Transforms/Passes.h"
 #include "mlir/Pass/PassManager.h"
@@ -365,6 +366,8 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
       mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
       assert(runtimeMod);
 
+      evm::removeSetImmutables(creationMod);
+
       std::unique_ptr<llvm::Module> creationLlvmMod =
           genLLVMIR(creationMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
       std::unique_ptr<llvm::Module> runtimeLlvmMod =
@@ -400,6 +403,8 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
     case Target::EVM: {
       auto creationMod = mod;
       mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
+
+      evm::removeSetImmutables(creationMod);
 
       std::string ret;
       ret = getAsm(
@@ -444,14 +449,28 @@ solidity::mlirgen::genEvmObj(mlir::ModuleOp mod, char optLevel,
   mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
   assert(runtimeMod);
 
-  std::unique_ptr<llvm::Module> creationLlvmMod =
-      genLLVMIR(creationMod, Target::EVM, optLevel, tgtMach, llvmCtx);
+  // Lower runtime object. This is a dependency for lowering the setimmutable
+  // ops in the creation object.
   std::unique_ptr<llvm::Module> runtimeLlvmMod =
       genLLVMIR(runtimeMod, Target::EVM, optLevel, tgtMach, llvmCtx);
+  LLVMMemoryBufferRef runtimeObj = genObj(*runtimeLlvmMod, tgtMach);
 
   assert(creationMod.getName() && runtimeMod.getName());
+
+  // Lower setimmutable ops in the creation object.
+  char **immIDs = nullptr;
+  uint64_t *immOffsets = nullptr;
+  uint64_t immCount = LLVMGetImmutablesEVM(runtimeObj, &immIDs, &immOffsets);
+  llvm::StringMap<mlir::SmallVector<uint64_t>> immMap;
+  for (uint64_t i = 0; i < immCount; ++i)
+    immMap[immIDs[i]].push_back(immOffsets[i]);
+  evm::lowerSetImmutables(creationMod, immMap);
+
+  // Lower the creation object.
+  std::unique_ptr<llvm::Module> creationLlvmMod =
+      genLLVMIR(creationMod, Target::EVM, optLevel, tgtMach, llvmCtx);
   LLVMMemoryBufferRef creationObj = genObj(*creationLlvmMod, tgtMach);
-  LLVMMemoryBufferRef runtimeObj = genObj(*runtimeLlvmMod, tgtMach);
+
   return {creationObj, runtimeObj, creationMod.getName()->str(),
           runtimeMod.getName()->str()};
 }

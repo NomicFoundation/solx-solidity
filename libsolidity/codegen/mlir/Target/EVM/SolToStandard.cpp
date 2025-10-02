@@ -1789,6 +1789,8 @@ struct FuncOpLowering : public OpConversionPattern<sol::FuncOp> {
 };
 
 struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
+  const char *libAddrName = "library_deploy_address";
+
   using OpRewritePattern<sol::ContractOp>::OpRewritePattern;
 
   /// Generate the call value check.
@@ -1824,7 +1826,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     Value notDelegateCallCond;
     if (contrOp.getKind() == sol::ContractKind::Library) {
       auto libAddr = r.create<sol::LoadImmutable2Op>(loc, r.getIntegerType(256),
-                                                     "library_deploy_address");
+                                                     libAddrName);
       auto currAddr = r.create<sol::AddressOp>(loc);
       notDelegateCallCond = r.create<arith::CmpIOp>(
           loc, arith::CmpIPredicate::eq, libAddr, currAddr);
@@ -2066,14 +2068,19 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     auto runtimeObjSize = r.create<sol::DataSizeOp>(loc, runtimeObjSym);
     r.create<sol::CodeCopyOp>(loc, freePtr, runtimeObjOffset, runtimeObjSize);
 
+    // Generate setimmutable of the library address (the runtime object uses
+    // this for the delegate call check).
+    if (op.getKind() == sol::ContractKind::Library)
+      r.create<sol::SetImmutableOp>(loc, freePtr, libAddrName,
+                                    r.create<sol::AddressOp>(loc));
+
     // Generate setimmutable's and remove all sol.immutable ops.
     for (sol::ImmutableOp immOp : llvm::make_early_inc_range(immOps)) {
       assert(immOp->getAttr("addr"));
       auto addr = bExt.genI256Const(
           cast<IntegerAttr>(immOp->getAttr("addr")).getValue());
       auto val = r.create<sol::MLoadOp>(loc, addr);
-      r.create<sol::SetImmutableOp>(loc, freePtr, std::to_string(immOp.getId()),
-                                    val);
+      r.create<sol::SetImmutableOp>(loc, freePtr, immOp.getName(), val);
       r.eraseOp(immOp);
     }
 

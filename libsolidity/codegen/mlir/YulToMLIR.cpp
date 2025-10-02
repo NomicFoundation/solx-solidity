@@ -292,9 +292,11 @@ void YulToMLIRPass::populateBuiltinGenMap() {
     return resVals;
   };
   defSimpleBuiltinGen<MLoadOp>("mload");
+  defSimpleBuiltinGenNoRet<LoadImmutable2Op>("loadimmutable");
   defSimpleBuiltinGenNoRet<MStoreOp>("mstore");
   defSimpleBuiltinGenNoRet<MStore8Op>("mstore8");
   defSimpleBuiltinGenNoRet<MCopyOp>("mcopy");
+  defSimpleBuiltinGenNoRet<SetImmutableOp>("setimmutable");
   defSimpleBuiltinGen<MSizeOp>("msize");
   defSimpleBuiltinGen<ByteOp>("byte");
   defSimpleBuiltinGen<CallDataLoadOp>("calldataload");

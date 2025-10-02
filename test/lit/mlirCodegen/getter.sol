@@ -77,7 +77,7 @@ contract C {
 // CHECK-NEXT:       %0 = sol.cast %c7_ui8 : ui8 to ui256 loc(#loc9)
 // CHECK-NEXT:       sol.return %0 : ui256 loc(#loc8)
 // CHECK-NEXT:     } loc(#loc8)
-// CHECK-NEXT:     sol.immutable @ii_33 {id = 33 : i64} : ui256 loc(#loc10)
+// CHECK-NEXT:     sol.immutable @ii_33 : ui256 loc(#loc10)
 // CHECK-NEXT:     sol.func @get_ii_33() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 1812098905 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.load_immutable @ii_33 : ui256 loc(#loc10)
 // CHECK-NEXT:       sol.return %0 : ui256 loc(#loc10)
