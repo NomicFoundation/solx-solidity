@@ -57,7 +57,7 @@ void populateEmitPat(mlir::RewritePatternSet &pats,
 void populateRequirePat(mlir::RewritePatternSet &pats);
 
 /// Adds the conversion pattern of sol.this.
-void populateThisPat(mlir::RewritePatternSet &pats);
+void populateAddrPat(mlir::RewritePatternSet &pats);
 
 /// Adds the conversion patterns of abi ops.
 void populateAbiPats(mlir::RewritePatternSet &pats,

@@ -496,6 +496,12 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
     return getLocalVarAddr(*var);
   }
 
+  if (const auto *contr = dynamic_cast<ContractDefinition const *>(decl)) {
+    assert(contr->isLibrary() && "NYI");
+    return b.create<mlir::sol::LibAddrOp>(getLoc(id),
+                                          contr->fullyQualifiedName());
+  }
+
   llvm_unreachable("NYI");
 }
 
@@ -843,8 +849,6 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     // Generate the address.
     const auto *memberAcc = dynamic_cast<MemberAccess const *>(callExpr);
     assert(memberAcc);
-    assert(dynamic_cast<ContractType const *>(
-        memberAcc->expression().annotation().type));
     mlir::Value addr =
         genExpr(dynamic_cast<Identifier const &>(memberAcc->expression()));
 
@@ -1703,8 +1707,7 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
 
   // Create the contract op.
   mlir::sol::ContractOp contOp = b.create<mlir::sol::ContractOp>(
-      loc, cont.name() + "_" + util::toString(cont.id()),
-      getContractKind(cont));
+      loc, getMangledName(cont), getContractKind(cont));
   b.setInsertionPointToStart(&contOp.getBodyRegion().emplaceBlock());
 
   // Lower immutables and state variables; Generate getters
@@ -1781,6 +1784,7 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
        cont.annotation().linearizedBaseContracts) {
     lowerFnsAndMods(*baseCont);
   }
+  currContract = nullptr;
 }
 
 void SolidityToMLIRPass::lowerFreeFuncs(SourceUnit const &srcUnit) {

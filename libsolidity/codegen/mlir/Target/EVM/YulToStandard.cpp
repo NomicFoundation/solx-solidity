@@ -361,6 +361,19 @@ struct LoadImmutableOpLowering
   }
 };
 
+struct LinkerSymbolOpLowering : public OpRewritePattern<sol::LinkerSymbolOp> {
+  using OpRewritePattern<sol::LinkerSymbolOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::LinkerSymbolOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(
+        op, llvm::Intrinsic::evm_linkersymbol,
+        /*resTy=*/r.getIntegerType(256),
+        /*name=*/r.getStrArrayAttr(op.getName()), "evm.linkersymbol");
+    return success();
+  }
+};
+
 struct MStoreOpLowering : public OpRewritePattern<sol::MStoreOp> {
   using OpRewritePattern<sol::MStoreOp>::OpRewritePattern;
 
@@ -624,6 +637,7 @@ void evm::populateYulPats(RewritePatternSet &pats) {
       MLoadOpLowering,
       LoadImmutableOpLowering,
       LoadImmutable2OpLowering,
+      LinkerSymbolOpLowering,
       MStoreOpLowering,
       MStore8OpLowering,
       SetImmutableOpLowering,

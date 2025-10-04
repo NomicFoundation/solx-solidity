@@ -839,7 +839,7 @@ void eravm::populateStage1Pats(RewritePatternSet &pats, TypeConverter &tyConv) {
   // TODO: Generate the overflow version of arith ops instead.
   evm::populateCheckedArithPats(pats, tyConv);
   evm::populateMemPats(pats, tyConv);
-  evm::populateThisPat(pats);
+  evm::populateAddrPat(pats);
   evm::populateEmitPat(pats, tyConv);
   evm::populateRequirePat(pats);
   evm::populateControlFlowPats(pats);

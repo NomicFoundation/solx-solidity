@@ -1033,6 +1033,16 @@ struct ThisOpLowering : public OpRewritePattern<sol::ThisOp> {
   }
 };
 
+struct LibAddrOpLowering : public OpConversionPattern<sol::LibAddrOp> {
+  using OpConversionPattern<sol::LibAddrOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::LibAddrOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    r.replaceOpWithNewOp<sol::LinkerSymbolOp>(op, op.getName());
+    return success();
+  }
+};
+
 struct EncodeOpLowering : public OpConversionPattern<sol::EncodeOp> {
   using OpConversionPattern<sol::EncodeOp>::OpConversionPattern;
 
@@ -2181,8 +2191,8 @@ void evm::populateFuncPats(RewritePatternSet &pats, TypeConverter &tyConv) {
                                                              pats.getContext());
 }
 
-void evm::populateThisPat(RewritePatternSet &pats) {
-  pats.add<ThisOpLowering>(pats.getContext());
+void evm::populateAddrPat(RewritePatternSet &pats) {
+  pats.add<ThisOpLowering, LibAddrOpLowering>(pats.getContext());
 }
 
 void evm::populateAbiPats(mlir::RewritePatternSet &pats,
@@ -2210,7 +2220,7 @@ void evm::populateStage1Pats(RewritePatternSet &pats, TypeConverter &tyConv) {
   populateArithPats(pats, tyConv);
   populateCheckedArithPats(pats, tyConv);
   populateMemPats(pats, tyConv);
-  populateThisPat(pats);
+  populateAddrPat(pats);
   populateAbiPats(pats, tyConv);
   populateExtCallPat(pats, tyConv);
   populateEmitPat(pats, tyConv);

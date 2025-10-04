@@ -267,6 +267,13 @@ def Sol_LoadImmutableOp : Sol_Op<"load_immutable", [Pure]> {
   let assemblyFormat = "$name attr-dict `:` type($val)";
 }
 
+def Sol_LibAddrOp : Sol_Op<"lib_addr", [Pure]> {
+  let arguments = (ins StrAttr:$name);
+  let results = (outs UI256:$val); // TODO: s/UI256/address
+
+  let assemblyFormat = "$name attr-dict `:` type($val)";
+}
+
 def Sol_StoreOp : Sol_Op<"store"> {
   let arguments = (ins AnyType:$val, Arg<Sol_RefType, "", [MemWrite]>:$addr);
 
@@ -580,13 +587,14 @@ def CallOp : Sol_Op<"call", [CallOpInterface]> {
 }
 
 def Sol_ThisOp : Sol_Op<"this"> {
-  let results = (outs UI256:$addr);
+  let results = (outs UI256:$addr); // TODO: s/UI256/address
 
   let assemblyFormat = "attr-dict";
 }
 
 def Sol_ExtCallOp : Sol_Op<"ext_call", [CallOpInterface]> {
-  let arguments = (ins FlatSymbolRefAttr:$callee, Variadic<AnyType>:$ins,
+  // TODO: s/UI256/address in $addr
+  let arguments = (ins StrAttr:$callee, Variadic<AnyType>:$ins,
                        UI256:$addr, UI256:$gas, UI256:$val, UnitAttr:$try_call,
                        UnitAttr:$static_call, UnitAttr:$delegate_call,
                        I32Attr:$selector,
@@ -940,6 +948,13 @@ def Sol_SetImmutableOp : Sol_Op<"setimmutable"> {
 
 def Sol_LoadImmutable2Op : Sol_Op<"loadimmutable"> {
   let summary = "Represents the `loadimmutable` call in yul";
+  let arguments = (ins StrAttr:$name);
+  let results = (outs I256:$out);
+  let assemblyFormat = "$name attr-dict";
+}
+
+def Sol_LinkerSymbolOp : Sol_Op<"linkersymbol"> {
+  let summary = "Represents the `linkersymbol` call in yul";
   let arguments = (ins StrAttr:$name);
   let results = (outs I256:$out);
   let assemblyFormat = "$name attr-dict";

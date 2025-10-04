@@ -152,6 +152,7 @@ struct ConvertSolToStandard
         sol::StoreOp,
         sol::LengthOp,
         sol::ThisOp,
+        sol::LibAddrOp,
         sol::EncodeOp,
         sol::DecodeOp,
         sol::ExtCallOp,
