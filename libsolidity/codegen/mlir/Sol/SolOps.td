@@ -773,6 +773,17 @@ def Sol_StaticCallOp : Sol_Op<"static_call"> {
   }];
 }
 
+def Sol_DelegateCallOp : Sol_Op<"delegate_call"> {
+  let summary = "Represents the `delegatecall` call in yul";
+  let arguments = (ins I256:$gas, I256:$address, I256:$inpOffset,
+                       I256:$inpSize, I256:$outOffset, I256:$outSize);
+  let results = (outs I256:$out);
+  let assemblyFormat = [{
+    $gas `,` $address `,` $inpOffset `,` $inpSize `,` $outOffset `,`
+    $outSize attr-dict
+  }];
+}
+
 def Sol_BuiltinRetOp : Sol_Op<"builtin_ret"> {
   let summary = "Represents the `return` call in yul";
   let arguments = (ins I256:$addr, I256:$size);

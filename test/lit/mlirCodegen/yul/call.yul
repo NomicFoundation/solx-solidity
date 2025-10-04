@@ -4,6 +4,7 @@ object "Test" {
   code {
     let r := call(0, 1, 2, 3, 4, 5, 6)
     r := staticcall(0, 1, 2, 3, 4, 5)
+    r := delegatecall(0, 1, 2, 3, 4, 5)
   }
 }
 
@@ -30,6 +31,14 @@ object "Test" {
 // CHECK-NEXT:     %c5_i256_6 = arith.constant 5 : i256 loc(#loc16)
 // CHECK-NEXT:     %2 = sol.static_call %c0_i256_1, %c1_i256_2, %c2_i256_3, %c3_i256_4, %c4_i256_5, %c5_i256_6 loc(#loc17)
 // CHECK-NEXT:     llvm.store %2, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc18)
+// CHECK-NEXT:     %c0_i256_7 = arith.constant 0 : i256 loc(#loc19)
+// CHECK-NEXT:     %c1_i256_8 = arith.constant 1 : i256 loc(#loc20)
+// CHECK-NEXT:     %c2_i256_9 = arith.constant 2 : i256 loc(#loc21)
+// CHECK-NEXT:     %c3_i256_10 = arith.constant 3 : i256 loc(#loc22)
+// CHECK-NEXT:     %c4_i256_11 = arith.constant 4 : i256 loc(#loc23)
+// CHECK-NEXT:     %c5_i256_12 = arith.constant 5 : i256 loc(#loc24)
+// CHECK-NEXT:     %3 = sol.delegate_call %c0_i256_7, %c1_i256_8, %c2_i256_9, %c3_i256_10, %c4_i256_11, %c5_i256_12 loc(#loc25)
+// CHECK-NEXT:     llvm.store %3, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc26)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
@@ -51,4 +60,12 @@ object "Test" {
 // CHECK-NEXT: #loc16 = loc({{.*}}:5:35)
 // CHECK-NEXT: #loc17 = loc({{.*}}:5:9)
 // CHECK-NEXT: #loc18 = loc({{.*}}:5:4)
+// CHECK-NEXT: #loc19 = loc({{.*}}:6:22)
+// CHECK-NEXT: #loc20 = loc({{.*}}:6:25)
+// CHECK-NEXT: #loc21 = loc({{.*}}:6:28)
+// CHECK-NEXT: #loc22 = loc({{.*}}:6:31)
+// CHECK-NEXT: #loc23 = loc({{.*}}:6:34)
+// CHECK-NEXT: #loc24 = loc({{.*}}:6:37)
+// CHECK-NEXT: #loc25 = loc({{.*}}:6:9)
+// CHECK-NEXT: #loc26 = loc({{.*}}:6:4)
 // CHECK-EMPTY:

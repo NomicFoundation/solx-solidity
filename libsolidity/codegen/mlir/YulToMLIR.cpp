@@ -319,6 +319,7 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   defSimpleBuiltinGen<GasOp>("gas");
   defSimpleBuiltinGen<BuiltinCallOp>("call");
   defSimpleBuiltinGen<StaticCallOp>("staticcall");
+  defSimpleBuiltinGen<DelegateCallOp>("delegatecall");
   defSimpleBuiltinGenNoRet<LogOp>("log0");
   defSimpleBuiltinGenNoRet<LogOp>("log1");
   defSimpleBuiltinGenNoRet<LogOp>("log2");

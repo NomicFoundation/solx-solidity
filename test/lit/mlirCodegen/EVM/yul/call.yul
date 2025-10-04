@@ -4,6 +4,7 @@ object "Test" {
   code {
     let r := call(0, 1, 2, 3, 4, 5, 6)
     r := staticcall(0, 1, 2, 3, 4, 5)
+    r := delegatecall(0, 1, 2, 3, 4, 5)
   }
 }
 
@@ -27,6 +28,10 @@ object "Test" {
 // CHECK-NEXT:     %5 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc5)
 // CHECK-NEXT:     %6 = "llvm.intrcall"(%c0_i256, %c1_i256, %4, %c3_i256, %5, %c5_i256) <{id = 3747 : i32, name = "evm.staticcall"}> : (i256, i256, !llvm.ptr<1>, i256, !llvm.ptr<1>, i256) -> i256 loc(#loc5)
 // CHECK-NEXT:     llvm.store %6, %3 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc6)
+// CHECK-NEXT:     %7 = llvm.inttoptr %c2_i256 : i256 to !llvm.ptr<1> loc(#loc7)
+// CHECK-NEXT:     %8 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc7)
+// CHECK-NEXT:     %9 = "llvm.intrcall"(%c0_i256, %c1_i256, %7, %c3_i256, %8, %c5_i256) <{id = 3705 : i32, name = "evm.delegatecall"}> : (i256, i256, !llvm.ptr<1>, i256, !llvm.ptr<1>, i256) -> i256 loc(#loc7)
+// CHECK-NEXT:     llvm.store %9, %3 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc8)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)
@@ -37,4 +42,6 @@ object "Test" {
 // CHECK-NEXT: #loc4 = loc({{.*}}:4:4)
 // CHECK-NEXT: #loc5 = loc({{.*}}:5:9)
 // CHECK-NEXT: #loc6 = loc({{.*}}:5:4)
+// CHECK-NEXT: #loc7 = loc({{.*}}:6:9)
+// CHECK-NEXT: #loc8 = loc({{.*}}:6:4)
 // CHECK-EMPTY:

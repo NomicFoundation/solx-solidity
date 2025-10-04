@@ -1095,8 +1095,6 @@ struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
 
   LogicalResult matchAndRewrite(sol::ExtCallOp op, OpAdaptor adaptor,
                                 ConversionPatternRewriter &r) const override {
-    assert(!op.getDelegateCall() && "NYI");
-
     Location loc = op.getLoc();
     solidity::mlirgen::BuilderExt bExt(r, loc);
     evm::Builder evmB(r, loc);
@@ -1160,7 +1158,14 @@ struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
     Value inpSize = r.create<arith::SubIOp>(loc, tupleEnd, selectorAddr);
     Value staticRetSize = bExt.genI256Const(staticRetSizeVal);
     mlir::Value status;
-    if (op.getStaticCall())
+
+    // Order is important here, staticcall might overlap with delegatecall.
+    if (op.getDelegateCall())
+      status = r.create<sol::DelegateCallOp>(
+          loc, adaptor.getGas(), adaptor.getAddr(),
+          /*inpOffset=*/selectorAddr, inpSize,
+          /*outOffset=*/selectorAddr, /*outSize=*/staticRetSize);
+    else if (op.getStaticCall())
       status = r.create<sol::StaticCallOp>(
           loc, adaptor.getGas(), adaptor.getAddr(),
           /*inpOffset=*/selectorAddr, inpSize,
