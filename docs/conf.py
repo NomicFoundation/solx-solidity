@@ -172,6 +172,10 @@ highlight_language = 'Solidity'
 # If true, keep warnings as "system message" paragraphs in the built documents.
 #keep_warnings = False
 
+suppress_warnings = [
+    # Suppress sphinx-syntax warnings, in particular `diagram descriptions can't have custom resolver_data`
+    'sphinx_syntax',
+]
 
 # -- Options for HTML output ----------------------------------------------
 
