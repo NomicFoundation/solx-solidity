@@ -514,12 +514,12 @@ defaults:
 
   - base_osx: &base_osx
       macos:
-        xcode: "15.0.0"
-      resource_class: macos.m1.medium.gen1
+        xcode: 15.4.0
+      resource_class: m4pro.medium
       environment: &base_osx_env
         TERM: xterm
-        MAKEFLAGS: -j5
-        CPUs: 5
+        MAKEFLAGS: -j8
+        CPUs: 8
 
   - base_ubuntu_clang: &base_ubuntu_clang
       docker:
