@@ -744,7 +744,7 @@ defaults:
       name: t_native_test_ext_zeppelin
       project: zeppelin
       binary_type: native
-      image: cimg/node:18.16
+      image: cimg/node:lts
       resource_class: large
 
   - job_native_test_ext_ens: &job_native_test_ext_ens
