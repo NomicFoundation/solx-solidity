@@ -73,6 +73,7 @@ add_library(yul
 	backends/evm/StackLayoutGenerator.h
 	backends/evm/VariableReferenceCounter.h
 	backends/evm/VariableReferenceCounter.cpp
+	backends/evm/ssa/BridgeFinder.h
 	backends/evm/ssa/ControlFlow.cpp
 	backends/evm/ssa/ControlFlow.h
 	backends/evm/ssa/LivenessAnalysis.cpp
