@@ -73,8 +73,11 @@ add_library(yul
 	backends/evm/StackLayoutGenerator.h
 	backends/evm/VariableReferenceCounter.h
 	backends/evm/VariableReferenceCounter.cpp
+	backends/evm/ssa/BridgeFinder.h
 	backends/evm/ssa/ControlFlow.cpp
 	backends/evm/ssa/ControlFlow.h
+	backends/evm/ssa/JunkAdmittingBlocksFinder.cpp
+	backends/evm/ssa/JunkAdmittingBlocksFinder.h
 	backends/evm/ssa/LivenessAnalysis.cpp
 	backends/evm/ssa/LivenessAnalysis.h
 	backends/evm/ssa/SSACFGLoopNestingForest.cpp

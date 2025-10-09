@@ -52,17 +52,14 @@ public:
 	struct BlockId
 	{
 		size_t value = std::numeric_limits<size_t>::max();
-		bool operator<(BlockId const& _rhs) const { return value < _rhs.value; }
-		bool operator==(BlockId const& _rhs) const { return value == _rhs.value; }
-		bool operator!=(BlockId const& _rhs) const { return value != _rhs.value; }
+		auto operator<=>(BlockId const&) const = default;
 	};
 	struct ValueId
 	{
-		size_t value = std::numeric_limits<size_t>::max();
-		bool hasValue() const { return value != std::numeric_limits<size_t>::max(); }
-		bool operator<(ValueId const& _rhs) const { return value < _rhs.value; }
-		bool operator==(ValueId const& _rhs) const { return value == _rhs.value; }
-		bool operator!=(ValueId const& _rhs) const { return value != _rhs.value; }
+		using ValueType = size_t;
+		ValueType value = std::numeric_limits<ValueType>::max();
+		bool hasValue() const { return value != std::numeric_limits<ValueType>::max(); }
+		auto operator<=>(ValueId const&) const = default;
 	};
 
 	struct BuiltinCall
@@ -93,26 +90,26 @@ public:
 		struct MainExit {};
 		struct ConditionalJump
 		{
-			langutil::DebugData::ConstPtr debugData;
+			langutil::DebugData::ConstPtr debugData{};
 			ValueId condition;
 			BlockId nonZero;
 			BlockId zero;
 		};
 		struct Jump
 		{
-			langutil::DebugData::ConstPtr debugData;
+			langutil::DebugData::ConstPtr debugData{};
 			BlockId target;
 		};
 		struct JumpTable
 		{
-			langutil::DebugData::ConstPtr debugData;
+			langutil::DebugData::ConstPtr debugData{};
 			ValueId value;
 			std::map<u256, BlockId> cases;
 			BlockId defaultCase;
 		};
 		struct FunctionReturn
 		{
-			langutil::DebugData::ConstPtr debugData;
+			langutil::DebugData::ConstPtr debugData{};
 			std::vector<ValueId> returnValues;
 		};
 		struct Terminated {};
@@ -138,6 +135,26 @@ public:
 				_callable(jumpTable->defaultCase);
 			}
 		}
+
+		bool isMainExitBlock() const
+		{
+			return std::holds_alternative<MainExit>(exit);
+		}
+
+		bool isTerminationBlock() const
+		{
+			return std::holds_alternative<Terminated>(exit);
+		}
+
+		bool isFunctionReturnBlock() const
+		{
+			return std::holds_alternative<FunctionReturn>(exit);
+		}
+
+		bool isJumpBlock() const
+		{
+			return std::holds_alternative<Jump>(exit);
+		}
 	};
 	BlockId makeBlock(langutil::DebugData::ConstPtr _debugData)
 	{
@@ -148,6 +165,7 @@ public:
 	BasicBlock& block(BlockId _id) { return m_blocks.at(_id.value); }
 	BasicBlock const& block(BlockId _id) const { return m_blocks.at(_id.value); }
 	size_t numBlocks() const { return m_blocks.size(); }
+
 private:
 	std::vector<BasicBlock> m_blocks;
 public:
@@ -170,13 +188,21 @@ public:
 	{
 		return std::holds_alternative<LiteralValue>(valueInfo(_var));
 	}
+	bool isPhiValue(ValueId const _var) const
+	{
+		return std::holds_alternative<PhiValue>(valueInfo(_var));
+	}
 	ValueInfo& valueInfo(ValueId const _var)
 	{
 		return m_valueInfos.at(_var.value);
 	}
 	ValueInfo const& valueInfo(ValueId const _var) const
 	{
-		return m_valueInfos.at(_var.value);
+		return valueInfo(_var.value);
+	}
+	ValueInfo const& valueInfo(ValueId::ValueType const _var) const
+	{
+		return m_valueInfos.at(_var);
 	}
 	ValueId newPhi(BlockId const _definingBlock)
 	{
