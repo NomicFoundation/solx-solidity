@@ -30,6 +30,7 @@
 #include "mlir/IR/Types.h"
 #include "mlir/Interfaces/CastInterfaces.h"
 #include "mlir/Interfaces/InferTypeOpInterface.h"
+#include "mlir/Interfaces/LoopLikeInterface.h"
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 
 #include "Sol/SolInterfaces.h.inc"

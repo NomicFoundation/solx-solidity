@@ -446,6 +446,8 @@ void WhileOp::getSuccessorRegions(RegionBranchPoint point,
   LoopOpInterface::getLoopOpSuccessorRegions(*this, point, regions);
 }
 
+SmallVector<Region *> WhileOp::getLoopRegions() { return {&getBody()}; }
+
 //===----------------------------------------------------------------------===//
 // DoWhileOp
 //===----------------------------------------------------------------------===//
@@ -455,6 +457,8 @@ void DoWhileOp::getSuccessorRegions(RegionBranchPoint point,
   LoopOpInterface::getLoopOpSuccessorRegions(*this, point, regions);
 }
 
+SmallVector<Region *> DoWhileOp::getLoopRegions() { return {&getBody()}; }
+
 //===----------------------------------------------------------------------===//
 // ForOp
 //===----------------------------------------------------------------------===//
@@ -463,6 +467,8 @@ void ForOp::getSuccessorRegions(RegionBranchPoint point,
                                 SmallVectorImpl<RegionSuccessor> &regions) {
   LoopOpInterface::getLoopOpSuccessorRegions(*this, point, regions);
 }
+
+SmallVector<Region *> ForOp::getLoopRegions() { return {&getBody()}; }
 
 //===----------------------------------------------------------------------===//
 // TryOp

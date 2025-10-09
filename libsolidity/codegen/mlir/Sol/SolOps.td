@@ -414,7 +414,7 @@ def Sol_SwitchOp : Sol_Op<"switch", [
 }
 
 class Sol_WhileOpBase<string mnemonic> : Sol_Op<mnemonic, [
-  LoopOpInterface, NoRegionArguments, AutomaticAllocationScope
+  Sol_LoopOpInterface, NoRegionArguments, AutomaticAllocationScope
 ]>;
 
 def Sol_WhileOp : Sol_WhileOpBase<"while"> {
@@ -433,7 +433,7 @@ def Sol_DoWhileOp : Sol_WhileOpBase<"do"> {
   }];
 }
 
-def Sol_ForOp : Sol_Op<"for", [LoopOpInterface, NoRegionArguments,
+def Sol_ForOp : Sol_Op<"for", [Sol_LoopOpInterface, NoRegionArguments,
                                AutomaticAllocationScope]> {
   let regions = (region SizedRegion<1>:$cond, MinSizedRegion<1>:$body,
                         SizedRegion<1>:$step);
