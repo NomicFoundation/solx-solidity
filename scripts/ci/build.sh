@@ -9,7 +9,7 @@ prerelease_source="${1:-ci}"
 
 cd "${ROOTDIR}"
 
-if [[ $CIRCLE_BRANCH == release || -n $CIRCLE_TAG || -n $FORCE_RELEASE ]]; then
+if [[ -n $CIRCLE_TAG || -n $FORCE_RELEASE ]]; then
     echo -n > prerelease.txt
 else
     # Use last commit date rather than build date to avoid ending up with builds for
@@ -25,7 +25,7 @@ fi
 mkdir -p build
 cd build
 
-[[ -n $COVERAGE && $CIRCLE_BRANCH != release && -z $CIRCLE_TAG ]] && CMAKE_OPTIONS="$CMAKE_OPTIONS -DCOVERAGE=ON"
+[[ -n $COVERAGE && -z $CIRCLE_TAG ]] && CMAKE_OPTIONS="$CMAKE_OPTIONS -DCOVERAGE=ON"
 
 # shellcheck disable=SC2086
 cmake .. -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}" $CMAKE_OPTIONS

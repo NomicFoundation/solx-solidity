@@ -45,7 +45,7 @@ function build() {
 
     cd "${ROOT_DIR}"
 
-    if [[ $CIRCLE_BRANCH == release || -n $CIRCLE_TAG || -n $FORCE_RELEASE || $(git tag --points-at HEAD 2> /dev/null) == v* ]]; then
+    if [[ -n $CIRCLE_TAG || -n $FORCE_RELEASE || $(git tag --points-at HEAD 2> /dev/null) == v* ]]; then
         echo -n > prerelease.txt
     else
         # Use last commit date rather than build date to avoid ending up with builds for

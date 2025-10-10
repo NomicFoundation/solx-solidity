@@ -187,7 +187,7 @@ commands:
       - run:
           name: Store commit hash and prerelease
           command: |
-            if [[ $CIRCLE_BRANCH == release || -n $CIRCLE_TAG ]]; then
+            if [[ -n $CIRCLE_TAG ]]; then
               echo -n > prerelease.txt;
             else
               date -u +"nightly.%Y.%-m.%-d" > prerelease.txt;
