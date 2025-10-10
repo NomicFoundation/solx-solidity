@@ -18,10 +18,6 @@ else
     TZ=UTC git show --quiet --date="format-local:%Y.%-m.%-d" --format="${prerelease_source}.%cd" > prerelease.txt
 fi
 
-if [[ -n $CIRCLE_SHA1 ]]; then
-    echo -n "$CIRCLE_SHA1" > commit_hash.txt
-fi
-
 mkdir -p build
 cd build
 

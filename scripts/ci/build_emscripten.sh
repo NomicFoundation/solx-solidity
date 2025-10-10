@@ -53,9 +53,6 @@ function build() {
         # if the CI is triggered just before midnight.
         TZ=UTC git show --quiet --date="format-local:%Y.%-m.%-d" --format="${prerelease_source}.%cd" > prerelease.txt
     fi
-    if [[ -n $CIRCLE_SHA1 ]]; then
-        echo -n "$CIRCLE_SHA1" > commit_hash.txt
-    fi
 
     # Disable warnings for unqualified `move()` calls, introduced and enabled by
     # default in clang-16 which is what the emscripten docker image uses.

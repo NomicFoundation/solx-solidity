@@ -182,17 +182,16 @@ commands:
   # --------------------------------------------------------------------------
   # Build Commands
 
-  setup_prerelease_commit_hash:
+  setup_prerelease:
     steps:
       - run:
-          name: Store commit hash and prerelease
+          name: Store prerelease suffix
           command: |
             if [[ -n $CIRCLE_TAG ]]; then
               echo -n > prerelease.txt;
             else
               date -u +"nightly.%Y.%-m.%-d" > prerelease.txt;
             fi
-            echo -n "$CIRCLE_SHA1" > commit_hash.txt
 
   install_and_check_minimum_requirements:
     parameters:
@@ -1115,7 +1114,7 @@ jobs:
     <<: *base_ubuntu_clang_large
     steps:
       - checkout
-      - setup_prerelease_commit_hash
+      - setup_prerelease
       - run_build_ossfuzz
       - persist_ossfuzz_executables_to_workspace
       - matrix_notify_failure_unless_pr
@@ -1225,7 +1224,7 @@ jobs:
     <<: *base_ubuntu2404_small
     steps:
       - checkout
-      - setup_prerelease_commit_hash
+      - setup_prerelease
       - run:
           name: Install build system dependencies
           command: |
