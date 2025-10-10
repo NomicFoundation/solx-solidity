@@ -72,6 +72,29 @@ bool evmhasStaticCall(ModuleOp mod);
 bool evmSupportsReturnData(ModuleOp mod);
 bool evmCanOverchargeGasForCall(ModuleOp mod);
 
+struct StackResource : public SideEffects::Resource::Base<StackResource> {
+  StringRef getName() final { return "<Stack>"; }
+};
+
+struct CallDataResource : public SideEffects::Resource::Base<CallDataResource> {
+  StringRef getName() final { return "<CallData>"; }
+};
+
+struct MemoryResource : public SideEffects::Resource::Base<MemoryResource> {
+  StringRef getName() final { return "<Memory>"; }
+};
+
+struct StorageResource : public SideEffects::Resource::Base<StorageResource> {
+  StringRef getName() final { return "<Storage>"; }
+};
+
+struct ImmutableResource
+    : public SideEffects::Resource::Base<ImmutableResource> {
+  StringRef getName() final { return "<Immutable>"; }
+};
+
+mlir::SideEffects::Resource *getResource(DataLocation dataLoc);
+
 } // namespace sol
 } // namespace mlir
 

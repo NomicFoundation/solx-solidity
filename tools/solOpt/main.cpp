@@ -40,7 +40,8 @@ int main(int argc, char **argv) {
                   scf::SCFDialect>();
 
   registerPass([](void) -> std::unique_ptr<Pass> {
-    return sol::createConvertSolToStandardPass();
+    // return sol::createConvertSolToStandardPass();
+    return sol::createLoopInvariantCodeMotionPass();
     // return sol::createModifierOpLoweringPass();
   });
 

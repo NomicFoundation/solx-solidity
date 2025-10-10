@@ -129,6 +129,23 @@ DataLocation mlir::sol::getDataLocation(Type ty) {
       .Default([&](Type) { return DataLocation::Stack; });
 }
 
+mlir::SideEffects::Resource *mlir::sol::getResource(DataLocation dataLoc) {
+  switch (dataLoc) {
+  case DataLocation::Stack:
+    return StackResource::get();
+  case DataLocation::CallData:
+    return CallDataResource::get();
+  case DataLocation::Memory:
+    return MemoryResource::get();
+  case DataLocation::Storage:
+    return StorageResource::get();
+  case DataLocation::Immutable:
+    return ImmutableResource::get();
+  default:
+    llvm_unreachable("Invalid data-location");
+  }
+}
+
 // TODO? Should we exclude sol.pointer from reference types?
 
 bool mlir::sol::isRefType(Type ty) {

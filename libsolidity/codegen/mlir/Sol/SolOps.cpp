@@ -139,6 +139,28 @@ ParseResult AllocaOp::parse(OpAsmParser &parser, OperationState &result) {
 void AllocaOp::print(OpAsmPrinter &p) { printAllocationOp(*this, p); }
 
 //===----------------------------------------------------------------------===//
+// LoadOp
+//===----------------------------------------------------------------------===//
+
+void LoadOp::getEffects(
+    SmallVectorImpl<SideEffects::EffectInstance<MemoryEffects::Effect>>
+        &effects) {
+  effects.emplace_back(MemoryEffects::Read::get(), &getAddrMutable(),
+                       getResource(getDataLocation(getAddr().getType())));
+}
+
+//===----------------------------------------------------------------------===//
+// StoreOp
+//===----------------------------------------------------------------------===//
+
+void StoreOp::getEffects(
+    SmallVectorImpl<SideEffects::EffectInstance<MemoryEffects::Effect>>
+        &effects) {
+  effects.emplace_back(MemoryEffects::Write::get(), &getAddrMutable(),
+                       getResource(getDataLocation(getAddr().getType())));
+}
+
+//===----------------------------------------------------------------------===//
 // PushOp
 //===----------------------------------------------------------------------===//
 

@@ -192,12 +192,15 @@ def Sol_EvmVersionAttr : EnumAttr<Sol_Dialect, Sol_EvmVersion,
 class Sol_Op<string mnemonic, list<Trait> traits = []> : Op<Sol_Dialect,
                                                             mnemonic, traits>;
 
-class Sol_IntBinaryOp<string mnemonic, list<Trait> traits = []> :
+class Sol_IntArithOp<string mnemonic, list<Trait> traits = []> :
     Sol_Op<mnemonic, traits # [SameOperandsAndResultType]> {
   let arguments = (ins Sol_Int:$lhs, Sol_Int:$rhs);
   let results = (outs Sol_Int:$result);
 
   let assemblyFormat = "$lhs `,` $rhs attr-dict `:` type($result)";
 }
+
+class Sol_UncheckedIntArithOp<string mnemonic, list<Trait> traits = []> :
+    Sol_IntArithOp<mnemonic, traits # [Pure]>;
 
 #endif // MLIR_SOL_SOLBASE_TD

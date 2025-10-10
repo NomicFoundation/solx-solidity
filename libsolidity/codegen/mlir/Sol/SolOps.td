@@ -54,7 +54,8 @@ def Sol_ConvCastOp : Sol_Op<"conv_cast"> {
 def Sol_ConstantOp : Op<Sol_Dialect, "constant",
     [ConstantLike, Pure,
      DeclareOpInterfaceMethods<OpAsmOpInterface, ["getAsmResultNames"]>,
-     AllTypesMatch<["value", "result"]>]> {
+     AllTypesMatch<["value", "result"]>]
+>{
   let arguments = (ins TypedAttrInterface:$value);
   let results = (outs AnyType:$result);
 
@@ -84,31 +85,27 @@ def Sol_BytesCastOp : Sol_Op<"bytes_cast",
 
 // TODO: Add folders for the c0 case.
 
-def Sol_CAddOp : Sol_IntBinaryOp<"cadd", [Commutative]>;
+// Checked arith ops are not speculatable, but unchecked are (including div and
+// mod because of evm semantics).
 
-def Sol_CSubOp : Sol_IntBinaryOp<"csub">;
+def Sol_CAddOp : Sol_IntArithOp<"cadd", [Commutative]>;
+def Sol_CSubOp : Sol_IntArithOp<"csub">;
+def Sol_CMulOp : Sol_IntArithOp<"cmul", [Commutative]>;
+def Sol_CDivOp : Sol_IntArithOp<"cdiv">;
 
-def Sol_CMulOp : Sol_IntBinaryOp<"cmul", [Commutative]>;
-
-def Sol_CDivOp : Sol_IntBinaryOp<"cdiv">;
-
-def Sol_AddOp : Sol_IntBinaryOp<"add", [Pure, Commutative]> {
+def Sol_AddOp : Sol_UncheckedIntArithOp<"add", [Commutative]> {
   // TODO: folder, canonicalizer
 }
-
-def Sol_SubOp : Sol_IntBinaryOp<"sub", [Pure]> {
+def Sol_SubOp : Sol_UncheckedIntArithOp<"sub"> {
   // TODO: folder, canonicalizer
 }
-
-def Sol_MulOp : Sol_IntBinaryOp<"mul", [Pure, Commutative]> {
+def Sol_MulOp : Sol_UncheckedIntArithOp<"mul", [Commutative]> {
   // TODO: folder, canonicalizer
 }
-
-def Sol_DivOp : Sol_IntBinaryOp<"div"> {
+def Sol_DivOp : Sol_UncheckedIntArithOp<"div"> {
   // TODO: folder, canonicalizer
 }
-
-def Sol_ModOp : Sol_IntBinaryOp<"mod"> {
+def Sol_ModOp : Sol_UncheckedIntArithOp<"mod"> {
   // TODO: folder, canonicalizer
 }
 
@@ -247,8 +244,11 @@ def Sol_CopyOp : Sol_Op<"copy"> {
 
 // TODO: Simplify the asm format by inferring element type of Sol_RefType.
 
-def Sol_LoadOp : Sol_Op<"load"> {
-  let arguments = (ins Arg<Sol_RefType, "", [MemRead]>:$addr);
+def Sol_LoadOp : Sol_Op<"load", [
+  AlwaysSpeculatable,
+  DeclareOpInterfaceMethods<MemoryEffectsOpInterface>]
+>{
+  let arguments = (ins Sol_RefType:$addr);
   let results = (outs AnyType:$out);
 
   let builders = [
@@ -274,8 +274,10 @@ def Sol_LibAddrOp : Sol_Op<"lib_addr", [Pure]> {
   let assemblyFormat = "$name attr-dict `:` type($val)";
 }
 
-def Sol_StoreOp : Sol_Op<"store"> {
-  let arguments = (ins AnyType:$val, Arg<Sol_RefType, "", [MemWrite]>:$addr);
+def Sol_StoreOp : Sol_Op<"store", [
+  DeclareOpInterfaceMethods<MemoryEffectsOpInterface>]
+>{
+  let arguments = (ins AnyType:$val, Sol_RefType:$addr);
 
   let assemblyFormat = [{
     $val `,` $addr attr-dict `:` type($val) `,` type($addr)
