@@ -116,23 +116,9 @@ Linux Packages
 Binary packages of Solidity are available at
 `solidity/releases <https://github.com/argotorg/solidity/releases>`_.
 
-We also have PPAs for Ubuntu, you can get the latest stable
-version using the following commands:
-
-.. code-block:: bash
-
-    sudo add-apt-repository ppa:ethereum/ethereum
-    sudo apt-get update
-    sudo apt-get install solc
-
-The nightly version can be installed using these commands:
-
-.. code-block:: bash
-
-    sudo add-apt-repository ppa:ethereum/ethereum
-    sudo add-apt-repository ppa:ethereum/ethereum-dev
-    sudo apt-get update
-    sudo apt-get install solc
+Ubuntu packages for versions up to 0.8.30 are available in the
+`ethereum/ethereum PPA <https://launchpad.net/~ethereum/+archive/ubuntu/ethereum>`_.
+However, we have discontinued this distribution method and future versions will not be added there.
 
 Furthermore, some Linux distributions provide their own packages. These packages are not directly
 maintained by us but usually kept up-to-date by the respective package maintainers.
