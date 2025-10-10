@@ -8,14 +8,22 @@ source "${REPO_ROOT}/scripts/common.sh"
 cd "$REPO_ROOT"
 version=$(scripts/get_version.sh)
 commit_hash=$(git rev-parse --short=8 HEAD)
-commit_date=$(TZ=UTC git show --quiet --date="format-local:%Y.%-m.%-d" --format="%cd")
 
-# File exists and has zero size -> not a prerelease
-if [[ -e prerelease.txt && ! -s prerelease.txt ]]; then
-    version_string="$version"
-elif [[ -e prerelease.txt ]]; then
-    version_string="${version}-$(cat prerelease.txt)-${commit_hash}"
+if [[ -e prerelease.txt ]]; then
+    prerelease_suffix=$(cat prerelease.txt)
+    if [[ $prerelease_suffix == "" ]]; then
+        # File exists and has zero size -> not a prerelease
+        version_string="$version"
+    elif [[ $prerelease_suffix == pre.* ]]; then
+        # Tagged prerelease -> unambiguous, so commit hash not needed
+        version_string="${version}-${prerelease_suffix}"
+    else
+        # Nightly/develop/other prerelease -> include commit hash
+        version_string="${version}-${prerelease_suffix}-${commit_hash}"
+    fi
 else
+    # Nightly/develop/other prerelease -> include commit hash + default prerelease suffix
+    commit_date=$(TZ=UTC git show --quiet --date="format-local:%Y.%-m.%-d" --format="%cd")
     version_string="${version}-nightly-${commit_date}-${commit_hash}"
 fi
 

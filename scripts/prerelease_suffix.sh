@@ -11,8 +11,10 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     GNU_DATE=gdate
 fi
 
-if [[ $FORCE_RELEASE != "" || $git_tag == v* ]]; then
+if [[ $FORCE_RELEASE != "" || $git_tag =~ ^v[0-9.]+$ ]]; then
     echo -n
+elif [[ $git_tag =~ ^v[0-9.]+-pre. ]]; then
+    echo -n "pre.${git_tag#*-pre.}"
 else
     # Use last commit date rather than build date to avoid ending up with builds for
     # different platforms having different version strings (and therefore producing different bytecode)

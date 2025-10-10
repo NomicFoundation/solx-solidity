@@ -1001,6 +1001,7 @@ jobs:
     <<: *base_ubuntu2404_xlarge
     steps:
       - build
+      - run: cat prerelease.txt
 
   # x64 ASAN build, for testing for memory related bugs
   b_ubu_asan: &b_ubu_asan
