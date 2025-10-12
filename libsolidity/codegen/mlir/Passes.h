@@ -41,6 +41,7 @@ std::unique_ptr<Pass>
 createConvertSolToStandardPass(solidity::mlirgen::Target tgt);
 
 std::unique_ptr<Pass> createModifierOpLoweringPass();
+std::unique_ptr<Pass> createFuseFreePtrPass();
 std::unique_ptr<Pass> createLoopInvariantCodeMotionPass();
 
 // TODO: Is mlir::sol the right namespace for this?

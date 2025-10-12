@@ -709,6 +709,12 @@ def Sol_ContractOp : Sol_Op<"contract", [Symbol, SymbolTable, SingleBlock,
 // TODO? Move the rest of the ops to the yul dialect?
 //
 
+def Sol_UpdFreePtrOp : Sol_Op<"upd_free_ptr"> {
+  let arguments = (ins I256:$size);
+  let results = (outs I256:$out);
+  let assemblyFormat = "$size attr-dict";
+}
+
 def Sol_ObjectOp : Sol_Op<"object", [Symbol, SymbolTable, NoTerminator,
                                      IsolatedFromAbove]> {
   let arguments = (ins SymbolNameAttr:$sym_name);

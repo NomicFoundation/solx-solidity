@@ -224,6 +224,7 @@ set(mlir_sources
 	codegen/mlir/SolidityToMLIR.cpp
 	codegen/mlir/ModifierOpLowering.cpp
 	codegen/mlir/LoopInvariantCodeMotion.cpp
+	codegen/mlir/FuseFreePtr.cpp
 	codegen/mlir/StandardToLLVM.cpp
 	codegen/mlir/YulToMLIR.cpp
 	codegen/mlir/SolToStandardPass.cpp

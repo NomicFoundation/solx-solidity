@@ -27,6 +27,19 @@ using namespace mlir;
 
 namespace {
 
+struct UpdFreePtrOpLowering : public OpRewritePattern<sol::UpdFreePtrOp> {
+  using OpRewritePattern<sol::UpdFreePtrOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::UpdFreePtrOp op,
+                                PatternRewriter &r) const override {
+    evm::Builder evmB(r, op.getLoc());
+    Value freePtr = evmB.genFreePtr();
+    evmB.genFreePtrUpd(freePtr, op.getSize());
+    r.replaceOp(op, freePtr);
+    return success();
+  }
+};
+
 struct Keccak256OpLowering : public OpRewritePattern<sol::Keccak256Op> {
   using OpRewritePattern<sol::Keccak256Op>::OpRewritePattern;
 
@@ -633,6 +646,7 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
 void evm::populateYulPats(RewritePatternSet &pats) {
   pats.add<
       // clang-format off
+      UpdFreePtrOpLowering,
       Keccak256OpLowering,
       LogOpLowering,
       AddressOpLowering,

@@ -1,4 +1,4 @@
-.. _mlir-free-ptr:
+.. _mlir-fuse-free-ptr:
 
 Optimizing free-ptr modification
 ================================
@@ -30,12 +30,3 @@ Then we can eliminate the redundant free-ptr modification by rewriting it to:
 
   %a = upd_free_ptr 5 : i256
   %b = add %a, 2
-
-We can only do this iff there are no memory unsafe ``inline_asm`` ops between
-the free-ptr access, including anywhere in the callgraph if there are calls
-between the free-ptr access.
-
-Lowering the free-ptr access ops to llvm intrinsics instead of plain load/store
-64 can also let llvm optimize it further, if possible. The memory unsafe
-inline-asm legality check is crucial as free-ptr's are allowed to modified in
-them.

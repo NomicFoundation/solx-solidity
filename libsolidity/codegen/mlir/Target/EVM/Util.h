@@ -121,6 +121,8 @@ public:
   //
 
   /// Generates the free pointer.
+  ///
+  /// NOTE! Watch out for free-ptr loads between this and the update!
   mlir::Value genFreePtr(std::optional<mlir::Location> locArg = std::nullopt);
 
   /// Generates the free pointer update code.
