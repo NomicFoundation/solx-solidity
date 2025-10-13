@@ -47,6 +47,8 @@ def main():
         insert_pt = handle.seek(0)
         line = handle.readline()
         while line:
+            if line.lstrip().startswith(COMMENT_PREFIX + ' XFAIL:'):
+                return
             if line == HEADER:
                 break
             insert_pt = handle.tell()
