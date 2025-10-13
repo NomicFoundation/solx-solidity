@@ -9,7 +9,6 @@ on:
     paths:
       - 'scripts/docker/buildpack-deps/Dockerfile.emscripten'
       - 'scripts/docker/buildpack-deps/Dockerfile.ubuntu.clang.ossfuzz'
-      - 'scripts/docker/buildpack-deps/Dockerfile.ubuntu2204'
       - 'scripts/docker/buildpack-deps/Dockerfile.ubuntu2404'
       - 'scripts/docker/buildpack-deps/Dockerfile.ubuntu2404.clang'
 
@@ -26,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image_variant: [emscripten, ubuntu.clang.ossfuzz, ubuntu2004, ubuntu2204, ubuntu2404, ubuntu2404.clang]
+        image_variant: [emscripten, ubuntu.clang.ossfuzz, ubuntu2004, ubuntu2404, ubuntu2404.clang]
 
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
