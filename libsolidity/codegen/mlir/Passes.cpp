@@ -304,8 +304,9 @@ solidity::mlirgen::Bytecode solidity::mlirgen::genEvmBytecode(
   return ret;
 }
 
-static solidity::mlirgen::Bytecode
-genEraVMBytecode(llvm::Module &llvmMod, llvm::TargetMachine &tgtMach) {
+solidity::mlirgen::Bytecode
+solidity::mlirgen::genEraVMBytecode(llvm::Module &llvmMod,
+                                    llvm::TargetMachine &tgtMach) {
   llvm::legacy::PassManager llvmPassMgr;
   llvm::SmallString<0> outStreamData;
   llvm::raw_svector_ostream outStream(outStreamData);

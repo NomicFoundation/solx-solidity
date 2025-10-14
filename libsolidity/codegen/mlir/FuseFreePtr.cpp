@@ -119,7 +119,7 @@ struct FuseFreePtr : public PassWrapper<FuseFreePtr, OperationPass<>> {
   }
 
   FuseFreePtr() = default;
-  FuseFreePtr(const FuseFreePtr &) : PassWrapper() {}
+  FuseFreePtr(const FuseFreePtr &other) : PassWrapper(other) {}
 };
 
 std::unique_ptr<Pass> sol::createFuseFreePtrPass() {

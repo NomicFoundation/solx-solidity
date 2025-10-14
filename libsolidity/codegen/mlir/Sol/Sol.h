@@ -64,6 +64,10 @@ bool isNonPtrRefType(Type ty);
 /// Returns the element type of a non mapping reference type.
 Type getEltType(Type ty, Index structTyIdx = 0);
 
+/// Return true if revert strings (RevertStrings::Debug) needs to be generated
+/// in the lowering.
+bool isRevertStringsEnabled(ModuleOp mod);
+
 ///
 /// The following functions are used to query the capabilities of the specified
 /// evm in the module.

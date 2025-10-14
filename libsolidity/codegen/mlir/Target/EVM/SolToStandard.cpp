@@ -1113,16 +1113,17 @@ struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
     for (auto resTy : op.getCalleeType().getResults()) {
       totHeadSize += evm::getCallDataHeadSize(resTy);
     }
+    // TODO: Do we really need to check revertStrings() >= RevertStrings::Debug
+    // here?
     bool extCodeSizeCheck =
-        totHeadSize == 0 || !sol::evmSupportsReturnData(mod) ||
-        /* TODO: revertStrings() >= RevertStrings::Debug */ false;
+        totHeadSize == 0 || !sol::evmSupportsReturnData(mod);
 
     if (extCodeSizeCheck) {
       // Generate the revert code.
       auto extCodeSize = r.create<sol::ExtCodeSizeOp>(loc, adaptor.getAddr());
       auto isExtCodeSizeZero = r.create<arith::CmpIOp>(
           loc, arith::CmpIPredicate::eq, extCodeSize, bExt.genI256Const(0));
-      if (/*TODO: m_revertStrings < RevertStrings::Debug*/ false)
+      if (sol::isRevertStringsEnabled(mod))
         evmB.genRevertWithMsg(isExtCodeSizeZero,
                               "Target contract does not contain code");
       else

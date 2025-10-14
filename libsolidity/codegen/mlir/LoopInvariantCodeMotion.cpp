@@ -34,9 +34,7 @@ using namespace mlir;
 
 struct LoopInvariantCodeMotion
     : public PassWrapper<LoopInvariantCodeMotion, OperationPass<>> {
-  LoopInvariantCodeMotion() = default;
-  LoopInvariantCodeMotion(const LoopInvariantCodeMotion &) : PassWrapper() {}
-
+  StringRef getArgument() const override { return "sol-licm"; }
   Statistic count{this, "count", "Number of ops licm'd"};
 
   void runOnOperation() override {
@@ -112,19 +110,23 @@ struct LoopInvariantCodeMotion
 
           // Don’t hoist ops that read from resources written inside the loop.
           SmallVector<MemoryEffects::EffectInstance> effs = getMemEffs(op);
-          for (auto &eff : effs) {
-            // Speculative ops have memory effects iff it reads.
-            assert(isa<MemoryEffects::Read>(eff.getEffect()));
-            if (writtenResources.contains(eff.getResource()))
-              return false;
-          }
-          return true;
+
+          // Speculative ops have memory effects iff they read.
+          assert(llvm::all_of(effs, [](const auto &eff) {
+            return isa<MemoryEffects::Read>(eff.getEffect());
+          }));
+
+          return !llvm::any_of(effs, [&](const auto &eff) {
+            return writtenResources.contains(eff.getResource());
+          });
         },
         /*moveOutOfRegion=*/
         [&](Operation *op, Region *) { loopLike.moveOutOfLoop(op); });
   }
 
-  StringRef getArgument() const override { return "sol-licm"; }
+  LoopInvariantCodeMotion() = default;
+  LoopInvariantCodeMotion(const LoopInvariantCodeMotion &other)
+      : PassWrapper(other) {}
 };
 
 std::unique_ptr<Pass> sol::createLoopInvariantCodeMotionPass() {

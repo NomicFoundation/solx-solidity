@@ -796,7 +796,7 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     bool freeCallee = !callee->annotation().contract;
     if ((calleeInLib && currContrNotInLib) || (freeCallee && currContract)) {
       mlir::OpBuilder::InsertionGuard insertGuard(b);
-      auto parentOp = b.getInsertionBlock()->getParentOp();
+      auto *parentOp = b.getInsertionBlock()->getParentOp();
       if (!mlir::isa<mlir::sol::FuncOp>(parentOp))
         parentOp = parentOp->getParentOfType<mlir::sol::FuncOp>();
       assert(parentOp);

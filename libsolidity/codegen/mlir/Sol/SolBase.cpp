@@ -83,6 +83,10 @@ Operation *SolDialect::materializeConstant(OpBuilder &builder, Attribute val,
   return builder.create<ConstantOp>(loc, type, cast<TypedAttr>(val));
 }
 
+bool mlir::sol::isRevertStringsEnabled(ModuleOp mod) {
+  return mod->hasAttr("sol.revert_strings");
+}
+
 bool mlir::sol::evmhasStaticCall(ModuleOp mod) {
   auto evmVersionAttr = cast<EvmVersionAttr>(mod->getAttr("sol.evm_version"));
   return evmVersionAttr.getValue() >= EvmVersion::Byzantium;

@@ -89,4 +89,8 @@ solidity::mlirgen::Bytecode
 genEvmBytecode(EvmObj const &obj,
                std::map<std::string, util::h160> const &libAddrMap);
 
+/// Don't use this! EraVM impl broke recently!
+solidity::mlirgen::Bytecode genEraVMBytecode(llvm::Module &llvmMod,
+                                             llvm::TargetMachine &tgtMach);
+
 } // namespace solidity::mlirgen

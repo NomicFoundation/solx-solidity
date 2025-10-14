@@ -472,7 +472,8 @@ void evm::Builder::genABITupleSizeAssert(TypeRange tys, Value tupleSize,
   auto shortTupleCond =
       b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, tupleSize,
                               bExt.genI256Const(totCallDataHeadSz));
-  if (/*TODO: m_revertStrings < RevertStrings::Debug*/ false)
+  assert(shortTupleCond->getParentOfType<ModuleOp>());
+  if (sol::isRevertStringsEnabled(shortTupleCond->getParentOfType<ModuleOp>()))
     genRevertWithMsg(shortTupleCond, "ABI decoding: tuple data too short", loc);
   else
     genRevert(shortTupleCond, loc);
