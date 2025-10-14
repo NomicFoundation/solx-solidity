@@ -196,7 +196,7 @@ def Sol_ImmutableOp : Sol_Op<"immutable", [Symbol]> {
   let assemblyFormat = "$sym_name attr-dict `:` $type";
 }
 
-def Sol_AddrOfOp : Sol_Op<"addr_of"> {
+def Sol_AddrOfOp : Sol_Op<"addr_of", [Pure]> {
   let arguments = (ins FlatSymbolRefAttr:$var);
   // FIXME: AnyType -> Sol_PtrTy causes the asm printer to miss the prefix!
   let results = (outs AnyType:$addr);
