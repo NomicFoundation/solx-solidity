@@ -1909,7 +1909,7 @@ bool CompilerStack::runMlirPipeline() {
   } else {
     for (auto const &i : objMap) {
       m_contracts.at(i.first->fullyQualifiedName()).mlirPipeline =
-          mlirgen::genEvmBytecode(i.second);
+          mlirgen::genEvmBytecode(i.second, m_libraries);
       LLVMDisposeMemoryBuffer(i.second.creationPart);
       LLVMDisposeMemoryBuffer(i.second.runtimePart);
     }

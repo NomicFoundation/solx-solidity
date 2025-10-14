@@ -13,6 +13,6 @@ contract C {
 }
 
 // ====
-// compileViaYul: false
+// compileViaMlir: true
 // ----
 // f() -> 3

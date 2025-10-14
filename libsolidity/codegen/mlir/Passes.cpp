@@ -245,8 +245,9 @@ static LLVMMemoryBufferRef genObj(llvm::Module &mod,
   return obj;
 }
 
-solidity::mlirgen::Bytecode
-solidity::mlirgen::genEvmBytecode(solidity::mlirgen::EvmObj const &obj) {
+solidity::mlirgen::Bytecode solidity::mlirgen::genEvmBytecode(
+    solidity::mlirgen::EvmObj const &obj,
+    std::map<std::string, util::h160> const &libAddrMap) {
   LLVMMemoryBufferRef objs[2];
   const char *objIds[2];
   char *errMsg = nullptr;
@@ -268,16 +269,26 @@ solidity::mlirgen::genEvmBytecode(solidity::mlirgen::EvmObj const &obj) {
                       /*errorMessage=*/&errMsg))
     llvm_unreachable(errMsg);
 
+  // Convert libAddrMap for lld-c.
+  auto numLibs = libAddrMap.size();
+  auto **libNames = new const char *[numLibs];
+  auto *libAddrs = new char[numLibs][LINKER_SYMBOL_SIZE];
+  int64_t i = 0;
+  for (const auto &[name, addr] : libAddrMap) {
+    libNames[i] = name.c_str();
+    std::memcpy(libAddrs[i], addr.data(), LINKER_SYMBOL_SIZE);
+    ++i;
+  }
+
   // Generate bytecode.
   LLVMMemoryBufferRef creationBytecode, runtimeBytecode;
+
   if (LLVMLinkEVM(/*inBuffer=*/creationAssembled,
-                  /*outBuffer=*/&creationBytecode,
-                  /*linkerSymbolNames=*/nullptr, /*linkerSymbolValues=*/nullptr,
-                  /*numLinkerSymbols=*/0, &errMsg))
+                  /*outBuffer=*/&creationBytecode, libNames, libAddrs, numLibs,
+                  &errMsg))
     llvm_unreachable(errMsg);
   if (LLVMLinkEVM(/*inBuffer=*/runtimeAssembled, /*outBuffer=*/&runtimeBytecode,
-                  /*linkerSymbolNames=*/nullptr, /*linkerSymbolValues=*/nullptr,
-                  /*numLinkerSymbols=*/0, &errMsg))
+                  libNames, libAddrs, numLibs, &errMsg))
     llvm_unreachable(errMsg);
 
   LLVMDisposeMemoryBuffer(creationAssembled);

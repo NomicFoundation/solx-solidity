@@ -22,6 +22,7 @@
 #pragma once
 
 #include "libsolidity/codegen/mlir/Interface.h"
+#include "libsolutil/FixedHash.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
@@ -84,6 +85,8 @@ EvmObj genEvmObj(mlir::ModuleOp, char optLevel, llvm::TargetMachine &tgtMach);
 /// Returns the bytecode of `obj` for evm.  This function is not thread-safe
 /// across LLVM threads.  It calls into lld, which mutates global llvm state
 /// internally.
-solidity::mlirgen::Bytecode genEvmBytecode(EvmObj const &obj);
+solidity::mlirgen::Bytecode
+genEvmBytecode(EvmObj const &obj,
+               std::map<std::string, util::h160> const &libAddrMap);
 
 } // namespace solidity::mlirgen
