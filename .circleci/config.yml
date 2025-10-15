@@ -1866,7 +1866,7 @@ jobs:
           command: scripts/docker_deploy_manual.sh develop "file://$PWD" --no-push
       - run:
           name: Smoke test
-          command: docker run --pull=never ethereum/solc:build-alpine --version
+          command: docker run --pull=never ghcr.io/argotorg/solc:build-alpine --version
       - matrix_notify_failure_unless_pr
 
 workflows:
