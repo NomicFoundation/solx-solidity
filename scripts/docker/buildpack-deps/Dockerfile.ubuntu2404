@@ -22,7 +22,7 @@
 # (c) 2016-2024 solidity contributors.
 #------------------------------------------------------------------------------
 FROM buildpack-deps:noble AS base
-LABEL version="4"
+LABEL version="5"
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -31,6 +31,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 ENV PIP_BREAK_SYSTEM_PACKAGES 1
 
 RUN set -ex; \
+	z3_version="4.13.3"; \
 	dist=$(grep DISTRIB_CODENAME /etc/lsb-release | cut -d= -f2); \
 	echo "deb http://ppa.launchpad.net/ethereum/cpp-build-deps/ubuntu $dist main" >> /etc/apt/sources.list ; \
 	apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 1c52189c923f6ca9 ; \
@@ -62,7 +63,7 @@ RUN set -ex; \
 		pylint \
 		requests \
 		tabulate \
-		z3-solver;
+		z3-solver=="${z3_version}";
 
 # Eldarica
 RUN set -ex; \
@@ -83,15 +84,6 @@ RUN set -ex; \
 	test "$(sha256sum /opt/cvc5.zip)" = "d18f174ff9a11923c32c3f871f844ed16bd77a28f51050b8e7c8d821c98a1c2e  /opt/cvc5.zip"; \
 	unzip -j /opt/cvc5.zip "${cvc5_archive_name}/bin/cvc5" -d /usr/bin; \
 	rm -f /opt/cvc5.zip;
-
-# Z3
-RUN set -ex; \
-	z3_version="4.13.3"; \
-	z3_archive_name="z3-${z3_version}-x64-glibc-2.35"; \
-	wget "https://github.com/Z3Prover/z3/releases/download/z3-${z3_version}/${z3_archive_name}.zip" -O /opt/z3.zip; \
-	test "$(sha256sum /opt/z3.zip)" = "32c7377026733c9d7b33c21cd77a68f50ba682367207b031a6bfd80140a8722f  /opt/z3.zip"; \
-	unzip -j /opt/z3.zip "${z3_archive_name}/bin/z3" -d /usr/bin; \
-	rm -f /opt/z3.zip;
 
 FROM base AS libraries
 
