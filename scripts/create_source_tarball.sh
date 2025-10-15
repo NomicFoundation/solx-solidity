@@ -8,7 +8,7 @@ source "${REPO_ROOT}/scripts/common.sh"
 cd "$REPO_ROOT"
 version=$(scripts/get_version.sh)
 commit_hash=$(git rev-parse --short=8 HEAD)
-commit_date=$(git show --format=%ci HEAD | head -n 1 | cut - -b1-10 | sed -e 's/-0?/./' | sed -e 's/-0?/./')
+commit_date=$(TZ=UTC git show --quiet --date="format-local:%Y.%-m.%-d" --format="%cd")
 
 # File exists and has zero size -> not a prerelease
 if [[ -e prerelease.txt && ! -s prerelease.txt ]]; then
