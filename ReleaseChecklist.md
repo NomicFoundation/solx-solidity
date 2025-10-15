@@ -1,6 +1,6 @@
-## Checklist for making a release:
+# Checklist for making a Solidity release
 
-### Requirements
+## Requirements
 - [ ] GitHub account with access to [solidity](https://github.com/argotorg/solidity), [solc-js](https://github.com/argotorg/solc-js),
       [solc-bin](https://github.com/argotorg/solc-bin), [solidity-website](https://github.com/argotorg/solidity-website).
 - [ ] DockerHub account with push rights to the [`solc` image](https://hub.docker.com/r/ethereum/solc).
@@ -11,6 +11,8 @@
 - [ ] [npm Registry](https://www.npmjs.com) account added as a collaborator for the [`solc` package](https://www.npmjs.com/package/solc).
 - [ ] Access to the [solidity_lang Twitter account](https://twitter.com/solidity_lang).
 - [ ] [Reddit](https://www.reddit.com) account that is at least 10 days old with a minimum of 20 comment karma (`/r/ethereum` requirements).
+
+## Full release
 
 ### Pre-flight checks
 At least a day before the release:
@@ -59,19 +61,19 @@ At least a day before the release:
 - [ ] Thank voluntary contributors in the GitHub release notes.
       Use `scripts/list_contributors.sh v<previous version>` to get initial list of names.
       Remove different variants of the same name manually before using the output.
-- [ ] Check that all tests on the latest commit in `develop` are green.
+- [ ] Check that all tests on the latest commit on `develop` are green.
 - [ ] Click the `Publish release` button on the release page, creating the tag.
       **Important: Must not be done before all the PRs, including changelog cleanup and date, are merged.**
 - [ ] Wait for the CI runs on the tag itself.
 
 ### Upload Release Artifacts and Publish Binaries
 - [ ] Switch to the tag that archives have to be created for.
-- [ ] Create the `prerelease.txt` file: (`echo -n > prerelease.txt`).
-- [ ] Run `scripts/create_source_tarball.sh` while being on the tag to create the source tarball. This will create the tarball in a directory called `upload`.
-- [ ] Take the tarball from the upload directory (its name should be `solidity_x.x.x.tar.gz`, otherwise `prerelease.txt` was missing in the step before) and upload the source tarball to the release page.
-- [ ] Take the `github-binaries.tar` tarball from `c_release_binaries` run of the tagged commit in circle-ci and add all binaries from it to the release page.
+- [ ] Create the `prerelease.txt` file: `echo -n > prerelease.txt`.
+- [ ] Run `scripts/create_source_tarball.sh` to create the source tarball. This will create the tarball in a directory called `upload`.
+- [ ] Take the tarball from the upload directory (its name should be `solidity_x.x.x.tar.gz`, otherwise `prerelease.txt` was missing in the step before) and upload it to the release page.
+- [ ] Take the `github-binaries.tar` tarball from `c_release_binaries` run of the tagged commit on Circle CI and add all binaries from it to the release page.
       Make sure it contains four binaries: `solc-windows.exe`, `solc-macos`, `solc-static-linux` and `soljson.js`.
-- [ ] Take the `solc-bin-binaries.tar` tarball from `c_release_binaries` run of the tagged commit in circle-ci and add all binaries from it to solc-bin.
+- [ ] Take the `solc-bin-binaries.tar` tarball from `c_release_binaries` run of the tagged commit on Circle CI and add all binaries from it to solc-bin.
 - [ ] Run `npm install` if you've got a clean checkout of the solc-bin repo.
 - [ ] Run `npm run update -- --reuse-hashes` in `solc-bin` and verify that the script has updated `list.js`, `list.txt` and `list.json` files correctly and that symlinks to the new release have been added in `solc-bin/wasm/` and `solc-bin/emscripten-wasm32/`.
 - [ ] Create a pull request in solc-bin and merge.
@@ -101,7 +103,7 @@ At least a day before the release:
 - [ ] Increment the version number, create a pull request for that, merge it after tests succeeded.
 - [ ] Create a tag using `git tag --annotate v$VERSION` and push it with `git push --tags`.
 - [ ] Wait for the CI runs on the tag itself.
-- [ ] Take the `solc-x.y.z.tgz` artifact from `build-package` run on the tagged commit in circle-ci.
+- [ ] Take the `solc-x.y.z.tgz` artifact from `build-package` run on the tagged commit on Circle CI.
       Inspect the tarball to ensure that it contains an up-to-date compiler binary (`soljson.js`).
 - [ ] Run `npm publish solc-x.y.z.tgz` to publish the newly created tarball.
 
@@ -116,9 +118,37 @@ At least a day before the release:
 - [ ] Announce on [Fosstodon](https://fosstodon.org/@solidity/), including links to the release and the blog post.
 - [ ] Share the announcement on Reddit in [`/r/ethdev`](https://reddit.com/r/ethdev/), cross-posted to [`/r/ethereum`](https://reddit.com/r/ethereum/).
 - [ ] Share the announcement on the [Solidity forum](https://forum.soliditylang.org) in the `Announcements` category.
-- [ ] Share the announcement on [Project Updates](https://discord.com/channels/420394352083337236/798974456704925696)
-- [ ] Share the announcement on [`#solidity` channel on Matrix](https://matrix.to/#/#ethereum_solidity:gitter.im)
-- [ ] Share the announcement on [`#solc-tooling`](https://matrix.to/#/#solc-tooling:matrix.org)
+- [ ] Share the announcement on [`#solidity` channel on Matrix](https://matrix.to/#/#ethereum_solidity:gitter.im).
+- [ ] Share the announcement on [`#solc-tooling`](https://matrix.to/#/#solc-tooling:matrix.org).
 - [ ] If anything went wrong this time, mention it in [Learning from Past Releases](https://notes.argot.org/@solidity-release-mistakes).
 - [ ] Bump vendored dependencies.
+- [ ] Lean back, wait for bug reports and repeat from step 1 :).
+
+## Prerelease
+- [ ] Check that all tests on the latest commit on `develop` or `breaking` branch (whichever was chosen for the prerelease) are green.
+- [ ] Create a [release on GitHub](https://github.com/argotorg/solidity/releases/new).
+      - Set the target to the `develop` or `breaking` branch and the tag to the new version with a prerelease suffix, e.g. `v0.8.5-pre.6`.
+          Version matches the next release (`develop`) or the next breaking release (`breaking`).
+          The prerelease number in the suffix is 1-based, sequential, resets after a full release and is counted separately for `develop` and `breaking`.
+      - Include the following warning: `**The release is still in progress. You may see broken links and binaries may not yet be available from all sources.**`.
+      - Include the current, incomplete changelog.
+      - Check the `Set as a pre-release` box.
+      - Click the `Publish release` button on the release page, creating the tag.
+- [ ] Wait for the CI runs on the tag itself.
+- [ ] Switch to the tag that archives have to be created for.
+- [ ] Create the `prerelease.txt` file: `scripts/prerelease_suffix.sh pre "$(git describe --tags --exact-match)" > prerelease.txt`.
+- [ ] Run `scripts/create_source_tarball.sh` to create the source tarball. This will create the tarball in a directory called `upload`.
+- [ ] Take the tarball from the upload directory (its name should be `solidity_x.x.x-pre.N.tar.gz`, if `prerelease.txt` was created correctly) and upload it to the release page.
+- [ ] Take the `github-binaries.tar` tarball from `c_release_binaries` run of the tagged commit on Circle CI and add all binaries from it to the release page.
+      Make sure it contains four binaries: `solc-windows.exe`, `solc-macos`, `solc-static-linux` and `soljson.js`.
+- [ ] Take the `solc-bin-binaries.tar` tarball from `c_release_binaries` run of the tagged commit on Circle CI and add all binaries from it to solc-bin.
+- [ ] Run `npm install` if you've got a clean checkout of the solc-bin repo.
+- [ ] Run `npm run update -- --reuse-hashes` in `solc-bin` and verify that the script has updated `list.js`, `list.txt` and `list.json` files correctly and that symlinks to the new release have been added in `solc-bin/wasm/` and `solc-bin/emscripten-wasm32/`.
+- [ ] Create a pull request in solc-bin and merge.
+- [ ] Remove "still in progress" warning from the [release notes](https://github.com/argotorg/solidity/releases).
+- [ ] Mention it on [Twitter](https://twitter.com/solidity_lang).
+- [ ] Mention it on [Fosstodon](https://fosstodon.org/@solidity/).
+- [ ] Mention it on [`#solidity` channel on Matrix](https://matrix.to/#/#ethereum_solidity:gitter.im).
+- [ ] Mention it on [`#solc-tooling`](https://matrix.to/#/#solc-tooling:matrix.org).
+- [ ] If anything went wrong this time, mention it in [Learning from Past Releases](https://notes.argot.org/@solidity-release-mistakes).
 - [ ] Lean back, wait for bug reports and repeat from step 1 :).
