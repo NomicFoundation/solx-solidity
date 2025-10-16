@@ -628,9 +628,9 @@ def Sol_ExtCallOp : Sol_Op<"ext_call", [CallOpInterface]> {
   }];
 }
 
-def Sol_ReturnOp : Sol_Op<"return", [Pure,
-                                     ParentOneOf<["FuncOp", "ModifierOp"]>,
-                                     ReturnLike, Terminator]> {
+def Sol_ReturnOp : Sol_Op<"return", [Pure, Terminator]> {
+  // TODO: Verifier should check if a func op is an ancestor. ParentOneOf
+  // doesn't work for this.
   let arguments = (ins Variadic<AnyType>:$operands);
 
   let builders = [OpBuilder<(ins), [{

@@ -44,6 +44,7 @@
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Location.h"
 #include "mlir/IR/MLIRContext.h"
+#include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/OperationSupport.h"
 #include "mlir/IR/TypeRange.h"
 #include "mlir/IR/Value.h"
@@ -54,6 +55,7 @@
 #include "llvm-c/Core.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/SaveAndRestore.h"
 #include "llvm/Support/ThreadPool.h"
 #include <mutex>
@@ -1246,18 +1248,18 @@ void SolidityToMLIRPass::lower(Return const &ret) {
        ret.annotation().function->returnParameters())
     fnResTys.push_back(retParam->type());
 
-  // The function generator emits `ReturnOp` for empty result
-  if (fnResTys.empty())
-    return;
-
   Expression const *astExpr = ret.expression();
-  assert(astExpr);
-  mlir::SmallVector<mlir::Value> exprs = genRValExprs(*astExpr);
-  mlir::SmallVector<mlir::Value> castedExprs;
-  for (auto [expr, dstTy] : llvm::zip(exprs, fnResTys)) {
-    castedExprs.push_back(genCast(expr, getType(dstTy)));
+  if (astExpr) {
+    mlir::SmallVector<mlir::Value> exprs = genRValExprs(*astExpr);
+    mlir::SmallVector<mlir::Value> castedExprs;
+    for (auto [expr, dstTy] : llvm::zip(exprs, fnResTys)) {
+      castedExprs.push_back(genCast(expr, getType(dstTy)));
+    }
+    b.create<mlir::sol::ReturnOp>(getLoc(ret), castedExprs);
+  } else {
+    b.create<mlir::sol::ReturnOp>(getLoc(ret));
   }
-  b.create<mlir::sol::ReturnOp>(getLoc(ret), castedExprs);
+  b.setInsertionPointToStart(b.createBlock(b.getBlock()->getParent()));
 }
 
 void SolidityToMLIRPass::lower(IfStatement const &ifStmt) {
@@ -1673,9 +1675,18 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   // Lower the body.
   lower(fn.body());
 
-  // Generate empty return.
+  // Return stmt lowering generates an empty block that might be empty at this
+  // stage.
   if (outTys.empty())
     b.create<mlir::sol::ReturnOp>(getLoc(fn));
+  mlir::Block *currBlk = b.getBlock();
+  if (currBlk->empty()) {
+    op.getBody().back().erase();
+  } else if (!currBlk->back().hasTrait<mlir::OpTrait::IsTerminator>()) {
+    // FIXME: Generate "default" return statement for non-empty return types
+    // (zero/zero-pointer).
+    llvm_unreachable("NYI");
+  }
 
   b.setInsertionPointAfter(op);
   return op;
