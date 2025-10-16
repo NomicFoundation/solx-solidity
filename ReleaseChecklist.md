@@ -127,13 +127,13 @@ At least a day before the release:
 ## Prerelease
 - [ ] Check that all tests on the latest commit on `develop` or `breaking` branch (whichever was chosen for the prerelease) are green.
 - [ ] Create a [release on GitHub](https://github.com/argotorg/solidity/releases/new).
-      - Set the target to the `develop` or `breaking` branch and the tag to the new version with a prerelease suffix, e.g. `v0.8.5-pre.6`.
-          Version matches the next release (`develop`) or the next breaking release (`breaking`).
-          The prerelease number in the suffix is 1-based, sequential, resets after a full release and is counted separately for `develop` and `breaking`.
-      - Include the following warning: `**The release is still in progress. You may see broken links and binaries may not yet be available from all sources.**`.
-      - Include the current, incomplete changelog.
-      - Check the `Set as a pre-release` box.
-      - Click the `Publish release` button on the release page, creating the tag.
+    - Set the target to the `develop` or `breaking` branch and the tag to the new version with a prerelease suffix, e.g. `v0.8.5-pre.6`.
+        Version matches the next release (`develop`) or the next breaking release (`breaking`).
+        The prerelease number in the suffix is 1-based, sequential, resets after a full release and is counted separately for `develop` and `breaking`.
+    - Include the following warning: `**The release is still in progress. You may see broken links and binaries may not yet be available from all sources.**`.
+    - Include the current, incomplete changelog.
+    - Check the `Set as a pre-release` box.
+    - Click the `Publish release` button on the release page, creating the tag.
 - [ ] Wait for the CI runs on the tag itself.
 - [ ] Switch to the tag that archives have to be created for.
 - [ ] Create the `prerelease.txt` file: `scripts/prerelease_suffix.sh pre "$(git describe --tags --exact-match)" > prerelease.txt`.
