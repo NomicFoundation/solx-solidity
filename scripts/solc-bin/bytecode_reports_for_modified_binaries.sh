@@ -124,7 +124,12 @@ modified_release_versions=$(
     uniq
 )
 echo "Release versions modified in the commit range:"
-echo "$modified_release_versions"
+if [[ $modified_release_versions != "" ]]; then
+    echo "$modified_release_versions"
+else
+    echo "No modified binaries found."
+    exit 0
+fi
 
 # NOTE: We want perform the check when the soljson-* files in bin/ and wasm/ are modified too
 # because in that case the symlinks in emscripten-wasm32/ and emscripten-asmjs/ might remain
