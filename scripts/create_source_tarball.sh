@@ -45,7 +45,7 @@ SOLDIR="$SOLDIR" git submodule foreach 'git checkout-index --all --prefix="${SOL
 
 # Include the commit hash and prerelease suffix in the tarball
 echo "$commit_hash" > "${SOLDIR}/commit_hash.txt"
-[[ -e prerelease.txt && ! -s prerelease.txt ]] && cp prerelease.txt "${SOLDIR}/"
+[[ -e prerelease.txt ]] && cp prerelease.txt "${SOLDIR}/"
 
 mkdir -p "$REPO_ROOT/upload"
 tar \
