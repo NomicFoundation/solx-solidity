@@ -181,6 +181,8 @@ u256 EVMInstructionInterpreter::eval(
 			return v;
 		}
 	}
+	case Instruction::CLZ:
+		return arg[0] == 0 ? 256 : 255 - msb(arg[0]);
 	case Instruction::ADDMOD:
 		return arg[2] == 0 ? 0 : u256((u512(arg[0]) + u512(arg[1])) % arg[2]);
 	case Instruction::MULMOD:

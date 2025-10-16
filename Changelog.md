@@ -1,6 +1,7 @@
 ### 0.8.31 (unreleased)
 
 Language Features:
+* Yul: Introduce builtin `clz(x)` for counting the number of leading zero bits in a 256-bit word.
 
 Compiler Features:
 * ethdebug: Experimental support for instructions and source locations under EOF.
