@@ -24,8 +24,7 @@ using namespace solidity::yul::ssa;
 
 ControlFlowLiveness::ControlFlowLiveness(ControlFlow const& _controlFlow):
 	controlFlow(_controlFlow),
-	mainLiveness(std::make_unique<LivenessAnalysis>(*_controlFlow.mainGraph)),
-	functionLiveness(_controlFlow.functionGraphs | ranges::views::transform([](auto const& _cfg) { return std::make_unique<LivenessAnalysis>(*_cfg); }) | ranges::to<std::vector>)
+	cfgLiveness(_controlFlow.functionGraphs | ranges::views::transform([](auto const& _cfg) { return std::make_unique<LivenessAnalysis>(*_cfg); }) | ranges::to<std::vector>)
 { }
 
 std::string ControlFlowLiveness::toDot() const
