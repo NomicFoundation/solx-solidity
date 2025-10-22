@@ -6,7 +6,7 @@ REPO_ROOT="$(dirname "$0")/.."
 # shellcheck source=scripts/common.sh
 source "${REPO_ROOT}/scripts/common.sh"
 
-image="ethereum/solc"
+image="ghcr.io/argotorg/solc"
 
 if (( $# < 1 || $# > 3 )); then
     fail "Usage: $0 <tag/branch> [repo URL] [--no-push]"
@@ -22,7 +22,11 @@ else
     publish=true
 fi
 
-#docker login
+# NOTE: Login to GHCR before running this script with a PAT:
+# echo $GHCR_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
+#
+# Create a classic PAT with write:packages scope only visiting the following url:
+# https://github.com/settings/tokens/new?scopes=write:packages
 
 DIR=$(mktemp -d)
 (

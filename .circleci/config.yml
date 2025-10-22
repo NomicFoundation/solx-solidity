@@ -9,25 +9,25 @@ version: 2.1
 parameters:
   ubuntu-2004-docker-image:
     type: string
-    # solbuildpackpusher/solidity-buildpack-deps:ubuntu2004-26
-    default: "solbuildpackpusher/solidity-buildpack-deps@sha256:1f387a77be889f65a2a25986a5c5eccc88cec23fabe6aeaf351790751145c81e"
+    # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu2004-26
+    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:1f387a77be889f65a2a25986a5c5eccc88cec23fabe6aeaf351790751145c81e"
   ubuntu-2404-docker-image:
     type: string
-    # solbuildpackpusher/solidity-buildpack-deps:ubuntu2404-6
-    default: "solbuildpackpusher/solidity-buildpack-deps@sha256:c0412c53e59ce0c96bde4c08e7332ea12e4cadba9bbac829621947897fa21272"
+    # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu2404-6
+    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:c0412c53e59ce0c96bde4c08e7332ea12e4cadba9bbac829621947897fa21272"
   ubuntu-2404-clang-docker-image:
     type: string
-    # solbuildpackpusher/solidity-buildpack-deps:ubuntu2404.clang-7
-    default: "solbuildpackpusher/solidity-buildpack-deps@sha256:7466ed23590cf14e60da884894723bcdab064742f017dcfcce015999b4f9143b"
+    # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu2404.clang-7
+    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:7466ed23590cf14e60da884894723bcdab064742f017dcfcce015999b4f9143b"
   ubuntu-clang-ossfuzz-docker-image:
     type: string
-    # solbuildpackpusher/solidity-buildpack-deps:ubuntu.clang.ossfuzz-12
-    default: "solbuildpackpusher/solidity-buildpack-deps@sha256:c7088af5082bf764244a6251ecf3dd29d280d2cd2cd071f011f7f32e0326f426"
+    # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu.clang.ossfuzz-12
+    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:c7088af5082bf764244a6251ecf3dd29d280d2cd2cd071f011f7f32e0326f426"
   emscripten-docker-image:
     type: string
     # NOTE: Please remember to update the `scripts/build_emscripten.sh` whenever the hash of this image changes.
-    # solbuildpackpusher/solidity-buildpack-deps:emscripten-21
-    default: "solbuildpackpusher/solidity-buildpack-deps@sha256:fc53d68a4680ffa7d5f70164e13a903478964f15bcc07434d74833a05f4fbc19"
+    # ghcr.io/argotorg/solidity-buildpack-deps:emscripten-21
+    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:fc53d68a4680ffa7d5f70164e13a903478964f15bcc07434d74833a05f4fbc19"
   evm-version:
     type: string
     default: prague
@@ -1866,7 +1866,7 @@ jobs:
           command: scripts/docker_deploy_manual.sh develop "file://$PWD" --no-push
       - run:
           name: Smoke test
-          command: docker run --pull=never ethereum/solc:build-alpine --version
+          command: docker run --pull=never ghcr.io/argotorg/solc:build-alpine --version
       - matrix_notify_failure_unless_pr
 
 workflows:

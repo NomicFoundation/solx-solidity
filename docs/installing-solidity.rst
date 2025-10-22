@@ -71,7 +71,7 @@ Please refer to the solc-js repository for instructions.
 Docker
 ======
 
-Docker images of Solidity builds are available using the ``solc`` image from the ``ethereum`` organization.
+Docker images of Solidity builds are available using the `solc <https://github.com/argotorg/solidity/pkgs/container/solc>`_ image from the argotorg organization on ghcr.io.
 Use the ``stable`` tag for the latest released version, and ``nightly`` for potentially unstable changes in the ``develop`` branch.
 
 The Docker image runs the compiler executable so that you can pass all compiler arguments to it.
@@ -80,11 +80,11 @@ and runs it in a new container, passing the ``--help`` argument.
 
 .. code-block:: bash
 
-    docker run ethereum/solc:stable --help
+    docker run ghcr.io/argotorg/solc:stable --help
 
 .. note::
 
-    Specific compiler versions are supported as the Docker image tag such as ``ethereum/solc:0.8.23``.
+    Specific compiler versions are supported as the Docker image tag such as ``ghcr.io/argotorg/solc:0.8.23``.
     We will be passing the ``stable`` tag here instead of specific version tag to ensure that users get
     the latest version by default and avoid the issue of an out-of-date version.
 
@@ -95,7 +95,7 @@ local folder for input and output, and specify the contract to compile. For exam
 
     docker run \
         --volume "/tmp/some/local/path/:/sources/" \
-        ethereum/solc:stable \
+        ghcr.io/argotorg/solc:stable \
             /sources/Contract.sol \
             --abi \
             --bin \
@@ -108,7 +108,7 @@ self-contained (i.e. it does not refer to any external files that would have to 
 
 .. code-block:: bash
 
-    docker run ethereum/solc:stable --standard-json < input.json > output.json
+    docker run ghcr.io/argotorg/solc:stable --standard-json < input.json > output.json
 
 Linux Packages
 ==============
