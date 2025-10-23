@@ -314,6 +314,37 @@ struct ExtCodeSizeOpLowering : public OpRewritePattern<sol::ExtCodeSizeOp> {
   }
 };
 
+struct CreateOpLowering : public OpRewritePattern<sol::CreateOp> {
+  using OpRewritePattern<sol::CreateOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::CreateOp op,
+                                PatternRewriter &r) const override {
+    evm::Builder evmB(r, op->getLoc());
+    Value addr = evmB.genHeapPtr(op.getAddr());
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(
+        op, llvm::Intrinsic::evm_create,
+        /*resTy=*/r.getIntegerType(256),
+        /*ins=*/ValueRange{op.getVal(), addr, op.getSize()}, "evm.create");
+    return success();
+  }
+};
+
+struct Create2OpLowering : public OpRewritePattern<sol::Create2Op> {
+  using OpRewritePattern<sol::Create2Op>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::Create2Op op,
+                                PatternRewriter &r) const override {
+    evm::Builder evmB(r, op->getLoc());
+    Value addr = evmB.genHeapPtr(op.getAddr());
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(
+        op, llvm::Intrinsic::evm_create2,
+        /*resTy=*/r.getIntegerType(256),
+        /*ins=*/ValueRange{op.getVal(), addr, op.getSize(), op.getSalt()},
+        "evm.create2");
+    return success();
+  }
+};
+
 struct MLoadOpLowering : public OpRewritePattern<sol::MLoadOp> {
   using OpRewritePattern<sol::MLoadOp>::OpRewritePattern;
 
@@ -667,6 +698,8 @@ void evm::populateYulPats(RewritePatternSet &pats) {
       CodeSizeOpLowering,
       CodeCopyOpLowering,
       ExtCodeSizeOpLowering,
+      CreateOpLowering,
+      Create2OpLowering,
       MLoadOpLowering,
       LoadImmutableOpLowering,
       LoadImmutable2OpLowering,

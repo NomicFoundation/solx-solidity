@@ -31,7 +31,6 @@
 #include "llvm-c/Transforms/PassBuilder.h"
 #include "llvm-c/Types.h"
 #include "llvm/ADT/SmallString.h"
-#include "llvm/ADT/StringExtras.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/MC/TargetRegistry.h"
@@ -245,95 +244,46 @@ static LLVMMemoryBufferRef genObj(llvm::Module &mod,
   return obj;
 }
 
-solidity::mlirgen::Bytecode solidity::mlirgen::genEvmBytecode(
-    solidity::mlirgen::EvmObj const &obj,
-    std::map<std::string, util::h160> const &libAddrMap) {
-  LLVMMemoryBufferRef objs[2];
-  const char *objIds[2];
-  char *errMsg = nullptr;
+evm::UnlinkedObj solidity::mlirgen::genEvmObj(mlir::ModuleOp mod, char optLevel,
+                                              llvm::TargetMachine &tgtMach) {
+  mlir::PassManager passMgr(mod.getContext());
+  llvm::LLVMContext llvmCtx;
 
-  objs[0] = obj.creationPart;
-  objIds[0] = obj.creationId.data();
-  objs[1] = obj.runtimePart;
-  objIds[1] = obj.runtimeId.data();
+  // Convert the module's ir to llvm dialect.
+  // FIXME: enableDI UNREACHABLE executed at
+  // llvm/lib/Target/EVM/MCTargetDesc/EVMAsmBackend.cpp:112!
+  addConversionPasses(passMgr, Target::EVM, /*enableDI=*/false);
+  if (mlir::failed(passMgr.run(mod)))
+    llvm_unreachable("Conversion to llvm dialect failed");
 
-  LLVMMemoryBufferRef creationAssembled, runtimeAssembled;
-  if (LLVMAssembleEVM(/*codeSegment=*/0, /*inBuffers=*/objs,
-                      /*inBuffersIDs=*/objIds, /*inBuffersNum=*/2,
-                      /*outBuffer=*/&creationAssembled,
-                      /*errorMessage=*/&errMsg))
-    llvm_unreachable(errMsg);
-  if (LLVMAssembleEVM(/*codeSegment=*/1, /*inBuffers=*/&objs[1],
-                      /*inBuffersIDs=*/&objIds[1], /*inBuffersNum=*/1,
-                      /*outBuffer=*/&runtimeAssembled,
-                      /*errorMessage=*/&errMsg))
-    llvm_unreachable(errMsg);
+  auto creationMod = mod;
+  mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
+  assert(runtimeMod);
 
-  // Convert libAddrMap for lld-c.
-  auto numLibs = libAddrMap.size();
-  auto **libNames = new const char *[numLibs];
-  auto *libAddrs = new char[numLibs][LINKER_SYMBOL_SIZE];
-  int64_t i = 0;
-  for (const auto &[name, addr] : libAddrMap) {
-    libNames[i] = name.c_str();
-    std::memcpy(libAddrs[i], addr.data(), LINKER_SYMBOL_SIZE);
-    ++i;
-  }
+  // Lower runtime object. This is a dependency for lowering the setimmutable
+  // ops in the creation object.
+  std::unique_ptr<llvm::Module> runtimeLlvmMod =
+      genLLVMIR(runtimeMod, Target::EVM, optLevel, tgtMach, llvmCtx);
+  LLVMMemoryBufferRef runtimeObj = genObj(*runtimeLlvmMod, tgtMach);
 
-  // Generate bytecode.
-  LLVMMemoryBufferRef creationBytecode, runtimeBytecode;
+  assert(creationMod.getName() && runtimeMod.getName());
 
-  if (LLVMLinkEVM(/*inBuffer=*/creationAssembled,
-                  /*outBuffer=*/&creationBytecode, libNames, libAddrs, numLibs,
-                  &errMsg))
-    llvm_unreachable(errMsg);
-  if (LLVMLinkEVM(/*inBuffer=*/runtimeAssembled, /*outBuffer=*/&runtimeBytecode,
-                  libNames, libAddrs, numLibs, &errMsg))
-    llvm_unreachable(errMsg);
+  // Lower setimmutable ops in the creation object.
+  char **immIDs = nullptr;
+  uint64_t *immOffsets = nullptr;
+  uint64_t immCount = LLVMGetImmutablesEVM(runtimeObj, &immIDs, &immOffsets);
+  llvm::StringMap<mlir::SmallVector<uint64_t>> immMap;
+  for (uint64_t i = 0; i < immCount; ++i)
+    immMap[immIDs[i]].push_back(immOffsets[i]);
+  evm::lowerSetImmutables(creationMod, immMap);
 
-  LLVMDisposeMemoryBuffer(creationAssembled);
-  LLVMDisposeMemoryBuffer(runtimeAssembled);
+  // Lower the creation object.
+  std::unique_ptr<llvm::Module> creationLlvmMod =
+      genLLVMIR(creationMod, Target::EVM, optLevel, tgtMach, llvmCtx);
+  LLVMMemoryBufferRef creationObj = genObj(*creationLlvmMod, tgtMach);
 
-  solidity::mlirgen::Bytecode ret;
-  ret.creation = llvm::unwrap(creationBytecode)->getBuffer();
-  ret.runtime = llvm::unwrap(runtimeBytecode)->getBuffer();
-
-  LLVMDisposeMemoryBuffer(creationBytecode);
-  LLVMDisposeMemoryBuffer(runtimeBytecode);
-
-  return ret;
-}
-
-solidity::mlirgen::Bytecode
-solidity::mlirgen::genEraVMBytecode(llvm::Module &llvmMod,
-                                    llvm::TargetMachine &tgtMach) {
-  llvm::legacy::PassManager llvmPassMgr;
-  llvm::SmallString<0> outStreamData;
-  llvm::raw_svector_ostream outStream(outStreamData);
-  tgtMach.addPassesToEmitFile(llvmPassMgr, outStream,
-                              /*DwoOut=*/nullptr,
-                              llvm::CodeGenFileType::ObjectFile);
-  llvmPassMgr.run(llvmMod);
-
-  LLVMMemoryBufferRef obj = LLVMCreateMemoryBufferWithMemoryRange(
-      outStream.str().data(), outStream.str().size(), "Input",
-      /*RequiresNullTerminator=*/0);
-  LLVMMemoryBufferRef bytecode = nullptr;
-  char *errMsg = nullptr;
-  if (LLVMLinkEraVM(obj, &bytecode, /*linkerSymbolNames=*/nullptr,
-                    /*linkerSymbolValues=*/nullptr, /*numLinkerSymbols=*/0,
-                    /*factoryDependencySymbolNames=*/nullptr,
-                    /*factoryDependencySymbolValues=*/nullptr,
-                    /*numFactoryDependencySymbols=*/0, &errMsg))
-    llvm_unreachable(errMsg);
-
-  solidity::mlirgen::Bytecode ret;
-  ret.creation = llvm::unwrap(bytecode)->getBuffer();
-  ret.runtime = ret.creation;
-
-  LLVMDisposeMemoryBuffer(obj);
-  LLVMDisposeMemoryBuffer(bytecode);
-  return ret;
+  return {creationObj, runtimeObj, creationMod.getName()->str(),
+          runtimeMod.getName()->str()};
 }
 
 std::string solidity::mlirgen::printJob(JobSpec const &job,
@@ -444,45 +394,34 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
   llvm_unreachable("Undefined action/target");
 }
 
-solidity::mlirgen::EvmObj
-solidity::mlirgen::genEvmObj(mlir::ModuleOp mod, char optLevel,
-                             llvm::TargetMachine &tgtMach) {
-  mlir::PassManager passMgr(mod.getContext());
-  llvm::LLVMContext llvmCtx;
+solidity::mlirgen::Bytecode
+solidity::mlirgen::genEraVMBytecode(llvm::Module &llvmMod,
+                                    llvm::TargetMachine &tgtMach) {
+  llvm::legacy::PassManager llvmPassMgr;
+  llvm::SmallString<0> outStreamData;
+  llvm::raw_svector_ostream outStream(outStreamData);
+  tgtMach.addPassesToEmitFile(llvmPassMgr, outStream,
+                              /*DwoOut=*/nullptr,
+                              llvm::CodeGenFileType::ObjectFile);
+  llvmPassMgr.run(llvmMod);
 
-  // Convert the module's ir to llvm dialect.
-  // FIXME: enableDI UNREACHABLE executed at
-  // llvm/lib/Target/EVM/MCTargetDesc/EVMAsmBackend.cpp:112!
-  addConversionPasses(passMgr, Target::EVM, /*enableDI=*/false);
-  if (mlir::failed(passMgr.run(mod)))
-    llvm_unreachable("Conversion to llvm dialect failed");
+  LLVMMemoryBufferRef obj = LLVMCreateMemoryBufferWithMemoryRange(
+      outStream.str().data(), outStream.str().size(), "Input",
+      /*RequiresNullTerminator=*/0);
+  LLVMMemoryBufferRef bytecode = nullptr;
+  char *errMsg = nullptr;
+  if (LLVMLinkEraVM(obj, &bytecode, /*linkerSymbolNames=*/nullptr,
+                    /*linkerSymbolValues=*/nullptr, /*numLinkerSymbols=*/0,
+                    /*factoryDependencySymbolNames=*/nullptr,
+                    /*factoryDependencySymbolValues=*/nullptr,
+                    /*numFactoryDependencySymbols=*/0, &errMsg))
+    llvm_unreachable(errMsg);
 
-  auto creationMod = mod;
-  mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
-  assert(runtimeMod);
+  solidity::mlirgen::Bytecode ret;
+  ret.creation = llvm::unwrap(bytecode)->getBuffer();
+  ret.runtime = ret.creation;
 
-  // Lower runtime object. This is a dependency for lowering the setimmutable
-  // ops in the creation object.
-  std::unique_ptr<llvm::Module> runtimeLlvmMod =
-      genLLVMIR(runtimeMod, Target::EVM, optLevel, tgtMach, llvmCtx);
-  LLVMMemoryBufferRef runtimeObj = genObj(*runtimeLlvmMod, tgtMach);
-
-  assert(creationMod.getName() && runtimeMod.getName());
-
-  // Lower setimmutable ops in the creation object.
-  char **immIDs = nullptr;
-  uint64_t *immOffsets = nullptr;
-  uint64_t immCount = LLVMGetImmutablesEVM(runtimeObj, &immIDs, &immOffsets);
-  llvm::StringMap<mlir::SmallVector<uint64_t>> immMap;
-  for (uint64_t i = 0; i < immCount; ++i)
-    immMap[immIDs[i]].push_back(immOffsets[i]);
-  evm::lowerSetImmutables(creationMod, immMap);
-
-  // Lower the creation object.
-  std::unique_ptr<llvm::Module> creationLlvmMod =
-      genLLVMIR(creationMod, Target::EVM, optLevel, tgtMach, llvmCtx);
-  LLVMMemoryBufferRef creationObj = genObj(*creationLlvmMod, tgtMach);
-
-  return {creationObj, runtimeObj, creationMod.getName()->str(),
-          runtimeMod.getName()->str()};
+  LLVMDisposeMemoryBuffer(obj);
+  LLVMDisposeMemoryBuffer(bytecode);
+  return ret;
 }

@@ -22,7 +22,7 @@ contract C {
 // CHECK-NEXT:     sol.func @f_23(%arg0: ui256 loc({{.*}}:3:13)) -> ui256 attributes {orig_fn_type = (ui256) -> ui256, selector = -1277270901 : i32, state_mutability = #Payable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc3)
-// CHECK-NEXT:       %1 = sol.this loc(#loc4)
+// CHECK-NEXT:       %1 = sol.this : ui256 loc(#loc4)
 // CHECK-NEXT:       %2 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc5)
 // CHECK-NEXT:       %3 = sol.gas loc(#loc4)
 // CHECK-NEXT:       %4 = sol.conv_cast %3 : i256 -> ui256 loc(#loc4)
@@ -32,7 +32,7 @@ contract C {
 // CHECK-NEXT:       %c7_ui8 = sol.constant 7 : ui8 loc(#loc7)
 // CHECK-NEXT:       %6 = sol.cast %c7_ui8 : ui8 to ui256 loc(#loc7)
 // CHECK-NEXT:       %7 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc8)
-// CHECK-NEXT:       %8 = sol.this loc(#loc9)
+// CHECK-NEXT:       %8 = sol.this : ui256 loc(#loc9)
 // CHECK-NEXT:       %9 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc10)
 // CHECK-NEXT:       %10 = sol.conv_cast %7 : ui256 -> ui256 loc(#loc9)
 // CHECK-NEXT:       %status_0, %11 = sol.ext_call "f_23"(%9) at %8 gas %10 value %6 {callee_type = (ui256) -> ui256, selector = -1277270901 : i32} : (ui256) -> (i1, ui256) loc(#loc9)

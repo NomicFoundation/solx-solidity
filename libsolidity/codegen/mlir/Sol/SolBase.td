@@ -53,6 +53,7 @@ class Sol_Type<string name, string typeMnemonic, list<Trait> traits = []> :
 def I256 : I<256>;
 def UI256 : UI<256>;
 def Sol_Int : AnyTypeOf<[I1, AnySignedInteger, AnyUnsignedInteger]>;
+def Sol_AddressType : UI<256>; // FIXME
 
 def Sol_BytesType : Sol_Type<"Bytes", "bytes"> {
   let parameters = (ins "uint32_t":$size);

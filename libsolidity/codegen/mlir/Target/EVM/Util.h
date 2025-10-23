@@ -21,9 +21,12 @@
 
 #pragma once
 
+#include "libsolidity/ast/AST.h"
+#include "libsolidity/codegen/mlir/Interface.h"
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolutil/ErrorCodes.h"
 #include "mlir/IR/Builders.h"
+#include "llvm-c/Core.h"
 
 namespace evm {
 
@@ -72,6 +75,60 @@ void lowerSetImmutables(mlir::ModuleOp mod,
 
 /// Removes llvm.setimmutable ops.
 void removeSetImmutables(mlir::ModuleOp mod);
+
+/// The unlinked elf objects.
+struct UnlinkedObj {
+  LLVMMemoryBufferRef creationPart;
+  LLVMMemoryBufferRef runtimePart;
+  std::string creationId;
+  std::string runtimeId;
+};
+
+/// This class creates and caches "assembled" objects ("assembled" here means
+/// linked with dependendent bytecodes) and uses it to generate the bytecode. It
+/// internally uses evm specific lld functions.
+struct BytecodeGen {
+  using UnlinkedMap =
+      std::map<solidity::frontend::ContractDefinition const *, UnlinkedObj,
+               solidity::frontend::ASTNode::CompareByID>;
+  using AssembledMap =
+      std::map<solidity::frontend::ContractDefinition const *,
+               LLVMMemoryBufferRef, solidity::frontend::ASTNode::CompareByID>;
+
+  /// Maps contracts to their unlinked objects.
+  UnlinkedMap const &unlinkedMap;
+  /// Maps contracts to their assembled objects.
+  AssembledMap creationAssembledMap;
+  AssembledMap runtimeAssembledMap;
+  /// Maps libraries to their address.
+  std::map<std::string, solidity::util::h160> const &libAddrMap;
+
+  BytecodeGen(UnlinkedMap const &objMap,
+              std::map<std::string, solidity::util::h160> const &libAddrMap)
+      : unlinkedMap(objMap), libAddrMap(libAddrMap) {}
+
+  ~BytecodeGen() {
+    // Dispose all LLVM memory buffers
+    for (auto &i : creationAssembledMap)
+      LLVMDisposeMemoryBuffer(i.second);
+    for (auto &i : runtimeAssembledMap)
+      LLVMDisposeMemoryBuffer(i.second);
+  }
+
+  /// Returns the bytecode of contract.
+  solidity::mlirgen::Bytecode
+  genEvmBytecode(solidity::frontend::ContractDefinition const *cont);
+
+  /// Returns the assembled object of the contract. Also caches the assembled
+  /// dependent objects.
+  LLVMMemoryBufferRef
+  genAssembledObj(solidity::frontend::ContractDefinition const *cont,
+                  bool isCreationRequested);
+
+  /// Return true if the ast node representation is a creation bytecode
+  /// dependency.
+  bool isCreationDep(solidity::frontend::ASTNode const *ast);
+};
 
 /// IR Builder for EVM specific lowering.
 class Builder {

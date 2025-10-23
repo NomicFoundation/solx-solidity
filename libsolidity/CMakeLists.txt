@@ -229,6 +229,7 @@ set(mlir_sources
 	codegen/mlir/YulToMLIR.cpp
 	codegen/mlir/SolToStandardPass.cpp
 	codegen/mlir/Target/EVM/Util.cpp
+	codegen/mlir/Target/EVM/BytecodeGen.cpp
 	codegen/mlir/Target/EVM/TypeConverter.cpp
 	codegen/mlir/Target/EVM/SolToStandard.cpp
 	codegen/mlir/Target/EVM/YulToStandard.cpp

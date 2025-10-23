@@ -269,7 +269,7 @@ def Sol_LoadImmutableOp : Sol_Op<"load_immutable", [Pure]> {
 
 def Sol_LibAddrOp : Sol_Op<"lib_addr", [Pure]> {
   let arguments = (ins StrAttr:$name);
-  let results = (outs UI256:$val); // TODO: s/UI256/address
+  let results = (outs Sol_AddressType:$val);
 
   let assemblyFormat = "$name attr-dict `:` type($val)";
 }
@@ -589,15 +589,14 @@ def CallOp : Sol_Op<"call", [CallOpInterface]> {
 }
 
 def Sol_ThisOp : Sol_Op<"this"> {
-  let results = (outs UI256:$addr); // TODO: s/UI256/address
+  let results = (outs Sol_AddressType:$addr);
 
-  let assemblyFormat = "attr-dict";
+  let assemblyFormat = "attr-dict `:` type($addr)";
 }
 
 def Sol_ExtCallOp : Sol_Op<"ext_call", [CallOpInterface]> {
-  // TODO: s/UI256/address in $addr
   let arguments = (ins StrAttr:$callee, Variadic<AnyType>:$ins,
-                       UI256:$addr, UI256:$gas, UI256:$val, UnitAttr:$try_call,
+                       Sol_AddressType:$addr, UI256:$gas, UI256:$val, UnitAttr:$try_call,
                        UnitAttr:$static_call, UnitAttr:$delegate_call,
                        I32Attr:$selector,
                        TypeAttrOf<FunctionType>:$callee_type);
@@ -625,6 +624,17 @@ def Sol_ExtCallOp : Sol_Op<"ext_call", [CallOpInterface]> {
   let assemblyFormat = [{
     $callee `(` $ins `)` `at` $addr `gas` $gas `value` $val attr-dict `:`
       functional-type($ins, results)
+  }];
+}
+
+def Sol_NewOp : Sol_Op<"new", [AttrSizedOperandSegments]> {
+  let arguments = (ins StrAttr:$objName, UI256:$val,
+                   Optional<UI256>:$salt,
+                   Variadic<AnyType>:$ctorArgs);
+  let results = (outs Sol_AddressType:$out);
+  let assemblyFormat = [{
+    $objName `value` `=` $val (`salt` `=` $salt^)?
+    `ctor` `(` ($ctorArgs^ `:` type($ctorArgs))? `)` attr-dict `:` type($out)
   }];
 }
 
@@ -933,6 +943,20 @@ def Sol_ExtCodeSizeOp : Sol_Op<"extcodesize", [Pure]> {
   let arguments = (ins I256:$addr);
   let results = (outs I256:$out);
   let assemblyFormat = "$addr attr-dict";
+}
+
+def Sol_CreateOp : Sol_Op<"create"> {
+  let summary = "Represents the `create` call in yul";
+  let arguments = (ins I256:$val, I256:$addr, I256:$size);
+  let results = (outs I256:$out);
+  let assemblyFormat = "$val `,` $addr `,` $size attr-dict";
+}
+
+def Sol_Create2Op : Sol_Op<"create2"> {
+  let summary = "Represents the `create2` call in yul";
+  let arguments = (ins I256:$val, I256:$addr, I256:$size, I256:$salt);
+  let results = (outs I256:$out);
+  let assemblyFormat = "$val `,` $addr `,` $size `,` $salt attr-dict";
 }
 
 // TODO: Is this `ConstantLike`? Adding it causes "expected ConstantLike op to

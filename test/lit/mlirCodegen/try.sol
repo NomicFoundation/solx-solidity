@@ -31,7 +31,7 @@ contract C {
 // CHECK-NEXT:     sol.func @f_77(%arg0: ui256 loc({{.*}}:3:13)) -> ui256 attributes {orig_fn_type = (ui256) -> ui256, selector = -1277270901 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc3)
-// CHECK-NEXT:       %1 = sol.this loc(#loc4)
+// CHECK-NEXT:       %1 = sol.this : ui256 loc(#loc4)
 // CHECK-NEXT:       %2 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc5)
 // CHECK-NEXT:       %3 = sol.gas loc(#loc4)
 // CHECK-NEXT:       %4 = sol.conv_cast %3 : i256 -> ui256 loc(#loc4)
@@ -55,7 +55,7 @@ contract C {
 // CHECK-NEXT:       } error {
 // CHECK-NEXT:       } fallback {
 // CHECK-NEXT:       } loc(#loc6)
-// CHECK-NEXT:       %6 = sol.this loc(#loc15)
+// CHECK-NEXT:       %6 = sol.this : ui256 loc(#loc15)
 // CHECK-NEXT:       %7 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc16)
 // CHECK-NEXT:       %8 = sol.gas loc(#loc15)
 // CHECK-NEXT:       %9 = sol.conv_cast %8 : i256 -> ui256 loc(#loc15)

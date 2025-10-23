@@ -21,11 +21,14 @@
 
 #pragma once
 
+#include "libsolidity/ast/AST.h"
 #include "libsolidity/codegen/mlir/Interface.h"
+#include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolutil/FixedHash.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
+#include "mlir/Support/LLVM.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Target/TargetMachine.h"
@@ -57,13 +60,6 @@ std::unique_ptr<Pass> createConvertStandardToLLVMPass(StringRef triple,
 
 namespace solidity::mlirgen {
 
-struct EvmObj {
-  LLVMMemoryBufferRef creationPart;
-  LLVMMemoryBufferRef runtimePart;
-  std::string creationId;
-  std::string runtimeId;
-};
-
 /// Adds dialect conversion passes for the target.
 void addConversionPasses(mlir::PassManager &, Target tgt, bool enableDI = true);
 
@@ -80,17 +76,19 @@ void setTgtSpecificInfoInModule(Target tgt, llvm::Module &llvmMod,
                                 llvm::TargetMachine const &tgtMach);
 
 /// Lowers the module and returns the evm object.
-EvmObj genEvmObj(mlir::ModuleOp, char optLevel, llvm::TargetMachine &tgtMach);
+evm::UnlinkedObj genEvmObj(mlir::ModuleOp, char optLevel,
+                           llvm::TargetMachine &tgtMach);
 
 /// Returns the bytecode of `obj` for evm.  This function is not thread-safe
 /// across LLVM threads.  It calls into lld, which mutates global llvm state
 /// internally.
-solidity::mlirgen::Bytecode
-genEvmBytecode(EvmObj const &obj,
+Bytecode
+genEvmBytecode(frontend::ContractDefinition const *cont,
+               std::map<frontend::ContractDefinition const *, evm::UnlinkedObj,
+                        frontend::ASTNode::CompareByID> &objMap,
                std::map<std::string, util::h160> const &libAddrMap);
 
 /// Don't use this! EraVM impl broke recently!
-solidity::mlirgen::Bytecode genEraVMBytecode(llvm::Module &llvmMod,
-                                             llvm::TargetMachine &tgtMach);
+Bytecode genEraVMBytecode(llvm::Module &llvmMod, llvm::TargetMachine &tgtMach);
 
 } // namespace solidity::mlirgen

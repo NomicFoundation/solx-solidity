@@ -32,6 +32,7 @@
 #include "libsolidity/codegen/mlir/Interface.h"
 #include "libsolidity/codegen/mlir/Passes.h"
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
+#include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/mlir/Util.h"
 #include "libsolidity/interface/CompilerStack.h"
 #include "libsolutil/CommonIO.h"
@@ -851,8 +852,7 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     // Generate the address.
     const auto *memberAcc = dynamic_cast<MemberAccess const *>(callExpr);
     assert(memberAcc);
-    mlir::Value addr =
-        genExpr(dynamic_cast<Identifier const &>(memberAcc->expression()));
+    mlir::Value addr = genLValExpr(memberAcc->expression());
 
     // Get the callee and the selector.
     const auto *callee = dynamic_cast<FunctionDefinition const *>(
@@ -912,6 +912,43 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       resVals.push_back(val);
     return resVals;
   }
+
+  case FunctionType::Kind::Creation: {
+    ContractDefinition const &cont =
+        dynamic_cast<ContractType const &>(
+            *calleeTy->returnParameterTypes().front())
+            .contractDefinition();
+    // FIXME: We assert that the creation object's name is contract op's name.
+    std::string objName = getMangledName(cont);
+
+    // Lower args.
+    std::vector<mlir::Value> args;
+    for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes()))
+      args.push_back(genRValExpr(*arg, getType(dstTy)));
+
+    mlir::Value salt, value;
+    mlir::Type ui256Ty = b.getIntegerType(256, /*isSigned=*/false);
+    if (const auto *fnCallOpt =
+            dynamic_cast<FunctionCallOptions const *>(&call.expression())) {
+      for (const auto &[namePtr, exprPtr] :
+           llvm::zip(fnCallOpt->names(), fnCallOpt->options())) {
+        ASTString const &name = *namePtr;
+        Expression const &expr = *exprPtr;
+        mlir::Value loweredExpr = genRValExpr(expr, ui256Ty);
+        if (name == "salt")
+          salt = loweredExpr;
+        else if (name == "value")
+          value = loweredExpr;
+      }
+    }
+    if (!value)
+      value = genUnsignedConst(0, /*numBits=*/256, loc);
+
+    resVals.push_back(
+        b.create<mlir::sol::NewOp>(loc, objName, value, salt, args));
+    return resVals;
+  }
+
   case FunctionType::Kind::ObjectCreation: {
     mlir::Type ty =
         getType(dynamic_cast<ArrayType const *>(call.annotation().type));
@@ -1825,7 +1862,7 @@ bool CompilerStack::runMlirPipeline() {
   // Maps contract ast to requested output. Updates are sync'ed by `outMtx`.
   std::map<ContractDefinition const *, std::string, ASTNode::CompareByID>
       outputMap;
-  std::map<ContractDefinition const *, mlirgen::EvmObj, ASTNode::CompareByID>
+  std::map<ContractDefinition const *, evm::UnlinkedObj, ASTNode::CompareByID>
       objMap;
 
   for (Source const *src : m_sourceOrder) {
@@ -1868,7 +1905,7 @@ bool CompilerStack::runMlirPipeline() {
             mlirgen::setTgtMachOpt(tgtMach.get(), m_mlirGenJob.optLevel);
 
             // Generate the object.
-            mlirgen::EvmObj obj =
+            evm::UnlinkedObj obj =
                 mlirgen::genEvmObj(mod, m_mlirGenJob.optLevel, *tgtMach);
             std::lock_guard<std::mutex> g(outMtx);
             objMap[contr] = obj;
@@ -1918,11 +1955,10 @@ bool CompilerStack::runMlirPipeline() {
     for (auto const &i : outputMap)
       llvm::outs() << i.second;
   } else {
+    evm::BytecodeGen bcGen(objMap, m_libraries);
     for (auto const &i : objMap) {
       m_contracts.at(i.first->fullyQualifiedName()).mlirPipeline =
-          mlirgen::genEvmBytecode(i.second, m_libraries);
-      LLVMDisposeMemoryBuffer(i.second.creationPart);
-      LLVMDisposeMemoryBuffer(i.second.runtimePart);
+          bcGen.genEvmBytecode(i.first);
     }
   }
 

@@ -1253,6 +1253,35 @@ struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
   }
 };
 
+struct NewOpLowering : public OpConversionPattern<sol::NewOp> {
+  using OpConversionPattern<sol::NewOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::NewOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+    evm::Builder evmB(r, loc);
+
+    Value bytecodeAddr = evmB.genFreePtr();
+    Value dataOffset = r.create<sol::DataOffsetOp>(loc, op.getObjName());
+    Value dataSize = r.create<sol::DataSizeOp>(loc, op.getObjName());
+    r.create<sol::CodeCopyOp>(loc, bytecodeAddr, dataOffset, dataSize);
+
+    Value tupleStart = r.create<arith::AddIOp>(loc, bytecodeAddr, dataSize);
+    Value tupleEnd = evmB.genABITupleEncoding(
+        op.getCtorArgs().getType(), adaptor.getCtorArgs(), tupleStart);
+    Value allocSize = r.create<arith::SubIOp>(loc, tupleEnd, bytecodeAddr);
+
+    if (op.getSalt())
+      r.replaceOpWithNewOp<sol::Create2Op>(op, adaptor.getVal(), bytecodeAddr,
+                                           allocSize, adaptor.getSalt());
+    else
+      r.replaceOpWithNewOp<sol::CreateOp>(op, adaptor.getVal(), bytecodeAddr,
+                                          allocSize);
+    return success();
+  }
+};
+
 struct TryOpLowering : public OpConversionPattern<sol::TryOp> {
   using OpConversionPattern<sol::TryOp>::OpConversionPattern;
 
@@ -2201,7 +2230,8 @@ void evm::populateAbiPats(mlir::RewritePatternSet &pats,
 }
 
 void evm::populateExtCallPat(RewritePatternSet &pats, TypeConverter &tyConv) {
-  pats.add<ExtCallOpLowering, TryOpLowering>(tyConv, pats.getContext());
+  pats.add<ExtCallOpLowering, TryOpLowering, NewOpLowering>(tyConv,
+                                                            pats.getContext());
 }
 
 void evm::populateEmitPat(RewritePatternSet &pats, TypeConverter &tyConv) {

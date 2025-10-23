@@ -20,7 +20,7 @@ contract C {
 // CHECK-NEXT:     sol.func @f_13(%arg0: ui256 loc({{.*}}:3:13)) attributes {orig_fn_type = (ui256) -> (), selector = -60272102 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc3)
-// CHECK-NEXT:       %1 = sol.this loc(#loc4)
+// CHECK-NEXT:       %1 = sol.this : ui256 loc(#loc4)
 // CHECK-NEXT:       sol.store %1, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc5)
 // CHECK-NEXT:       sol.return loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
