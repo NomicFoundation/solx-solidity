@@ -1863,7 +1863,7 @@ bool CompilerStack::runMlirPipeline() {
   std::map<ContractDefinition const *, std::string, ASTNode::CompareByID>
       outputMap;
   std::map<ContractDefinition const *, evm::UnlinkedObj, ASTNode::CompareByID>
-      objMap;
+      unlinkedObjMap;
 
   for (Source const *src : m_sourceOrder) {
     // Lower requested contracts per thread.
@@ -1908,7 +1908,7 @@ bool CompilerStack::runMlirPipeline() {
             evm::UnlinkedObj obj =
                 mlirgen::genEvmObj(mod, m_mlirGenJob.optLevel, *tgtMach);
             std::lock_guard<std::mutex> g(outMtx);
-            objMap[contr] = obj;
+            unlinkedObjMap[contr] = obj;
 
           } else {
             // Generate the print output.
@@ -1955,10 +1955,18 @@ bool CompilerStack::runMlirPipeline() {
     for (auto const &i : outputMap)
       llvm::outs() << i.second;
   } else {
-    evm::BytecodeGen bcGen(objMap, m_libraries);
-    for (auto const &i : objMap) {
-      m_contracts.at(i.first->fullyQualifiedName()).mlirPipeline =
+    evm::BytecodeGen bcGen(unlinkedObjMap, m_libraries);
+    for (auto const &i : unlinkedObjMap) {
+      ContractDefinition const *cont = i.first;
+      m_contracts.at(cont->fullyQualifiedName()).mlirPipeline =
           bcGen.genEvmBytecode(i.first);
+    }
+    for (auto const &i : unlinkedObjMap) {
+      evm::UnlinkedObj obj = i.second;
+      if (obj.creationPart)
+        LLVMDisposeMemoryBuffer(obj.creationPart);
+      if (obj.runtimePart)
+        LLVMDisposeMemoryBuffer(obj.runtimePart);
     }
   }
 
