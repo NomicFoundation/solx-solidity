@@ -275,7 +275,13 @@ evm::UnlinkedObj solidity::mlirgen::genEvmObj(mlir::ModuleOp mod, char optLevel,
   llvm::StringMap<mlir::SmallVector<uint64_t>> immMap;
   for (uint64_t i = 0; i < immCount; ++i)
     immMap[immIDs[i]].push_back(immOffsets[i]);
-  evm::lowerSetImmutables(creationMod, immMap);
+  if (immCount) {
+    LLVMDisposeImmutablesEVM(immIDs, immOffsets, immCount);
+    evm::lowerSetImmutables(creationMod, immMap);
+  } else {
+    // llvm might have optimized away the immutable references.
+    evm::removeSetImmutables(creationMod);
+  }
 
   // Lower the creation object.
   std::unique_ptr<llvm::Module> creationLlvmMod =
