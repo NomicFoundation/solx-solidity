@@ -1,6 +1,7 @@
 name: buildpack-deps
 
 permissions:
+  packages: write
   pull-requests: write
 
 on:
@@ -11,20 +12,31 @@ on:
       - 'scripts/docker/buildpack-deps/Dockerfile.ubuntu.clang.ossfuzz'
       - 'scripts/docker/buildpack-deps/Dockerfile.ubuntu2404'
       - 'scripts/docker/buildpack-deps/Dockerfile.ubuntu2404.clang'
+      - 'scripts/docker/buildpack-deps/Dockerfile.ubuntu2404.arm'
 
 jobs:
   buildpack-deps:
+    runs-on: ${{ matrix.runs-on }}
+
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       DOCKER_REPOSITORY: ghcr.io/argotorg/solidity-buildpack-deps
       IMAGE_NAME: buildpack-deps
 
-    runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
-        image_variant: [emscripten, ubuntu.clang.ossfuzz, ubuntu2404, ubuntu2404.clang]
+        include:
+          - image_variant: emscripten
+            runs-on: ubuntu-latest
+          - image_variant: ubuntu.clang.ossfuzz
+            runs-on: ubuntu-latest
+          - image_variant: ubuntu2404
+            runs-on: ubuntu-latest
+          - image_variant: ubuntu2404.clang
+            runs-on: ubuntu-latest
+          - image_variant: ubuntu2404.arm
+            runs-on: ubuntu-24.04-arm
 
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
