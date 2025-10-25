@@ -40,15 +40,17 @@ include "mlir/IR/SymbolInterfaces.td"
 // specific ops) should verify that their types (ssa argument types and
 // TypeAttr) are high level ((un)signed int types, sol dialect types etc.).
 
-// FIXME: Can we have a custom lowering of unrealized_conversion_cast instead?
-// ReconcileUnrealizedCasts conversion won't work here.
-def Sol_ConvCastOp : Sol_Op<"conv_cast"> {
-  let summary = "Like unrealized_conversion_cast; Represents the remapped value";
+// TODO: Is using builtin.unrealized_conversion_cast better+faster? Can we
+// legalize it without a separate reconcile pass?
+def Sol_ConvCastOp : Sol_Op<"conv_cast", [Pure]> {
+  let summary = "No-op cast that casts to the remapped value in conversion";
 
   let arguments = (ins AnyType:$inp);
   let results = (outs AnyType:$out);
 
   let assemblyFormat = "$inp attr-dict `:` type($inp) `->` type($out)";
+
+  let hasFolder = 1;
 }
 
 def Sol_ConstantOp : Op<Sol_Dialect, "constant",
