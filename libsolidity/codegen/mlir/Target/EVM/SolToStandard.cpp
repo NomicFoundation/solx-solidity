@@ -21,6 +21,7 @@
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/mlir/Target/EVM/YulToStandard.h"
 #include "libsolidity/codegen/mlir/Util.h"
+#include "libsolidity/codegen/mlir/Yul/Yul.h"
 #include "libsolutil/FunctionSelector.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
@@ -500,9 +501,9 @@ struct PushOpLowering : public OpConversionPattern<sol::PushOp> {
     solidity::mlirgen::BuilderExt bExt(r, loc);
 
     Value slot = adaptor.getInp();
-    Value size = r.create<sol::SLoadOp>(loc, slot);
+    Value size = r.create<yul::SLoadOp>(loc, slot);
     Value newSize = r.create<arith::AddIOp>(loc, size, bExt.genI256Const(1));
-    r.create<sol::SStoreOp>(loc, slot, newSize);
+    r.create<yul::SStoreOp>(loc, slot, newSize);
     Value dataSlot = evmB.genDataAddrPtr(slot, sol::DataLocation::Storage);
 
     r.replaceOp(op, r.create<arith::AddIOp>(loc, dataSlot, size));
@@ -520,7 +521,7 @@ struct PopOpLowering : public OpConversionPattern<sol::PopOp> {
     solidity::mlirgen::BuilderExt bExt(r, loc);
 
     Value slot = adaptor.getInp();
-    Value oldSize = r.create<sol::SLoadOp>(loc, slot);
+    Value oldSize = r.create<yul::SLoadOp>(loc, slot);
 
     // Generate the empty array panic check.
     Value panicCond = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq,
@@ -528,12 +529,12 @@ struct PopOpLowering : public OpConversionPattern<sol::PopOp> {
     evmB.genPanic(solidity::util::PanicCode::EmptyArrayPop, panicCond);
 
     Value newSize = r.create<arith::SubIOp>(loc, oldSize, bExt.genI256Const(1));
-    r.create<sol::SStoreOp>(loc, slot, newSize);
+    r.create<yul::SStoreOp>(loc, slot, newSize);
     Value dataSlot = evmB.genDataAddrPtr(slot, sol::DataLocation::Storage);
 
     // Zero the deleted slot.
     Value tailAddr = r.create<arith::AddIOp>(loc, dataSlot, newSize);
-    r.create<sol::SStoreOp>(loc, tailAddr, bExt.genI256Const(0));
+    r.create<yul::SStoreOp>(loc, tailAddr, bExt.genI256Const(0));
 
     r.eraseOp(op);
     return success();
@@ -715,10 +716,10 @@ struct MapOpLowering : public OpConversionPattern<sol::MapOp> {
     auto key = bExt.genIntCast(
         /*width=*/256, cast<IntegerType>(op.getKey().getType()).isSigned(),
         adaptor.getKey());
-    r.create<sol::MStoreOp>(loc, zero, key);
-    r.create<sol::MStoreOp>(loc, bExt.genI256Const(0x20), adaptor.getMapping());
+    r.create<yul::MStoreOp>(loc, zero, key);
+    r.create<yul::MStoreOp>(loc, bExt.genI256Const(0x20), adaptor.getMapping());
 
-    r.replaceOpWithNewOp<sol::Keccak256Op>(op, zero, bExt.genI256Const(0x40));
+    r.replaceOpWithNewOp<yul::Keccak256Op>(op, zero, bExt.genI256Const(0x40));
     return success();
   }
 };
@@ -826,8 +827,8 @@ struct StoreOpLowering : public OpConversionPattern<sol::StoreOp> {
       if (bytesEleTy && dataLoc == sol::DataLocation::Memory) {
         assert(bytesEleTy.getSize() == 1 && "NYI");
         auto byteVal =
-            r.create<sol::ByteOp>(loc, bExt.genI256Const(0), remappedVal);
-        r.replaceOpWithNewOp<sol::MStore8Op>(op, remappedAddr, byteVal);
+            r.create<yul::ByteOp>(loc, bExt.genI256Const(0), remappedVal);
+        r.replaceOpWithNewOp<yul::MStore8Op>(op, remappedAddr, byteVal);
         return success();
       }
 
@@ -843,7 +844,7 @@ struct StoreOpLowering : public OpConversionPattern<sol::StoreOp> {
       return success();
     }
     case sol::DataLocation::Storage:
-      r.replaceOpWithNewOp<sol::SStoreOp>(op, remappedAddr, remappedVal);
+      r.replaceOpWithNewOp<yul::SStoreOp>(op, remappedAddr, remappedVal);
       return success();
     default:
       break;
@@ -1022,7 +1023,7 @@ struct ThisOpLowering : public OpRewritePattern<sol::ThisOp> {
 
   LogicalResult matchAndRewrite(sol::ThisOp op,
                                 PatternRewriter &r) const override {
-    r.replaceOpWithNewOp<sol::AddressOp>(op);
+    r.replaceOpWithNewOp<yul::AddressOp>(op);
     return success();
   }
 };
@@ -1032,7 +1033,7 @@ struct LibAddrOpLowering : public OpConversionPattern<sol::LibAddrOp> {
 
   LogicalResult matchAndRewrite(sol::LibAddrOp op, OpAdaptor adaptor,
                                 ConversionPatternRewriter &r) const override {
-    r.replaceOpWithNewOp<sol::LinkerSymbolOp>(op, op.getName());
+    r.replaceOpWithNewOp<yul::LinkerSymbolOp>(op, op.getName());
     return success();
   }
 };
@@ -1052,7 +1053,7 @@ struct EncodeOpLowering : public OpConversionPattern<sol::EncodeOp> {
     Value tupleEnd = evmB.genABITupleEncoding(
         op.getOperandTypes(), adaptor.getOperands(), tupleStart);
     Value tupleSize = r.create<arith::SubIOp>(loc, tupleEnd, tupleStart);
-    r.create<sol::MStoreOp>(loc, freePtr, tupleSize);
+    r.create<yul::MStoreOp>(loc, freePtr, tupleSize);
     Value allocationSize = r.create<arith::SubIOp>(loc, tupleEnd, freePtr);
     evmB.genFreePtrUpd(freePtr, allocationSize);
     r.replaceOp(op, freePtr);
@@ -1070,7 +1071,7 @@ struct DecodeOpLowering : public OpConversionPattern<sol::DecodeOp> {
     evm::Builder evmB(r, loc);
 
     std::vector<Value> results;
-    Value tupleSize = r.create<sol::MLoadOp>(loc, adaptor.getAddr());
+    Value tupleSize = r.create<yul::MLoadOp>(loc, adaptor.getAddr());
     Value tupleStart =
         r.create<arith::AddIOp>(loc, adaptor.getAddr(), bExt.genI256Const(32));
     Value tupleEnd = r.create<arith::AddIOp>(loc, tupleStart, tupleSize);
@@ -1114,7 +1115,7 @@ struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
 
     if (extCodeSizeCheck) {
       // Generate the revert code.
-      auto extCodeSize = r.create<sol::ExtCodeSizeOp>(loc, adaptor.getAddr());
+      auto extCodeSize = r.create<yul::ExtCodeSizeOp>(loc, adaptor.getAddr());
       auto isExtCodeSizeZero = r.create<arith::CmpIOp>(
           loc, arith::CmpIPredicate::eq, extCodeSize, bExt.genI256Const(0));
       if (sol::isRevertStringsEnabled(mod))
@@ -1127,7 +1128,7 @@ struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
     // Generate the store of the selector.
     Value selectorAddr = evmB.genFreePtr();
     auto shiftedSelector = APInt(/*numBits=*/256, op.getSelector()) << 224;
-    r.create<sol::MStoreOp>(loc, selectorAddr,
+    r.create<yul::MStoreOp>(loc, selectorAddr,
                             bExt.genI256Const(shiftedSelector));
 
     // Generate the abi encoding code.
@@ -1156,17 +1157,17 @@ struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
 
     // Order is important here, staticcall might overlap with delegatecall.
     if (op.getDelegateCall())
-      status = r.create<sol::DelegateCallOp>(
+      status = r.create<yul::DelegateCallOp>(
           loc, adaptor.getGas(), adaptor.getAddr(),
           /*inpOffset=*/selectorAddr, inpSize,
           /*outOffset=*/selectorAddr, /*outSize=*/staticRetSize);
     else if (op.getStaticCall())
-      status = r.create<sol::StaticCallOp>(
+      status = r.create<yul::StaticCallOp>(
           loc, adaptor.getGas(), adaptor.getAddr(),
           /*inpOffset=*/selectorAddr, inpSize,
           /*outOffset=*/selectorAddr, /*outSize=*/staticRetSize);
     else
-      status = r.create<sol::BuiltinCallOp>(
+      status = r.create<yul::CallOp>(
           loc, adaptor.getGas(), adaptor.getAddr(), adaptor.getVal(),
           /*inpOffset=*/selectorAddr, inpSize,
           /*outOffset=*/selectorAddr, /*outSize=*/staticRetSize);
@@ -1207,10 +1208,10 @@ struct ExtCallOpLowering : public OpConversionPattern<sol::ExtCallOp> {
     // The allocation `selectorAddr` will be reused for the return data.
 
     // Generate the decoding of the results.
-    Value retDataSize = r.create<sol::ReturnDataSizeOp>(loc);
+    Value retDataSize = r.create<yul::ReturnDataSizeOp>(loc);
     std::vector<Value> decodedResults;
     if (isRetSizeDynamic) {
-      r.create<sol::ReturnDataCopyOp>(loc, selectorAddr,
+      r.create<yul::ReturnDataCopyOp>(loc, selectorAddr,
                                       /*src=*/bExt.genI256Const(0),
                                       retDataSize);
       evmB.genFreePtrUpd(selectorAddr, retDataSize);
@@ -1263,9 +1264,9 @@ struct NewOpLowering : public OpConversionPattern<sol::NewOp> {
     evm::Builder evmB(r, loc);
 
     Value bytecodeAddr = evmB.genFreePtr();
-    Value dataOffset = r.create<sol::DataOffsetOp>(loc, op.getObjName());
-    Value dataSize = r.create<sol::DataSizeOp>(loc, op.getObjName());
-    r.create<sol::CodeCopyOp>(loc, bytecodeAddr, dataOffset, dataSize);
+    Value dataOffset = r.create<yul::DataOffsetOp>(loc, op.getObjName());
+    Value dataSize = r.create<yul::DataSizeOp>(loc, op.getObjName());
+    r.create<yul::CodeCopyOp>(loc, bytecodeAddr, dataOffset, dataSize);
 
     Value tupleStart = r.create<arith::AddIOp>(loc, bytecodeAddr, dataSize);
     Value tupleEnd = evmB.genABITupleEncoding(
@@ -1273,10 +1274,10 @@ struct NewOpLowering : public OpConversionPattern<sol::NewOp> {
     Value allocSize = r.create<arith::SubIOp>(loc, tupleEnd, bytecodeAddr);
 
     if (op.getSalt())
-      r.replaceOpWithNewOp<sol::Create2Op>(op, adaptor.getVal(), bytecodeAddr,
+      r.replaceOpWithNewOp<yul::Create2Op>(op, adaptor.getVal(), bytecodeAddr,
                                            allocSize, adaptor.getSalt());
     else
-      r.replaceOpWithNewOp<sol::CreateOp>(op, adaptor.getVal(), bytecodeAddr,
+      r.replaceOpWithNewOp<yul::CreateOp>(op, adaptor.getVal(), bytecodeAddr,
                                           allocSize);
     return success();
   }
@@ -1337,7 +1338,7 @@ struct TryOpLowering : public OpConversionPattern<sol::TryOp> {
     //
     // The ops after this if op belong to the fallback. Track it for the
     // fallback lowering.
-    auto returnDataSize = r.create<sol::ReturnDataSizeOp>(loc);
+    auto returnDataSize = r.create<yul::ReturnDataSizeOp>(loc);
     auto selectorRetCond = r.create<arith::CmpIOp>(
         loc, arith::CmpIPredicate::ugt, returnDataSize, bExt.genI256Const(3));
     auto ifSelectorRet = r.create<sol::IfOp>(loc, selectorRetCond);
@@ -1351,9 +1352,9 @@ struct TryOpLowering : public OpConversionPattern<sol::TryOp> {
 
     // Generate the selector extraction code.
     auto zero = bExt.genI256Const(0);
-    r.create<sol::ReturnDataCopyOp>(loc, /*dst=*/zero, /*src=*/zero,
+    r.create<yul::ReturnDataCopyOp>(loc, /*dst=*/zero, /*src=*/zero,
                                     /*size=*/bExt.genI256Const(4));
-    auto selectorWord = r.create<sol::MLoadOp>(loc, zero);
+    auto selectorWord = r.create<yul::MLoadOp>(loc, zero);
     auto selector =
         r.create<arith::ShRUIOp>(loc, selectorWord, bExt.genI256Const(224));
 
@@ -1402,10 +1403,10 @@ struct TryOpLowering : public OpConversionPattern<sol::TryOp> {
       r.create<sol::StoreOp>(loc, bExt.genBool(false), runFallbackFlag);
       // Replace the panic code block arg with the panic code at offset 4.
       BlockArgument blkArg = thenEntry.getArgument(0);
-      r.create<sol::ReturnDataCopyOp>(blkArg.getLoc(), /*dst=*/zero,
+      r.create<yul::ReturnDataCopyOp>(blkArg.getLoc(), /*dst=*/zero,
                                       /*src=*/bExt.genI256Const(4),
                                       /*size=*/bExt.genI256Const(0x20));
-      Value panicCode = r.create<sol::MLoadOp>(blkArg.getLoc(), zero);
+      Value panicCode = r.create<yul::MLoadOp>(blkArg.getLoc(), zero);
       auto blkArgRepl = getTypeConverter()->materializeSourceConversion(
           r, loc, blkArg.getType(), panicCode);
       // FIXME: Why does the following cause a "no matched legalization pattern"
@@ -1452,10 +1453,10 @@ struct TryOpLowering : public OpConversionPattern<sol::TryOp> {
       Value abiTupleSize =
           r.create<arith::SubIOp>(loc, returnDataSize, bExt.genI256Const(4));
       Value abiTuple = evmB.genMemAlloc(abiTupleSize);
-      r.create<sol::ReturnDataCopyOp>(loc, /*dst=*/abiTuple,
+      r.create<yul::ReturnDataCopyOp>(loc, /*dst=*/abiTuple,
                                       /*src=*/bExt.genI256Const(4),
                                       abiTupleSize);
-      Value errMsgOffset = r.create<sol::MLoadOp>(loc, abiTuple);
+      Value errMsgOffset = r.create<yul::MLoadOp>(loc, abiTuple);
       Value errMsg = r.create<arith::AddIOp>(loc, abiTuple, errMsgOffset);
       auto blkArgRepl = getTypeConverter()->materializeSourceConversion(
           r, loc, blkArg.getType(), errMsg);
@@ -1544,7 +1545,7 @@ struct EmitOpLowering : public OpConversionPattern<sol::EmitOp> {
     Value tupleSize = r.create<arith::SubIOp>(loc, tupleEnd, tupleStart);
 
     // Generate sol.log and replace sol.emit with it.
-    r.replaceOpWithNewOp<sol::LogOp>(op, tupleStart, tupleSize, indexedArgs);
+    r.replaceOpWithNewOp<yul::LogOp>(op, tupleStart, tupleSize, indexedArgs);
 
     return success();
   }
@@ -1837,7 +1838,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     solidity::mlirgen::BuilderExt bExt(r, loc);
     evm::Builder evmB(r, loc);
 
-    auto callVal = r.create<sol::CallValOp>(loc);
+    auto callVal = r.create<yul::CallValOp>(loc);
     auto callValChk = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ne,
                                               callVal, bExt.genI256Const(0));
     evmB.genRevert(callValChk);
@@ -1850,7 +1851,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     mlir::Value freeMem = bExt.genI256Const(
         solidity::frontend::CompilerUtils::generalPurposeMemoryStart +
         reservedMem);
-    r.create<sol::MStoreOp>(loc, bExt.genI256Const(64), freeMem);
+    r.create<yul::MStoreOp>(loc, bExt.genI256Const(64), freeMem);
   };
 
   /// Generates the dispatch to interface functions.
@@ -1864,9 +1865,9 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 
     Value notDelegateCallCond;
     if (contrOp.getKind() == sol::ContractKind::Library) {
-      auto libAddr = r.create<sol::LoadImmutable2Op>(loc, r.getIntegerType(256),
-                                                     libAddrName);
-      auto currAddr = r.create<sol::AddressOp>(loc);
+      auto libAddr = r.create<yul::LoadImmutableOp>(loc, r.getIntegerType(256),
+                                                    libAddrName);
+      auto currAddr = r.create<yul::AddressOp>(loc);
       notDelegateCallCond = r.create<arith::CmpIOp>(
           loc, arith::CmpIPredicate::eq, libAddr, currAddr);
     }
@@ -1877,7 +1878,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 
     // Generate `if iszero(lt(calldatasize(), 4))` and set the insertion point
     // to its then block.
-    auto callDataSz = r.create<sol::CallDataSizeOp>(loc);
+    auto callDataSz = r.create<yul::CallDataSizeOp>(loc);
     auto callDataSzCmp = r.create<arith::CmpIOp>(
         loc, arith::CmpIPredicate::uge, callDataSz, bExt.genI256Const(4));
     auto ifOp =
@@ -1886,7 +1887,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     r.setInsertionPointToStart(&ifOp.getThenRegion().front());
 
     // Load the selector from the calldata.
-    auto callDataLd = r.create<sol::CallDataLoadOp>(loc, bExt.genI256Const(0));
+    auto callDataLd = r.create<yul::CallDataLoadOp>(loc, bExt.genI256Const(0));
     Value callDataSelector =
         r.create<arith::ShRUIOp>(loc, callDataLd, bExt.genI256Const(224));
     callDataSelector =
@@ -1956,7 +1957,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 
       // Generate the return.
       assert(tupleSize);
-      r.create<sol::BuiltinRetOp>(loc, tupleStart, tupleSize);
+      r.create<yul::ReturnOp>(loc, tupleStart, tupleSize);
 
       r.create<mlir::scf::YieldOp>(loc);
     }
@@ -1984,10 +1985,10 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
     evm::Builder evmB(r, loc);
 
     // Generate the creation and runtime ObjectOp.
-    auto creationObj = r.create<sol::ObjectOp>(loc, op.getName());
+    auto creationObj = r.create<yul::ObjectOp>(loc, op.getName());
     r.setInsertionPointToStart(&creationObj.getBody().front());
     auto runtimeObj =
-        r.create<sol::ObjectOp>(loc, std::string(op.getName()) + "_deployed");
+        r.create<yul::ObjectOp>(loc, std::string(op.getName()) + "_deployed");
 
     SmallVector<sol::FuncOp, 4> ifcFns;
     sol::FuncOp ctor, receiveFn, fallbackFn;
@@ -2082,11 +2083,11 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 
     // Generate the call to constructor (if required).
     if (ctor && op.getKind() != sol::ContractKind::Library) {
-      auto progSize = r.create<sol::DataSizeOp>(loc, creationObj.getName());
-      auto codeSize = r.create<sol::CodeSizeOp>(loc);
+      auto progSize = r.create<yul::DataSizeOp>(loc, creationObj.getName());
+      auto codeSize = r.create<yul::CodeSizeOp>(loc);
       auto argSize = r.create<arith::SubIOp>(loc, codeSize, progSize);
       Value tupleStart = evmB.genMemAlloc(argSize);
-      r.create<sol::CodeCopyOp>(loc, tupleStart, progSize, argSize);
+      r.create<yul::CodeCopyOp>(loc, tupleStart, progSize, argSize);
       std::vector<Value> decodedArgs;
       FunctionType ctorFnTy = *ctor.getOrigFnType();
       if (!ctorFnTy.getInputs().empty()) {
@@ -2101,30 +2102,30 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 
     // Generate the codecopy of the runtime object for the return from the
     // creation object.
-    auto freePtr = r.create<sol::MLoadOp>(loc, bExt.genI256Const(64));
+    auto freePtr = r.create<yul::MLoadOp>(loc, bExt.genI256Const(64));
     auto runtimeObjSym = FlatSymbolRefAttr::get(runtimeObj);
-    auto runtimeObjOffset = r.create<sol::DataOffsetOp>(loc, runtimeObjSym);
-    auto runtimeObjSize = r.create<sol::DataSizeOp>(loc, runtimeObjSym);
-    r.create<sol::CodeCopyOp>(loc, freePtr, runtimeObjOffset, runtimeObjSize);
+    auto runtimeObjOffset = r.create<yul::DataOffsetOp>(loc, runtimeObjSym);
+    auto runtimeObjSize = r.create<yul::DataSizeOp>(loc, runtimeObjSym);
+    r.create<yul::CodeCopyOp>(loc, freePtr, runtimeObjOffset, runtimeObjSize);
 
     // Generate setimmutable of the library address (the runtime object uses
     // this for the delegate call check).
     if (op.getKind() == sol::ContractKind::Library)
-      r.create<sol::SetImmutableOp>(loc, freePtr, libAddrName,
-                                    r.create<sol::AddressOp>(loc));
+      r.create<yul::SetImmutableOp>(loc, freePtr, libAddrName,
+                                    r.create<yul::AddressOp>(loc));
 
     // Generate setimmutable's and remove all sol.immutable ops.
     for (sol::ImmutableOp immOp : llvm::make_early_inc_range(immOps)) {
       assert(immOp->getAttr("addr"));
       auto addr = bExt.genI256Const(
           cast<IntegerAttr>(immOp->getAttr("addr")).getValue());
-      auto val = r.create<sol::MLoadOp>(loc, addr);
-      r.create<sol::SetImmutableOp>(loc, freePtr, immOp.getName(), val);
+      auto val = r.create<yul::MLoadOp>(loc, addr);
+      r.create<yul::SetImmutableOp>(loc, freePtr, immOp.getName(), val);
       r.eraseOp(immOp);
     }
 
     // Generate the return for the creation context.
-    r.create<sol::BuiltinRetOp>(loc, freePtr, runtimeObjSize);
+    r.create<yul::ReturnOp>(loc, freePtr, runtimeObjSize);
 
     //
     // Runtime context
@@ -2141,7 +2142,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 
     // Generate receive function.
     if (receiveFn) {
-      auto callDataSz = r.create<sol::CallDataSizeOp>(loc);
+      auto callDataSz = r.create<yul::CallDataSizeOp>(loc);
       auto callDataSzIsZero = r.create<arith::CmpIOp>(
           loc, arith::CmpIPredicate::eq, callDataSz, bExt.genI256Const(0));
       auto ifOp =
@@ -2149,7 +2150,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
       OpBuilder::InsertionGuard insertGuard(r);
       r.setInsertionPointToStart(&ifOp.getThenRegion().front());
       r.create<sol::CallOp>(loc, receiveFn, /*operands=*/ValueRange{});
-      r.create<sol::StopOp>(loc);
+      r.create<yul::StopOp>(loc);
     }
 
     // Generate fallback function.
@@ -2163,11 +2164,11 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
         genCallValChk(r, loc);
       }
       r.create<sol::CallOp>(loc, fallbackFn, /*operands=*/ValueRange{});
-      r.create<sol::StopOp>(loc);
+      r.create<yul::StopOp>(loc);
 
     } else {
       // TODO: Generate error message.
-      r.create<sol::RevertOp>(loc, bExt.genI256Const(0), bExt.genI256Const(0));
+      r.create<yul::RevertOp>(loc, bExt.genI256Const(0), bExt.genI256Const(0));
     }
 
     // TODO? Make sure op.getBody() is either empty or has only ops marked for

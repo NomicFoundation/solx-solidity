@@ -5,16 +5,16 @@ module {
 sol.func @f() {
   %c1 = arith.constant 1 : i256
   %c2 = arith.constant 2 : i256
-  %a = sol.upd_free_ptr %c1
-  %b = sol.upd_free_ptr %c2
+  %a = yul.upd_free_ptr %c1
+  %b = yul.upd_free_ptr %c2
   sol.return
 }
 
 sol.func @g(%i : i256, %j : i256) {
-  %a = sol.upd_free_ptr %i
-  %b = sol.upd_free_ptr %j
-  sol.mstore %b, %a
-  %c = sol.upd_free_ptr %j
+  %a = yul.upd_free_ptr %i
+  %b = yul.upd_free_ptr %j
+  yul.mstore %b, %a
+  %c = yul.upd_free_ptr %j
   sol.return
 }
 
@@ -25,16 +25,16 @@ sol.func @g(%i : i256, %j : i256) {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256
 // CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256
 // CHECK-NEXT:     %0 = arith.addi %c2_i256, %c1_i256 : i256
-// CHECK-NEXT:     %1 = sol.upd_free_ptr %0
+// CHECK-NEXT:     %1 = yul.upd_free_ptr %0
 // CHECK-NEXT:     %2 = arith.addi %1, %c1_i256 : i256
 // CHECK-NEXT:     sol.return
 // CHECK-NEXT:   }
 // CHECK-NEXT:   sol.func @g(%arg0: i256, %arg1: i256) {
 // CHECK-NEXT:     %0 = arith.addi %arg1, %arg0 : i256
-// CHECK-NEXT:     %1 = sol.upd_free_ptr %0
+// CHECK-NEXT:     %1 = yul.upd_free_ptr %0
 // CHECK-NEXT:     %2 = arith.addi %1, %arg0 : i256
-// CHECK-NEXT:     sol.mstore %2, %1
-// CHECK-NEXT:     %3 = sol.upd_free_ptr %arg1
+// CHECK-NEXT:     yul.mstore %2, %1
+// CHECK-NEXT:     %3 = yul.upd_free_ptr %arg1
 // CHECK-NEXT:     sol.return
 // CHECK-NEXT:   }
 // CHECK-NEXT: }

@@ -25,6 +25,7 @@
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/mlir/Target/EraVM/SolToStandard.h"
 #include "libsolidity/codegen/mlir/Target/EraVM/Util.h"
+#include "libsolidity/codegen/mlir/Yul/Yul.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
@@ -80,8 +81,9 @@ struct ConvertSolToStandard
       : PassWrapper(other) {}
 
   void getDependentDialects(DialectRegistry &reg) const override {
-    reg.insert<func::FuncDialect, scf::SCFDialect, cf::ControlFlowDialect,
-               arith::ArithDialect, LLVM::LLVMDialect>();
+    reg.insert<yul::YulDialect, func::FuncDialect, scf::SCFDialect,
+               cf::ControlFlowDialect, arith::ArithDialect,
+               LLVM::LLVMDialect>();
   }
 
   // TODO: Generalize this comment.
@@ -119,9 +121,9 @@ struct ConvertSolToStandard
 
     ConversionTarget convTgt(getContext());
     convTgt.addLegalOp<ModuleOp>();
-    convTgt.addLegalDialect<sol::SolDialect, func::FuncDialect, scf::SCFDialect,
-                            cf::ControlFlowDialect, arith::ArithDialect,
-                            LLVM::LLVMDialect>();
+    convTgt.addLegalDialect<sol::SolDialect, yul::YulDialect, func::FuncDialect,
+                            scf::SCFDialect, cf::ControlFlowDialect,
+                            arith::ArithDialect, LLVM::LLVMDialect>();
     convTgt.addIllegalOp<
         // clang-format off
         sol::ConstantOp,
@@ -222,7 +224,7 @@ struct ConvertSolToStandard
     convTgt.addLegalDialect<sol::SolDialect, func::FuncDialect, scf::SCFDialect,
                             cf::ControlFlowDialect, arith::ArithDialect,
                             LLVM::LLVMDialect>();
-    convTgt.addIllegalDialect<sol::SolDialect>();
+    convTgt.addIllegalDialect<sol::SolDialect, yul::YulDialect>();
     convTgt
         .addLegalOp<sol::FuncOp, sol::CallOp, sol::ReturnOp, sol::ConvCastOp>();
 

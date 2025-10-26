@@ -13,7 +13,7 @@ function f() {
 // CHECK-NEXT:   sol.func @f_5() attributes {state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc2)
 // CHECK-NEXT:     %c0_i256_0 = arith.constant 0 : i256 loc(#loc3)
-// CHECK-NEXT:     sol.mstore %c0_i256, %c0_i256_0 loc(#loc4)
+// CHECK-NEXT:     yul.mstore %c0_i256, %c0_i256_0 loc(#loc4)
 // CHECK-NEXT:     sol.return loc(#loc1)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT: } loc(#loc)

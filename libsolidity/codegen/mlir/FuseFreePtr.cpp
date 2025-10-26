@@ -20,7 +20,7 @@
 //
 
 #include "libsolidity/codegen/mlir/Passes.h"
-#include "libsolidity/codegen/mlir/Sol/Sol.h"
+#include "libsolidity/codegen/mlir/Yul/Yul.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/Dominance.h"
@@ -51,7 +51,7 @@ struct FuseFreePtr : public PassWrapper<FuseFreePtr, OperationPass<>> {
     if (blk.empty())
       return;
 
-    SmallVector<sol::UpdFreePtrOp, 4> updOps;
+    SmallVector<yul::UpdFreePtrOp, 4> updOps;
     SmallPtrSet<Operation *, 4> updOpsUsers;
 
     auto fuseAndReset = [&]() {
@@ -67,7 +67,7 @@ struct FuseFreePtr : public PassWrapper<FuseFreePtr, OperationPass<>> {
         fuseAndReset();
         continue;
       }
-      if (auto updOp = dyn_cast<sol::UpdFreePtrOp>(op)) {
+      if (auto updOp = dyn_cast<yul::UpdFreePtrOp>(op)) {
         for (Operation *user : updOp->getUsers())
           updOpsUsers.insert(user);
         updOps.push_back(updOp);
@@ -78,17 +78,17 @@ struct FuseFreePtr : public PassWrapper<FuseFreePtr, OperationPass<>> {
 
   /// Fuses all the UpdFreePtrOps into one at the last op so that the use-graph
   /// is not broken. This expects the user-graph to be dominated by the last op.
-  void fuse(ArrayRef<sol::UpdFreePtrOp> updOps) {
+  void fuse(ArrayRef<yul::UpdFreePtrOp> updOps) {
     if (updOps.size() < 2)
       return;
 
     // Generate the total size of allocated area after all the UpdFreePtrOps.
     count += updOps.size();
-    sol::UpdFreePtrOp firstUpd = updOps.front();
+    yul::UpdFreePtrOp firstUpd = updOps.front();
     IRRewriter r(firstUpd);
     SmallVector<Location> fusedLocs{firstUpd.getLoc()};
     mlir::Value totalSize = firstUpd.getSize();
-    for (sol::UpdFreePtrOp updOp : llvm::drop_begin(updOps)) {
+    for (yul::UpdFreePtrOp updOp : llvm::drop_begin(updOps)) {
       fusedLocs.push_back(updOp.getLoc());
       r.setInsertionPoint(updOp);
       totalSize =
@@ -97,15 +97,15 @@ struct FuseFreePtr : public PassWrapper<FuseFreePtr, OperationPass<>> {
 
     // Generate the fused UpdFreePtrOp. The users of this will be the users of
     // the original first UpdFreePtrOp.
-    auto fusedUpd = r.create<sol::UpdFreePtrOp>(
+    auto fusedUpd = r.create<yul::UpdFreePtrOp>(
         FusedLoc::get(r.getContext(), fusedLocs), totalSize);
     r.replaceAllOpUsesWith(updOps.front(), fusedUpd);
 
     // The remaining UpdFreePtrOps are generated as add ops and the users are
     // updated accordingly.
-    sol::UpdFreePtrOp prevUpdOp = updOps.front();
+    yul::UpdFreePtrOp prevUpdOp = updOps.front();
     mlir::Value prevFreePtr = fusedUpd;
-    for (sol::UpdFreePtrOp updOp : llvm::drop_begin(updOps)) {
+    for (yul::UpdFreePtrOp updOp : llvm::drop_begin(updOps)) {
       auto add = r.create<arith::AddIOp>(updOp.getLoc(), prevFreePtr,
                                          prevUpdOp.getSize());
       r.replaceAllOpUsesWith(updOp, add);
@@ -114,7 +114,7 @@ struct FuseFreePtr : public PassWrapper<FuseFreePtr, OperationPass<>> {
     }
 
     // Erase all original UpdFreePtrOps.
-    for (sol::UpdFreePtrOp updOp : updOps)
+    for (yul::UpdFreePtrOp updOp : updOps)
       r.eraseOp(updOp);
   }
 

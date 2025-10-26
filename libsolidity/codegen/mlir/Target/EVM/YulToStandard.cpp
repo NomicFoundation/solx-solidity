@@ -19,6 +19,7 @@
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/mlir/Util.h"
+#include "libsolidity/codegen/mlir/Yul/Yul.h"
 #include "mlir/IR/IRMapping.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/IntrinsicsEVM.h"
@@ -27,10 +28,10 @@ using namespace mlir;
 
 namespace {
 
-struct UpdFreePtrOpLowering : public OpRewritePattern<sol::UpdFreePtrOp> {
-  using OpRewritePattern<sol::UpdFreePtrOp>::OpRewritePattern;
+struct UpdFreePtrOpLowering : public OpRewritePattern<yul::UpdFreePtrOp> {
+  using OpRewritePattern<yul::UpdFreePtrOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::UpdFreePtrOp op,
+  LogicalResult matchAndRewrite(yul::UpdFreePtrOp op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op.getLoc());
     Value freePtr = evmB.genFreePtr();
@@ -40,10 +41,10 @@ struct UpdFreePtrOpLowering : public OpRewritePattern<sol::UpdFreePtrOp> {
   }
 };
 
-struct Keccak256OpLowering : public OpRewritePattern<sol::Keccak256Op> {
-  using OpRewritePattern<sol::Keccak256Op>::OpRewritePattern;
+struct Keccak256OpLowering : public OpRewritePattern<yul::Keccak256Op> {
+  using OpRewritePattern<yul::Keccak256Op>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::Keccak256Op op,
+  LogicalResult matchAndRewrite(yul::Keccak256Op op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op.getLoc());
 
@@ -57,10 +58,10 @@ struct Keccak256OpLowering : public OpRewritePattern<sol::Keccak256Op> {
   }
 };
 
-struct LogOpLowering : public OpRewritePattern<sol::LogOp> {
-  using OpRewritePattern<sol::LogOp>::OpRewritePattern;
+struct LogOpLowering : public OpRewritePattern<yul::LogOp> {
+  using OpRewritePattern<yul::LogOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::LogOp op,
+  LogicalResult matchAndRewrite(yul::LogOp op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op.getLoc());
 
@@ -97,10 +98,10 @@ struct LogOpLowering : public OpRewritePattern<sol::LogOp> {
   }
 };
 
-struct AddressOpLowering : public OpRewritePattern<sol::AddressOp> {
-  using OpRewritePattern<sol::AddressOp>::OpRewritePattern;
+struct AddressOpLowering : public OpRewritePattern<yul::AddressOp> {
+  using OpRewritePattern<yul::AddressOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::AddressOp op,
+  LogicalResult matchAndRewrite(yul::AddressOp op,
                                 PatternRewriter &r) const override {
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_address,
                                            /*resTy=*/r.getIntegerType(256),
@@ -109,10 +110,10 @@ struct AddressOpLowering : public OpRewritePattern<sol::AddressOp> {
   }
 };
 
-struct CallerOpLowering : public OpRewritePattern<sol::CallerOp> {
-  using OpRewritePattern<sol::CallerOp>::OpRewritePattern;
+struct CallerOpLowering : public OpRewritePattern<yul::CallerOp> {
+  using OpRewritePattern<yul::CallerOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::CallerOp op,
+  LogicalResult matchAndRewrite(yul::CallerOp op,
                                 PatternRewriter &r) const override {
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_caller,
                                            /*resTy=*/r.getIntegerType(256),
@@ -122,10 +123,10 @@ struct CallerOpLowering : public OpRewritePattern<sol::CallerOp> {
   }
 };
 
-struct GasOpLowering : public OpRewritePattern<sol::GasOp> {
-  using OpRewritePattern<sol::GasOp>::OpRewritePattern;
+struct GasOpLowering : public OpRewritePattern<yul::GasOp> {
+  using OpRewritePattern<yul::GasOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::GasOp op,
+  LogicalResult matchAndRewrite(yul::GasOp op,
                                 PatternRewriter &r) const override {
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_gas,
                                            /*resTy=*/r.getIntegerType(256),
@@ -134,10 +135,10 @@ struct GasOpLowering : public OpRewritePattern<sol::GasOp> {
   }
 };
 
-struct CallValOpLowering : public OpRewritePattern<sol::CallValOp> {
-  using OpRewritePattern<sol::CallValOp>::OpRewritePattern;
+struct CallValOpLowering : public OpRewritePattern<yul::CallValOp> {
+  using OpRewritePattern<yul::CallValOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::CallValOp op,
+  LogicalResult matchAndRewrite(yul::CallValOp op,
                                 PatternRewriter &r) const override {
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_callvalue,
                                            /*resTy=*/r.getIntegerType(256),
@@ -147,10 +148,10 @@ struct CallValOpLowering : public OpRewritePattern<sol::CallValOp> {
   }
 };
 
-struct CallDataLoadOpLowering : public OpRewritePattern<sol::CallDataLoadOp> {
-  using OpRewritePattern<sol::CallDataLoadOp>::OpRewritePattern;
+struct CallDataLoadOpLowering : public OpRewritePattern<yul::CallDataLoadOp> {
+  using OpRewritePattern<yul::CallDataLoadOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::CallDataLoadOp op,
+  LogicalResult matchAndRewrite(yul::CallDataLoadOp op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op.getLoc());
 
@@ -161,10 +162,10 @@ struct CallDataLoadOpLowering : public OpRewritePattern<sol::CallDataLoadOp> {
   }
 };
 
-struct CallDataSizeOpLowering : public OpRewritePattern<sol::CallDataSizeOp> {
-  using OpRewritePattern<sol::CallDataSizeOp>::OpRewritePattern;
+struct CallDataSizeOpLowering : public OpRewritePattern<yul::CallDataSizeOp> {
+  using OpRewritePattern<yul::CallDataSizeOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::CallDataSizeOp op,
+  LogicalResult matchAndRewrite(yul::CallDataSizeOp op,
                                 PatternRewriter &r) const override {
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(
         op, llvm::Intrinsic::evm_calldatasize,
@@ -174,10 +175,10 @@ struct CallDataSizeOpLowering : public OpRewritePattern<sol::CallDataSizeOp> {
   }
 };
 
-struct CallDataCopyOpLowering : public OpRewritePattern<sol::CallDataCopyOp> {
-  using OpRewritePattern<sol::CallDataCopyOp>::OpRewritePattern;
+struct CallDataCopyOpLowering : public OpRewritePattern<yul::CallDataCopyOp> {
+  using OpRewritePattern<yul::CallDataCopyOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::CallDataCopyOp op,
+  LogicalResult matchAndRewrite(yul::CallDataCopyOp op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op.getLoc());
 
@@ -190,10 +191,10 @@ struct CallDataCopyOpLowering : public OpRewritePattern<sol::CallDataCopyOp> {
 };
 
 struct ReturnDataSizeOpLowering
-    : public OpRewritePattern<sol::ReturnDataSizeOp> {
-  using OpRewritePattern<sol::ReturnDataSizeOp>::OpRewritePattern;
+    : public OpRewritePattern<yul::ReturnDataSizeOp> {
+  using OpRewritePattern<yul::ReturnDataSizeOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::ReturnDataSizeOp op,
+  LogicalResult matchAndRewrite(yul::ReturnDataSizeOp op,
                                 PatternRewriter &r) const override {
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(
         op, llvm::Intrinsic::evm_returndatasize,
@@ -204,10 +205,10 @@ struct ReturnDataSizeOpLowering
 };
 
 struct ReturnDataCopyOpLowering
-    : public OpRewritePattern<sol::ReturnDataCopyOp> {
-  using OpRewritePattern<sol::ReturnDataCopyOp>::OpRewritePattern;
+    : public OpRewritePattern<yul::ReturnDataCopyOp> {
+  using OpRewritePattern<yul::ReturnDataCopyOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::ReturnDataCopyOp op,
+  LogicalResult matchAndRewrite(yul::ReturnDataCopyOp op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op.getLoc());
 
@@ -219,10 +220,10 @@ struct ReturnDataCopyOpLowering
   }
 };
 
-struct SLoadOpLowering : public OpRewritePattern<sol::SLoadOp> {
-  using OpRewritePattern<sol::SLoadOp>::OpRewritePattern;
+struct SLoadOpLowering : public OpRewritePattern<yul::SLoadOp> {
+  using OpRewritePattern<yul::SLoadOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::SLoadOp op,
+  LogicalResult matchAndRewrite(yul::SLoadOp op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op->getLoc());
 
@@ -233,10 +234,10 @@ struct SLoadOpLowering : public OpRewritePattern<sol::SLoadOp> {
   }
 };
 
-struct SStoreOpLowering : public OpRewritePattern<sol::SStoreOp> {
-  using OpRewritePattern<sol::SStoreOp>::OpRewritePattern;
+struct SStoreOpLowering : public OpRewritePattern<yul::SStoreOp> {
+  using OpRewritePattern<yul::SStoreOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::SStoreOp op,
+  LogicalResult matchAndRewrite(yul::SStoreOp op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op->getLoc());
 
@@ -247,10 +248,10 @@ struct SStoreOpLowering : public OpRewritePattern<sol::SStoreOp> {
   }
 };
 
-struct DataOffsetOpLowering : public OpRewritePattern<sol::DataOffsetOp> {
-  using OpRewritePattern<sol::DataOffsetOp>::OpRewritePattern;
+struct DataOffsetOpLowering : public OpRewritePattern<yul::DataOffsetOp> {
+  using OpRewritePattern<yul::DataOffsetOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::DataOffsetOp op,
+  LogicalResult matchAndRewrite(yul::DataOffsetOp op,
                                 PatternRewriter &r) const override {
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(
         op, llvm::Intrinsic::evm_dataoffset,
@@ -260,10 +261,10 @@ struct DataOffsetOpLowering : public OpRewritePattern<sol::DataOffsetOp> {
   }
 };
 
-struct DataSizeOpLowering : public OpRewritePattern<sol::DataSizeOp> {
-  using OpRewritePattern<sol::DataSizeOp>::OpRewritePattern;
+struct DataSizeOpLowering : public OpRewritePattern<yul::DataSizeOp> {
+  using OpRewritePattern<yul::DataSizeOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::DataSizeOp op,
+  LogicalResult matchAndRewrite(yul::DataSizeOp op,
                                 PatternRewriter &r) const override {
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(
         op, llvm::Intrinsic::evm_datasize,
@@ -273,10 +274,10 @@ struct DataSizeOpLowering : public OpRewritePattern<sol::DataSizeOp> {
   }
 };
 
-struct CodeSizeOpLowering : public OpRewritePattern<sol::CodeSizeOp> {
-  using OpRewritePattern<sol::CodeSizeOp>::OpRewritePattern;
+struct CodeSizeOpLowering : public OpRewritePattern<yul::CodeSizeOp> {
+  using OpRewritePattern<yul::CodeSizeOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::CodeSizeOp op,
+  LogicalResult matchAndRewrite(yul::CodeSizeOp op,
                                 PatternRewriter &r) const override {
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_codesize,
                                            /*resTy=*/r.getIntegerType(256),
@@ -286,10 +287,10 @@ struct CodeSizeOpLowering : public OpRewritePattern<sol::CodeSizeOp> {
   }
 };
 
-struct CodeCopyOpLowering : public OpRewritePattern<sol::CodeCopyOp> {
-  using OpRewritePattern<sol::CodeCopyOp>::OpRewritePattern;
+struct CodeCopyOpLowering : public OpRewritePattern<yul::CodeCopyOp> {
+  using OpRewritePattern<yul::CodeCopyOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::CodeCopyOp op,
+  LogicalResult matchAndRewrite(yul::CodeCopyOp op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op.getLoc());
 
@@ -301,10 +302,10 @@ struct CodeCopyOpLowering : public OpRewritePattern<sol::CodeCopyOp> {
   }
 };
 
-struct ExtCodeSizeOpLowering : public OpRewritePattern<sol::ExtCodeSizeOp> {
-  using OpRewritePattern<sol::ExtCodeSizeOp>::OpRewritePattern;
+struct ExtCodeSizeOpLowering : public OpRewritePattern<yul::ExtCodeSizeOp> {
+  using OpRewritePattern<yul::ExtCodeSizeOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::ExtCodeSizeOp op,
+  LogicalResult matchAndRewrite(yul::ExtCodeSizeOp op,
                                 PatternRewriter &r) const override {
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_extcodesize,
                                            /*resTy=*/r.getIntegerType(256),
@@ -314,10 +315,10 @@ struct ExtCodeSizeOpLowering : public OpRewritePattern<sol::ExtCodeSizeOp> {
   }
 };
 
-struct CreateOpLowering : public OpRewritePattern<sol::CreateOp> {
-  using OpRewritePattern<sol::CreateOp>::OpRewritePattern;
+struct CreateOpLowering : public OpRewritePattern<yul::CreateOp> {
+  using OpRewritePattern<yul::CreateOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::CreateOp op,
+  LogicalResult matchAndRewrite(yul::CreateOp op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op->getLoc());
     Value addr = evmB.genHeapPtr(op.getAddr());
@@ -329,10 +330,10 @@ struct CreateOpLowering : public OpRewritePattern<sol::CreateOp> {
   }
 };
 
-struct Create2OpLowering : public OpRewritePattern<sol::Create2Op> {
-  using OpRewritePattern<sol::Create2Op>::OpRewritePattern;
+struct Create2OpLowering : public OpRewritePattern<yul::Create2Op> {
+  using OpRewritePattern<yul::Create2Op>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::Create2Op op,
+  LogicalResult matchAndRewrite(yul::Create2Op op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op->getLoc());
     Value addr = evmB.genHeapPtr(op.getAddr());
@@ -345,10 +346,10 @@ struct Create2OpLowering : public OpRewritePattern<sol::Create2Op> {
   }
 };
 
-struct MLoadOpLowering : public OpRewritePattern<sol::MLoadOp> {
-  using OpRewritePattern<sol::MLoadOp>::OpRewritePattern;
+struct MLoadOpLowering : public OpRewritePattern<yul::MLoadOp> {
+  using OpRewritePattern<yul::MLoadOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::MLoadOp op,
+  LogicalResult matchAndRewrite(yul::MLoadOp op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op->getLoc());
 
@@ -360,10 +361,10 @@ struct MLoadOpLowering : public OpRewritePattern<sol::MLoadOp> {
 };
 
 struct LoadImmutable2OpLowering
-    : public OpRewritePattern<sol::LoadImmutable2Op> {
-  using OpRewritePattern<sol::LoadImmutable2Op>::OpRewritePattern;
+    : public OpRewritePattern<yul::LoadImmutableOp> {
+  using OpRewritePattern<yul::LoadImmutableOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::LoadImmutable2Op op,
+  LogicalResult matchAndRewrite(yul::LoadImmutableOp op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op->getLoc());
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(
@@ -386,11 +387,11 @@ struct LoadImmutableOpLowering
     bool inRuntime = op->getParentOfType<sol::FuncOp>().getRuntime();
     Value repl;
     if (inRuntime) {
-      repl = r.create<sol::LoadImmutable2Op>(loc, op.getName());
+      repl = r.create<yul::LoadImmutableOp>(loc, op.getName());
     } else {
       assert(op->hasAttr("addr"));
       IntegerAttr addr = cast<IntegerAttr>(op->getAttr("addr"));
-      repl = r.create<sol::MLoadOp>(loc, bExt.genI256Const(addr.getValue()));
+      repl = r.create<yul::MLoadOp>(loc, bExt.genI256Const(addr.getValue()));
     }
 
     if (auto intTy = dyn_cast<IntegerType>(op.getType())) {
@@ -405,10 +406,10 @@ struct LoadImmutableOpLowering
   }
 };
 
-struct LinkerSymbolOpLowering : public OpRewritePattern<sol::LinkerSymbolOp> {
-  using OpRewritePattern<sol::LinkerSymbolOp>::OpRewritePattern;
+struct LinkerSymbolOpLowering : public OpRewritePattern<yul::LinkerSymbolOp> {
+  using OpRewritePattern<yul::LinkerSymbolOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::LinkerSymbolOp op,
+  LogicalResult matchAndRewrite(yul::LinkerSymbolOp op,
                                 PatternRewriter &r) const override {
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(
         op, llvm::Intrinsic::evm_linkersymbol,
@@ -418,10 +419,10 @@ struct LinkerSymbolOpLowering : public OpRewritePattern<sol::LinkerSymbolOp> {
   }
 };
 
-struct MStoreOpLowering : public OpRewritePattern<sol::MStoreOp> {
-  using OpRewritePattern<sol::MStoreOp>::OpRewritePattern;
+struct MStoreOpLowering : public OpRewritePattern<yul::MStoreOp> {
+  using OpRewritePattern<yul::MStoreOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::MStoreOp op,
+  LogicalResult matchAndRewrite(yul::MStoreOp op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op->getLoc());
 
@@ -432,10 +433,10 @@ struct MStoreOpLowering : public OpRewritePattern<sol::MStoreOp> {
   }
 };
 
-struct MStore8OpLowering : public OpRewritePattern<sol::MStore8Op> {
-  using OpRewritePattern<sol::MStore8Op>::OpRewritePattern;
+struct MStore8OpLowering : public OpRewritePattern<yul::MStore8Op> {
+  using OpRewritePattern<yul::MStore8Op>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::MStore8Op op,
+  LogicalResult matchAndRewrite(yul::MStore8Op op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op->getLoc());
 
@@ -448,10 +449,10 @@ struct MStore8OpLowering : public OpRewritePattern<sol::MStore8Op> {
   }
 };
 
-struct SetImmutableOpLowering : public OpRewritePattern<sol::SetImmutableOp> {
-  using OpRewritePattern<sol::SetImmutableOp>::OpRewritePattern;
+struct SetImmutableOpLowering : public OpRewritePattern<yul::SetImmutableOp> {
+  using OpRewritePattern<yul::SetImmutableOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::SetImmutableOp op,
+  LogicalResult matchAndRewrite(yul::SetImmutableOp op,
                                 PatternRewriter &r) const override {
     r.replaceOpWithNewOp<LLVM::SetImmutableOp>(op, op.getAddr(), op.getName(),
                                                op.getVal());
@@ -459,10 +460,10 @@ struct SetImmutableOpLowering : public OpRewritePattern<sol::SetImmutableOp> {
   }
 };
 
-struct ByteOpLowering : public OpRewritePattern<sol::ByteOp> {
-  using OpRewritePattern<sol::ByteOp>::OpRewritePattern;
+struct ByteOpLowering : public OpRewritePattern<yul::ByteOp> {
+  using OpRewritePattern<yul::ByteOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::ByteOp op,
+  LogicalResult matchAndRewrite(yul::ByteOp op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op->getLoc());
 
@@ -474,10 +475,10 @@ struct ByteOpLowering : public OpRewritePattern<sol::ByteOp> {
   }
 };
 
-struct MCopyOpLowering : public OpRewritePattern<sol::MCopyOp> {
-  using OpRewritePattern<sol::MCopyOp>::OpRewritePattern;
+struct MCopyOpLowering : public OpRewritePattern<yul::MCopyOp> {
+  using OpRewritePattern<yul::MCopyOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::MCopyOp op,
+  LogicalResult matchAndRewrite(yul::MCopyOp op,
                                 PatternRewriter &r) const override {
     // TODO? Check m_evmVersion.hasMcopy() and legalize here?
 
@@ -493,10 +494,10 @@ struct MCopyOpLowering : public OpRewritePattern<sol::MCopyOp> {
   }
 };
 
-struct MemGuardOpLowering : public OpRewritePattern<sol::MemGuardOp> {
-  using OpRewritePattern<sol::MemGuardOp>::OpRewritePattern;
+struct MemGuardOpLowering : public OpRewritePattern<yul::MemGuardOp> {
+  using OpRewritePattern<yul::MemGuardOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::MemGuardOp op,
+  LogicalResult matchAndRewrite(yul::MemGuardOp op,
                                 PatternRewriter &r) const override {
     auto size = op->getAttrOfType<IntegerAttr>("size");
     r.replaceOpWithNewOp<arith::ConstantOp>(op, size);
@@ -504,10 +505,10 @@ struct MemGuardOpLowering : public OpRewritePattern<sol::MemGuardOp> {
   }
 };
 
-struct RevertOpLowering : public OpRewritePattern<sol::RevertOp> {
-  using OpRewritePattern<sol::RevertOp>::OpRewritePattern;
+struct RevertOpLowering : public OpRewritePattern<yul::RevertOp> {
+  using OpRewritePattern<yul::RevertOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::RevertOp op,
+  LogicalResult matchAndRewrite(yul::RevertOp op,
                                 PatternRewriter &r) const override {
     Location loc = op.getLoc();
     evm::Builder evmB(r, loc);
@@ -523,10 +524,10 @@ struct RevertOpLowering : public OpRewritePattern<sol::RevertOp> {
   }
 };
 
-struct BuiltinCallOpLowering : public OpRewritePattern<sol::BuiltinCallOp> {
-  using OpRewritePattern<sol::BuiltinCallOp>::OpRewritePattern;
+struct BuiltinCallOpLowering : public OpRewritePattern<yul::CallOp> {
+  using OpRewritePattern<yul::CallOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::BuiltinCallOp op,
+  LogicalResult matchAndRewrite(yul::CallOp op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op.getLoc());
 
@@ -542,10 +543,10 @@ struct BuiltinCallOpLowering : public OpRewritePattern<sol::BuiltinCallOp> {
   }
 };
 
-struct StaticCallOpLowering : public OpRewritePattern<sol::StaticCallOp> {
-  using OpRewritePattern<sol::StaticCallOp>::OpRewritePattern;
+struct StaticCallOpLowering : public OpRewritePattern<yul::StaticCallOp> {
+  using OpRewritePattern<yul::StaticCallOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::StaticCallOp op,
+  LogicalResult matchAndRewrite(yul::StaticCallOp op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op.getLoc());
 
@@ -561,10 +562,10 @@ struct StaticCallOpLowering : public OpRewritePattern<sol::StaticCallOp> {
   }
 };
 
-struct DelegateCallOpLowering : public OpRewritePattern<sol::DelegateCallOp> {
-  using OpRewritePattern<sol::DelegateCallOp>::OpRewritePattern;
+struct DelegateCallOpLowering : public OpRewritePattern<yul::DelegateCallOp> {
+  using OpRewritePattern<yul::DelegateCallOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::DelegateCallOp op,
+  LogicalResult matchAndRewrite(yul::DelegateCallOp op,
                                 PatternRewriter &r) const override {
     evm::Builder evmB(r, op.getLoc());
 
@@ -580,10 +581,10 @@ struct DelegateCallOpLowering : public OpRewritePattern<sol::DelegateCallOp> {
   }
 };
 
-struct BuiltinRetOpLowering : public OpRewritePattern<sol::BuiltinRetOp> {
-  using OpRewritePattern<sol::BuiltinRetOp>::OpRewritePattern;
+struct BuiltinRetOpLowering : public OpRewritePattern<yul::ReturnOp> {
+  using OpRewritePattern<yul::ReturnOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::BuiltinRetOp op,
+  LogicalResult matchAndRewrite(yul::ReturnOp op,
                                 PatternRewriter &r) const override {
     Location loc = op.getLoc();
     evm::Builder evmB(r, loc);
@@ -599,10 +600,10 @@ struct BuiltinRetOpLowering : public OpRewritePattern<sol::BuiltinRetOp> {
   }
 };
 
-struct StopOpLowering : public OpRewritePattern<sol::StopOp> {
-  using OpRewritePattern<sol::StopOp>::OpRewritePattern;
+struct StopOpLowering : public OpRewritePattern<yul::StopOp> {
+  using OpRewritePattern<yul::StopOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::StopOp op,
+  LogicalResult matchAndRewrite(yul::StopOp op,
                                 PatternRewriter &r) const override {
     solidity::mlirgen::BuilderExt bExt(r, op.getLoc());
 
@@ -614,11 +615,11 @@ struct StopOpLowering : public OpRewritePattern<sol::StopOp> {
   }
 };
 
-struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
-  using OpRewritePattern<sol::ObjectOp>::OpRewritePattern;
+struct ObjectOpLowering : public OpRewritePattern<yul::ObjectOp> {
+  using OpRewritePattern<yul::ObjectOp>::OpRewritePattern;
 
   // "Moves" the sol.object to the module.
-  void moveObjToMod(sol::ObjectOp obj, ModuleOp mod, PatternRewriter &r) const {
+  void moveObjToMod(yul::ObjectOp obj, ModuleOp mod, PatternRewriter &r) const {
     Location loc = obj.getLoc();
     solidity::mlirgen::BuilderExt bExt(r, loc);
     OpBuilder::InsertionGuard insertGuard(r);
@@ -634,7 +635,7 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
     // Move the entry code to the entry function and everything else to the
     // module.
     for (auto &op : llvm::make_early_inc_range(*obj.getEntryBlock())) {
-      if (isa<sol::FuncOp>(op) || isa<sol::ObjectOp>(op))
+      if (isa<sol::FuncOp>(op) || isa<yul::ObjectOp>(op))
         op.moveBefore(modBlk, modBlk->end());
     }
     // Terminate all blocks without terminators using the unreachable op.
@@ -648,7 +649,7 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
                          entryFn.getBody().begin());
   }
 
-  LogicalResult matchAndRewrite(sol::ObjectOp obj,
+  LogicalResult matchAndRewrite(yul::ObjectOp obj,
                                 PatternRewriter &r) const override {
     Location loc = obj.getLoc();
 

@@ -277,9 +277,7 @@ mlir::Value YulToMLIRPass::convToBool(mlir::Value val) {
 
 void YulToMLIRPass::populateBuiltinGenMap() {
   using namespace mlir;
-  using namespace mlir::sol;
-  // TODO:
-  // using namespace mlir::yul;
+  using namespace mlir::yul;
   defSimpleBuiltinGen<arith::AddIOp>("add");
   defSimpleBuiltinGen<arith::SubIOp>("sub");
   defSimpleBuiltinGen<arith::ShRUIOp, /*reverseArgs=*/true>("shr");
@@ -295,7 +293,7 @@ void YulToMLIRPass::populateBuiltinGenMap() {
     return resVals;
   };
   defSimpleBuiltinGen<MLoadOp>("mload");
-  defSimpleBuiltinGenNoRet<LoadImmutable2Op>("loadimmutable");
+  defSimpleBuiltinGenNoRet<LoadImmutableOp>("loadimmutable");
   defSimpleBuiltinGenNoRet<MStoreOp>("mstore");
   defSimpleBuiltinGenNoRet<MStore8Op>("mstore8");
   defSimpleBuiltinGenNoRet<MCopyOp>("mcopy");
@@ -314,7 +312,7 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   defSimpleBuiltinGen<Create2Op>("create2");
   defSimpleBuiltinGen<SLoadOp>("sload");
   defSimpleBuiltinGenNoRet<SStoreOp>("sstore");
-  defSimpleBuiltinGenNoRet<BuiltinRetOp>("return");
+  defSimpleBuiltinGenNoRet<ReturnOp>("return");
   defSimpleBuiltinGenNoRet<RevertOp>("revert");
   defSimpleBuiltinGenNoRet<StopOp>("stop");
   defSimpleBuiltinGen<Keccak256Op>("keccak256");
@@ -322,7 +320,7 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   defSimpleBuiltinGen<AddressOp>("address");
   defSimpleBuiltinGen<CallerOp>("caller");
   defSimpleBuiltinGen<GasOp>("gas");
-  defSimpleBuiltinGen<BuiltinCallOp>("call");
+  defSimpleBuiltinGen<CallOp>("call");
   defSimpleBuiltinGen<StaticCallOp>("staticcall");
   defSimpleBuiltinGen<DelegateCallOp>("delegatecall");
   defSimpleBuiltinGenNoRet<LogOp>("log0");
@@ -336,8 +334,8 @@ void YulToMLIRPass::populateBuiltinGenMap() {
     auto *objectName = std::get_if<Literal>(&args[0]);
     assert(objectName);
     assert(objectName->kind == LiteralKind::String);
-    auto objectOp = lookupSymbol<sol::ObjectOp>(
-        objectName->value.builtinStringLiteralValue());
+    auto objectOp =
+        lookupSymbol<ObjectOp>(objectName->value.builtinStringLiteralValue());
     assert(objectOp && "NYI: References to external object");
     resVals.push_back(
         b.create<DataOffsetOp>(loc, FlatSymbolRefAttr::get(objectOp)));
@@ -349,8 +347,8 @@ void YulToMLIRPass::populateBuiltinGenMap() {
     auto *objectName = std::get_if<Literal>(&args[0]);
     assert(objectName);
     assert(objectName->kind == LiteralKind::String);
-    auto objectOp = lookupSymbol<sol::ObjectOp>(
-        objectName->value.builtinStringLiteralValue());
+    auto objectOp =
+        lookupSymbol<ObjectOp>(objectName->value.builtinStringLiteralValue());
     assert(objectOp && "NYI: References to external object");
     resVals.push_back(
         b.create<DataSizeOp>(loc, FlatSymbolRefAttr::get(objectOp)));
@@ -669,7 +667,7 @@ void YulToMLIRPass::lowerBlk(Block const &blk) {
 
 void YulToMLIRPass::lowerObj(Object const &obj) {
   // Lookup ObjectOp (should be declared by the top level object lowering)
-  auto op = lookupSymbol<mlir::sol::ObjectOp>(obj.name);
+  auto op = lookupSymbol<mlir::yul::ObjectOp>(obj.name);
   assert(op);
 
   b.setInsertionPointToStart(op.getEntryBlock());
@@ -682,13 +680,13 @@ void YulToMLIRPass::lowerTopLevelObj(Object const &obj) {
   // that we can create symbol references to them (for builtins like dataoffset)
   //
   // TODO: Where is the source location info for Object? Do we need to track it?
-  auto topLevelObj = b.create<mlir::sol::ObjectOp>(b.getUnknownLoc(), obj.name);
+  auto topLevelObj = b.create<mlir::yul::ObjectOp>(b.getUnknownLoc(), obj.name);
   {
     mlir::OpBuilder::InsertionGuard insertGuard(b);
     b.setInsertionPointToEnd(topLevelObj.getEntryBlock());
     for (auto const &subNode : obj.subObjects) {
       if (auto *subObj = dynamic_cast<Object const *>(subNode.get())) {
-        b.create<mlir::sol::ObjectOp>(b.getUnknownLoc(), subObj->name);
+        b.create<mlir::yul::ObjectOp>(b.getUnknownLoc(), subObj->name);
       }
     }
   }

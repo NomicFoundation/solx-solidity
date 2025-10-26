@@ -21,6 +21,7 @@
 
 #include "libsolidity/codegen/mlir/Passes.h"
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
+#include "libsolidity/codegen/mlir/Yul/Yul.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
@@ -36,8 +37,8 @@ using namespace mlir;
 
 int main(int argc, char **argv) {
   DialectRegistry registry;
-  registry.insert<BuiltinDialect, sol::SolDialect, arith::ArithDialect,
-                  scf::SCFDialect>();
+  registry.insert<BuiltinDialect, sol::SolDialect, yul::YulDialect,
+                  arith::ArithDialect, scf::SCFDialect>();
 
   registerPass([](void) -> std::unique_ptr<Pass> {
     return sol::createLoopInvariantCodeMotionPass();

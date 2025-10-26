@@ -20,6 +20,7 @@
 #include "libsolidity/codegen/mlir/Target/EVM/SolToStandard.h"
 #include "libsolidity/codegen/mlir/Target/EraVM/Util.h"
 #include "libsolidity/codegen/mlir/Util.h"
+#include "libsolidity/codegen/mlir/Yul/Yul.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
@@ -55,7 +56,7 @@ namespace {
 
 /// Returns true if `op` is defined in a runtime context
 static bool inRuntimeContext(Operation *op) {
-  assert(!isa<sol::FuncOp>(op) && !isa<sol::ObjectOp>(op));
+  assert(!isa<sol::FuncOp>(op) && !isa<yul::ObjectOp>(op));
 
   // Check if the parent FuncOp has isRuntime attribute set
   auto parentFunc = op->getParentOfType<sol::FuncOp>();
@@ -63,7 +64,7 @@ static bool inRuntimeContext(Operation *op) {
     return parentFunc.getRuntime();
 
   // If there's no parent FuncOp, check the parent ObjectOp
-  auto parentObj = op->getParentOfType<sol::ObjectOp>();
+  auto parentObj = op->getParentOfType<yul::ObjectOp>();
   if (parentObj) {
     return parentObj.getName().ends_with("_deployed");
   }
@@ -71,10 +72,10 @@ static bool inRuntimeContext(Operation *op) {
   llvm_unreachable("op has no parent FuncOp or ObjectOp");
 }
 
-struct Keccak256OpLowering : public OpRewritePattern<sol::Keccak256Op> {
-  using OpRewritePattern<sol::Keccak256Op>::OpRewritePattern;
+struct Keccak256OpLowering : public OpRewritePattern<yul::Keccak256Op> {
+  using OpRewritePattern<yul::Keccak256Op>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::Keccak256Op op,
+  LogicalResult matchAndRewrite(yul::Keccak256Op op,
                                 PatternRewriter &r) const override {
     Location loc = op.getLoc();
     solidity::mlirgen::BuilderExt bExt(r, loc);
@@ -99,10 +100,10 @@ struct Keccak256OpLowering : public OpRewritePattern<sol::Keccak256Op> {
   }
 };
 
-struct LogOpLowering : public OpRewritePattern<sol::LogOp> {
-  using OpRewritePattern<sol::LogOp>::OpRewritePattern;
+struct LogOpLowering : public OpRewritePattern<yul::LogOp> {
+  using OpRewritePattern<yul::LogOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::LogOp op,
+  LogicalResult matchAndRewrite(yul::LogOp op,
                                 PatternRewriter &r) const override {
     Location loc = op.getLoc();
     solidity::mlirgen::BuilderExt bExt(r, loc);
@@ -140,7 +141,7 @@ struct LogOpLowering : public OpRewritePattern<sol::LogOp> {
                                 farCall.getResult(1), bExt.genBool(false));
     r.create<scf::IfOp>(loc, farCallFailCond,
                         /*thenBuilder=*/[&](OpBuilder &b, Location loc) {
-                          b.create<sol::RevertOp>(loc, bExt.genI256Const(0),
+                          b.create<yul::RevertOp>(loc, bExt.genI256Const(0),
                                                   bExt.genI256Const(0));
                           b.create<scf::YieldOp>(loc);
                         });
@@ -150,10 +151,10 @@ struct LogOpLowering : public OpRewritePattern<sol::LogOp> {
   }
 };
 
-struct AddressOpLowering : public OpRewritePattern<sol::AddressOp> {
-  using OpRewritePattern<sol::AddressOp>::OpRewritePattern;
+struct AddressOpLowering : public OpRewritePattern<yul::AddressOp> {
+  using OpRewritePattern<yul::AddressOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::AddressOp op,
+  LogicalResult matchAndRewrite(yul::AddressOp op,
                                 PatternRewriter &r) const override {
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::eravm_this,
                                            /*resTy=*/r.getIntegerType(256),
@@ -163,10 +164,10 @@ struct AddressOpLowering : public OpRewritePattern<sol::AddressOp> {
   }
 };
 
-struct CallerOpLowering : public OpRewritePattern<sol::CallerOp> {
-  using OpRewritePattern<sol::CallerOp>::OpRewritePattern;
+struct CallerOpLowering : public OpRewritePattern<yul::CallerOp> {
+  using OpRewritePattern<yul::CallerOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::CallerOp op,
+  LogicalResult matchAndRewrite(yul::CallerOp op,
                                 PatternRewriter &r) const override {
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::eravm_caller,
                                            /*resTy=*/r.getIntegerType(256),
@@ -177,10 +178,10 @@ struct CallerOpLowering : public OpRewritePattern<sol::CallerOp> {
   }
 };
 
-struct CallValOpLowering : public OpRewritePattern<sol::CallValOp> {
-  using OpRewritePattern<sol::CallValOp>::OpRewritePattern;
+struct CallValOpLowering : public OpRewritePattern<yul::CallValOp> {
+  using OpRewritePattern<yul::CallValOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::CallValOp op,
+  LogicalResult matchAndRewrite(yul::CallValOp op,
                                 PatternRewriter &r) const override {
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(
         op, llvm::Intrinsic::eravm_getu128, /*resTy=*/r.getIntegerType(256),
@@ -189,10 +190,10 @@ struct CallValOpLowering : public OpRewritePattern<sol::CallValOp> {
   }
 };
 
-struct CallDataLoadOpLowering : public OpRewritePattern<sol::CallDataLoadOp> {
-  using OpRewritePattern<sol::CallDataLoadOp>::OpRewritePattern;
+struct CallDataLoadOpLowering : public OpRewritePattern<yul::CallDataLoadOp> {
+  using OpRewritePattern<yul::CallDataLoadOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::CallDataLoadOp op,
+  LogicalResult matchAndRewrite(yul::CallDataLoadOp op,
                                 PatternRewriter &r) const override {
     Location loc = op.getLoc();
     eravm::Builder eraB(r, loc);
@@ -212,10 +213,10 @@ struct CallDataLoadOpLowering : public OpRewritePattern<sol::CallDataLoadOp> {
   }
 };
 
-struct CallDataSizeOpLowering : public OpRewritePattern<sol::CallDataSizeOp> {
-  using OpRewritePattern<sol::CallDataSizeOp>::OpRewritePattern;
+struct CallDataSizeOpLowering : public OpRewritePattern<yul::CallDataSizeOp> {
+  using OpRewritePattern<yul::CallDataSizeOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::CallDataSizeOp op,
+  LogicalResult matchAndRewrite(yul::CallDataSizeOp op,
                                 PatternRewriter &r) const override {
     if (inRuntimeContext(op)) {
       eravm::Builder eraB(r, op.getLoc());
@@ -229,10 +230,10 @@ struct CallDataSizeOpLowering : public OpRewritePattern<sol::CallDataSizeOp> {
   }
 };
 
-struct CallDataCopyOpLowering : public OpRewritePattern<sol::CallDataCopyOp> {
-  using OpRewritePattern<sol::CallDataCopyOp>::OpRewritePattern;
+struct CallDataCopyOpLowering : public OpRewritePattern<yul::CallDataCopyOp> {
+  using OpRewritePattern<yul::CallDataCopyOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::CallDataCopyOp op,
+  LogicalResult matchAndRewrite(yul::CallDataCopyOp op,
                                 PatternRewriter &r) const override {
     Location loc = op.getLoc();
     auto mod = op->getParentOfType<ModuleOp>();
@@ -252,10 +253,10 @@ struct CallDataCopyOpLowering : public OpRewritePattern<sol::CallDataCopyOp> {
 };
 
 struct ReturnDataSizeOpLowering
-    : public OpRewritePattern<sol::ReturnDataSizeOp> {
-  using OpRewritePattern<sol::ReturnDataSizeOp>::OpRewritePattern;
+    : public OpRewritePattern<yul::ReturnDataSizeOp> {
+  using OpRewritePattern<yul::ReturnDataSizeOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::ReturnDataSizeOp op,
+  LogicalResult matchAndRewrite(yul::ReturnDataSizeOp op,
                                 PatternRewriter &r) const override {
     eravm::Builder eraB(r, op.getLoc());
     r.replaceOp(op,
@@ -264,10 +265,10 @@ struct ReturnDataSizeOpLowering
   }
 };
 
-struct SLoadOpLowering : public OpRewritePattern<sol::SLoadOp> {
-  using OpRewritePattern<sol::SLoadOp>::OpRewritePattern;
+struct SLoadOpLowering : public OpRewritePattern<yul::SLoadOp> {
+  using OpRewritePattern<yul::SLoadOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::SLoadOp op,
+  LogicalResult matchAndRewrite(yul::SLoadOp op,
                                 PatternRewriter &r) const override {
     eravm::Builder eraB(r, op->getLoc());
 
@@ -278,10 +279,10 @@ struct SLoadOpLowering : public OpRewritePattern<sol::SLoadOp> {
   }
 };
 
-struct SStoreOpLowering : public OpRewritePattern<sol::SStoreOp> {
-  using OpRewritePattern<sol::SStoreOp>::OpRewritePattern;
+struct SStoreOpLowering : public OpRewritePattern<yul::SStoreOp> {
+  using OpRewritePattern<yul::SStoreOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::SStoreOp op,
+  LogicalResult matchAndRewrite(yul::SStoreOp op,
                                 PatternRewriter &r) const override {
     eravm::Builder eraB(r, op->getLoc());
 
@@ -292,10 +293,10 @@ struct SStoreOpLowering : public OpRewritePattern<sol::SStoreOp> {
   }
 };
 
-struct DataOffsetOpLowering : public OpRewritePattern<sol::DataOffsetOp> {
-  using OpRewritePattern<sol::DataOffsetOp>::OpRewritePattern;
+struct DataOffsetOpLowering : public OpRewritePattern<yul::DataOffsetOp> {
+  using OpRewritePattern<yul::DataOffsetOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::DataOffsetOp op,
+  LogicalResult matchAndRewrite(yul::DataOffsetOp op,
                                 PatternRewriter &r) const override {
     // FIXME:
     // - Handle references to objects outside the current module.
@@ -306,10 +307,10 @@ struct DataOffsetOpLowering : public OpRewritePattern<sol::DataOffsetOp> {
   }
 };
 
-struct DataSizeOpLowering : public OpRewritePattern<sol::DataSizeOp> {
-  using OpRewritePattern<sol::DataSizeOp>::OpRewritePattern;
+struct DataSizeOpLowering : public OpRewritePattern<yul::DataSizeOp> {
+  using OpRewritePattern<yul::DataSizeOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::DataSizeOp op,
+  LogicalResult matchAndRewrite(yul::DataSizeOp op,
                                 PatternRewriter &r) const override {
     // FIXME:
     // - Handle references to objects outside the current module.
@@ -320,10 +321,10 @@ struct DataSizeOpLowering : public OpRewritePattern<sol::DataSizeOp> {
   }
 };
 
-struct CodeSizeOpLowering : public OpRewritePattern<sol::CodeSizeOp> {
-  using OpRewritePattern<sol::CodeSizeOp>::OpRewritePattern;
+struct CodeSizeOpLowering : public OpRewritePattern<yul::CodeSizeOp> {
+  using OpRewritePattern<yul::CodeSizeOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::CodeSizeOp op,
+  LogicalResult matchAndRewrite(yul::CodeSizeOp op,
                                 PatternRewriter &r) const override {
     Location loc = op->getLoc();
     auto mod = op->getParentOfType<ModuleOp>();
@@ -338,10 +339,10 @@ struct CodeSizeOpLowering : public OpRewritePattern<sol::CodeSizeOp> {
   }
 };
 
-struct CodeCopyOpLowering : public OpRewritePattern<sol::CodeCopyOp> {
-  using OpRewritePattern<sol::CodeCopyOp>::OpRewritePattern;
+struct CodeCopyOpLowering : public OpRewritePattern<yul::CodeCopyOp> {
+  using OpRewritePattern<yul::CodeCopyOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::CodeCopyOp op,
+  LogicalResult matchAndRewrite(yul::CodeCopyOp op,
                                 PatternRewriter &r) const override {
     Location loc = op->getLoc();
     eravm::Builder eraB(r, loc);
@@ -361,10 +362,10 @@ struct CodeCopyOpLowering : public OpRewritePattern<sol::CodeCopyOp> {
   }
 };
 
-struct MLoadOpLowering : public OpRewritePattern<sol::MLoadOp> {
-  using OpRewritePattern<sol::MLoadOp>::OpRewritePattern;
+struct MLoadOpLowering : public OpRewritePattern<yul::MLoadOp> {
+  using OpRewritePattern<yul::MLoadOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::MLoadOp op,
+  LogicalResult matchAndRewrite(yul::MLoadOp op,
                                 PatternRewriter &r) const override {
     eravm::Builder eraB(r, op->getLoc());
 
@@ -375,10 +376,10 @@ struct MLoadOpLowering : public OpRewritePattern<sol::MLoadOp> {
   }
 };
 
-struct MStoreOpLowering : public OpRewritePattern<sol::MStoreOp> {
-  using OpRewritePattern<sol::MStoreOp>::OpRewritePattern;
+struct MStoreOpLowering : public OpRewritePattern<yul::MStoreOp> {
+  using OpRewritePattern<yul::MStoreOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::MStoreOp op,
+  LogicalResult matchAndRewrite(yul::MStoreOp op,
                                 PatternRewriter &r) const override {
     eravm::Builder eraB(r, op->getLoc());
 
@@ -389,10 +390,10 @@ struct MStoreOpLowering : public OpRewritePattern<sol::MStoreOp> {
   }
 };
 
-struct MCopyOpLowering : public OpRewritePattern<sol::MCopyOp> {
-  using OpRewritePattern<sol::MCopyOp>::OpRewritePattern;
+struct MCopyOpLowering : public OpRewritePattern<yul::MCopyOp> {
+  using OpRewritePattern<yul::MCopyOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::MCopyOp op,
+  LogicalResult matchAndRewrite(yul::MCopyOp op,
                                 PatternRewriter &r) const override {
     // TODO? Check m_evmVersion.hasMcopy() and legalize here?
 
@@ -408,10 +409,10 @@ struct MCopyOpLowering : public OpRewritePattern<sol::MCopyOp> {
   }
 };
 
-struct MemGuardOpLowering : public OpRewritePattern<sol::MemGuardOp> {
-  using OpRewritePattern<sol::MemGuardOp>::OpRewritePattern;
+struct MemGuardOpLowering : public OpRewritePattern<yul::MemGuardOp> {
+  using OpRewritePattern<yul::MemGuardOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::MemGuardOp op,
+  LogicalResult matchAndRewrite(yul::MemGuardOp op,
                                 PatternRewriter &r) const override {
     auto size = op->getAttrOfType<IntegerAttr>("size");
     r.replaceOpWithNewOp<arith::ConstantOp>(op, size);
@@ -419,10 +420,10 @@ struct MemGuardOpLowering : public OpRewritePattern<sol::MemGuardOp> {
   }
 };
 
-struct RevertOpLowering : public OpRewritePattern<sol::RevertOp> {
-  using OpRewritePattern<sol::RevertOp>::OpRewritePattern;
+struct RevertOpLowering : public OpRewritePattern<yul::RevertOp> {
+  using OpRewritePattern<yul::RevertOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::RevertOp op,
+  LogicalResult matchAndRewrite(yul::RevertOp op,
                                 PatternRewriter &r) const override {
     Location loc = op.getLoc();
     auto mod = op->getParentOfType<ModuleOp>();
@@ -447,10 +448,10 @@ struct RevertOpLowering : public OpRewritePattern<sol::RevertOp> {
   }
 };
 
-struct BuiltinRetOpLowering : public OpRewritePattern<sol::BuiltinRetOp> {
-  using OpRewritePattern<sol::BuiltinRetOp>::OpRewritePattern;
+struct BuiltinRetOpLowering : public OpRewritePattern<yul::ReturnOp> {
+  using OpRewritePattern<yul::ReturnOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::BuiltinRetOp op,
+  LogicalResult matchAndRewrite(yul::ReturnOp op,
                                 PatternRewriter &r) const override {
     Location loc = op.getLoc();
     auto mod = op->getParentOfType<ModuleOp>();
@@ -523,14 +524,14 @@ struct BuiltinRetOpLowering : public OpRewritePattern<sol::BuiltinRetOp> {
   }
 };
 
-struct StopOpLowering : public OpRewritePattern<sol::StopOp> {
-  using OpRewritePattern<sol::StopOp>::OpRewritePattern;
+struct StopOpLowering : public OpRewritePattern<yul::StopOp> {
+  using OpRewritePattern<yul::StopOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::StopOp op,
+  LogicalResult matchAndRewrite(yul::StopOp op,
                                 PatternRewriter &r) const override {
     solidity::mlirgen::BuilderExt bExt(r, op.getLoc());
-    r.replaceOpWithNewOp<sol::BuiltinRetOp>(op, bExt.genI256Const(0),
-                                            bExt.genI256Const(0));
+    r.replaceOpWithNewOp<yul::ReturnOp>(op, bExt.genI256Const(0),
+                                        bExt.genI256Const(0));
     return success();
   }
 };
@@ -586,12 +587,12 @@ struct FuncOpLowering : public OpConversionPattern<sol::FuncOp> {
   }
 };
 
-struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
-  using OpRewritePattern<sol::ObjectOp>::OpRewritePattern;
+struct ObjectOpLowering : public OpRewritePattern<yul::ObjectOp> {
+  using OpRewritePattern<yul::ObjectOp>::OpRewritePattern;
 
   /// Move FuncOps in the ObjectOp to the ModuleOp by disambiguating the symbol
   /// names.
-  void moveFuncsToModule(sol::ObjectOp objOp, ModuleOp mod) const {
+  void moveFuncsToModule(yul::ObjectOp objOp, ModuleOp mod) const {
     // Track the names of the existing function in the module.
     std::set<std::string> fnNamesInMod;
     // TODO: Is there a way to run .walk for 1 level depth?
@@ -621,7 +622,7 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
 
         // The visitor might be at a inner object, so we need to explicitly
         // fetch the parent ObjectOp.
-        auto parentObjectOp = fn->getParentOfType<sol::ObjectOp>();
+        auto parentObjectOp = fn->getParentOfType<yul::ObjectOp>();
         assert(parentObjectOp);
         if (failed(fn.replaceAllSymbolUses(
                 StringAttr::get(objOp.getContext(), newName), parentObjectOp)))
@@ -637,7 +638,7 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
     });
   }
 
-  LogicalResult matchAndRewrite(sol::ObjectOp objOp,
+  LogicalResult matchAndRewrite(yul::ObjectOp objOp,
                                 PatternRewriter &r) const override {
     Location loc = objOp.getLoc();
 
@@ -793,7 +794,7 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
     Region &runtimeFuncRegion = runtimeFunc.getRegion();
     // Move the runtime object getter under the ObjectOp public API
     for (auto const &op : *objOp.getEntryBlock()) {
-      if (auto runtimeObj = dyn_cast<sol::ObjectOp>(&op)) {
+      if (auto runtimeObj = dyn_cast<yul::ObjectOp>(&op)) {
         assert(runtimeObj.getName().ends_with("_deployed"));
         assert(runtimeFuncRegion.empty());
         r.inlineRegionBefore(runtimeObj.getRegion(), runtimeFuncRegion,
@@ -816,8 +817,8 @@ struct ObjectOpLowering : public OpRewritePattern<sol::ObjectOp> {
     OpBuilder thenBuilder = ifOp.getThenBodyBuilder();
     thenBuilder.create<sol::CallOp>(loc, deployFunc, ValueRange{});
     // FIXME: Why the following fails with a "does not reference a valid
-    // function" error but generating the sol::CallOp to __return is fine
-    // thenBuilder.create<sol::CallOp>(
+    // function" error but generating the yul::CallOp to __return is fine
+    // thenBuilder.create<yul::CallOp>(
     //     loc, SymbolRefAttr::get(mod.getContext(), "__deploy"), TypeRange{},
     //     ValueRange{});
 

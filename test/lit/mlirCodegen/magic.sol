@@ -25,7 +25,7 @@ function decode(bytes memory a) returns (uint, uint8, int32) {
 // CHECK-NEXT: #loc17 = loc({{.*}}:14:16)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   sol.func @msgSender_9() -> ui256 attributes {state_mutability = #NonPayable} {
-// CHECK-NEXT:     %0 = sol.caller loc(#loc2)
+// CHECK-NEXT:     %0 = yul.caller loc(#loc2)
 // CHECK-NEXT:     %1 = sol.conv_cast %0 : i256 -> ui256 loc(#loc2)
 // CHECK-NEXT:     sol.return %1 : ui256 loc(#loc3)
 // CHECK-NEXT:   } loc(#loc1)

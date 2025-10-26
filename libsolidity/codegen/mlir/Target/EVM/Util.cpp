@@ -23,6 +23,7 @@
 #include "libsolidity/codegen/CompilerUtils.h"
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Util.h"
+#include "libsolidity/codegen/mlir/Yul/Yul.h"
 #include "libsolutil/FunctionSelector.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
@@ -158,7 +159,7 @@ Value evm::Builder::genCodePtr(Value addr, std::optional<Location> locArg) {
 Value evm::Builder::genFreePtr(std::optional<Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;
   solidity::mlirgen::BuilderExt bExt(b, loc);
-  return b.create<sol::MLoadOp>(loc, bExt.genI256Const(64));
+  return b.create<yul::MLoadOp>(loc, bExt.genI256Const(64));
 }
 
 void evm::Builder::genFreePtrUpd(Value freePtr, Value size,
@@ -175,7 +176,7 @@ void evm::Builder::genFreePtrUpd(Value freePtr, Value size,
   // Generate the PanicCode::ResourceError check.
   //
   // TODO: Do we need to imposes a hard limit of ``type(uint64).max`` here?
-  b.create<sol::MStoreOp>(loc, bExt.genI256Const(64), newFreePtr);
+  b.create<yul::MStoreOp>(loc, bExt.genI256Const(64), newFreePtr);
 }
 
 Value evm::Builder::genMemAlloc(Value size, std::optional<Location> locArg) {
@@ -205,7 +206,7 @@ Value evm::Builder::genMemAllocForDynArray(Value sizeVar, Value sizeInBytes,
   auto dynSizeInBytes =
       b.create<arith::AddIOp>(loc, sizeInBytes, bExt.genI256Const(32));
   auto memPtr = genMemAlloc(dynSizeInBytes, loc);
-  b.create<sol::MStoreOp>(loc, memPtr, sizeVar);
+  b.create<yul::MStoreOp>(loc, memPtr, sizeVar);
   return memPtr;
 }
 
@@ -253,7 +254,7 @@ Value evm::Builder::genMemAlloc(Type ty, bool zeroInit, ValueRange initVals,
         // store the offsets.
         Value addr = dataPtr;
         for (auto val : initVals) {
-          b.create<sol::MStoreOp>(loc, addr, val);
+          b.create<yul::MStoreOp>(loc, addr, val);
           addr = b.create<arith::AddIOp>(loc, addr, bExt.genI256Const(32));
         }
         return memPtr;
@@ -273,20 +274,20 @@ Value evm::Builder::genMemAlloc(Type ty, bool zeroInit, ValueRange initVals,
           [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
             Value incrMemPtr = b.create<arith::AddIOp>(
                 loc, dataPtr, bExt.genCastToI256(indVar));
-            b.create<sol::MStoreOp>(
+            b.create<yul::MStoreOp>(
                 loc, incrMemPtr,
                 genMemAlloc(eltTy, zeroInit, initVals, sizeVar, recDepth, loc));
             b.create<scf::YieldOp>(loc);
           });
 
     } else if (zeroInit) {
-      Value callDataSz = b.create<sol::CallDataSizeOp>(loc);
-      b.create<sol::CallDataCopyOp>(loc, dataPtr, callDataSz, sizeInBytes);
+      Value callDataSz = b.create<yul::CallDataSizeOp>(loc);
+      b.create<yul::CallDataCopyOp>(loc, dataPtr, callDataSz, sizeInBytes);
 
     } else {
       Value addr = dataPtr;
       for (auto val : initVals) {
-        b.create<sol::MStoreOp>(loc, addr, val);
+        b.create<yul::MStoreOp>(loc, addr, val);
         addr = b.create<arith::AddIOp>(loc, addr, bExt.genI256Const(32));
       }
     }
@@ -311,9 +312,9 @@ Value evm::Builder::genMemAlloc(Type ty, bool zeroInit, ValueRange initVals,
       Value initVal;
       if (isa<sol::StructType>(memTy) || isa<sol::ArrayType>(memTy)) {
         initVal = genMemAlloc(memTy, zeroInit, {}, sizeVar, recDepth, loc);
-        b.create<sol::MStoreOp>(loc, memPtr, initVal);
+        b.create<yul::MStoreOp>(loc, memPtr, initVal);
       } else if (zeroInit) {
-        b.create<sol::MStoreOp>(loc, memPtr, bExt.genI256Const(0));
+        b.create<yul::MStoreOp>(loc, memPtr, bExt.genI256Const(0));
       }
     }
     return memPtr;
@@ -348,8 +349,8 @@ Value evm::Builder::genDataAddrPtr(Value addr, sol::DataLocation dataLoc,
   if (dataLoc == sol::DataLocation::Storage) {
     // Return the keccak256 of addr.
     auto zero = bExt.genI256Const(0);
-    b.create<sol::MStoreOp>(loc, zero, addr);
-    return b.create<sol::Keccak256Op>(loc, zero, bExt.genI256Const(32));
+    b.create<yul::MStoreOp>(loc, zero, addr);
+    return b.create<yul::Keccak256Op>(loc, zero, bExt.genI256Const(32));
   }
 
   llvm_unreachable("NYI");
@@ -384,14 +385,14 @@ Value evm::Builder::genLoad(Value addr, sol::DataLocation dataLoc,
   Location loc = locArg ? *locArg : defLoc;
 
   if (dataLoc == sol::DataLocation::CallData)
-    return b.create<sol::CallDataLoadOp>(loc, addr);
+    return b.create<yul::CallDataLoadOp>(loc, addr);
 
   if (dataLoc == sol::DataLocation::Memory ||
       dataLoc == sol::DataLocation::Immutable)
-    return b.create<sol::MLoadOp>(loc, addr);
+    return b.create<yul::MLoadOp>(loc, addr);
 
   if (dataLoc == sol::DataLocation::Storage)
-    return b.create<sol::SLoadOp>(loc, addr);
+    return b.create<yul::SLoadOp>(loc, addr);
 
   llvm_unreachable("NYI");
 }
@@ -402,9 +403,9 @@ void evm::Builder::genStore(Value val, Value addr, sol::DataLocation dataLoc,
 
   if (dataLoc == sol::DataLocation::Memory ||
       dataLoc == sol::DataLocation::Immutable) {
-    b.create<sol::MStoreOp>(loc, addr, val);
+    b.create<yul::MStoreOp>(loc, addr, val);
   } else if (dataLoc == sol::DataLocation::Storage) {
-    b.create<sol::SStoreOp>(loc, addr, val);
+    b.create<yul::SStoreOp>(loc, addr, val);
   } else {
     llvm_unreachable("NYI");
   }
@@ -416,7 +417,7 @@ void evm::Builder::genStringStore(std::string const &str, Value addr,
   solidity::mlirgen::BuilderExt bExt(b, loc);
 
   // Generate the size store.
-  b.create<sol::MStoreOp>(loc, addr, bExt.genI256Const(str.length()));
+  b.create<yul::MStoreOp>(loc, addr, bExt.genI256Const(str.length()));
 
   // Store the strings in 32 byte chunks of their numerical representation.
   for (size_t i = 0; i < str.length(); i += 32) {
@@ -427,7 +428,7 @@ void evm::Builder::genStringStore(std::string const &str, Value addr,
                                             solidity::util::h256::AlignLeft))
             .str();
     addr = b.create<arith::AddIOp>(loc, addr, bExt.genI256Const(32));
-    b.create<sol::MStoreOp>(loc, addr, bExt.genI256Const(subStrAsI256));
+    b.create<yul::MStoreOp>(loc, addr, bExt.genI256Const(subStrAsI256));
   }
 }
 
@@ -489,13 +490,13 @@ Value evm::Builder::genABITupleEncoding(Type ty, Value src, Value dstAddr,
   // Integer type
   if (auto intTy = dyn_cast<IntegerType>(ty)) {
     src = bExt.genIntCast(/*width=*/256, intTy.isSigned(), src);
-    b.create<sol::MStoreOp>(loc, dstAddr, src);
+    b.create<yul::MStoreOp>(loc, dstAddr, src);
     return tailAddr;
   }
 
   // Bytes type
   if (auto bytesTy = dyn_cast<sol::BytesType>(ty)) {
-    b.create<sol::MStoreOp>(loc, dstAddr, src);
+    b.create<yul::MStoreOp>(loc, dstAddr, src);
     return tailAddr;
   }
 
@@ -507,7 +508,7 @@ Value evm::Builder::genABITupleEncoding(Type ty, Value src, Value dstAddr,
       // Generate the size store.
       Value i256Size = genLoad(src, arrTy.getDataLocation(), loc);
       assert(dstAddr == tailAddr);
-      b.create<sol::MStoreOp>(loc, dstAddr, i256Size);
+      b.create<yul::MStoreOp>(loc, dstAddr, i256Size);
 
       size = bExt.genCastToIdx(i256Size);
       dstArrAddr = b.create<arith::AddIOp>(loc, dstAddr, thirtyTwo);
@@ -550,7 +551,7 @@ Value evm::Builder::genABITupleEncoding(Type ty, Value src, Value dstAddr,
               // (on the rhs) is that offset.
               srcVal = b.create<arith::AddIOp>(loc, srcArrAddr, srcVal);
 
-            b.create<sol::MStoreOp>(
+            b.create<yul::MStoreOp>(
                 loc, iDstAddr,
                 b.create<arith::SubIOp>(loc, iTailAddr, dstArrAddr));
             assert(dstAddrInTail);
@@ -577,16 +578,16 @@ Value evm::Builder::genABITupleEncoding(Type ty, Value src, Value dstAddr,
   if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
     // Generate the length field copy.
     auto size = genLoad(src, stringTy.getDataLocation(), loc);
-    b.create<sol::MStoreOp>(loc, tailAddr, size);
+    b.create<yul::MStoreOp>(loc, tailAddr, size);
 
     // Generate the data copy.
     auto dataAddr = b.create<arith::AddIOp>(loc, src, bExt.genI256Const(32));
     auto tailDataAddr =
         b.create<arith::AddIOp>(loc, tailAddr, bExt.genI256Const(32));
     if (stringTy.getDataLocation() == sol::DataLocation::Memory)
-      b.create<sol::MCopyOp>(loc, tailDataAddr, dataAddr, size);
+      b.create<yul::MCopyOp>(loc, tailDataAddr, dataAddr, size);
     else if (stringTy.getDataLocation() == sol::DataLocation::CallData)
-      b.create<sol::CallDataCopyOp>(loc, tailDataAddr, dataAddr, size);
+      b.create<yul::CallDataCopyOp>(loc, tailDataAddr, dataAddr, size);
     else
       llvm_unreachable("NYI");
 
@@ -614,7 +615,7 @@ Value evm::Builder::genABITupleEncoding(TypeRange tys, ValueRange vals,
     Type ty = std::get<0>(it);
     Value val = std::get<1>(it);
     if (sol::hasDynamicallySizedElt(ty)) {
-      b.create<sol::MStoreOp>(
+      b.create<yul::MStoreOp>(
           loc, headAddr, b.create<arith::SubIOp>(loc, tailAddr, tupleStart));
       tailAddr = genABITupleEncoding(ty, val, tailAddr, /*dstAddrInTail=*/true,
                                      tupleStart, tailAddr);
@@ -636,7 +637,7 @@ Value evm::Builder::genABITupleEncoding(std::string const &str, Value headStart,
 
   // Generate the offset store at the head address.
   Value thirtyTwo = bExt.genI256Const(32);
-  b.create<sol::MStoreOp>(loc, headStart, thirtyTwo);
+  b.create<yul::MStoreOp>(loc, headStart, thirtyTwo);
 
   // Generate the string creation at the tail address.
   auto tailAddr = b.create<arith::AddIOp>(loc, headStart, thirtyTwo);
@@ -658,8 +659,8 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
 
   auto genLoad = [&](Value addr) -> Value {
     if (fromMem)
-      return b.create<sol::MLoadOp>(loc, addr);
-    return b.create<sol::CallDataLoadOp>(loc, addr);
+      return b.create<yul::MLoadOp>(loc, addr);
+    return b.create<yul::CallDataLoadOp>(loc, addr);
   };
 
   // Integer type
@@ -734,12 +735,12 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
                 b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt,
                                         offsetFromSrcArr, tupleEnd),
                 "ABI decoding: invalid array offset", loc);
-            b.create<sol::MStoreOp>(
+            b.create<yul::MStoreOp>(
                 loc, iDstAddr,
                 genABITupleDecoding(arrTy.getEltType(), offsetFromSrcArr,
                                     fromMem, tupleStart, tupleEnd, loc));
           } else {
-            b.create<sol::MStoreOp>(
+            b.create<yul::MStoreOp>(
                 loc, iDstAddr,
                 genABITupleDecoding(arrTy.getEltType(), iSrcAddr, fromMem,
                                     tupleStart, tupleEnd, loc));
@@ -800,9 +801,9 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
     if (fromMem)
       // TODO? Check m_evmVersion.hasMcopy() and legalize here or in sol.mcopy
       // lowering?
-      b.create<sol::MCopyOp>(loc, dstDataAddr, srcDataAddr, sizeInBytes);
+      b.create<yul::MCopyOp>(loc, dstDataAddr, srcDataAddr, sizeInBytes);
     else
-      b.create<sol::CallDataCopyOp>(loc, dstDataAddr, srcDataAddr, sizeInBytes);
+      b.create<yul::CallDataCopyOp>(loc, dstDataAddr, srcDataAddr, sizeInBytes);
 
     return dstAddr;
   }
@@ -825,8 +826,8 @@ void evm::Builder::genABITupleDecoding(TypeRange tys, Value tupleStart,
 
   auto genLoad = [&](Value addr) -> Value {
     if (fromMem)
-      return b.create<sol::MLoadOp>(loc, addr);
-    return b.create<sol::CallDataLoadOp>(loc, addr);
+      return b.create<yul::MLoadOp>(loc, addr);
+    return b.create<yul::CallDataLoadOp>(loc, addr);
   };
 
   // Decode the args.
@@ -877,10 +878,10 @@ void evm::Builder::genPanic(solidity::util::PanicCode code, Value cond,
   b.create<scf::IfOp>(
       loc, cond,
       /*thenBuilder=*/[&](OpBuilder &b, Location loc) {
-        b.create<sol::MStoreOp>(loc, bExt.genI256Const(0), selector);
-        b.create<sol::MStoreOp>(loc, bExt.genI256Const(4),
+        b.create<yul::MStoreOp>(loc, bExt.genI256Const(0), selector);
+        b.create<yul::MStoreOp>(loc, bExt.genI256Const(4),
                                 bExt.genI256Const(static_cast<int64_t>(code)));
-        b.create<sol::RevertOp>(loc, bExt.genI256Const(0),
+        b.create<yul::RevertOp>(loc, bExt.genI256Const(0),
                                 bExt.genI256Const(0x24));
         b.create<scf::YieldOp>(loc);
       });
@@ -891,10 +892,10 @@ void evm::Builder::genForwardingRevert(std::optional<Location> locArg) {
   solidity::mlirgen::BuilderExt bExt(b, loc);
 
   Value freePtr = genFreePtr(loc);
-  Value retDataSize = b.create<sol::ReturnDataSizeOp>(loc);
-  b.create<sol::ReturnDataCopyOp>(loc, /*dst=*/freePtr,
+  Value retDataSize = b.create<yul::ReturnDataSizeOp>(loc);
+  b.create<yul::ReturnDataCopyOp>(loc, /*dst=*/freePtr,
                                   /*src=*/bExt.genI256Const(0), retDataSize);
-  b.create<sol::RevertOp>(loc, freePtr, retDataSize);
+  b.create<yul::RevertOp>(loc, freePtr, retDataSize);
 }
 
 void evm::Builder::genForwardingRevert(Value cond,
@@ -918,7 +919,7 @@ void evm::Builder::genRevert(Value cond, std::optional<Location> locArg) {
 
   solidity::mlirgen::BuilderExt bExt(b, loc);
   mlir::Value zero = bExt.genI256Const(0);
-  b.create<sol::RevertOp>(loc, zero, zero);
+  b.create<yul::RevertOp>(loc, zero, zero);
 }
 
 void evm::Builder::genRevertWithMsg(std::string const &msg,
@@ -929,7 +930,7 @@ void evm::Builder::genRevertWithMsg(std::string const &msg,
 
   // Generate the "Error(string)" selector store at free ptr.
   Value freePtr = genFreePtr(loc);
-  b.create<sol::MStoreOp>(loc, freePtr, genI256Selector("Error(string)", loc));
+  b.create<yul::MStoreOp>(loc, freePtr, genI256Selector("Error(string)", loc));
 
   // Generate the tuple encoding of the message after the selector.
   auto freePtrPostSelector =
@@ -939,7 +940,7 @@ void evm::Builder::genRevertWithMsg(std::string const &msg,
 
   // Generate the revert.
   auto retDataSize = b.create<arith::SubIOp>(loc, tailAddr, freePtr);
-  b.create<sol::RevertOp>(loc, freePtr, retDataSize);
+  b.create<yul::RevertOp>(loc, freePtr, retDataSize);
 }
 
 void evm::Builder::genRevertWithMsg(Value cond, std::string const &msg,
@@ -963,10 +964,10 @@ void evm::Builder::genDbgRevert(ValueRange vals,
   for (Value val : vals) {
     auto offset =
         b.create<arith::AddIOp>(loc, freePtr, bExt.genI256Const(retDataSize));
-    b.create<sol::MStoreOp>(loc, offset, val);
+    b.create<yul::MStoreOp>(loc, offset, val);
     retDataSize += 32;
   }
-  b.create<sol::RevertOp>(loc, freePtr, bExt.genI256Const(retDataSize));
+  b.create<yul::RevertOp>(loc, freePtr, bExt.genI256Const(retDataSize));
 }
 
 void evm::Builder::genCondDbgRevert(Value cond, ValueRange vals,

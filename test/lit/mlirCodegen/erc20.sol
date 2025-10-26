@@ -205,7 +205,7 @@ contract ERC20 {
 // CHECK-NEXT:       sol.return loc(#loc7)
 // CHECK-NEXT:     } loc(#loc7)
 // CHECK-NEXT:     sol.func @_msgSender_58() -> ui256 attributes {state_mutability = #View} {
-// CHECK-NEXT:       %0 = sol.caller loc(#loc15)
+// CHECK-NEXT:       %0 = yul.caller loc(#loc15)
 // CHECK-NEXT:       %1 = sol.conv_cast %0 : i256 -> ui256 loc(#loc15)
 // CHECK-NEXT:       sol.return %1 : ui256 loc(#loc16)
 // CHECK-NEXT:     } loc(#loc14)

@@ -24,7 +24,7 @@ contract C {
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       %1 = sol.this : ui256 loc(#loc4)
 // CHECK-NEXT:       %2 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc5)
-// CHECK-NEXT:       %3 = sol.gas loc(#loc4)
+// CHECK-NEXT:       %3 = yul.gas loc(#loc4)
 // CHECK-NEXT:       %4 = sol.conv_cast %3 : i256 -> ui256 loc(#loc4)
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc4)
 // CHECK-NEXT:       %status, %5 = sol.ext_call "f_23"(%2) at %1 gas %4 value %c0_ui256 {callee_type = (ui256) -> ui256, selector = -1277270901 : i32} : (ui256) -> (i1, ui256) loc(#loc4)

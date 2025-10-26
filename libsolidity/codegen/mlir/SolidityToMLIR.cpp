@@ -34,6 +34,7 @@
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/mlir/Util.h"
+#include "libsolidity/codegen/mlir/Yul/Yul.h"
 #include "libsolidity/interface/CompilerStack.h"
 #include "libsolutil/CommonIO.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
@@ -729,7 +730,7 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
   case Type::Category::Magic:
     if (memberName == "sender") {
       // FIXME: sol.caller yields an i256 instead of an address.
-      auto callerOp = b.create<mlir::sol::CallerOp>(loc);
+      auto callerOp = b.create<mlir::yul::CallerOp>(loc);
       return b.create<mlir::sol::ConvCastOp>(
           loc, b.getIntegerType(256, /*isSigned=*/false), callerOp);
     }
@@ -880,7 +881,7 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     // Generate gas.
     if (!gas) {
       if (evmVersion.canOverchargeGasForCall()) {
-        gas = b.create<mlir::sol::GasOp>(loc);
+        gas = b.create<mlir::yul::GasOp>(loc);
       } else {
         u256 gasNeededByCaller = evmasm::GasCosts::callGas(evmVersion) + 10;
         size_t encodedHeadSize = 0;
@@ -889,7 +890,7 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
         if (encodedHeadSize == 0 || !evmVersion.supportsReturndata())
           gasNeededByCaller += evmasm::GasCosts::callNewAccountGas;
         gas =
-            b.create<mlir::arith::SubIOp>(loc, b.create<mlir::sol::GasOp>(loc),
+            b.create<mlir::arith::SubIOp>(loc, b.create<mlir::yul::GasOp>(loc),
                                           bExt.genI256Const(gasNeededByCaller));
       }
     }
@@ -1844,6 +1845,7 @@ void SolidityToMLIRPass::lowerFreeFuncs(SourceUnit const &srcUnit) {
 
 static void loadDialects(mlir::MLIRContext &ctx) {
   ctx.getOrLoadDialect<mlir::sol::SolDialect>();
+  ctx.getOrLoadDialect<mlir::yul::YulDialect>();
   // For lowering yul in inline-asm.
   ctx.getOrLoadDialect<mlir::arith::ArithDialect>();
   ctx.getOrLoadDialect<mlir::scf::SCFDialect>();
