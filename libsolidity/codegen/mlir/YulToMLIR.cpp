@@ -26,6 +26,7 @@
 #include "libsolidity/codegen/mlir/Passes.h"
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Util.h"
+#include "libsolidity/codegen/mlir/Yul/Yul.h"
 #include "libsolutil/Visitor.h"
 #include "libyul/AST.h"
 #include "libyul/Dialect.h"
@@ -277,6 +278,8 @@ mlir::Value YulToMLIRPass::convToBool(mlir::Value val) {
 void YulToMLIRPass::populateBuiltinGenMap() {
   using namespace mlir;
   using namespace mlir::sol;
+  // TODO:
+  // using namespace mlir::yul;
   defSimpleBuiltinGen<arith::AddIOp>("add");
   defSimpleBuiltinGen<arith::SubIOp>("sub");
   defSimpleBuiltinGen<arith::ShRUIOp, /*reverseArgs=*/true>("shr");
@@ -720,6 +723,7 @@ bool solidity::mlirgen::runYulToMLIRPass(Object const &obj,
                                          EVMVersion evmVersion) {
   mlir::MLIRContext ctx(mlir::MLIRContext::Threading::DISABLED);
   ctx.getOrLoadDialect<mlir::sol::SolDialect>();
+  ctx.getOrLoadDialect<mlir::yul::YulDialect>();
   ctx.getOrLoadDialect<mlir::arith::ArithDialect>();
   ctx.getOrLoadDialect<mlir::scf::SCFDialect>();
   ctx.getOrLoadDialect<mlir::LLVM::LLVMDialect>();

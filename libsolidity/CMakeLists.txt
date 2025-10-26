@@ -242,9 +242,14 @@ set(mlir_sol_dialect_sources
 	codegen/mlir/Sol/SolOps.cpp
 )
 
-include_directories(${PROJECT_BINARY_DIR}/libsolidity/codegen/mlir)
+set(mlir_yul_dialect_sources
+	codegen/mlir/Yul/YulBase.cpp
+	codegen/mlir/Yul/YulOps.cpp
+)
 
+include_directories(${PROJECT_BINARY_DIR}/libsolidity/codegen/mlir)
 add_subdirectory(codegen/mlir/Sol)
+add_subdirectory(codegen/mlir/Yul)
 
 add_mlir_dialect_library(MLIRSolDialect
 	${mlir_sol_dialect_sources}
@@ -252,6 +257,15 @@ add_mlir_dialect_library(MLIRSolDialect
 	DEPENDS
 	MLIRSolOpsIncGen
 	MLIRSolExtraIncGen
+
+	LINK_LIBS PUBLIC
+)
+
+add_mlir_dialect_library(MLIRYulDialect
+	${mlir_yul_dialect_sources}
+
+	DEPENDS
+	MLIRYulOpsIncGen
 
 	LINK_LIBS PUBLIC
 )
@@ -275,6 +289,7 @@ add_mlir_dialect_library(MLIRSolDialect
 
 set(mlir_libs
 	MLIRSolDialect
+	MLIRYulDialect
 	MLIRFuncDialect
 	MLIRSCFDialect
 	MLIRArithDialect
