@@ -263,7 +263,7 @@ A common type of properties in smart contracts are properties that involve the
 state of the contract. Multiple transactions might be needed to make an assertion
 fail for such a property.
 
-As an example, consider a 2D grid where both axis have coordinates in the range (-2^128, 2^128 - 1).
+As an example, consider a 2D grid where both axis have coordinates in the range (-2^127, 2^127 - 1).
 Let us place a robot at position (0, 0). The robot can only move diagonally, one step at a time,
 and cannot move outside the grid. The robot's state machine can be represented by the smart contract
 below.
