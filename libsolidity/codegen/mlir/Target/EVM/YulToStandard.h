@@ -16,7 +16,7 @@
 // SPDX-License-Identifier: GPL-3.0
 
 //
-// EVM specific lowering of yul ops in the sol dialect
+// EVM specific lowering of yul dialect
 //
 
 #include "mlir/Transforms/DialectConversion.h"

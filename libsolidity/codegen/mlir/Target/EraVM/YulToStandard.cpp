@@ -15,9 +15,9 @@
 
 // SPDX-License-Identifier: GPL-3.0
 
-#include "libsolidity/codegen/mlir/Target/EraVM/SolToStandard.h"
+#include "libsolidity/codegen/mlir/Target/EraVM/YulToStandard.h"
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
-#include "libsolidity/codegen/mlir/Target/EVM/SolToStandard.h"
+#include "libsolidity/codegen/mlir/Target/EVM/SolToYul.h"
 #include "libsolidity/codegen/mlir/Target/EraVM/Util.h"
 #include "libsolidity/codegen/mlir/Util.h"
 #include "libsolidity/codegen/mlir/Yul/Yul.h"

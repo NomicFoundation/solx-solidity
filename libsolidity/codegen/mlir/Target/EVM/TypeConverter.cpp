@@ -20,7 +20,7 @@
 //
 
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
-#include "libsolidity/codegen/mlir/Target/EVM/SolToStandard.h"
+#include "libsolidity/codegen/mlir/Target/EVM/SolToYul.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 
 using namespace mlir;

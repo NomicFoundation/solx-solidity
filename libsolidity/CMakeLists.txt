@@ -231,10 +231,10 @@ set(mlir_sources
 	codegen/mlir/Target/EVM/Util.cpp
 	codegen/mlir/Target/EVM/BytecodeGen.cpp
 	codegen/mlir/Target/EVM/TypeConverter.cpp
-	codegen/mlir/Target/EVM/SolToStandard.cpp
+	codegen/mlir/Target/EVM/SolToYul.cpp
 	codegen/mlir/Target/EVM/YulToStandard.cpp
 	codegen/mlir/Target/EraVM/Util.cpp
-	codegen/mlir/Target/EraVM/SolToStandard.cpp
+	codegen/mlir/Target/EraVM/YulToStandard.cpp
 )
 
 set(mlir_sol_dialect_sources

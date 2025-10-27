@@ -16,7 +16,7 @@
 // SPDX-License-Identifier: GPL-3.0
 
 //
-// EraVM specific lowering of sol dialect
+// EraVM specific lowering of yul dialect
 //
 
 #pragma once
