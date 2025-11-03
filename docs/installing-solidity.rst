@@ -32,7 +32,7 @@ Remix
 
 `Access Remix online <https://remix.ethereum.org/>`_, you do not need to install anything.
 If you want to use it without connection to the Internet, go to
-https://github.com/argotorg/remix-live/tree/gh-pages#readme and follow the instructions on that page.
+https://github.com/ethereum/remix-live/tree/gh-pages#readme and follow the instructions on that page.
 Remix is also a convenient option for testing nightly builds
 without installing multiple Solidity versions.
 
@@ -291,14 +291,14 @@ This means that:
 
 .. warning::
 
-    The binaries are also available at https://ethereum.github.io/solc-bin/ but this page
+    The binaries are also available at https://argotorg.github.io/solc-bin/ but this page
     stopped being updated just after the release of version 0.7.2, will not receive any new releases
     or nightly builds for any platform and does not serve the new directory structure, including
     non-emscripten builds.
 
     If you are using it, please switch to https://binaries.soliditylang.org, which is a drop-in
     replacement. This allows us to make changes to the underlying hosting in a transparent way and
-    minimize disruption. Unlike the ``ethereum.github.io`` domain, which we do not have any control
+    minimize disruption. Unlike the ``argotorg.github.io`` domain, which we do not have any control
     over, ``binaries.soliditylang.org`` is guaranteed to work and maintain the same URL structure
     in the long-term.
 
