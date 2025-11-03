@@ -3,7 +3,7 @@
 object "Test" {
   code {
     codecopy(codesize(), dataoffset("Test_deployed"), datasize("Test_deployed"))
-    let a := extcodesize(0)
+    extcodecopy(0, 1, 2, extcodesize(0))
   }
   object "Test_deployed" {
     code {}
@@ -14,6 +14,7 @@ object "Test" {
 // CHECK: #Prague = #sol<EvmVersion Prague>
 // CHECK-NEXT: module @Test attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   func.func @__entry() attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"]} {
+// CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256 loc(#loc)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:     %0 = "llvm.intrcall"() <{id = 3699 : i32, name = "evm.codesize"}> : () -> i256 loc(#loc1)
@@ -23,8 +24,9 @@ object "Test" {
 // CHECK-NEXT:     %4 = llvm.inttoptr %1 : i256 to !llvm.ptr<4> loc(#loc4)
 // CHECK-NEXT:     "llvm.intr.memcpy"(%3, %4, %2) <{isVolatile = false}> : (!llvm.ptr<1>, !llvm.ptr<4>, i256) -> () loc(#loc4)
 // CHECK-NEXT:     %5 = "llvm.intrcall"(%c0_i256) <{id = 3711 : i32, name = "evm.extcodesize"}> : (i256) -> i256 loc(#loc5)
-// CHECK-NEXT:     %6 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc6)
-// CHECK-NEXT:     llvm.store %5, %6 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc7)
+// CHECK-NEXT:     %6 = llvm.inttoptr %c1_i256 : i256 to !llvm.ptr<1> loc(#loc6)
+// CHECK-NEXT:     %7 = llvm.inttoptr %c2_i256 : i256 to !llvm.ptr<4> loc(#loc6)
+// CHECK-NEXT:     "llvm.intrcall"(%c0_i256, %6, %7, %5) <{id = 3709 : i32, name = "evm.extcodecopy"}> : (i256, !llvm.ptr<1>, !llvm.ptr<4>, i256) -> () loc(#loc6)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT:   module @Test_deployed {
@@ -38,7 +40,6 @@ object "Test" {
 // CHECK-NEXT: #loc2 = loc({{.*}}:4:25)
 // CHECK-NEXT: #loc3 = loc({{.*}}:4:54)
 // CHECK-NEXT: #loc4 = loc({{.*}}:4:4)
-// CHECK-NEXT: #loc5 = loc({{.*}}:5:13)
-// CHECK-NEXT: #loc6 = loc({{.*}}:5:8)
-// CHECK-NEXT: #loc7 = loc({{.*}}:5:4)
+// CHECK-NEXT: #loc5 = loc({{.*}}:5:25)
+// CHECK-NEXT: #loc6 = loc({{.*}}:5:4)
 // CHECK-EMPTY:

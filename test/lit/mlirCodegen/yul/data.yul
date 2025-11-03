@@ -3,7 +3,7 @@
 object "Test" {
   code {
     codecopy(codesize(), dataoffset("Test_deployed"), datasize("Test_deployed"))
-    let a := extcodesize(0)
+    extcodecopy(0, 1, 2, extcodesize(0))
   }
   object "Test_deployed" {
     code {}
@@ -19,10 +19,11 @@ object "Test" {
 // CHECK-NEXT:     %2 = yul.datasize {obj = @Test_deployed} loc(#loc3)
 // CHECK-NEXT:     yul.codecopy %0, %1, %2 loc(#loc4)
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc5)
-// CHECK-NEXT:     %3 = yul.extcodesize %c0_i256 loc(#loc6)
-// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc7)
-// CHECK-NEXT:     %4 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc8)
-// CHECK-NEXT:     llvm.store %3, %4 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc7)
+// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc6)
+// CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256 loc(#loc7)
+// CHECK-NEXT:     %c0_i256_0 = arith.constant 0 : i256 loc(#loc8)
+// CHECK-NEXT:     %3 = yul.extcodesize %c0_i256_0 loc(#loc9)
+// CHECK-NEXT:     yul.extcodecopy %c0_i256, %c1_i256, %c2_i256, %3 loc(#loc10)
 // CHECK-NEXT:     yul.object @Test_deployed {
 // CHECK-NEXT:     } loc(#loc)
 // CHECK-NEXT:   } loc(#loc)
@@ -32,8 +33,10 @@ object "Test" {
 // CHECK-NEXT: #loc2 = loc({{.*}}:4:25)
 // CHECK-NEXT: #loc3 = loc({{.*}}:4:54)
 // CHECK-NEXT: #loc4 = loc({{.*}}:4:4)
-// CHECK-NEXT: #loc5 = loc({{.*}}:5:25)
-// CHECK-NEXT: #loc6 = loc({{.*}}:5:13)
-// CHECK-NEXT: #loc7 = loc({{.*}}:5:4)
-// CHECK-NEXT: #loc8 = loc({{.*}}:5:8)
+// CHECK-NEXT: #loc5 = loc({{.*}}:5:16)
+// CHECK-NEXT: #loc6 = loc({{.*}}:5:19)
+// CHECK-NEXT: #loc7 = loc({{.*}}:5:22)
+// CHECK-NEXT: #loc8 = loc({{.*}}:5:37)
+// CHECK-NEXT: #loc9 = loc({{.*}}:5:25)
+// CHECK-NEXT: #loc10 = loc({{.*}}:5:4)
 // CHECK-EMPTY:

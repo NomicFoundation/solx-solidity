@@ -634,9 +634,24 @@ def Sol_NewOp : Sol_Op<"new", [AttrSizedOperandSegments]> {
                    Optional<UI256>:$salt,
                    Variadic<AnyType>:$ctorArgs);
   let results = (outs Sol_AddressType:$out);
+
   let assemblyFormat = [{
     $objName `value` `=` $val (`salt` `=` $salt^)?
     `ctor` `(` ($ctorArgs^ `:` type($ctorArgs))? `)` attr-dict `:` type($out)
+  }];
+}
+
+def Sol_CodeOp : Sol_Op<"code"> {
+  let arguments = (ins Sol_AddressType:$contAddr);
+  // FIXME: AnyType -> Sol_StringType causes the asm printer to miss the prefix!
+  let results = (outs AnyType:$out);
+
+  let builders = [
+    OpBuilder<(ins "Value":$contAddr)>
+  ];
+
+  let assemblyFormat = [{
+    $contAddr attr-dict `:` type($contAddr) `->` type($out)
   }];
 }
 

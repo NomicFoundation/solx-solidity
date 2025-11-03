@@ -472,6 +472,9 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
 
     return b.getFunctionType(inTys, outTys);
   }
+  case Type::Category::Contract:
+    // FIXME: 256 -> 160
+    return b.getIntegerType(256, /*isSigned=*/false);
   default:
     break;
   }
@@ -752,10 +755,15 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
                                       /*numBits=*/64, loc);
     return b.create<mlir::sol::GepOp>(loc, genRValExpr(memberAcc.expression()),
                                       memberIdx);
-    break;
   }
   default:
     break;
+  case Type::Category::Address: {
+    if (memberName == "code") {
+      return b.create<mlir::sol::CodeOp>(loc,
+                                         genRValExpr(memberAcc.expression()));
+    }
+  }
   }
 
   llvm_unreachable("NYI");

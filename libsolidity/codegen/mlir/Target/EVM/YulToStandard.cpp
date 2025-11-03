@@ -315,6 +315,23 @@ struct ExtCodeSizeOpLowering : public OpRewritePattern<yul::ExtCodeSizeOp> {
   }
 };
 
+struct ExtCodeCopyOpLowering : public OpRewritePattern<yul::ExtCodeCopyOp> {
+  using OpRewritePattern<yul::ExtCodeCopyOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::ExtCodeCopyOp op,
+                                PatternRewriter &r) const override {
+    evm::Builder evmB(r, op.getLoc());
+
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(
+        op, llvm::Intrinsic::evm_extcodecopy, /*resTy=*/Type{}, /*ins=*/
+        ValueRange{op.getAddr(),
+                   /*dst=*/evmB.genHeapPtr(op.getDst()),
+                   /*src=*/evmB.genCodePtr(op.getSrc()), op.getSize()},
+        "evm.extcodecopy");
+    return success();
+  }
+};
+
 struct CreateOpLowering : public OpRewritePattern<yul::CreateOp> {
   using OpRewritePattern<yul::CreateOp>::OpRewritePattern;
 
@@ -699,6 +716,7 @@ void evm::populateYulPats(RewritePatternSet &pats) {
       CodeSizeOpLowering,
       CodeCopyOpLowering,
       ExtCodeSizeOpLowering,
+      ExtCodeCopyOpLowering,
       CreateOpLowering,
       Create2OpLowering,
       MLoadOpLowering,

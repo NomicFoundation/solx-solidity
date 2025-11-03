@@ -254,6 +254,12 @@ def Yul_ExtCodeSizeOp : Yul_Op<"extcodesize", [Pure]> {
   let assemblyFormat = "$addr attr-dict";
 }
 
+def Yul_ExtCodeCopyOp : Yul_Op<"extcodecopy"> {
+  let summary = "Represents the `extcodecopy` call in yul";
+  let arguments = (ins I256:$addr, I256:$dst, I256:$src, I256:$size);
+  let assemblyFormat = "$addr `,` $dst `,` $src `,` $size attr-dict";
+}
+
 def Yul_CreateOp : Yul_Op<"create"> {
   let summary = "Represents the `create` call in yul";
   let arguments = (ins I256:$val, I256:$addr, I256:$size);

@@ -159,6 +159,7 @@ struct ConvertSolToStandard
         sol::DecodeOp,
         sol::ExtCallOp,
         sol::NewOp,
+        sol::CodeOp,
         sol::EmitOp,
         sol::RequireOp,
         sol::ConvCastOp,

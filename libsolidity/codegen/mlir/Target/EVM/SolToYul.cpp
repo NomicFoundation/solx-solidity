@@ -1283,6 +1283,28 @@ struct NewOpLowering : public OpConversionPattern<sol::NewOp> {
   }
 };
 
+struct CodeOpLowering : public OpConversionPattern<sol::CodeOp> {
+  using OpConversionPattern<sol::CodeOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::CodeOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+    evm::Builder evmB(r, loc);
+
+    auto extCodeSize = r.create<yul::ExtCodeSizeOp>(loc, adaptor.getContAddr());
+    Value alloc = evmB.genMemAlloc(op.getType(), /*zeroInit=*/false,
+                                   /*initVals=*/{}, extCodeSize);
+    auto codeAddr = evmB.genDataAddrPtr(alloc, sol::DataLocation::Memory);
+    r.create<yul::ExtCodeCopyOp>(
+        loc, adaptor.getContAddr(), /*dstOffset=*/codeAddr,
+        /*srcOffset=*/bExt.genI256Const(0), extCodeSize);
+    r.replaceOp(op, alloc);
+    return success();
+  }
+};
+
 struct TryOpLowering : public OpConversionPattern<sol::TryOp> {
   using OpConversionPattern<sol::TryOp>::OpConversionPattern;
 
@@ -2231,8 +2253,8 @@ void evm::populateAbiPats(mlir::RewritePatternSet &pats,
 }
 
 void evm::populateExtCallPat(RewritePatternSet &pats, TypeConverter &tyConv) {
-  pats.add<ExtCallOpLowering, TryOpLowering, NewOpLowering>(tyConv,
-                                                            pats.getContext());
+  pats.add<ExtCallOpLowering, TryOpLowering, NewOpLowering, CodeOpLowering>(
+      tyConv, pats.getContext());
 }
 
 void evm::populateEmitPat(RewritePatternSet &pats, TypeConverter &tyConv) {

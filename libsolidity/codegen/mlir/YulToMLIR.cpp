@@ -308,6 +308,7 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   defSimpleBuiltinGenNoRet<CodeCopyOp>("codecopy");
   defSimpleBuiltinGen<CodeSizeOp>("codesize");
   defSimpleBuiltinGen<ExtCodeSizeOp>("extcodesize");
+  defSimpleBuiltinGenNoRet<ExtCodeCopyOp>("extcodecopy");
   defSimpleBuiltinGen<CreateOp>("create");
   defSimpleBuiltinGen<Create2Op>("create2");
   defSimpleBuiltinGen<SLoadOp>("sload");

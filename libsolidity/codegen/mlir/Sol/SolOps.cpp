@@ -291,6 +291,17 @@ void EmitOp::print(OpAsmPrinter &p) {
 }
 
 //===----------------------------------------------------------------------===//
+// CodeOp
+//===----------------------------------------------------------------------===//
+
+void CodeOp::build(OpBuilder &odsBuilder, OperationState &odsState,
+                   Value contAddr) {
+  Type resTy =
+      sol::StringType::get(odsBuilder.getContext(), sol::DataLocation::Memory);
+  build(odsBuilder, odsState, resTy, contAddr);
+}
+
+//===----------------------------------------------------------------------===//
 // IfOp
 //===----------------------------------------------------------------------===//
 
