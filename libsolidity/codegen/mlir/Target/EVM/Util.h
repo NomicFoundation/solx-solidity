@@ -164,6 +164,11 @@ public:
   genStoragePtr(mlir::Value addr,
                 std::optional<mlir::Location> locArg = std::nullopt);
 
+  /// Generates a pointer to the address in the transient storage.
+  mlir::Value
+  genTStoragePtr(mlir::Value addr,
+                 std::optional<mlir::Location> locArg = std::nullopt);
+
   /// Generates a pointer to the address in the code.
   mlir::Value genCodePtr(mlir::Value addr,
                          std::optional<mlir::Location> locArg = std::nullopt);

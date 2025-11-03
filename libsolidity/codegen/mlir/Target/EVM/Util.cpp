@@ -148,6 +148,14 @@ Value evm::Builder::genStoragePtr(Value addr, std::optional<Location> locArg) {
   return b.create<LLVM::IntToPtrOp>(loc, storageAddrSpacePtrTy, addr);
 }
 
+Value evm::Builder::genTStoragePtr(Value addr, std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+
+  auto tstorageAddrSpacePtrTy = LLVM::LLVMPointerType::get(
+      b.getContext(), evm::AddrSpace_TransientStorage);
+  return b.create<LLVM::IntToPtrOp>(loc, tstorageAddrSpacePtrTy, addr);
+}
+
 Value evm::Builder::genCodePtr(Value addr, std::optional<Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;
 

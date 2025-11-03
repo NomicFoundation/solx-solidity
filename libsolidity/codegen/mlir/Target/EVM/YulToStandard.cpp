@@ -248,6 +248,34 @@ struct SStoreOpLowering : public OpRewritePattern<yul::SStoreOp> {
   }
 };
 
+struct TLoadOpLowering : public OpRewritePattern<yul::TLoadOp> {
+  using OpRewritePattern<yul::TLoadOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::TLoadOp op,
+                                PatternRewriter &r) const override {
+    evm::Builder evmB(r, op->getLoc());
+
+    Value ptr = evmB.genTStoragePtr(op.getAddr());
+    r.replaceOpWithNewOp<LLVM::LoadOp>(op, r.getIntegerType(256), ptr,
+                                       evm::getAlignment(ptr));
+    return success();
+  }
+};
+
+struct TStoreOpLowering : public OpRewritePattern<yul::TStoreOp> {
+  using OpRewritePattern<yul::TStoreOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::TStoreOp op,
+                                PatternRewriter &r) const override {
+    evm::Builder evmB(r, op->getLoc());
+
+    Value ptr = evmB.genTStoragePtr(op.getAddr());
+    r.replaceOpWithNewOp<LLVM::StoreOp>(op, op.getVal(), ptr,
+                                        evm::getAlignment(ptr));
+    return success();
+  }
+};
+
 struct DataOffsetOpLowering : public OpRewritePattern<yul::DataOffsetOp> {
   using OpRewritePattern<yul::DataOffsetOp>::OpRewritePattern;
 
@@ -711,6 +739,8 @@ void evm::populateYulPats(RewritePatternSet &pats) {
       ReturnDataCopyOpLowering,
       SLoadOpLowering,
       SStoreOpLowering,
+      TLoadOpLowering,
+      TStoreOpLowering,
       DataOffsetOpLowering,
       DataSizeOpLowering,
       CodeSizeOpLowering,

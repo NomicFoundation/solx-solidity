@@ -313,6 +313,8 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   defSimpleBuiltinGen<Create2Op>("create2");
   defSimpleBuiltinGen<SLoadOp>("sload");
   defSimpleBuiltinGenNoRet<SStoreOp>("sstore");
+  defSimpleBuiltinGen<TLoadOp>("tload");
+  defSimpleBuiltinGenNoRet<TStoreOp>("tstore");
   defSimpleBuiltinGenNoRet<ReturnOp>("return");
   defSimpleBuiltinGenNoRet<RevertOp>("revert");
   defSimpleBuiltinGenNoRet<StopOp>("stop");

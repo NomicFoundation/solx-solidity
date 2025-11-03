@@ -217,6 +217,19 @@ def Yul_SStoreOp : Yul_Op<"sstore"> {
   let assemblyFormat = "$addr `,` $val attr-dict";
 }
 
+def Yul_TLoadOp : Yul_Op<"tload"> {
+  let summary = "Represents the `tload` call in yul";
+  let arguments = (ins I256:$addr);
+  let results = (outs I256:$out);
+  let assemblyFormat = "$addr attr-dict";
+}
+
+def Yul_TStoreOp : Yul_Op<"tstore"> {
+  let summary = "Represents the `tstore` call in yul";
+  let arguments = (ins I256:$addr, I256:$val);
+  let assemblyFormat = "$addr `,` $val attr-dict";
+}
+
 // TODO: Support symbolic references to objects outside the current symbol table
 // (including ones outside the translation unit) using SymbolRefAttr instead of
 // FlatSymbolRefAttr
