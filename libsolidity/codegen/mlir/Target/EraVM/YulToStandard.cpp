@@ -52,8 +52,6 @@
 
 using namespace mlir;
 
-namespace {
-
 /// Returns true if `op` is defined in a runtime context
 static bool inRuntimeContext(Operation *op) {
   assert(!isa<sol::FuncOp>(op) && !isa<yul::ObjectOp>(op));
@@ -71,6 +69,8 @@ static bool inRuntimeContext(Operation *op) {
 
   llvm_unreachable("op has no parent FuncOp or ObjectOp");
 }
+
+namespace {
 
 struct Keccak256OpLowering : public OpRewritePattern<yul::Keccak256Op> {
   using OpRewritePattern<yul::Keccak256Op>::OpRewritePattern;

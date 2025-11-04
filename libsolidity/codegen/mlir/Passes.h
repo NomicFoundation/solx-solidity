@@ -30,6 +30,7 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "llvm-c/TargetMachine.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Target/TargetMachine.h"
 #include <memory>
@@ -92,3 +93,7 @@ genEvmBytecode(frontend::ContractDefinition const *cont,
 Bytecode genEraVMBytecode(llvm::Module &llvmMod, llvm::TargetMachine &tgtMach);
 
 } // namespace solidity::mlirgen
+
+namespace llvm {
+DEFINE_SIMPLE_CONVERSION_FUNCTIONS(llvm::TargetMachine, LLVMTargetMachineRef)
+}

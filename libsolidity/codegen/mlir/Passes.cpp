@@ -27,7 +27,6 @@
 #include "mlir/Transforms/Passes.h"
 #include "llvm-c/Core.h"
 #include "llvm-c/Target.h"
-#include "llvm-c/TargetMachine.h"
 #include "llvm-c/Transforms/PassBuilder.h"
 #include "llvm-c/Types.h"
 #include "llvm/ADT/SmallString.h"
@@ -228,8 +227,6 @@ static mlir::ModuleOp extractRuntimeModule(mlir::ModuleOp creationMod) {
   }
   return {};
 }
-
-DEFINE_SIMPLE_CONVERSION_FUNCTIONS(llvm::TargetMachine, LLVMTargetMachineRef)
 
 static LLVMMemoryBufferRef genObj(llvm::Module &mod,
                                   llvm::TargetMachine &tgtMach) {
