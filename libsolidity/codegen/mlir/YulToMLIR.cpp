@@ -313,6 +313,13 @@ void YulToMLIRPass::populateBuiltinGenMap() {
         bExt.genI256Const(0)));
     return resVals;
   };
+  builtinGenMap["pop"] = [&](std::vector<Expression> const &args,
+                             mlir::Location loc) {
+    return mlir::SmallVector<mlir::Value>{genDefTyExpr(args[0])};
+  };
+  defSimpleBuiltinGen<AddModOp>("addmod");
+  defSimpleBuiltinGen<MulModOp>("mulmod");
+  defSimpleBuiltinGen<SignExtendOp>("signextend");
   defSimpleBuiltinGen<MLoadOp>("mload");
   defSimpleBuiltinGenNoRet<LoadImmutableOp>("loadimmutable");
   defSimpleBuiltinGenNoRet<MStoreOp>("mstore");
@@ -330,6 +337,7 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   defSimpleBuiltinGen<CodeSizeOp>("codesize");
   defSimpleBuiltinGen<ExtCodeSizeOp>("extcodesize");
   defSimpleBuiltinGenNoRet<ExtCodeCopyOp>("extcodecopy");
+  defSimpleBuiltinGen<ExtCodeHashOp>("extcodehash");
   defSimpleBuiltinGen<CreateOp>("create");
   defSimpleBuiltinGen<Create2Op>("create2");
   defSimpleBuiltinGen<SLoadOp>("sload");
@@ -343,9 +351,24 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   defSimpleBuiltinGen<ExpOp>("exp");
   defSimpleBuiltinGen<CallValOp>("callvalue");
   defSimpleBuiltinGen<AddressOp>("address");
+  defSimpleBuiltinGen<BalanceOp>("balance");
+  defSimpleBuiltinGen<SelfBalanceOp>("selfbalance");
   defSimpleBuiltinGen<CallerOp>("caller");
   defSimpleBuiltinGen<GasOp>("gas");
+  defSimpleBuiltinGen<ChainIdOp>("chainid");
+  defSimpleBuiltinGen<BaseFeeOp>("basefee");
+  defSimpleBuiltinGen<BlobBaseFeeOp>("blobbasefee");
+  defSimpleBuiltinGen<OriginOp>("origin");
+  defSimpleBuiltinGen<GasPriceOp>("gasprice");
+  defSimpleBuiltinGen<BlockHashOp>("blockhash");
+  defSimpleBuiltinGen<BlobHashOp>("blobhash");
+  defSimpleBuiltinGen<CoinBaseOp>("coinbase");
+  defSimpleBuiltinGen<TimeStampOp>("timestamp");
+  defSimpleBuiltinGen<NumberOp>("number");
+  defSimpleBuiltinGen<PrevrandaoOp>("prevrandao");
+  defSimpleBuiltinGen<GasLimitOp>("gaslimit");
   defSimpleBuiltinGen<CallOp>("call");
+  defSimpleBuiltinGen<CallCodeOp>("callcode");
   defSimpleBuiltinGen<StaticCallOp>("staticcall");
   defSimpleBuiltinGen<DelegateCallOp>("delegatecall");
   defSimpleBuiltinGenNoRet<LogOp>("log0");

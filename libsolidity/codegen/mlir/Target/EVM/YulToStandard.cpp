@@ -170,6 +170,48 @@ struct ExpOpLowering : public OpRewritePattern<yul::ExpOp> {
   }
 };
 
+struct AddModOpLowering : public OpRewritePattern<yul::AddModOp> {
+  using OpRewritePattern<yul::AddModOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::AddModOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(
+        op, llvm::Intrinsic::evm_addmod,
+        /*resTy=*/r.getIntegerType(256),
+        /*ins=*/ValueRange{op.getX(), op.getY(), op.getMod()}, "evm.addmod");
+
+    return success();
+  }
+};
+
+struct MulModOpLowering : public OpRewritePattern<yul::MulModOp> {
+  using OpRewritePattern<yul::MulModOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::MulModOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(
+        op, llvm::Intrinsic::evm_mulmod,
+        /*resTy=*/r.getIntegerType(256),
+        /*ins=*/ValueRange{op.getX(), op.getY(), op.getMod()}, "evm.mulmod");
+
+    return success();
+  }
+};
+
+struct SignExtendOpLowering : public OpRewritePattern<yul::SignExtendOp> {
+  using OpRewritePattern<yul::SignExtendOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::SignExtendOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(
+        op, llvm::Intrinsic::evm_signextend,
+        /*resTy=*/r.getIntegerType(256),
+        /*ins=*/ValueRange{op.getVal(), op.getOff()}, "evm.signextend");
+
+    return success();
+  }
+};
+
 struct LogOpLowering : public OpRewritePattern<yul::LogOp> {
   using OpRewritePattern<yul::LogOp>::OpRewritePattern;
 
@@ -222,6 +264,32 @@ struct AddressOpLowering : public OpRewritePattern<yul::AddressOp> {
   }
 };
 
+struct BalanceOpLowering : public OpRewritePattern<yul::BalanceOp> {
+  using OpRewritePattern<yul::BalanceOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::BalanceOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_balance,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{op.getAddr()},
+                                           "evm.balance");
+    return success();
+  }
+};
+
+struct SelfBalanceOpLowering : public OpRewritePattern<yul::SelfBalanceOp> {
+  using OpRewritePattern<yul::SelfBalanceOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::SelfBalanceOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_selfbalance,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{},
+                                           "evm.selfbalance");
+    return success();
+  }
+};
+
 struct CallerOpLowering : public OpRewritePattern<yul::CallerOp> {
   using OpRewritePattern<yul::CallerOp>::OpRewritePattern;
 
@@ -243,6 +311,159 @@ struct GasOpLowering : public OpRewritePattern<yul::GasOp> {
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_gas,
                                            /*resTy=*/r.getIntegerType(256),
                                            /*ins=*/ValueRange{}, "evm.gas");
+    return success();
+  }
+};
+
+struct ChainIdOpLowering : public OpRewritePattern<yul::ChainIdOp> {
+  using OpRewritePattern<yul::ChainIdOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::ChainIdOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_chainid,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{}, "evm.chainid");
+    return success();
+  }
+};
+
+struct BaseFeeOpLowering : public OpRewritePattern<yul::BaseFeeOp> {
+  using OpRewritePattern<yul::BaseFeeOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::BaseFeeOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_basefee,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{}, "evm.basefee");
+    return success();
+  }
+};
+
+struct BlobBaseFeeOpLowering : public OpRewritePattern<yul::BlobBaseFeeOp> {
+  using OpRewritePattern<yul::BlobBaseFeeOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::BlobBaseFeeOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_blobbasefee,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{},
+                                           "evm.blobbasefee");
+    return success();
+  }
+};
+
+struct OriginOpLowering : public OpRewritePattern<yul::OriginOp> {
+  using OpRewritePattern<yul::OriginOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::OriginOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_origin,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{}, "evm.origin");
+    return success();
+  }
+};
+
+struct GasPriceOpLowering : public OpRewritePattern<yul::GasPriceOp> {
+  using OpRewritePattern<yul::GasPriceOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::GasPriceOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_gasprice,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{},
+                                           "evm.gasprice");
+    return success();
+  }
+};
+
+struct BlockHashOpLowering : public OpRewritePattern<yul::BlockHashOp> {
+  using OpRewritePattern<yul::BlockHashOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::BlockHashOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_blockhash,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{op.getBlock()},
+                                           "evm.blockhash");
+    return success();
+  }
+};
+
+struct BlobHashOpLowering : public OpRewritePattern<yul::BlobHashOp> {
+  using OpRewritePattern<yul::BlobHashOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::BlobHashOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_blobhash,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{op.getIdx()},
+                                           "evm.blobhash");
+    return success();
+  }
+};
+
+struct CoinBaseOpLowering : public OpRewritePattern<yul::CoinBaseOp> {
+  using OpRewritePattern<yul::CoinBaseOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::CoinBaseOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_coinbase,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{},
+                                           "evm.coinbase");
+    return success();
+  }
+};
+
+struct TimeStampOpLowering : public OpRewritePattern<yul::TimeStampOp> {
+  using OpRewritePattern<yul::TimeStampOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::TimeStampOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_timestamp,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{},
+                                           "evm.timestamp");
+    return success();
+  }
+};
+
+struct NumberOpLowering : public OpRewritePattern<yul::NumberOp> {
+  using OpRewritePattern<yul::NumberOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::NumberOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_number,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{}, "evm.number");
+    return success();
+  }
+};
+
+struct PrevrandaoOpLowering : public OpRewritePattern<yul::PrevrandaoOp> {
+  using OpRewritePattern<yul::PrevrandaoOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::PrevrandaoOp op,
+                                PatternRewriter &r) const override {
+    // TODO: fix the intrinsic name in LLVM.
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_difficulty,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{},
+                                           "evm.difficulty");
+    return success();
+  }
+};
+
+struct GasLimitOpLowering : public OpRewritePattern<yul::GasLimitOp> {
+  using OpRewritePattern<yul::GasLimitOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::GasLimitOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_gaslimit,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{},
+                                           "evm.gaslimit");
     return success();
   }
 };
@@ -472,6 +693,19 @@ struct ExtCodeCopyOpLowering : public OpRewritePattern<yul::ExtCodeCopyOp> {
   }
 };
 
+struct ExtCodeHashOpLowering : public OpRewritePattern<yul::ExtCodeHashOp> {
+  using OpRewritePattern<yul::ExtCodeHashOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::ExtCodeHashOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_extcodehash,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/op.getAddr(),
+                                           "evm.extcodehash");
+    return success();
+  }
+};
+
 struct CreateOpLowering : public OpRewritePattern<yul::CreateOp> {
   using OpRewritePattern<yul::CreateOp>::OpRewritePattern;
 
@@ -513,6 +747,18 @@ struct MLoadOpLowering : public OpRewritePattern<yul::MLoadOp> {
     Value addr = evmB.genHeapPtr(op.getAddr());
     r.replaceOpWithNewOp<LLVM::LoadOp>(op, r.getIntegerType(256), addr,
                                        evm::getAlignment(addr));
+    return success();
+  }
+};
+
+struct MSizeOpLowering : public OpRewritePattern<yul::MSizeOp> {
+  using OpRewritePattern<yul::MSizeOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::MSizeOp op,
+                                PatternRewriter &r) const override {
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_msize,
+                                           /*resTy=*/r.getIntegerType(256),
+                                           /*ins=*/ValueRange{}, "evm.msize");
     return success();
   }
 };
@@ -622,8 +868,6 @@ struct ByteOpLowering : public OpRewritePattern<yul::ByteOp> {
 
   LogicalResult matchAndRewrite(yul::ByteOp op,
                                 PatternRewriter &r) const override {
-    evm::Builder evmB(r, op->getLoc());
-
     r.replaceOpWithNewOp<LLVM::IntrCallOp>(
         op, llvm::Intrinsic::evm_byte,
         /*resTy=*/r.getIntegerType(256),
@@ -696,6 +940,25 @@ struct BuiltinCallOpLowering : public OpRewritePattern<yul::CallOp> {
                    evmB.genHeapPtr(op.getInpOffset()), op.getInpSize(),
                    evmB.genHeapPtr(op.getOutOffset()), op.getOutSize()},
         "evm.call");
+    return success();
+  }
+};
+
+struct CallCodeOpLowering : public OpRewritePattern<yul::CallCodeOp> {
+  using OpRewritePattern<yul::CallCodeOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::CallCodeOp op,
+                                PatternRewriter &r) const override {
+    evm::Builder evmB(r, op.getLoc());
+
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(
+        op, llvm::Intrinsic::evm_callcode,
+        /*resTy=*/r.getIntegerType(256),
+        /*ins=*/
+        ValueRange{op.getGas(), op.getAddress(), op.getValue(),
+                   evmB.genHeapPtr(op.getInpOffset()), op.getInpSize(),
+                   evmB.genHeapPtr(op.getOutOffset()), op.getOutSize()},
+        "evm.callcode");
     return success();
   }
 };
@@ -835,6 +1098,8 @@ struct ObjectOpLowering : public OpRewritePattern<yul::ObjectOp> {
 void evm::populateYulPats(RewritePatternSet &pats) {
   pats.add<
       // clang-format off
+      AddModOpLowering,
+      MulModOpLowering,
       UpdFreePtrOpLowering,
       Keccak256OpLowering,
       DivOpLowering,
@@ -845,10 +1110,25 @@ void evm::populateYulPats(RewritePatternSet &pats) {
       ShrOpLowering,
       SarOpLowering,
       ExpOpLowering,
+      SignExtendOpLowering,
       LogOpLowering,
       AddressOpLowering,
+      BalanceOpLowering,
+      SelfBalanceOpLowering,
       CallerOpLowering,
       GasOpLowering,
+      ChainIdOpLowering,
+      BaseFeeOpLowering,
+      BlobBaseFeeOpLowering,
+      OriginOpLowering,
+      GasPriceOpLowering,
+      BlockHashOpLowering,
+      BlobHashOpLowering,
+      CoinBaseOpLowering,
+      TimeStampOpLowering,
+      NumberOpLowering,
+      PrevrandaoOpLowering,
+      GasLimitOpLowering,
       RevertOpLowering,
       StopOpLowering,
       CallValOpLowering,
@@ -867,9 +1147,11 @@ void evm::populateYulPats(RewritePatternSet &pats) {
       CodeCopyOpLowering,
       ExtCodeSizeOpLowering,
       ExtCodeCopyOpLowering,
+      ExtCodeHashOpLowering,
       CreateOpLowering,
       Create2OpLowering,
       MLoadOpLowering,
+      MSizeOpLowering,
       LoadImmutableOpLowering,
       LoadImmutable2OpLowering,
       LinkerSymbolOpLowering,
@@ -880,6 +1162,7 @@ void evm::populateYulPats(RewritePatternSet &pats) {
       MCopyOpLowering,
       MemGuardOpLowering,
       BuiltinCallOpLowering,
+      CallCodeOpLowering,
       StaticCallOpLowering,
       DelegateCallOpLowering,
       BuiltinRetOpLowering,
