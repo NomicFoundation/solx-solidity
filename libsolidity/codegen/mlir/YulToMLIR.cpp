@@ -280,9 +280,30 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   using namespace mlir::yul;
   defSimpleBuiltinGen<arith::AddIOp>("add");
   defSimpleBuiltinGen<arith::SubIOp>("sub");
-  defSimpleBuiltinGen<arith::ShRUIOp, /*reverseArgs=*/true>("shr");
+  defSimpleBuiltinGen<arith::MulIOp>("mul");
+  defSimpleBuiltinGen<arith::AndIOp>("and");
+  defSimpleBuiltinGen<arith::OrIOp>("or");
+  defSimpleBuiltinGen<arith::XOrIOp>("xor");
+  defSimpleBuiltinGen<DivOp>("div");
+  defSimpleBuiltinGen<SDivOp>("sdiv");
+  defSimpleBuiltinGen<ModOp>("mod");
+  defSimpleBuiltinGen<SModOp>("smod");
+  defSimpleBuiltinGen<ShrOp, /*reverseArgs=*/true>("shr");
+  defSimpleBuiltinGen<ShlOp, /*reverseArgs=*/true>("shl");
+  defSimpleBuiltinGen<SarOp, /*reverseArgs=*/true>("sar");
   defCmpBuiltinGen<arith::CmpIPredicate::ult>("lt");
   defCmpBuiltinGen<arith::CmpIPredicate::slt>("slt");
+  defCmpBuiltinGen<arith::CmpIPredicate::ugt>("gt");
+  defCmpBuiltinGen<arith::CmpIPredicate::sgt>("sgt");
+  defCmpBuiltinGen<arith::CmpIPredicate::eq>("eq");
+  builtinGenMap["not"] = [&](std::vector<Expression> const &args,
+                             mlir::Location loc) {
+    mlir::SmallVector<mlir::Value, 1> resVals;
+    mlirgen::BuilderExt bExt(b, loc);
+    resVals.push_back(b.create<mlir::arith::XOrIOp>(loc, genDefTyExpr(args[0]),
+                                                    bExt.genI256Const(-1)));
+    return resVals;
+  };
   builtinGenMap["iszero"] = [&](std::vector<Expression> const &args,
                                 mlir::Location loc) {
     mlir::SmallVector<mlir::Value, 2> resVals;
@@ -292,6 +313,13 @@ void YulToMLIRPass::populateBuiltinGenMap() {
         bExt.genI256Const(0)));
     return resVals;
   };
+  builtinGenMap["pop"] = [&](std::vector<Expression> const &args,
+                             mlir::Location loc) {
+    return mlir::SmallVector<mlir::Value>{genDefTyExpr(args[0])};
+  };
+  defSimpleBuiltinGen<AddModOp>("addmod");
+  defSimpleBuiltinGen<MulModOp>("mulmod");
+  defSimpleBuiltinGen<SignExtendOp>("signextend");
   defSimpleBuiltinGen<MLoadOp>("mload");
   defSimpleBuiltinGenNoRet<LoadImmutableOp>("loadimmutable");
   defSimpleBuiltinGenNoRet<MStoreOp>("mstore");
@@ -309,19 +337,38 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   defSimpleBuiltinGen<CodeSizeOp>("codesize");
   defSimpleBuiltinGen<ExtCodeSizeOp>("extcodesize");
   defSimpleBuiltinGenNoRet<ExtCodeCopyOp>("extcodecopy");
+  defSimpleBuiltinGen<ExtCodeHashOp>("extcodehash");
   defSimpleBuiltinGen<CreateOp>("create");
   defSimpleBuiltinGen<Create2Op>("create2");
   defSimpleBuiltinGen<SLoadOp>("sload");
   defSimpleBuiltinGenNoRet<SStoreOp>("sstore");
+  defSimpleBuiltinGen<TLoadOp>("tload");
+  defSimpleBuiltinGenNoRet<TStoreOp>("tstore");
   defSimpleBuiltinGenNoRet<ReturnOp>("return");
   defSimpleBuiltinGenNoRet<RevertOp>("revert");
   defSimpleBuiltinGenNoRet<StopOp>("stop");
   defSimpleBuiltinGen<Keccak256Op>("keccak256");
+  defSimpleBuiltinGen<ExpOp>("exp");
   defSimpleBuiltinGen<CallValOp>("callvalue");
   defSimpleBuiltinGen<AddressOp>("address");
+  defSimpleBuiltinGen<BalanceOp>("balance");
+  defSimpleBuiltinGen<SelfBalanceOp>("selfbalance");
   defSimpleBuiltinGen<CallerOp>("caller");
   defSimpleBuiltinGen<GasOp>("gas");
+  defSimpleBuiltinGen<ChainIdOp>("chainid");
+  defSimpleBuiltinGen<BaseFeeOp>("basefee");
+  defSimpleBuiltinGen<BlobBaseFeeOp>("blobbasefee");
+  defSimpleBuiltinGen<OriginOp>("origin");
+  defSimpleBuiltinGen<GasPriceOp>("gasprice");
+  defSimpleBuiltinGen<BlockHashOp>("blockhash");
+  defSimpleBuiltinGen<BlobHashOp>("blobhash");
+  defSimpleBuiltinGen<CoinBaseOp>("coinbase");
+  defSimpleBuiltinGen<TimeStampOp>("timestamp");
+  defSimpleBuiltinGen<NumberOp>("number");
+  defSimpleBuiltinGen<PrevrandaoOp>("prevrandao");
+  defSimpleBuiltinGen<GasLimitOp>("gaslimit");
   defSimpleBuiltinGen<CallOp>("call");
+  defSimpleBuiltinGen<CallCodeOp>("callcode");
   defSimpleBuiltinGen<StaticCallOp>("staticcall");
   defSimpleBuiltinGen<DelegateCallOp>("delegatecall");
   defSimpleBuiltinGenNoRet<LogOp>("log0");
@@ -416,7 +463,7 @@ mlir::Value YulToMLIRPass::genCast(mlir::Value val, mlir::IntegerType dstTy) {
   mlir::IntegerType valTy = mlir::cast<mlir::IntegerType>(val.getType());
   if (valTy == dstTy)
     return val;
-  assert(valTy.getWidth() > dstTy.getWidth());
+  assert(dstTy.getWidth() > valTy.getWidth());
   return b.create<mlir::arith::ExtUIOp>(val.getLoc(), dstTy, val);
 }
 
