@@ -1,0 +1,40 @@
+// RUN: solc --standard-json  %s | FileCheck %s
+
+{
+  "language": "Yul",
+  "sources": {
+    "i.yul": {
+      "content": "
+      object \"Test\" {
+          code {
+            let size := datasize(\"Test_deployed\")
+            codecopy(0, dataoffset(\"Test_deployed\"), size)
+            return(0, size)
+          }
+          object \"Test_deployed\" {
+              code {
+                mstore(0, 42)
+                return(0, 32)
+              }
+          }
+      }
+      "
+    }
+  },
+  "settings": {
+    "codegen": "mlir",
+    "optimizer": {
+      "mode": "3"
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "evm.bytecode.object",
+          "evm.deployedBytecode.object"
+        ]
+      }
+    }
+  }
+}
+
+// CHECK: {"contracts":{"i.yul":{"Test":{"evm":{"bytecode":{"object":"{{[0-9a-f]+}}"},"deployedBytecode":{"object":"{{[0-9a-f]+}}"}}}}},"errors":[]}

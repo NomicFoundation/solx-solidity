@@ -25,6 +25,8 @@
 #include <libsolidity/interface/ImportRemapper.h>
 
 #include <libsolidity/ast/ASTJsonExporter.h>
+#include <libsolidity/codegen/mlir/Interface.h>
+
 #include <libyul/YulStack.h>
 #include <libyul/Exceptions.h>
 #include <libyul/optimiser/Suite.h>
@@ -1745,6 +1747,7 @@ Json StandardCompiler::compileYul(InputsAndSettings _inputsAndSettings)
 	bool const wildcardMatchesExperimental = true;
 	MachineAssemblyObject object;
 	MachineAssemblyObject deployedObject;
+	mlirgen::Bytecode bcViaMlir;
 
 	bool successful = stack.parseAndAnalyze(sourceName, sourceContents);
 	if (!successful)
@@ -1764,7 +1767,16 @@ Json StandardCompiler::compileYul(InputsAndSettings _inputsAndSettings)
 			output["sources"][sourceName] = sourceResult;
 		}
 		stack.optimize();
-		std::tie(object, deployedObject) = stack.assembleWithDeployed();
+		if (_inputsAndSettings.mlirJobSpec.action == mlirgen::Action::GenObj)
+			bcViaMlir = mlirgen::runYulToMLIRPass(
+				*stack.parserResult(),
+				stack.charStream(sourceName),
+				stack.dialect(),
+				_inputsAndSettings.mlirJobSpec,
+				_inputsAndSettings.evmVersion,
+				_inputsAndSettings.libraries);
+		else
+			std::tie(object, deployedObject) = stack.assembleWithDeployed();
 		if (object.bytecode)
 			object.bytecode->link(_inputsAndSettings.libraries);
 		if (deployedObject.bytecode)
@@ -1806,7 +1818,15 @@ Json StandardCompiler::compileYul(InputsAndSettings _inputsAndSettings)
 			};
 
 			MachineAssemblyObject const& selectedObject = isDeployed ? deployedObject : object;
-			if (selectedObject.bytecode)
+			if (_inputsAndSettings.mlirJobSpec.action == mlirgen::Action::GenObj)
+			{
+				Json bytecodeJSON;
+				if (evmArtifactRequested(kind, "object"))
+					bytecodeJSON["object"] = isDeployed ? llvm::toHex(bcViaMlir.runtime, /*LowerCase=*/true)
+														: llvm::toHex(bcViaMlir.creation, /*LowerCase=*/true);
+				output["contracts"][sourceName][contractName]["evm"][kind] = bytecodeJSON;
+			}
+			else if (selectedObject.bytecode)
 			{
 				Json bytecodeJSON;
 				if (evmArtifactRequested(kind, "object"))

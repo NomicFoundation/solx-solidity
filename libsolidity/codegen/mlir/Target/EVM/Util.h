@@ -115,6 +115,12 @@ struct BytecodeGen {
       LLVMDisposeMemoryBuffer(i.second);
   }
 
+  /// Returns the bytecode of a fully contained unlinked object.
+  solidity::mlirgen::Bytecode genEvmBytecode(UnlinkedObj);
+  /// Returns the bytecode from the assembled objects.
+  solidity::mlirgen::Bytecode
+  genEvmBytecode(LLVMMemoryBufferRef creationAssembled,
+                 LLVMMemoryBufferRef runtimeAssembled);
   /// Returns the bytecode of contract.
   solidity::mlirgen::Bytecode
   genEvmBytecode(solidity::frontend::ContractDefinition const *cont);

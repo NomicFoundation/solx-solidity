@@ -22,6 +22,7 @@
 #pragma once
 
 #include "liblangutil/EVMVersion.h"
+#include "libsolutil/FixedHash.h"
 #include <string>
 #include <vector>
 
@@ -62,6 +63,18 @@ enum class Action {
   Undefined,
 };
 
+constexpr bool isPrintAction(Action a) {
+  switch (a) {
+  case Action::PrintInitStg:
+  case Action::PrintStandardMLIR:
+  case Action::PrintLLVMIR:
+  case Action::PrintAsm:
+    return true;
+  default:
+    return false;
+  }
+}
+
 enum class Target {
   EVM,
   EraVM,
@@ -93,8 +106,10 @@ extern void
 runYulToMLIRPass(yul::AST const &, langutil::CharStream const &,
                  std::function<mlir::Value(yul::Identifier const *)> const &,
                  mlir::OpBuilder &);
-extern bool runYulToMLIRPass(yul::Object const &, langutil::CharStream const &,
-                             yul::Dialect const &, JobSpec const &,
-                             langutil::EVMVersion);
+extern Bytecode runYulToMLIRPass(yul::Object const &,
+                                 langutil::CharStream const &,
+                                 yul::Dialect const &, JobSpec const &,
+                                 langutil::EVMVersion,
+                                 std::map<std::string, util::h160> const &);
 
 } // namespace solidity::mlirgen

@@ -25,6 +25,7 @@
 #include "libsolidity/codegen/mlir/Interface.h"
 #include "libsolidity/codegen/mlir/Passes.h"
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
+#include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/mlir/Util.h"
 #include "libsolidity/codegen/mlir/Yul/Yul.h"
 #include "libsolutil/Visitor.h"
@@ -762,11 +763,10 @@ void solidity::mlirgen::runYulToMLIRPass(
   yulToMLIR.lowerBlk(ast.root());
 }
 
-bool solidity::mlirgen::runYulToMLIRPass(Object const &obj,
-                                         CharStream const &stream,
-                                         Dialect const &yulDialect,
-                                         JobSpec const &job,
-                                         EVMVersion evmVersion) {
+solidity::mlirgen::Bytecode solidity::mlirgen::runYulToMLIRPass(
+    Object const &obj, CharStream const &stream, Dialect const &yulDialect,
+    JobSpec const &job, EVMVersion evmVersion,
+    std::map<std::string, util::h160> const &libAddrMap) {
   mlir::MLIRContext ctx(mlir::MLIRContext::Threading::DISABLED);
   ctx.getOrLoadDialect<mlir::sol::SolDialect>();
   ctx.getOrLoadDialect<mlir::yul::YulDialect>();
@@ -787,11 +787,25 @@ bool solidity::mlirgen::runYulToMLIRPass(Object const &obj,
   if (failed(mlir::verify(mod))) {
     mod.print(llvm::errs());
     mod.emitError("Module verification error");
-    return false;
+    llvm_unreachable("");
   }
 
-  // FIXME:
-  assert(job.action != solidity::mlirgen::Action::GenObj);
-  llvm::outs() << mlirgen::printJob(job, mod);
-  return true;
+  mlirgen::JobSpec m_mlirGenJob = job;
+  if (m_mlirGenJob.action == mlirgen::Action::GenObj) {
+    // Create the llvm target machine.
+    std::unique_ptr<llvm::TargetMachine> tgtMach =
+        createTargetMachine(m_mlirGenJob.tgt);
+    mlirgen::setTgtMachOpt(tgtMach.get(), m_mlirGenJob.optLevel);
+
+    // Generate the object.
+    evm::UnlinkedObj unlinkedObj =
+        mlirgen::genEvmObj(mod, m_mlirGenJob.optLevel, *tgtMach);
+    evm::BytecodeGen::UnlinkedMap unlinkedMap; // FIXME
+    evm::BytecodeGen bcGen(unlinkedMap, libAddrMap);
+    return bcGen.genEvmBytecode(unlinkedObj);
+  }
+
+  assert(isPrintAction(job.action));
+  llvm::outs() << printJob(job, mod);
+  return Bytecode();
 }

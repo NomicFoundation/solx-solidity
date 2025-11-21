@@ -31,12 +31,9 @@ using namespace evm;
 using namespace solidity;
 using namespace solidity::frontend;
 
-mlirgen::Bytecode BytecodeGen::genEvmBytecode(ContractDefinition const *cont) {
-  // Generate the assembled objs.
-  LLVMMemoryBufferRef creationAssembled =
-      genAssembledObj(cont, /*isCreationRequested=*/true);
-  LLVMMemoryBufferRef runtimeAssembled = runtimeAssembledMap[cont];
-
+mlirgen::Bytecode
+BytecodeGen::genEvmBytecode(LLVMMemoryBufferRef creationAssembled,
+                            LLVMMemoryBufferRef runtimeAssembled) {
   // Convert libAddrMap for lld-c.
   auto numLibs = libAddrMap.size();
   auto **libNames = new const char *[numLibs];
@@ -71,6 +68,35 @@ mlirgen::Bytecode BytecodeGen::genEvmBytecode(ContractDefinition const *cont) {
   LLVMDisposeMemoryBuffer(runtimeBytecode);
 
   return ret;
+}
+
+mlirgen::Bytecode BytecodeGen::genEvmBytecode(ContractDefinition const *cont) {
+  // Generate the assembled objs.
+  LLVMMemoryBufferRef creationAssembled =
+      genAssembledObj(cont, /*isCreationRequested=*/true);
+  LLVMMemoryBufferRef runtimeAssembled = runtimeAssembledMap[cont];
+  return genEvmBytecode(creationAssembled, runtimeAssembled);
+}
+
+mlirgen::Bytecode BytecodeGen::genEvmBytecode(UnlinkedObj obj) {
+  LLVMMemoryBufferRef *objs = new LLVMMemoryBufferRef[2];
+  const char **objIds = new const char *[2];
+  objs[0] = obj.creationPart;
+  objIds[0] = obj.creationId.data();
+  objs[1] = obj.runtimePart;
+  objIds[1] = obj.runtimeId.data();
+
+  LLVMMemoryBufferRef creationAssembled;
+  char *errMsg = nullptr;
+  if (LLVMAssembleEVM(/*codeSegment=*/0, /*inBuffers=*/objs,
+                      /*inBuffersIDs=*/objIds,
+                      /*inBuffersNum=*/2,
+                      /*outBuffer=*/&creationAssembled,
+                      /*errorMessage=*/&errMsg))
+    llvm_unreachable(errMsg);
+  delete[] objs;
+  delete[] objIds;
+  return genEvmBytecode(creationAssembled, obj.runtimePart);
 }
 
 LLVMMemoryBufferRef BytecodeGen::genAssembledObj(ContractDefinition const *cont,

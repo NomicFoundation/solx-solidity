@@ -64,6 +64,8 @@
 
 #include <range/v3/view/map.hpp>
 
+#include <llvm/ADT/StringExtras.h>
+
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/algorithm/string.hpp>
@@ -1294,6 +1296,7 @@ void CommandLineInterface::assembleYul(yul::YulStack::Language _language, yul::Y
 	bool successful = true;
 	std::map<std::string, yul::YulStack> yulStacks;
 	std::map<std::string, yul::MachineAssemblyObject> objects;
+	std::map<std::string, mlirgen::Bytecode> bcViaMlir;
 	for (auto const& [sourceUnitName, yulSource]: m_fileReader.sourceUnits())
 	{
 		auto& stack = yulStacks[sourceUnitName] = yul::YulStack(
@@ -1306,39 +1309,20 @@ void CommandLineInterface::assembleYul(yul::YulStack::Language _language, yul::Y
 				DebugInfoSelection::Default()
 		);
 
-		// FIXME: Support more than 1 source units.
-		if (m_options.mlirGenJob.action != mlirgen::Action::Undefined)
-		{
-			if (!stack.parseAndAnalyze(sourceUnitName, yulSource))
-			{
-				successful = false;
-				break;
-			}
-			yul::Dialect const* dialect = nullptr;
-			switch (_language)
-			{
-			case yul::YulStack::Language::Assembly:
-			case yul::YulStack::Language::StrictAssembly:
-				dialect = &yul::EVMDialect::
-							  strictAssemblyForEVMObjects(m_options.output.evmVersion, m_options.output.eofVersion);
-				break;
-			default:
-				solUnimplementedAssert(false, "Invalid yul dialect");
-			}
-			if (!mlirgen::runYulToMLIRPass(
-					*stack.parserResult(),
-					stack.charStream(sourceUnitName),
-					*dialect,
-					m_options.mlirGenJob,
-					m_options.output.evmVersion))
-				solAssert(false, "runYulToMLIRPass failed");
-			else
-				return;
-		}
-
 		successful = successful && stack.parseAndAnalyze(sourceUnitName, yulSource);
 		if (!successful)
 			solAssert(stack.hasErrors(), "No error reported, but parsing/analysis failed.");
+		else if (m_options.mlirGenJob.action != mlirgen::Action::Undefined)
+		{
+			mlirgen::Bytecode bytecode = mlirgen::runYulToMLIRPass(
+				*stack.parserResult(),
+				stack.charStream(sourceUnitName),
+				stack.dialect(),
+				m_options.mlirGenJob,
+				m_options.output.evmVersion,
+				m_options.linker.libraries);
+			bcViaMlir.insert({sourceUnitName, std::move(bytecode)});
+		}
 		else
 		{
 			if (
@@ -1360,6 +1344,10 @@ void CommandLineInterface::assembleYul(yul::YulStack::Language _language, yul::Y
 			objects.insert({sourceUnitName, std::move(object)});
 		}
 	}
+
+	// Print jobs are done in the pass.
+	if (mlirgen::isPrintAction(m_options.mlirGenJob.action))
+		return;
 
 	for (auto const& sourceAndStack: yulStacks)
 	{
@@ -1387,6 +1375,14 @@ void CommandLineInterface::assembleYul(yul::YulStack::Language _language, yul::Y
 
 		yul::YulStack const& stack = yulStacks[sourceUnitName];
 		yul::MachineAssemblyObject const& object = objects[sourceUnitName];
+
+		mlirgen::Bytecode mlirObj = bcViaMlir[sourceUnitName];
+		if (m_options.mlirGenJob.action == mlirgen::Action::GenObj)
+		{
+			sout() << std::endl << "Binary representation:" << std::endl;
+			sout() << llvm::toHex(mlirObj.creation, /*LowerCase=*/true) << std::endl;
+			continue;
+		}
 
 		if (m_options.compiler.outputs.ethdebug)
 		{
