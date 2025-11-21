@@ -34,7 +34,7 @@ parameters:
     default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:fc53d68a4680ffa7d5f70164e13a903478964f15bcc07434d74833a05f4fbc19"
   evm-version:
     type: string
-    default: prague
+    default: osaka
 
 orbs:
   win: circleci/windows@2.2.0
