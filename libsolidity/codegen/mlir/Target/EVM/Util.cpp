@@ -72,8 +72,8 @@ int64_t evm::getMallocSize(Type ty) {
 }
 
 unsigned evm::getStorageSlotCount(Type ty) {
-  if (isa<IntegerType>(ty) || isa<sol::MappingType>(ty) ||
-      sol::hasDynamicallySizedElt(ty))
+  if (isa<IntegerType>(ty) || isa<sol::BytesType>(ty) ||
+      isa<sol::MappingType>(ty) || sol::hasDynamicallySizedElt(ty))
     return 1;
 
   if (auto arrTy = dyn_cast<sol::ArrayType>(ty))
