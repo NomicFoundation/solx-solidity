@@ -293,10 +293,17 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
                                         mlir::ModuleOp mod) {
   assert(job.action != Action::GenObj);
 
-  mlir::PassManager passMgr(mod.getContext());
+  mlir::MLIRContext *mlirCtx = mod.getContext();
+  mlir::PassManager passMgr(mlirCtx);
   llvm::LLVMContext llvmCtx;
   std::string ret;
   llvm::raw_string_ostream ss(ret);
+  // Register a diagnostic handler to capture the diagnostic so that we can
+  // check it later.
+  std::unique_ptr<mlir::Diagnostic> diagnostic;
+  mlirCtx->getDiagEngine().registerHandler([&](mlir::Diagnostic &diag) {
+    diagnostic = std::make_unique<mlir::Diagnostic>(std::move(diag));
+  });
 
   switch (job.action) {
   case Action::PrintInitStg:
@@ -309,8 +316,12 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
     passMgr.addPass(mlir::sol::createModifierOpLoweringPass());
     passMgr.addPass(mlir::sol::createConvertSolToStandardPass(job.tgt));
     passMgr.addPass(mlir::createCanonicalizerPass());
-    if (mlir::failed(passMgr.run(mod)))
+    if (mlir::failed(passMgr.run(mod))) {
+      mod.print(ss);
+      llvm::errs() << ret << '\n';
+      llvm::errs() << diagnostic->str() << '\n';
       llvm_unreachable("Conversion to standard dialects failed");
+    }
     mod.print(ss);
     return ret;
 
@@ -319,8 +330,12 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
 
     // Convert the module's ir to llvm dialect.
     addConversionPasses(passMgr, job.tgt);
-    if (mlir::failed(passMgr.run(mod)))
+    if (mlir::failed(passMgr.run(mod))) {
+      mod.print(ss);
+      llvm::errs() << ret << '\n';
+      llvm::errs() << diagnostic->str() << '\n';
       llvm_unreachable("Conversion to llvm dialect failed");
+    }
 
     std::unique_ptr<llvm::TargetMachine> tgtMach = createTargetMachine(job.tgt);
     setTgtMachOpt(tgtMach.get(), job.optLevel);

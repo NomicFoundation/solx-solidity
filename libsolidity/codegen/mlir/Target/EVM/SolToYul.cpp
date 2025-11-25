@@ -1674,6 +1674,11 @@ struct SwitchOpLowering : public OpRewritePattern<sol::SwitchOp> {
     // Convert the default region.
     Block *defaultBlk = convertRegion(switchOp.getDefaultRegion());
 
+    if (caseVals.empty()) {
+      r.replaceOp(switchOp, continueBlk->getArguments());
+      return success();
+    }
+
     // Create the switch.
     r.setInsertionPointToEnd(condBlk);
     SmallVector<ValueRange> caseOperands(caseSuccessors.size(), {});

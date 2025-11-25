@@ -322,11 +322,9 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   defSimpleBuiltinGen<MulModOp>("mulmod");
   defSimpleBuiltinGen<SignExtendOp>("signextend");
   defSimpleBuiltinGen<MLoadOp>("mload");
-  defSimpleBuiltinGenNoRet<LoadImmutableOp>("loadimmutable");
   defSimpleBuiltinGenNoRet<MStoreOp>("mstore");
   defSimpleBuiltinGenNoRet<MStore8Op>("mstore8");
   defSimpleBuiltinGenNoRet<MCopyOp>("mcopy");
-  defSimpleBuiltinGenNoRet<SetImmutableOp>("setimmutable");
   defSimpleBuiltinGen<MSizeOp>("msize");
   defSimpleBuiltinGen<ByteOp>("byte");
   defSimpleBuiltinGen<CallDataLoadOp>("calldataload");
@@ -335,6 +333,8 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   defSimpleBuiltinGenNoRet<ReturnDataCopyOp>("returndatacopy");
   defSimpleBuiltinGen<ReturnDataSizeOp>("returndatasize");
   defSimpleBuiltinGenNoRet<CodeCopyOp>("codecopy");
+  // For the EVM, the datacopy function is equivalent to codecopy.
+  defSimpleBuiltinGenNoRet<CodeCopyOp>("datacopy");
   defSimpleBuiltinGen<CodeSizeOp>("codesize");
   defSimpleBuiltinGen<ExtCodeSizeOp>("extcodesize");
   defSimpleBuiltinGenNoRet<ExtCodeCopyOp>("extcodecopy");
@@ -348,6 +348,7 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   defSimpleBuiltinGenNoRet<ReturnOp>("return");
   defSimpleBuiltinGenNoRet<RevertOp>("revert");
   defSimpleBuiltinGenNoRet<StopOp>("stop");
+  defSimpleBuiltinGenNoRet<InvalidOp>("invalid");
   defSimpleBuiltinGen<Keccak256Op>("keccak256");
   defSimpleBuiltinGen<ExpOp>("exp");
   defSimpleBuiltinGen<CallValOp>("callvalue");
@@ -379,29 +380,29 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   defSimpleBuiltinGenNoRet<LogOp>("log4");
   builtinGenMap["dataoffset"] = [&](std::vector<Expression> const &args,
                                     Location loc) {
-    SmallVector<Value, 2> resVals;
     auto *objectName = std::get_if<Literal>(&args[0]);
     assert(objectName);
     assert(objectName->kind == LiteralKind::String);
-    auto objectOp =
-        lookupSymbol<ObjectOp>(objectName->value.builtinStringLiteralValue());
-    assert(objectOp && "NYI: References to external object");
-    resVals.push_back(
-        b.create<DataOffsetOp>(loc, FlatSymbolRefAttr::get(objectOp)));
-    return resVals;
+
+    // TODO: Check that there exists an ObjectOp whose 'sym_name' attribute
+    // is equal to 'name'.
+    const std::string &name = objectName->value.builtinStringLiteralValue();
+    Value val =
+        b.create<DataOffsetOp>(loc, SymbolRefAttr::get(b.getContext(), name));
+    return SmallVector<Value>{val};
   };
   builtinGenMap["datasize"] = [&](std::vector<Expression> const &args,
                                   Location loc) {
-    SmallVector<Value, 2> resVals;
     auto *objectName = std::get_if<Literal>(&args[0]);
     assert(objectName);
     assert(objectName->kind == LiteralKind::String);
-    auto objectOp =
-        lookupSymbol<ObjectOp>(objectName->value.builtinStringLiteralValue());
-    assert(objectOp && "NYI: References to external object");
-    resVals.push_back(
-        b.create<DataSizeOp>(loc, FlatSymbolRefAttr::get(objectOp)));
-    return resVals;
+
+    // TODO: Check that there exists an ObjectOp whose 'sym_name' attribute
+    // is equal to 'name'.
+    const std::string &name = objectName->value.builtinStringLiteralValue();
+    Value val =
+        b.create<DataSizeOp>(loc, SymbolRefAttr::get(b.getContext(), name));
+    return SmallVector<Value>{val};
   };
   builtinGenMap["memoryguard"] = [&](std::vector<Expression> const &args,
                                      Location loc) {
@@ -409,6 +410,27 @@ void YulToMLIRPass::populateBuiltinGenMap() {
     auto *arg = std::get_if<Literal>(&args[0]);
     assert(arg);
     resVals.push_back(b.create<MemGuardOp>(loc, getIntAttr(arg->value)));
+    return resVals;
+  };
+  builtinGenMap["setimmutable"] = [&](std::vector<Expression> const &args,
+                                      Location loc) {
+    auto *id = std::get_if<Literal>(&args[1]);
+    assert(id);
+    assert(id->kind == LiteralKind::String);
+    b.create<SetImmutableOp>(loc, genDefTyExpr(args[0]),
+                             id->value.builtinStringLiteralValue(),
+                             genDefTyExpr(args[2]));
+    return SmallVector<Value>{};
+  };
+  builtinGenMap["loadimmutable"] = [&](std::vector<Expression> const &args,
+                                       Location loc) {
+    auto *id = std::get_if<Literal>(&args[0]);
+    assert(id);
+    assert(id->kind == LiteralKind::String);
+    id->value.builtinStringLiteralValue();
+
+    SmallVector<Value, 1> resVals{
+        b.create<LoadImmutableOp>(loc, id->value.builtinStringLiteralValue())};
     return resVals;
   };
 }
@@ -530,7 +552,11 @@ void YulToMLIRPass::operator()(VariableDeclaration const &decl) {
   mlir::Location loc = getLoc(decl.debugData);
   mlirgen::BuilderExt bExt(b, loc);
 
-  mlir::SmallVector<mlir::Value> rhsExprs = genDefTyExprs(*decl.value);
+  // If no initializer is specified, the variable defaults to zero.
+  mlir::SmallVector<mlir::Value> rhsExprs =
+      (decl.value ? genDefTyExprs(*decl.value)
+                  : mlir::SmallVector<mlir::Value>(decl.variables.size(),
+                                                   bExt.genI256Const(0)));
   for (auto [var, rhsExpr] : llvm::zip(decl.variables, rhsExprs)) {
     auto addr = b.create<mlir::LLVM::AllocaOp>(
         getLoc(var.debugData),
@@ -579,14 +605,19 @@ void YulToMLIRPass::operator()(Switch const &switchStmt) {
       defCaseAST = &caseAST;
     }
   }
-  assert(defCaseAST && "NYI: Switch block without a default case");
   auto caseValsAttr = mlir::DenseIntElementsAttr::get(
       mlir::RankedTensorType::get(static_cast<int64_t>(caseVals.size()),
                                   getDefIntTy()),
       caseVals);
 
   // Lower the switch argument and generate the switch op.
-  mlir::Value arg = genExpr(*switchStmt.expression);
+  mlir::Value arg = genDefTyExpr(*switchStmt.expression);
+  if (caseVals.empty()) {
+    if (defCaseAST)
+      ASTWalker::operator()(defCaseAST->body);
+    return;
+  }
+
   auto switchOp = b.create<mlir::sol::SwitchOp>(
       loc, /*resultTypes=*/std::nullopt, arg, caseValsAttr, caseVals.size());
   mlir::OpBuilder::InsertionGuard insertGuard(b);
@@ -600,7 +631,14 @@ void YulToMLIRPass::operator()(Switch const &switchStmt) {
     b.setInsertionPointToStart(blk);
     ASTWalker::operator()(caseAST.body);
   };
-  lowerBody(switchOp.getDefaultRegion(), *defCaseAST);
+
+  if (defCaseAST) {
+    lowerBody(switchOp.getDefaultRegion(), *defCaseAST);
+  } else {
+    b.setInsertionPointToStart(b.createBlock(&switchOp.getDefaultRegion()));
+    b.create<mlir::sol::YieldOp>(loc);
+  }
+
   assert(switchOp.getCaseRegions().size() == caseASTs.size());
   for (auto [region, caseAST] : llvm::zip(switchOp.getCaseRegions(), caseASTs))
     lowerBody(region, *caseAST);
@@ -744,6 +782,7 @@ void YulToMLIRPass::lowerTopLevelObj(Object const &obj) {
   // TODO: Does it make sense to nest subobjects in the top level ObjectOp's
   // body?
   for (auto const &subNode : obj.subObjects) {
+    b.setInsertionPointToStart(topLevelObj.getEntryBlock());
     if (auto *subObj = dynamic_cast<Object const *>(subNode.get())) {
       lowerObj(*subObj);
     } else {
@@ -774,6 +813,13 @@ solidity::mlirgen::Bytecode solidity::mlirgen::runYulToMLIRPass(
   ctx.getOrLoadDialect<mlir::scf::SCFDialect>();
   ctx.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
 
+  // Register a diagnostic handler to capture the diagnostic so that we can
+  // check it later.
+  std::unique_ptr<mlir::Diagnostic> diagnostic;
+  ctx.getDiagEngine().registerHandler([&](mlir::Diagnostic &diag) {
+    diagnostic = std::make_unique<mlir::Diagnostic>(std::move(diag));
+  });
+
   mlir::OpBuilder b(&ctx);
   mlir::ModuleOp mod = mlir::ModuleOp::create(b.getUnknownLoc());
   mod->setAttr("sol.evm_version",
@@ -786,7 +832,8 @@ solidity::mlirgen::Bytecode solidity::mlirgen::runYulToMLIRPass(
 
   if (failed(mlir::verify(mod))) {
     mod.print(llvm::errs());
-    mod.emitError("Module verification error");
+    assert(diagnostic.get() != nullptr);
+    llvm::errs() << "Module verification error: " << diagnostic->str() << '\n';
     llvm_unreachable("");
   }
 
