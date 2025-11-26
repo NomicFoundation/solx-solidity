@@ -767,6 +767,10 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
       return b.create<mlir::sol::CodeOp>(loc,
                                          genRValExpr(memberAcc.expression()));
     }
+    if (memberName == "codehash") {
+      return b.create<mlir::sol::CodeHashOp>(
+          loc, genRValExpr(memberAcc.expression()));
+    }
   }
   }
 

@@ -658,6 +658,15 @@ def Sol_CodeOp : Sol_Op<"code"> {
   }];
 }
 
+def Sol_CodeHashOp : Sol_Op<"code_hash", [Pure]> {
+  let arguments = (ins Sol_AddressType:$contAddr);
+  let results = (outs UI256:$out);
+
+  let assemblyFormat = [{
+    $contAddr attr-dict `:` type($contAddr) `->` type($out)
+  }];
+}
+
 def Sol_ReturnOp : Sol_Op<"return", [Pure, Terminator]> {
   // TODO: Verifier should check if a func op is an ancestor. ParentOneOf
   // doesn't work for this.

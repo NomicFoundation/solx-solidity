@@ -297,7 +297,7 @@ def Yul_ExtCodeSizeOp : Yul_Op<"extcodesize", [Pure]> {
   let assemblyFormat = "$addr attr-dict";
 }
 
-def Yul_ExtCodeHashOp : Yul_Op<"extcodehash"> {
+def Yul_ExtCodeHashOp : Yul_Op<"extcodehash", [Pure]> {
   let summary = "Represents the `extcodehash` call in yul";
   let arguments = (ins I256:$addr);
   let results = (outs I256:$out);

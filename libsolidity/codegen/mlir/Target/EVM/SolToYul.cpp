@@ -1038,6 +1038,16 @@ struct LibAddrOpLowering : public OpConversionPattern<sol::LibAddrOp> {
   }
 };
 
+struct CodeHashOpLowering : public OpConversionPattern<sol::CodeHashOp> {
+  using OpConversionPattern<sol::CodeHashOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::CodeHashOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    r.replaceOpWithNewOp<yul::ExtCodeHashOp>(op, adaptor.getContAddr());
+    return success();
+  }
+};
+
 struct EncodeOpLowering : public OpConversionPattern<sol::EncodeOp> {
   using OpConversionPattern<sol::EncodeOp>::OpConversionPattern;
 
@@ -2245,7 +2255,8 @@ void evm::populateFuncPats(RewritePatternSet &pats, TypeConverter &tyConv) {
 }
 
 void evm::populateAddrPat(RewritePatternSet &pats) {
-  pats.add<ThisOpLowering, LibAddrOpLowering>(pats.getContext());
+  pats.add<ThisOpLowering, LibAddrOpLowering, CodeHashOpLowering>(
+      pats.getContext());
 }
 
 void evm::populateAbiPats(mlir::RewritePatternSet &pats,
