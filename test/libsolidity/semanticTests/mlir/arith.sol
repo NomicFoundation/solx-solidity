@@ -51,6 +51,22 @@ contract C {
   function dec(int8 a) public returns (int8) {
     return a--;
   }
+
+  function shl(uint a, uint b) public returns (uint) {
+    return a << b;
+  }
+
+  function shr(uint a, uint b) public returns (uint) {
+    return a >> b;
+  }
+
+  function shl8(uint8 a, uint b) public returns (uint8) {
+    return a << b;
+  }
+
+  function shr8(uint8 a, uint b) public returns (uint8) {
+    return a >> b;
+  }
 }
 
 // ====
@@ -67,3 +83,7 @@ contract C {
 // neg(int256): 1 -> -1
 // inc(int256): 0 -> 2
 // dec(int8): -128 -> FAILURE, hex"4e487b71", 0x11
+// shl(uint256,uint256): 4, 1 -> 8
+// shr(uint256,uint256): 4, 1 -> 2
+// shl8(uint8,uint256): 1, 8 -> 0
+// shr8(uint8,uint256): 1, 8 -> 0

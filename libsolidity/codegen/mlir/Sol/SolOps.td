@@ -113,6 +113,12 @@ def Sol_ModOp : Sol_UncheckedIntArithOp<"mod"> {
 def Sol_ExpOp : Sol_UncheckedIntArithOp<"exp"> {
   // TODO: folder, canonicalizer
 }
+def Sol_ShlOp : Sol_UncheckedIntArithOp<"shl"> {
+  // TODO: folder, canonicalizer
+}
+def Sol_ShrOp : Sol_UncheckedIntArithOp<"shr"> {
+  // TODO: folder, canonicalizer
+}
 
 def Sol_CmpOp : Sol_Op<"cmp", [Pure, SameTypeOperands]> {
   let arguments = (ins Sol_CmpPredicateAttr:$predicate, Sol_Int:$lhs,

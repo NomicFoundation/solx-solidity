@@ -134,6 +134,8 @@ struct ConvertSolToStandard
         sol::MulOp,
         sol::DivOp,
         sol::ModOp,
+        sol::ShlOp,
+        sol::ShrOp,
         sol::CmpOp,
         sol::CAddOp,
         sol::CSubOp,

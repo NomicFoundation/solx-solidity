@@ -154,6 +154,63 @@ struct DivOrModOpLowering : public OpConversionPattern<SolOp> {
   }
 };
 
+template <bool isLeftShift>
+static Value genYulShiftOp(ConversionPatternRewriter &r, Location loc,
+                           Value val, Value shiftVal, bool isSigned) {
+  solidity::mlirgen::BuilderExt bExt(r, loc);
+
+  unsigned resWidth = cast<IntegerType>(val.getType()).getWidth();
+
+  // Yul shift ops work with i256.
+  Value val256 = bExt.genIntCast(256, isSigned, val);
+  Value shift256 = bExt.genIntCast(256, false, shiftVal);
+
+  Value shifted256;
+  if constexpr (isLeftShift) {
+    shifted256 = r.create<yul::ShlOp>(loc, shift256, val256);
+  } else {
+    if (isSigned)
+      shifted256 = r.create<yul::SarOp>(loc, shift256, val256);
+    else
+      shifted256 = r.create<yul::ShrOp>(loc, shift256, val256);
+  }
+
+  // Cast back to the original bitwidth.
+  return bExt.genIntCast(resWidth, isSigned, shifted256);
+}
+
+struct ShlOpLowering : public OpConversionPattern<sol::ShlOp> {
+  using OpConversionPattern<sol::ShlOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::ShlOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    auto ty = cast<IntegerType>(op.getType());
+
+    Value result = genYulShiftOp</*isLeftShift=*/true>(
+        r, loc, adaptor.getLhs(), adaptor.getRhs(), ty.isSigned());
+
+    r.replaceOp(op, result);
+    return success();
+  }
+};
+
+struct ShrOpLowering : public OpConversionPattern<sol::ShrOp> {
+  using OpConversionPattern<sol::ShrOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::ShrOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    auto ty = cast<IntegerType>(op.getType());
+
+    Value result = genYulShiftOp</*isLeftShift=*/false>(
+        r, loc, adaptor.getLhs(), adaptor.getRhs(), ty.isSigned());
+
+    r.replaceOp(op, result);
+    return success();
+  }
+};
+
 struct CAddOpLowering : public OpConversionPattern<sol::CAddOp> {
   using OpConversionPattern<sol::CAddOp>::OpConversionPattern;
 
@@ -2226,7 +2283,8 @@ void evm::populateArithPats(RewritePatternSet &pats, TypeConverter &tyConv) {
            ArithBinOpLowering<sol::ExpOp, yul::ExpOp>,
            DivOrModOpLowering<sol::DivOp, arith::DivSIOp, arith::DivUIOp>,
            DivOrModOpLowering<sol::ModOp, arith::RemSIOp, arith::RemUIOp>,
-           CmpOpLowering>(tyConv, pats.getContext());
+           ShrOpLowering, ShlOpLowering, CmpOpLowering>(tyConv,
+                                                        pats.getContext());
 }
 
 void evm::populateCheckedArithPats(RewritePatternSet &pats,
