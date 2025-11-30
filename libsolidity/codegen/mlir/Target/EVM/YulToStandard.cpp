@@ -1035,6 +1035,21 @@ struct StopOpLowering : public OpRewritePattern<yul::StopOp> {
   }
 };
 
+struct InvalidOpLowering : public OpRewritePattern<yul::InvalidOp> {
+  using OpRewritePattern<yul::InvalidOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(yul::InvalidOp op,
+                                PatternRewriter &r) const override {
+    solidity::mlirgen::BuilderExt bExt(r, op.getLoc());
+
+    r.replaceOpWithNewOp<LLVM::IntrCallOp>(op, llvm::Intrinsic::evm_invalid,
+                                           /*resTy=*/Type{},
+                                           /*ins=*/ValueRange{}, "evm.invalid");
+    bExt.createCallToUnreachableWrapper(op->getParentOfType<ModuleOp>());
+    return success();
+  }
+};
+
 struct ObjectOpLowering : public OpRewritePattern<yul::ObjectOp> {
   using OpRewritePattern<yul::ObjectOp>::OpRewritePattern;
 
@@ -1053,11 +1068,14 @@ struct ObjectOpLowering : public OpRewritePattern<yul::ObjectOp> {
     // an object.
     //
     // Move the entry code to the entry function and everything else to the
-    // module.
-    for (auto &op : llvm::make_early_inc_range(*obj.getEntryBlock())) {
-      if (isa<sol::FuncOp>(op) || isa<yul::ObjectOp>(op))
-        op.moveBefore(modBlk, modBlk->end());
-    }
+    // module. We need to visit the blocks that are directly nested inside
+    // `mod`.
+    for (Region &region : obj->getRegions())
+      for (Block &block : region)
+        for (Operation &nestedOp : llvm::make_early_inc_range(block))
+          if (isa<sol::FuncOp>(nestedOp) || isa<yul::ObjectOp>(nestedOp))
+            nestedOp.moveBefore(modBlk, modBlk->end());
+
     // Terminate all blocks without terminators using the unreachable op.
     obj.walk([&](Block *blk) {
       if (blk->empty() || !blk->back().hasTrait<OpTrait::IsTerminator>()) {
@@ -1131,6 +1149,7 @@ void evm::populateYulPats(RewritePatternSet &pats) {
       GasLimitOpLowering,
       RevertOpLowering,
       StopOpLowering,
+      InvalidOpLowering,
       CallValOpLowering,
       CallDataLoadOpLowering,
       CallDataSizeOpLowering,
