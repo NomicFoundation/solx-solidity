@@ -119,13 +119,13 @@ def Sol_ShlOp : Sol_UncheckedIntArithOp<"shl"> {
 def Sol_ShrOp : Sol_UncheckedIntArithOp<"shr"> {
   // TODO: folder, canonicalizer
 }
-def Sol_AndOp : Sol_UncheckedIntArithOp<"and"> {
+def Sol_AndOp : Sol_UncheckedIntArithOp<"and", [Commutative]> {
   // TODO: folder, canonicalizer
 }
-def Sol_OrOp : Sol_UncheckedIntArithOp<"or"> {
+def Sol_OrOp : Sol_UncheckedIntArithOp<"or", [Commutative]> {
   // TODO: folder, canonicalizer
 }
-def Sol_XorOp : Sol_UncheckedIntArithOp<"xor"> {
+def Sol_XorOp : Sol_UncheckedIntArithOp<"xor", [Commutative]> {
   // TODO: folder, canonicalizer
 }
 

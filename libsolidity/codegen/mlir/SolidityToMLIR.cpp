@@ -704,8 +704,52 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const &unaryOp) {
 mlir::Value SolidityToMLIRPass::genExpr(BinaryOperation const &binOp) {
   mlir::Type argTy = getType(binOp.annotation().commonType);
   auto loc = getLoc(binOp);
+  mlirgen::BuilderExt bExt(b, loc);
 
   mlir::Value lhs = genRValExpr(binOp.leftExpression(), argTy);
+
+  // Handle logical operators that can short-circuit.
+  //
+  // We generate `if` ops for the short-circuiting and an alloca op to track the
+  // final value.
+  //
+  // TODO: We won't need the alloca for the short-circuting codegen if the `if`
+  // ops can yield values.
+  if (binOp.getOperator() == Token::And) {
+    mlir::Type allocTy = mlir::sol::PointerType::get(
+        b.getContext(), argTy, mlir::sol::DataLocation::Stack);
+    auto alloca = b.create<mlir::sol::AllocaOp>(loc, allocTy);
+    b.create<mlir::sol::StoreOp>(loc, bExt.genBool(false), alloca);
+
+    auto ifOp = b.create<mlir::sol::IfOp>(loc, lhs);
+    auto resPt = b.saveInsertionPoint();
+    b.setInsertionPointToStart(&ifOp.getThenRegion().emplaceBlock());
+    mlir::Value rhs = genRValExpr(binOp.rightExpression(), argTy);
+    b.create<mlir::sol::StoreOp>(loc, rhs, alloca);
+    b.create<mlir::sol::YieldOp>(loc);
+    b.restoreInsertionPoint(resPt);
+
+    return b.create<mlir::sol::LoadOp>(loc, alloca);
+  }
+  if (binOp.getOperator() == Token::Or) {
+    mlir::Type allocTy = mlir::sol::PointerType::get(
+        b.getContext(), argTy, mlir::sol::DataLocation::Stack);
+    auto alloca = b.create<mlir::sol::AllocaOp>(loc, allocTy);
+    b.create<mlir::sol::StoreOp>(loc, lhs, alloca);
+
+    auto ifOp = b.create<mlir::sol::IfOp>(loc, lhs);
+    auto resPt = b.saveInsertionPoint();
+    b.setInsertionPointToStart(&ifOp.getThenRegion().emplaceBlock());
+    b.create<mlir::sol::YieldOp>(loc);
+    b.setInsertionPointToStart(&ifOp.getElseRegion().emplaceBlock());
+    mlir::Value rhs = genRValExpr(binOp.rightExpression(), argTy);
+    b.create<mlir::sol::StoreOp>(loc, rhs, alloca);
+    b.create<mlir::sol::YieldOp>(loc);
+    b.restoreInsertionPoint(resPt);
+
+    return b.create<mlir::sol::LoadOp>(loc, alloca);
+  }
+
   mlir::Value rhs = genRValExpr(binOp.rightExpression(), argTy);
 
   return genBinExpr(binOp.getOperator(), lhs, rhs, loc);
