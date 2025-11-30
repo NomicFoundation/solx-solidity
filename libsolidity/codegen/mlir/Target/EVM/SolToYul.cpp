@@ -154,6 +154,26 @@ struct DivOrModOpLowering : public OpConversionPattern<SolOp> {
   }
 };
 
+struct ExpOpLowering : public OpConversionPattern<sol::ExpOp> {
+  using OpConversionPattern<sol::ExpOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::ExpOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+
+    auto ty = cast<IntegerType>(op.getType());
+    // Yul exp op work with i256.
+    Value lhs256 = bExt.genIntCast(256, ty.isSigned(), adaptor.getLhs());
+    Value rhs256 = bExt.genIntCast(256, ty.isSigned(), adaptor.getRhs());
+    Value exp256 = r.create<yul::ExpOp>(loc, lhs256, rhs256);
+    // Cast back to the original bitwidth.
+    Value exp = bExt.genIntCast(ty.getWidth(), ty.isSigned(), exp256);
+    r.replaceOp(op, exp);
+    return success();
+  }
+};
+
 template <bool isLeftShift>
 static Value genYulShiftOp(ConversionPatternRewriter &r, Location loc,
                            Value val, Value shiftVal, bool isSigned) {
@@ -2280,14 +2300,13 @@ void evm::populateArithPats(RewritePatternSet &pats, TypeConverter &tyConv) {
            ArithBinOpLowering<sol::AddOp, arith::AddIOp>,
            ArithBinOpLowering<sol::SubOp, arith::SubIOp>,
            ArithBinOpLowering<sol::MulOp, arith::MulIOp>,
-           ArithBinOpLowering<sol::ExpOp, yul::ExpOp>,
            ArithBinOpLowering<sol::AndOp, arith::AndIOp>,
            ArithBinOpLowering<sol::OrOp, arith::OrIOp>,
            ArithBinOpLowering<sol::XorOp, arith::XOrIOp>,
            DivOrModOpLowering<sol::DivOp, arith::DivSIOp, arith::DivUIOp>,
            DivOrModOpLowering<sol::ModOp, arith::RemSIOp, arith::RemUIOp>,
-           ShrOpLowering, ShlOpLowering, CmpOpLowering>(tyConv,
-                                                        pats.getContext());
+           ExpOpLowering, ShrOpLowering, ShlOpLowering, CmpOpLowering>(
+      tyConv, pats.getContext());
 }
 
 void evm::populateCheckedArithPats(RewritePatternSet &pats,

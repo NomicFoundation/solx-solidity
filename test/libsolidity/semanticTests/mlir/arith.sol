@@ -10,6 +10,7 @@ contract C {
     r /= 2;
     r = r % 13;
     r %= 13;
+    r = a ** b;
     }
     return r;
   }
@@ -80,7 +81,7 @@ contract C {
 // ====
 // compileViaMlir: true
 // ----
-// uc(uint256,uint256): 4, 2 -> 12
+// uc(uint256,uint256): 4, 2 -> 16
 // c(uint256,uint256): -2, 1 -> -1
 // c(uint256,uint256): -2, 2 -> FAILURE, hex"4e487b71", 0x11
 // ofa(uint8): 255 -> FAILURE, hex"4e487b71", 0x11
