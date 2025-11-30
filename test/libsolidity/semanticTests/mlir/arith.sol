@@ -67,6 +67,14 @@ contract C {
   function shr8(uint8 a, uint b) public returns (uint8) {
     return a >> b;
   }
+
+  function bit(int a, int b) public returns (int, int, int) {
+    return (a & b, a | b, a ^ b);
+  }
+
+  function bit8(int8 a, int8 b) public returns (int8, int8, int8) {
+    return (a & b, a | b, a ^ b);
+  }
 }
 
 // ====
@@ -87,3 +95,5 @@ contract C {
 // shr(uint256,uint256): 4, 1 -> 2
 // shl8(uint8,uint256): 1, 8 -> 0
 // shr8(uint8,uint256): 1, 8 -> 0
+// bit(int256,int256): 6, 3 -> 2, 7, 5
+// bit8(int8,int8): 6, 3 -> 2, 7, 5
