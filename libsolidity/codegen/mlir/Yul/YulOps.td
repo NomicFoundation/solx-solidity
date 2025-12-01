@@ -153,6 +153,11 @@ def Yul_StopOp : Yul_Op<"stop"> {
   let assemblyFormat = "attr-dict";
 }
 
+def Yul_InvalidOp : Yul_Op<"invalid"> {
+  let summary = "Represents the `invalid` call in yul";
+  let assemblyFormat = "attr-dict";
+}
+
 def Yul_MLoadOp : Yul_Op<"mload"> {
   let summary = "Represents the `mload` call in yul";
   let arguments = (ins I256:$addr);
