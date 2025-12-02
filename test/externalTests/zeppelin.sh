@@ -105,6 +105,9 @@ function zeppelin_test
     # Fails with ProviderError: Invalid transaction: GasFloorMoreThanGasLimit
     sed -i "177s|+ 2_000n|+ 10_000n|" test/metatx/ERC2771Forwarder.test.js
 
+    # Fails under evmVersion=osaka, likely due to transaction gas limits introduced by EIP-7825 or by the modexp upper bound EIP-7823.
+    sed -i "s|describe(\('RSA'\)|describe.skip(\1|g" test/utils/cryptography/RSA.test.js
+
     neutralize_package_json_hooks
     force_hardhat_compiler_binary "$config_file" "$BINARY_TYPE" "$BINARY_PATH"
     force_hardhat_compiler_settings "$config_file" "$(first_word "$SELECTED_PRESETS")"
