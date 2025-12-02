@@ -160,6 +160,11 @@ The component does not yet support all features of the Solidity language and
 likely outputs many warnings. In case it reports unsupported features, the
 analysis may not be fully sound.
 
+.. note::
+
+    The ``SMTChecker`` pragma is deprecated and will be removed.
+    To enable SMTChecker, simply select :ref:`select an engine<smtchecker_engines>` when invoking the compiler.
+
 .. index:: source file, ! import, module, source unit
 
 .. _import:
