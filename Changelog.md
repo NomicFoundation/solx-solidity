@@ -13,6 +13,7 @@ Bugfixes:
 
 Build System:
 * Enable Linux arm64 binaries for testing and releases.
+* Ubuntu PPA Packages: Discontinue the PPA as a binary distribution channel.
 * Update minimum version requirements of Boost to 1.83.0 for non-windows builds and of GCC and Clang to 13.3 and 18.1.3, respectively. Fixes infinite recursion on `boost::rational` comparison affecting compiler binaries built with GCC<14.0 and Boost<1.75.
 
 ### 0.8.30 (2025-05-07)
