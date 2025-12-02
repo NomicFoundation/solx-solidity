@@ -84,7 +84,14 @@ OpFoldResult CastOp::fold(FoldAdaptor adaptor) {
 
 bool CastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
   assert(inputs.size() == 1 && outputs.size() == 1);
-  return isa<IntegerType>(inputs.front()) && isa<IntegerType>(outputs.front());
+  return isa<IntegerType, sol::EnumType>(inputs.front()) &&
+         isa<IntegerType>(outputs.front());
+}
+
+bool EnumCastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {
+  assert(inputs.size() == 1 && outputs.size() == 1);
+  return isa<IntegerType>(inputs.front()) &&
+         isa<sol::EnumType>(outputs.front());
 }
 
 bool BytesCastOp::areCastCompatible(TypeRange inputs, TypeRange outputs) {

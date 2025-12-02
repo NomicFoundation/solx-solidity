@@ -128,6 +128,7 @@ struct ConvertSolToStandard
         // clang-format off
         sol::ConstantOp,
         sol::CastOp,
+        sol::EnumCastOp,
         sol::BytesCastOp,
         sol::AddOp,
         sol::SubOp,

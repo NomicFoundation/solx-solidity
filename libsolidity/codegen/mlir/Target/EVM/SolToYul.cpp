@@ -59,7 +59,11 @@ struct CastOpLowering : public OpConversionPattern<sol::CastOp> {
 
   LogicalResult matchAndRewrite(sol::CastOp op, OpAdaptor adaptor,
                                 ConversionPatternRewriter &r) const override {
-    auto inpTy = cast<IntegerType>(op.getInp().getType());
+    auto inpTy = dyn_cast<IntegerType>(op.getInp().getType());
+    if (!inpTy) {
+      assert(isa<sol::EnumType>(op.getInp().getType()));
+      inpTy = r.getIntegerType(256);
+    }
     auto inpTyWidth = inpTy.getWidth();
     auto outTyWidth = cast<IntegerType>(op.getType()).getWidth();
 
@@ -79,6 +83,26 @@ struct CastOpLowering : public OpConversionPattern<sol::CastOp> {
       r.replaceOpWithNewOp<arith::ExtSIOp>(op, signlessOutTy, adaptor.getInp());
     else
       r.replaceOpWithNewOp<arith::ExtUIOp>(op, signlessOutTy, adaptor.getInp());
+    return success();
+  }
+};
+
+struct EnumCastOpLowering : public OpConversionPattern<sol::EnumCastOp> {
+  using OpConversionPattern<sol::EnumCastOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::EnumCastOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+    evm::Builder evmB(r, loc);
+
+    auto enumTy = dyn_cast<sol::EnumType>(op.getType());
+    auto panicCond = r.create<arith::CmpIOp>(
+        loc, arith::CmpIPredicate::ugt, adaptor.getInp(),
+        bExt.genI256Const(enumTy.getMax()));
+    evmB.genPanic(solidity::util::PanicCode::EnumConversionError, panicCond,
+                  loc);
+    r.replaceOp(op, bExt.genIntCast(256, /*isSigned=*/false, adaptor.getInp()));
     return success();
   }
 };
@@ -489,8 +513,13 @@ struct CmpOpLowering : public OpConversionPattern<sol::CmpOp> {
 
   LogicalResult matchAndRewrite(sol::CmpOp op, OpAdaptor adaptor,
                                 ConversionPatternRewriter &r) const override {
-    arith::CmpIPredicate signlessPred = getSignlessPred(
-        op.getPredicate(), cast<IntegerType>(op.getLhs().getType()).isSigned());
+    bool isSigned;
+    if (isa<sol::EnumType>(op.getLhs().getType()))
+      isSigned = false;
+    else
+      isSigned = cast<IntegerType>(op.getLhs().getType()).isSigned();
+    arith::CmpIPredicate signlessPred =
+        getSignlessPred(op.getPredicate(), isSigned);
     r.replaceOpWithNewOp<arith::CmpIOp>(op, signlessPred, adaptor.getLhs(),
                                         adaptor.getRhs());
     return success();
@@ -2301,8 +2330,8 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 // debug builds?)
 
 void evm::populateArithPats(RewritePatternSet &pats, TypeConverter &tyConv) {
-  pats.add<ConstantOpLowering, CastOpLowering, BytesCastOpLowering,
-           ArithBinOpLowering<sol::AddOp, arith::AddIOp>,
+  pats.add<ConstantOpLowering, CastOpLowering, EnumCastOpLowering,
+           BytesCastOpLowering, ArithBinOpLowering<sol::AddOp, arith::AddIOp>,
            ArithBinOpLowering<sol::SubOp, arith::SubIOp>,
            ArithBinOpLowering<sol::MulOp, arith::MulIOp>,
            ArithBinOpLowering<sol::AndOp, arith::AndIOp>,

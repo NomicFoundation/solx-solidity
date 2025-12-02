@@ -75,6 +75,16 @@ def Sol_CastOp : Sol_Op<"cast",
   let hasFolder = 1;
 }
 
+// This operation can panic.
+def Sol_EnumCastOp : Sol_Op<"enum_cast",
+  [DeclareOpInterfaceMethods<CastOpInterface>]
+>{
+  let arguments = (ins Sol_Int:$inp);
+  let results = (outs Sol_EnumType:$out);
+
+  let assemblyFormat = "$inp attr-dict `:` type($inp) `to` type($out)";
+}
+
 // TODO: folder
 def Sol_BytesCastOp : Sol_Op<"bytes_cast",
   [Pure, DeclareOpInterfaceMethods<CastOpInterface>]

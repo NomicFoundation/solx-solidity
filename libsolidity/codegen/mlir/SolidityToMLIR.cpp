@@ -412,6 +412,10 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
     const auto *intTy = static_cast<IntegerType const *>(ty);
     return b.getIntegerType(intTy->numBits(), intTy->isSigned());
   }
+  case Type::Category::Enum: {
+    const auto *enumTy = static_cast<EnumType const *>(ty);
+    return mlir::sol::EnumType::get(b.getContext(), enumTy->maxValue());
+  }
   case Type::Category::RationalNumber: {
     const auto *ratNumTy = static_cast<RationalNumberType const *>(ty);
     if (ratNumTy->isFractional())
@@ -552,6 +556,10 @@ mlir::Value SolidityToMLIRPass::genCast(mlir::Value val, mlir::Type dstTy) {
   if (mlir::isa<mlir::sol::BytesType>(srcTy) ||
       mlir::isa<mlir::sol::BytesType>(dstTy))
     return b.create<mlir::sol::BytesCastOp>(loc, dstTy, val);
+
+  // Casting to enum type.
+  if (mlir::isa<mlir::sol::EnumType>(dstTy))
+    return b.create<mlir::sol::EnumCastOp>(loc, dstTy, val);
 
   // Casting to integer type.
   if (mlir::isa<mlir::IntegerType>(dstTy))

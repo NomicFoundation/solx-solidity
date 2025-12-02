@@ -45,6 +45,13 @@ evm::SolTypeConverter::SolTypeConverter() {
                             IntegerType::Signless);
   });
 
+  // Enum type
+  addConversion([&](sol::EnumType ty) -> Type {
+    // Unlike integer types, legalizing to i256 avoids unnecessary zext/trunc
+    // ops.
+    return IntegerType::get(ty.getContext(), 256, IntegerType::Signless);
+  });
+
   // Function type
   addConversion([&](FunctionType ty) -> Type {
     SmallVector<Type> convertedInpTys, convertedResTys;

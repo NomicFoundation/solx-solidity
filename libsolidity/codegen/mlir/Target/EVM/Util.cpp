@@ -24,6 +24,7 @@
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Util.h"
 #include "libsolidity/codegen/mlir/Yul/Yul.h"
+#include "libsolutil/ErrorCodes.h"
 #include "libsolutil/FunctionSelector.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
@@ -42,8 +43,8 @@ unsigned evm::getAlignment(Value ptr) {
 }
 
 unsigned evm::getCallDataHeadSize(Type ty) {
-  if (isa<IntegerType>(ty) || isa<sol::BytesType>(ty) ||
-      sol::hasDynamicallySizedElt(ty))
+  if (isa<IntegerType>(ty) || isa<sol::EnumType>(ty) ||
+      isa<sol::BytesType>(ty) || sol::hasDynamicallySizedElt(ty))
     return 32;
 
   if (auto arrTy = dyn_cast<sol::ArrayType>(ty))
@@ -72,8 +73,9 @@ int64_t evm::getMallocSize(Type ty) {
 }
 
 unsigned evm::getStorageSlotCount(Type ty) {
-  if (isa<IntegerType>(ty) || isa<sol::BytesType>(ty) ||
-      isa<sol::MappingType>(ty) || sol::hasDynamicallySizedElt(ty))
+  if (isa<IntegerType>(ty) || isa<sol::EnumType>(ty) ||
+      isa<sol::BytesType>(ty) || isa<sol::MappingType>(ty) ||
+      sol::hasDynamicallySizedElt(ty))
     return 1;
 
   if (auto arrTy = dyn_cast<sol::ArrayType>(ty))
@@ -502,6 +504,13 @@ Value evm::Builder::genABITupleEncoding(Type ty, Value src, Value dstAddr,
     return tailAddr;
   }
 
+  // Enum type
+  if (auto enumTy = dyn_cast<sol::EnumType>(ty)) {
+    src = bExt.genIntCast(/*width=*/256, /*isSigned=*/false, src);
+    b.create<yul::MStoreOp>(loc, dstAddr, src);
+    return tailAddr;
+  }
+
   // Bytes type
   if (auto bytesTy = dyn_cast<sol::BytesType>(ty)) {
     b.create<yul::MStoreOp>(loc, dstAddr, src);
@@ -687,6 +696,18 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
       genRevert(revertCond, loc);
       return castedArg;
     }
+    return arg;
+  }
+
+  // Enum type
+  if (auto enumTy = dyn_cast<sol::EnumType>(ty)) {
+    Value arg = genLoad(addr);
+    // Generate a panic check that checks if the decoded value is within in the
+    // range of the enum type.
+    auto panicCond =
+        b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt, arg,
+                                bExt.genI256Const(enumTy.getMax()));
+    genPanic(solidity::util::PanicCode::EnumConversionError, panicCond, loc);
     return arg;
   }
 
