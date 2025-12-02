@@ -103,9 +103,13 @@ select between the two implementations of the ABI encoder and decoder.
 The new ABI coder (v2) is able to encode and decode arbitrarily nested
 arrays and structs. Apart from supporting more types, it involves more extensive
 validation and safety checks, which may result in higher gas costs, but also heightened
-security. It is considered
-non-experimental as of Solidity 0.6.0 and it is enabled by default starting
+security.
+It is considered non-experimental as of Solidity 0.6.0 and it is enabled by default starting
 with Solidity 0.8.0. The old ABI coder can still be selected using ``pragma abicoder v1;``.
+
+.. warning::
+  The ABI coder v1 is deprecated and scheduled for removal.
+  Use ABI coder v2 instead.
 
 The set of types supported by the new encoder is a strict superset of
 the ones supported by the old one. Contracts that use it can interact with ones

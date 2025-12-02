@@ -108,6 +108,25 @@ function zeppelin_test
     # Fails under evmVersion=osaka, likely due to transaction gas limits introduced by EIP-7825 or by the modexp upper bound EIP-7823.
     sed -i "s|describe(\('RSA'\)|describe.skip(\1|g" test/utils/cryptography/RSA.test.js
 
+    cat <<-EOF >> "$config_file"
+    const { TASK_COMPILE_SOLIDITY_COMPILE } = require("hardhat/builtin-tasks/task-names");
+
+    task(TASK_COMPILE_SOLIDITY_COMPILE)
+        .setAction(async (args, hre, runSuper) => {
+            const result = await runSuper(args);
+
+            result.output.errors = (result.output.errors || []).filter(err => {
+                if (err.severity === "warning" && err.message.includes("deprecated")) {
+                    return false; // suppress this warning
+                }
+                return true;
+            });
+
+            return result;
+        });
+
+EOF
+
     neutralize_package_json_hooks
     force_hardhat_compiler_binary "$config_file" "$BINARY_TYPE" "$BINARY_PATH"
     force_hardhat_compiler_settings "$config_file" "$(first_word "$SELECTED_PRESETS")"

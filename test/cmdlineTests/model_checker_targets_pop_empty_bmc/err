@@ -3,5 +3,3 @@ Warning: 'transfer' is deprecated and scheduled for removal. Use 'call{value: <a
    |
 11 | 		a.transfer(x);
    | 		^^^^^^^^^^
-
-Info: CHC: 1 verification condition(s) proved safe! Enable the model checker option "show proved safe" to see all of them.
