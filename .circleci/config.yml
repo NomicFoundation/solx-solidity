@@ -701,6 +701,11 @@ defaults:
       requires:
         - b_ubu_static
 
+  - requires_b_ubu_static_arm: &requires_b_ubu_static_arm
+      <<: *on_all_tags_and_branches
+      requires:
+        - b_ubu_static_arm
+
   - requires_b_archlinux: &requires_b_archlinux
       <<: *on_all_tags_and_branches
       requires:
@@ -1104,7 +1109,7 @@ jobs:
             - solc/solc-static-linux
       - matrix_notify_failure_unless_pr
 
-  b_ubu_static_arm:
+  b_ubu_static_arm: &b_ubu_static_arm
     <<: *base_ubuntu2404_arm_large
     environment:
       <<: *base_ubuntu2404_arm_large_env
@@ -1293,6 +1298,28 @@ jobs:
     steps:
       - soltest_all
 
+  t_ubu_arm_soltest: &t_ubu_arm_soltest
+    <<: *base_ubuntu2404_arm_medium
+    parallelism: 20
+    environment:
+      <<: *base_ubuntu2404_arm_medium_env
+      EVM: << pipeline.parameters.evm-version >>
+      EOF_VERSION: 0
+      OPTIMIZE: 0
+    steps:
+      - checkout
+      - attach_workspace:
+          at: build
+      - run:
+          name: Create symbolic link with expected soltest binary name
+          command: |
+            ln --symbolic --relative build/test/soltest-linux-arm build/test/soltest
+      - run_soltest
+      - store_test_results:
+          path: test_results/
+      - store_artifacts_test_results
+      - matrix_notify_failure_unless_pr
+
   t_ubu_soltest_deprecated_evm_versions: &t_ubu_soltest_deprecated_evm_versions
     <<: *base_ubuntu2404_large
     parallelism: 50
@@ -1354,6 +1381,24 @@ jobs:
     parallelism: 8 # Should match number of tests in .circleci/parallel_cli_tests.py
     steps:
       - cmdline_tests
+
+  t_ubu_arm_cli: &t_ubu_arm_cli
+    <<: *base_ubuntu2404_arm_medium
+    parallelism: 8 # Should match number of tests in .circleci/parallel_cli_tests.py
+    steps:
+      - checkout
+      - attach_workspace:
+          at: build
+      - run:
+          name: Create symbolic link with expected solc and solfuzzer binaries name
+          command: |
+            ln --symbolic --relative build/solc/solc-static-linux-arm build/solc/solc
+            ln --symbolic --relative build/test/tools/solfuzzer-linux-arm build/test/tools/solfuzzer
+      - run_cmdline_tests
+      - store_test_results:
+          path: test_results/
+      - store_artifacts_test_results
+      - matrix_notify_failure_unless_pr
 
   t_ubu_force_release_cli: &t_ubu_force_release_cli
     <<: *t_ubu_cli
@@ -1991,8 +2036,10 @@ workflows:
       # Ubuntu build and tests
       - b_ubu: *requires_nothing
       - t_ubu_cli: *requires_b_ubu
+      - t_ubu_arm_cli: *requires_b_ubu_static_arm
       - t_ubu_locale: *requires_b_ubu
       - t_ubu_soltest_all: *requires_b_ubu
+      - t_ubu_arm_soltest: *requires_b_ubu_static_arm
       - b_ubu_clang: *requires_nothing
       - t_ubu_clang_soltest: *requires_b_ubu_clang
       - t_ubu_lsp: *requires_b_ubu
