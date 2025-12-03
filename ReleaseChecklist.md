@@ -1,13 +1,14 @@
 # Checklist for making a Solidity release
 
 ## Requirements
-- [ ] GitHub account with access to [solidity](https://github.com/argotorg/solidity), [solc-js](https://github.com/argotorg/solc-js),
+- GitHub account with access to [solidity](https://github.com/argotorg/solidity), [solc-js](https://github.com/argotorg/solc-js),
       [solc-bin](https://github.com/argotorg/solc-bin), [solidity-website](https://github.com/argotorg/solidity-website).
-- [ ] DockerHub account with push rights to the [`solc` image](https://hub.docker.com/r/ethereum/solc).
-- [ ] Ubuntu/Debian dependencies of the Docker script: `docker-buildx`.
-- [ ] [npm Registry](https://www.npmjs.com) account added as a collaborator for the [`solc` package](https://www.npmjs.com/package/solc).
-- [ ] Access to the [solidity_lang Twitter account](https://twitter.com/solidity_lang).
-- [ ] [Reddit](https://www.reddit.com) account that is at least 10 days old with a minimum of 20 comment karma (`/r/ethereum` requirements).
+- Personal Access Token (PAT) with `write:packages` scope to access Github's container registry.
+    You can generate one by visiting https://github.com/settings/tokens/new?scopes=write:packages.
+- Ubuntu/Debian dependencies of the Docker script: `docker-buildx`.
+- [npm Registry](https://www.npmjs.com) account added as a collaborator for the [`solc` package](https://www.npmjs.com/package/solc).
+- Access to the [solidity_lang Twitter account](https://twitter.com/solidity_lang).
+- [Reddit](https://www.reddit.com) account that is at least 10 days old with a minimum of 20 comment karma (`/r/ethereum` requirements).
 
 ## Full release
 
