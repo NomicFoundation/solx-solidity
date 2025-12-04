@@ -17,8 +17,8 @@ parameters:
     default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:c0412c53e59ce0c96bde4c08e7332ea12e4cadba9bbac829621947897fa21272"
   ubuntu-2404-arm-docker-image:
     type: string
-    # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu2404.arm-1
-    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:6cdb928fa8743d0b5d515c2c489b8d545c541f2370af28d5d3a71532056a0f22"
+    # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu2404.arm-2
+    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:27b03c1c4688e5d69b10e0539460346a3dee3b10b0e04fb406b9707c6f0dd95e"
   ubuntu-2404-clang-docker-image:
     type: string
     # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu2404.clang-7
