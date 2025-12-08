@@ -5,6 +5,7 @@ Language Features:
 Compiler Features:
 
 Bugfixes:
+* TypeChecker: Fix error and event selectors not being considered compile-time constant.
 
 
 ### 0.8.31 (2025-12-03)
