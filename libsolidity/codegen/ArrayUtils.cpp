@@ -226,11 +226,6 @@ void ArrayUtils::copyArrayToStorage(ArrayType const& _targetType, ArrayType cons
 				else
 					solUnimplemented("Copying of type " + _sourceType.toString(false) + " to storage is not supported in legacy (only supported by the IR pipeline). Hint: try compiling with `--via-ir` (CLI) or the equivalent `viaIR: true` (Standard JSON)");
 				// stack: target_ref target_data_end source_data_pos target_data_pos source_data_end [target_byte_offset] [source_byte_offset] <source_value>...
-				assertThrow(
-					2 + byteOffsetSize + sourceBaseType->sizeOnStack() <= 16,
-					StackTooDeepError,
-					util::stackTooDeepString
-				);
 				// fetch target storage reference
 				_context << dupInstruction(2 + byteOffsetSize + sourceBaseType->sizeOnStack());
 				if (haveByteOffsetTarget)
@@ -296,6 +291,17 @@ void ArrayUtils::copyArrayToStorage(ArrayType const& _targetType, ArrayType cons
 			_context << Instruction::POP;
 		}
 	);
+
+	if (auto* structType = dynamic_cast<StructType const*>(_sourceType.baseType()))
+	{
+		if (structType->recursive())
+		{
+			std::string name{"$copyArrayToStorage_" + sourceType->identifier() + "_to_" + targetType->identifier()};
+			auto tag = m_context.lowLevelFunctionTagIfExists(name);
+			solAssert(tag != evmasm::AssemblyItem(evmasm::UndefinedItem), "");
+			m_context.addRecursiveLowLevelFunc({name, tag.data().convert_to<uint32_t>(), /*ins=*/3, /*outs=*/1});
+		}
+	}
 }
 
 void ArrayUtils::copyArrayToMemory(ArrayType const& _sourceType, bool _padToWordBoundaries) const
@@ -598,6 +604,17 @@ void ArrayUtils::clearArray(ArrayType const& _typeIn) const
 			solAssert(_context.stackHeight() == stackHeightStart - 2, "");
 		}
 	);
+
+	if (auto* structType = dynamic_cast<StructType const*>(_typeIn.baseType()))
+	{
+		if (structType->recursive())
+		{
+			std::string name{"$clearArray_" + _typeIn.identifier()};
+			auto tag = m_context.lowLevelFunctionTagIfExists(name);
+			solAssert(tag != evmasm::AssemblyItem(evmasm::UndefinedItem), "");
+			m_context.addRecursiveLowLevelFunc({name, tag.data().convert_to<uint32_t>(), /*ins=*/2, /*outs=*/0});
+		}
+	}
 }
 
 void ArrayUtils::clearDynamicArray(ArrayType const& _type) const
