@@ -154,6 +154,7 @@ struct ConvertSolToStandard
         sol::Sha256Op,
         sol::Ripemd160Op,
         sol::EcrecoverOp,
+        sol::CExpOp,
         sol::AllocaOp,
         sol::MallocOp,
         sol::ArrayLitOp,
