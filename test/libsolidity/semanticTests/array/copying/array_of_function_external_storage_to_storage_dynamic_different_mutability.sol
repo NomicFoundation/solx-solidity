@@ -52,4 +52,4 @@ contract C {
 // gas legacy: 108295
 // gas legacyOptimized: 102162
 // copyInternalArrayOfFunctionType() -> true
-// gas legacy: 104178
+// gas legacy: 36192
