@@ -1328,7 +1328,7 @@ jobs:
       - attach_workspace:
           at: build
       - run_soltest_all:
-          evm_versions: homestead byzantium
+          evm_versions: homestead byzantium constantinople petersburg
       - store_test_results:
           path: test_results/
       - store_artifacts_test_results
