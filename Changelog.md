@@ -10,6 +10,7 @@ Compiler Features:
 Bugfixes:
 * Codegen: Fix internal compiler error when emitting events via module member access.
 * TypeChecker: Fix error and event selectors not being considered compile-time constant.
+* TypeChecker: Fix `string.concat` and `bytes.concat` with constant arguments not being considered compile-time constant.
 
 
 ### 0.8.31 (2025-12-03)
