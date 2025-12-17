@@ -5,6 +5,7 @@ Language Features:
 Compiler Features:
 
 Bugfixes:
+* Codegen: Fix internal compiler error when emitting events via module member access.
 * TypeChecker: Fix error and event selectors not being considered compile-time constant.
 
 
