@@ -1136,6 +1136,62 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     return resVals;
   }
 
+  case FunctionType::Kind::AddMod:
+  case FunctionType::Kind::MulMod: {
+    std::vector<mlir::Value> args;
+    for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes()))
+      args.push_back(genRValExpr(*arg, getType(dstTy)));
+
+    if (calleeTy->kind() == FunctionType::Kind::AddMod)
+      resVals.push_back(b.create<mlir::sol::AddModOp>(loc, args));
+    else
+      resVals.push_back(b.create<mlir::sol::MulModOp>(loc, args));
+
+    return resVals;
+  }
+
+  case FunctionType::Kind::KECCAK256: {
+    std::vector<mlir::Value> args;
+    for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes()))
+      args.push_back(genRValExpr(*arg, getType(dstTy)));
+
+    mlir::Type resTy = mlir::sol::BytesType::get(b.getContext(), 32);
+    resVals.push_back(b.create<mlir::sol::Keccak256Op>(loc, resTy, args));
+
+    return resVals;
+  }
+
+  case FunctionType::Kind::SHA256:
+  case FunctionType::Kind::ECRecover:
+  case FunctionType::Kind::RIPEMD160: {
+    mlirgen::BuilderExt bExt(b);
+    std::vector<mlir::Type> resTys;
+    for (Type const *ty : calleeTy->returnParameterTypes())
+      resTys.push_back(getType(ty));
+
+    std::vector<mlir::Value> args;
+    for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes()))
+      args.push_back(genRValExpr(*arg, getType(dstTy)));
+
+    if (calleeTy->kind() == FunctionType::Kind::SHA256) {
+      args.push_back(genUnsignedConst(2, 256, loc));
+      auto res = b.create<mlir::sol::Sha256Op>(loc, resTys, args);
+      res.setResShiftAmt(0);
+      resVals.push_back(res);
+    } else if (calleeTy->kind() == FunctionType::Kind::RIPEMD160) {
+      args.push_back(genUnsignedConst(3, 256, loc));
+      auto res = b.create<mlir::sol::Ripemd160Op>(loc, resTys, args);
+      res.setResShiftAmt(96);
+      resVals.push_back(res);
+    } else if (calleeTy->kind() == FunctionType::Kind::ECRecover) {
+      args.push_back(genUnsignedConst(1, 256, loc));
+      auto res = b.create<mlir::sol::EcrecoverOp>(loc, resTys, args);
+      resVals.push_back(res);
+    }
+
+    return resVals;
+  }
+
   default:
     break;
   }
