@@ -37,6 +37,10 @@ public:
 void populateArithPats(mlir::RewritePatternSet &pats,
                        mlir::TypeConverter &tyConv);
 
+/// Adds the conversion patterns of crypto ops in the sol dialect.
+void populateCryptoPats(mlir::RewritePatternSet &pats,
+                        mlir::TypeConverter &tyConv);
+
 /// Adds the conversion patterns of checked arithmetic ops in the sol dialect.
 void populateCheckedArithPats(mlir::RewritePatternSet &pats,
                               mlir::TypeConverter &tyConv);

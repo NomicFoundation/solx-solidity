@@ -139,6 +139,23 @@ def Sol_XorOp : Sol_UncheckedIntArithOp<"xor", [Commutative]> {
   // TODO: folder, canonicalizer
 }
 
+def Sol_AddModOp : Sol_ModOp<"addmod">;
+def Sol_MulModOp : Sol_ModOp<"mulmod">;
+
+def Sol_Keccak256Op : Sol_Op<"keccak256"> {
+  let arguments = (ins Sol_StringType:$addr);
+  let results = (outs Sol_BytesType:$result);
+}
+
+def Sol_Sha256Op : Sol_HashPreCompileOp<"sha256">;
+def Sol_Ripemd160Op : Sol_HashPreCompileOp<"ripemd160">;
+
+def Sol_EcrecoverOp : Sol_Op<"ecrecover"> {
+  let arguments = (ins Sol_BytesType:$hash, AnyUnsignedInteger:$v,
+      Sol_BytesType:$r, Sol_BytesType:$s);
+  let results = (outs Sol_AddressType:$result);
+}
+
 def Sol_CmpOp : Sol_Op<"cmp", [Pure, SameTypeOperands]> {
   let arguments = (ins Sol_CmpPredicateAttr:$predicate, Sol_Int:$lhs,
                        Sol_Int:$rhs);
