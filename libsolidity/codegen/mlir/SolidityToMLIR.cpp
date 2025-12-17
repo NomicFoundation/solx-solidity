@@ -1978,7 +1978,7 @@ bool CompilerStack::runMlirPipeline() {
             return;
           }
 
-          if (m_mlirGenJob.action == mlirgen::Action::GenObj) {
+          if (mlirgen::requiresLinking(m_mlirGenJob.action)) {
             // Create the llvm target machine.
             std::unique_ptr<llvm::TargetMachine> tgtMach =
                 createTargetMachine(m_mlirGenJob.tgt);
@@ -2031,7 +2031,7 @@ bool CompilerStack::runMlirPipeline() {
     return false;
 
   // Combine all the outputs.
-  if (m_mlirGenJob.action != mlirgen::Action::GenObj) {
+  if (!mlirgen::requiresLinking(m_mlirGenJob.action)) {
     for (auto const &i : outputMap)
       llvm::outs() << i.second;
   } else {
@@ -2041,6 +2041,19 @@ bool CompilerStack::runMlirPipeline() {
       m_contracts.at(cont->fullyQualifiedName()).mlirPipeline =
           bcGen.genEvmBytecode(i.first);
     }
+
+    if (m_mlirGenJob.action == mlirgen::Action::PrintObj) {
+      for (auto const &i : unlinkedObjMap) {
+        ContractDefinition const *cont = i.first;
+        mlirgen::Bytecode const &bc =
+            m_contracts.at(cont->fullyQualifiedName()).mlirPipeline;
+        llvm::outs() << "Binary:" << "\n";
+        llvm::outs() << llvm::toHex(bc.creation, /*LowerCase=*/true) << "\n";
+        llvm::outs() << "Binary of the runtime part:" << "\n";
+        llvm::outs() << llvm::toHex(bc.runtime, /*LowerCase=*/true) << "\n";
+      }
+    }
+
     for (auto const &i : unlinkedObjMap) {
       evm::UnlinkedObj obj = i.second;
       if (obj.creationPart)

@@ -1216,6 +1216,8 @@ void CommandLineParser::processArgs()
 			m_options.mlirGenJob.action = mlirgen::Action::PrintLLVMIR;
 		else if (val == "print-asm")
 			m_options.mlirGenJob.action = mlirgen::Action::PrintAsm;
+		else if (val == "print-obj")
+			m_options.mlirGenJob.action = mlirgen::Action::PrintObj;
 		else if (val == "gen-obj")
 			m_options.mlirGenJob.action = mlirgen::Action::GenObj;
 		else

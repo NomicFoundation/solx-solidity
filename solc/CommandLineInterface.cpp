@@ -1345,8 +1345,8 @@ void CommandLineInterface::assembleYul(yul::YulStack::Language _language, yul::Y
 		}
 	}
 
-	// Print jobs are done in the pass.
-	if (mlirgen::isPrintAction(m_options.mlirGenJob.action))
+	// Asm/ir print jobs are done in the pass.
+	if (!mlirgen::requiresLinking(m_options.mlirGenJob.action))
 		return;
 
 	for (auto const& sourceAndStack: yulStacks)
@@ -1377,7 +1377,7 @@ void CommandLineInterface::assembleYul(yul::YulStack::Language _language, yul::Y
 		yul::MachineAssemblyObject const& object = objects[sourceUnitName];
 
 		mlirgen::Bytecode mlirObj = bcViaMlir[sourceUnitName];
-		if (m_options.mlirGenJob.action == mlirgen::Action::GenObj)
+		if (m_options.mlirGenJob.action == mlirgen::Action::PrintObj)
 		{
 			sout() << std::endl << "Binary representation:" << std::endl;
 			sout() << llvm::toHex(mlirObj.creation, /*LowerCase=*/true) << std::endl;

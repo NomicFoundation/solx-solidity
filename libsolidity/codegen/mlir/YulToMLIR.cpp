@@ -838,7 +838,7 @@ solidity::mlirgen::Bytecode solidity::mlirgen::runYulToMLIRPass(
   }
 
   mlirgen::JobSpec m_mlirGenJob = job;
-  if (m_mlirGenJob.action == mlirgen::Action::GenObj) {
+  if (requiresLinking(m_mlirGenJob.action)) {
     // Create the llvm target machine.
     std::unique_ptr<llvm::TargetMachine> tgtMach =
         createTargetMachine(m_mlirGenJob.tgt);
@@ -852,7 +852,6 @@ solidity::mlirgen::Bytecode solidity::mlirgen::runYulToMLIRPass(
     return bcGen.genEvmBytecode(unlinkedObj);
   }
 
-  assert(isPrintAction(job.action));
   llvm::outs() << printJob(job, mod);
   return Bytecode();
 }

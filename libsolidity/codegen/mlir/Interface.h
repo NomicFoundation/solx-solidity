@@ -57,18 +57,19 @@ enum class Action {
   /// Print the assembly.
   PrintAsm,
 
+  /// Print the object.
+  PrintObj,
+
   /// Generate the object.
   GenObj,
 
   Undefined,
 };
 
-constexpr bool isPrintAction(Action a) {
+constexpr bool requiresLinking(Action a) {
   switch (a) {
-  case Action::PrintInitStg:
-  case Action::PrintStandardMLIR:
-  case Action::PrintLLVMIR:
-  case Action::PrintAsm:
+  case Action::GenObj:
+  case Action::PrintObj:
     return true;
   default:
     return false;
