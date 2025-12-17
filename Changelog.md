@@ -1,5 +1,8 @@
 ### 0.8.32 (unreleased)
 
+Important Bugfixes:
+* Code Generator: Fix a bug in clearing/copying of arrays that straddle the end of storage, potentially resulting in assignment/initialization/`delete`/`push()`/`pop()` skipping some or all of the intended storage writes.
+
 Language Features:
 
 Compiler Features:
