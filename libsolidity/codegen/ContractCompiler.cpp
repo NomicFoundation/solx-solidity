@@ -35,6 +35,7 @@
 #include <libyul/backends/evm/AsmCodeGen.h>
 #include <libyul/backends/evm/EVMMetrics.h>
 #include <libyul/backends/evm/EVMDialect.h>
+#include <libyul/optimiser/Disambiguator.h>
 #include <libyul/optimiser/Suite.h>
 #include <libyul/Object.h>
 #include <libyul/optimiser/ASTCopier.h>
@@ -128,6 +129,15 @@ void ContractCompiler::initializeContext(
 	std::map<ContractDefinition const*, std::shared_ptr<Compiler const>> const& _otherCompilers
 )
 {
+	auto spillAreaSizeFound = m_optimiserSettings.spillAreaSize.find(_contract.fullyQualifiedName());
+	if (spillAreaSizeFound != m_optimiserSettings.spillAreaSize.end())
+	{
+		// Non-null m_runtimeCompiler implies creation context.
+		size_t spillAreaSize
+			= m_runtimeCompiler ? spillAreaSizeFound->second.creation : spillAreaSizeFound->second.runtime;
+		m_context.setSpillAreaSize(spillAreaSize);
+	}
+
 	m_context.setUseABICoderV2(*_contract.sourceUnit().annotation().useABICoderV2);
 	m_context.setOtherCompilers(_otherCompilers);
 	m_context.setMostDerivedContract(_contract);
@@ -202,20 +212,22 @@ SubAssemblyID ContractCompiler::packIntoContractCreator(ContractDefinition const
 	if (immutables.empty())
 		m_context << Instruction::DUP1;
 	m_context.pushSubroutineOffset(m_context.runtimeSub());
-	m_context << u256(0) << Instruction::CODECOPY;
+	CompilerUtils(m_context).fetchFreeMemoryPointer();
+	m_context << Instruction::CODECOPY;
 	// Assign immutable values from stack in reversed order.
 	for (auto const& immutable: immutables | ranges::views::reverse)
 	{
 		auto slotNames = m_context.immutableVariableSlotNames(*immutable);
 		for (auto&& slotName: slotNames | ranges::views::reverse)
 		{
-			m_context << u256(0);
+			CompilerUtils(m_context).fetchFreeMemoryPointer();
 			m_context.appendImmutableAssignment(slotName);
 		}
 	}
 	if (!immutables.empty())
 		m_context.pushSubroutineSize(m_context.runtimeSub());
-	m_context << u256(0) << Instruction::RETURN;
+	CompilerUtils(m_context).fetchFreeMemoryPointer();
+	m_context << Instruction::RETURN;
 
 	return m_context.runtimeSub();
 }
@@ -239,7 +251,8 @@ SubAssemblyID ContractCompiler::deployLibrary(ContractDefinition const& _contrac
 		{
 			// If code starts at 11, an mstore(0) writes to the full PUSH20 plus data
 			// without the need for a shift.
-			let codepos := 11
+			let memPtr := mload(64)
+			let codepos := add(memPtr, 11)
 			codecopy(codepos, subOffset, subSize)
 			// Check that the first opcode is a PUSH20
 			if iszero(eq(0x73, byte(0, mload(codepos)))) {
@@ -247,7 +260,7 @@ SubAssemblyID ContractCompiler::deployLibrary(ContractDefinition const& _contrac
 				mstore(4, <panicCode>)
 				revert(0, 0x24)
 			}
-			mstore(0, address())
+			mstore(memPtr, address())
 			mstore8(codepos, 0x73)
 			return(codepos, subSize)
 		}
@@ -672,12 +685,6 @@ bool ContractCompiler::visit(FunctionDefinition const& _function)
 	for (size_t i = 0; i < c_returnValuesSize; ++i)
 		stackLayout.push_back(static_cast<int>(i));
 
-	if (stackLayout.size() > 17)
-		BOOST_THROW_EXCEPTION(
-			StackTooDeepError() <<
-			errinfo_sourceLocation(_function.location()) <<
-			util::errinfo_comment(util::stackTooDeepString)
-		);
 	while (!stackLayout.empty() && stackLayout.back() != static_cast<int>(stackLayout.size() - 1))
 		if (stackLayout.back() < 0)
 		{
@@ -686,7 +693,7 @@ bool ContractCompiler::visit(FunctionDefinition const& _function)
 		}
 		else
 		{
-			m_context << swapInstruction(static_cast<unsigned>(stackLayout.size()) - static_cast<unsigned>(stackLayout.back()) - 1u);
+			m_context.appendSwapX(static_cast<unsigned>(stackLayout.size()) - static_cast<unsigned>(stackLayout.back()) - 1u);
 			std::swap(stackLayout[static_cast<size_t>(stackLayout.back())], stackLayout.back());
 		}
 	for (size_t i = 0; i < stackLayout.size(); ++i)
@@ -711,6 +718,8 @@ bool ContractCompiler::visit(FunctionDefinition const& _function)
 
 bool ContractCompiler::visit(InlineAssembly const& _inlineAssembly)
 {
+	if (*_inlineAssembly.annotation().hasMemoryEffects && !_inlineAssembly.annotation().markedMemorySafe)
+		m_context << Instruction::UNSAFEASM;
 	unsigned startStackHeight = m_context.stackHeight();
 	yul::ExternalIdentifierAccess::CodeGenerator identifierAccessCodeGen = [&](
 		yul::Identifier const& _identifier,
@@ -720,6 +729,20 @@ bool ContractCompiler::visit(InlineAssembly const& _inlineAssembly)
 	{
 		solAssert(_context == yul::IdentifierContext::RValue || _context == yul::IdentifierContext::LValue, "");
 		auto ref = _inlineAssembly.annotation().externalReferences.find(&_identifier);
+		if (ref == _inlineAssembly.annotation().externalReferences.end())
+		{
+			// The yul AST might be copied from the original (In case we ran the Disambiguator, for instance). So we'll
+			// search for the identifier's name instead.
+			auto& externalReferences = _inlineAssembly.annotation().externalReferences;
+			for (auto extRef = externalReferences.begin(); extRef != externalReferences.end(); ++extRef)
+			{
+				if (extRef->first->name == _identifier.name)
+				{
+					ref = extRef;
+					break;
+				}
+			}
+		}
 		solAssert(ref != _inlineAssembly.annotation().externalReferences.end(), "");
 		Declaration const* decl = ref->second.declaration;
 		solAssert(!!decl, "");
@@ -842,13 +865,7 @@ bool ContractCompiler::visit(InlineAssembly const& _inlineAssembly)
 					}
 					else
 						solAssert(variable->type()->sizeOnStack() == 1, "");
-					if (stackDiff < 1 || stackDiff > 16)
-						BOOST_THROW_EXCEPTION(
-							StackTooDeepError() <<
-							errinfo_sourceLocation(_inlineAssembly.location()) <<
-							util::errinfo_comment(util::stackTooDeepString)
-						);
-					_assembly.appendInstruction(dupInstruction(stackDiff));
+					_assembly.appendDupX(stackDiff);
 				}
 				else
 					solAssert(false, "");
@@ -916,13 +933,7 @@ bool ContractCompiler::visit(InlineAssembly const& _inlineAssembly)
 			else
 				solAssert(suffix.empty(), "");
 
-			if (stackDiff > 16 || stackDiff < 1)
-				BOOST_THROW_EXCEPTION(
-					StackTooDeepError() <<
-					errinfo_sourceLocation(_inlineAssembly.location()) <<
-					util::errinfo_comment(util::stackTooDeepString)
-				);
-			_assembly.appendInstruction(swapInstruction(stackDiff));
+			_assembly.appendSwapX(stackDiff);
 			_assembly.appendInstruction(Instruction::POP);
 		}
 	};
@@ -950,19 +961,56 @@ bool ContractCompiler::visit(InlineAssembly const& _inlineAssembly)
 		m_context.optimizeYul(object, m_optimiserSettings);
 
 		code = object.code().get();
+		_inlineAssembly.annotation().optimizedOperations = object.code();
+		analysisInfo = object.analysisInfo.get();
+	}
+	else
+	{
+		auto const* dialect = dynamic_cast<yul::EVMDialect const*>(&_inlineAssembly.dialect());
+		solAssert(dialect, "");
+
+		// Run the disambiguator.
+		// We need this so that the yul::CallGraphGenerator runs correctly (which is required for setting the
+		// "recursiveFunctions" record in the extraMetadata for inline assembly)
+		std::set<yul::YulString> reservedIdentifiers;
+		for (auto extRef: _inlineAssembly.annotation().externalReferences)
+		{
+			reservedIdentifiers.insert(extRef.first->name);
+		}
+		yul::Disambiguator disambiguator(*dialect, *analysisInfo, reservedIdentifiers);
+		object.setCode(std::make_shared<yul::AST>(*dialect, std::get<yul::Block>(disambiguator(code->root()))));
+
+		// Run the AsmAnalyzer on `object.code`.
+		// Create a resolver that accepts any identifiers. This is OK since the TypeChecker already did the resolution
+		// and the disambiguator should have left them as it is.
+		yul::ExternalIdentifierAccess::Resolver resolver
+			= [](yul::Identifier const& _identifier, yul::IdentifierContext _context, bool) -> bool
+		{
+			(void) _identifier;
+			(void) _context;
+			return true;
+		};
+		object.analysisInfo = std::make_shared<yul::AsmAnalysisInfo>(
+			yul::AsmAnalyzer::analyzeStrictAssertCorrect(*dialect, object, resolver));
+
+		code = object.code().get();
+		_inlineAssembly.annotation().optimizedOperations = object.code();
 		analysisInfo = object.analysisInfo.get();
 	}
 
+	std::shared_ptr<yul::CodeTransformContext> yulContext;
 	yul::CodeGenerator::assemble(
 		code->root(),
 		*analysisInfo,
 		*m_context.assemblyPtr(),
 		m_context.evmVersion(),
 		std::nullopt,
+		yulContext,
 		identifierAccessCodeGen,
 		false,
 		m_optimiserSettings.optimizeStackAllocation
 	);
+	m_context.addInlineAsmContextMapping(&_inlineAssembly, yulContext);
 	m_context.setStackOffset(static_cast<int>(startStackHeight));
 	return false;
 }
@@ -972,11 +1020,14 @@ bool ContractCompiler::visit(TryStatement const& _tryStatement)
 	StackHeightChecker checker(m_context);
 	CompilerContext::LocationSetter locationSetter(m_context, _tryStatement);
 
-	compileExpression(_tryStatement.externalCall());
+	auto* externalCall = dynamic_cast<FunctionCall const*>(&_tryStatement.externalCall());
+	solAssert(externalCall && externalCall->annotation().tryCall, "");
+	compileExpression(*externalCall);
+
 	int const returnSize = static_cast<int>(_tryStatement.externalCall().annotation().type->sizeOnStack());
 
 	// Stack: [ return values] <success flag>
-	evmasm::AssemblyItem successTag = m_context.appendConditionalJump();
+	m_context << Instruction::POP;
 
 	// Catch case.
 	m_context.adjustStackOffset(-returnSize);
@@ -985,7 +1036,11 @@ bool ContractCompiler::visit(TryStatement const& _tryStatement)
 
 	evmasm::AssemblyItem endTag = m_context.appendJumpToNew();
 
-	m_context << successTag;
+	auto& successTag = externalCall->annotation().tryCallSuccessTag;
+	solAssert(successTag, "");
+	m_context << AssemblyItem(AssemblyItemType::Tag, *successTag);
+	successTag.reset();
+
 	m_context.adjustStackOffset(returnSize);
 	{
 		// Success case.
@@ -1123,8 +1178,9 @@ void ContractCompiler::handleCatch(std::vector<ASTPointer<TryCatchClause>> const
 		// re-throw
 		if (m_context.evmVersion().supportsReturndata())
 			m_context.appendInlineAssembly(R"({
-				returndatacopy(0, 0, returndatasize())
-				revert(0, returndatasize())
+				let memPtr := mload(64)
+				returndatacopy(memPtr, 0, returndatasize())
+				revert(memPtr, returndatasize())
 			})");
 		else
 			// Since both returndata and revert are >=byzantium, this should be unreachable.
