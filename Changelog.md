@@ -1,21 +1,21 @@
-### 1.0.2 - ZKsync Legacy Edition (2025-04-01)
+### 1.0.2 - solx Legacy Revision (2025-04-01)
 
 Bugfixes:
-* Fixed reporting of recursive functions in base contracts
+* Fixed reporting of Solidity functions in base contracts
 
 
-### 1.0.1 - ZKsync Legacy Edition (2024-05-31)
+### 1.0.1 - solx Legacy Revision (2024-05-31)
 
 Bugfixes:
 * Fixed nested try-catch lowering in EVM assembly codegen (^0.6.0)
 
 
-### 1.0.0 - ZKsync Legacy Edition (2024-01-16)
+### 1.0.0 - solx Legacy Revision (2024-01-16)
 
-This release has changes in the lowering of EVM assembly in order to get the ZKsync's translator targeting LLVM IR to work correctly.
+This release has changes in the lowering of EVM assembly in order to get the **solx** translator targeting LLVM IR to work correctly.
 
 Added:
-* A new metadata output field called "extraMetadata" in standard-json that stores information of recursive functions
+* A new metadata output field called "extraMetadata" in standard-json that stores information of Solidity functions
 
 Changed:
 * Internal function pointers are lowered to static jump tables
