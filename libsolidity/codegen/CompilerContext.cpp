@@ -75,7 +75,7 @@ void CompilerContext::addImmutable(VariableDeclaration const& _variable)
 	solAssert(_variable.immutable(), "Attempted to register a non-immutable variable as immutable.");
 	solUnimplementedAssert(_variable.annotation().type->isValueType(), "Only immutable variables of value type are supported.");
 	solAssert(m_runtimeContext, "Attempted to register an immutable variable for runtime code generation.");
-	m_immutableVariables[&_variable] = CompilerUtils::generalPurposeMemoryStart + *m_reservedMemory;
+	m_immutableVariables[&_variable] = CompilerUtils::generalPurposeMemoryStart + spillAreaSize() + *m_reservedMemory;
 	solAssert(_variable.annotation().type->memoryHeadSize() == 32, "Memory writes might overlap.");
 	*m_reservedMemory += _variable.annotation().type->memoryHeadSize();
 }
@@ -104,6 +104,10 @@ std::vector<std::string> CompilerContext::immutableVariableSlotNames(VariableDec
 	collectSlotNames(baseName, _variable.annotation().type, collectSlotNames);
 	return names;
 }
+
+size_t CompilerContext::spillAreaSize() const { return m_spillAreaSize; }
+
+void CompilerContext::setSpillAreaSize(size_t s) { m_spillAreaSize = s; }
 
 size_t CompilerContext::reservedMemory()
 {
@@ -145,7 +149,9 @@ void CompilerContext::callYulFunction(
 	m_externallyUsedYulFunctions.insert(_name);
 	auto const retTag = pushNewTag();
 	CompilerUtils(*this).moveIntoStack(_inArgs);
-	appendJumpTo(namedTag(_name, _inArgs, _outArgs, {}), evmasm::AssemblyItem::JumpType::IntoFunction);
+	auto tag = namedTag(_name, _inArgs, _outArgs, {});
+	appendJumpTo(tag, evmasm::AssemblyItem::JumpType::IntoFunction);
+	m_lowLevelFunctions.insert(make_pair(_name, tag));
 	adjustStackOffset(static_cast<int>(_outArgs) - 1 - static_cast<int>(_inArgs));
 	*this << retTag.tag();
 }
@@ -165,6 +171,15 @@ evmasm::AssemblyItem CompilerContext::lowLevelFunctionTag(
 		m_lowLevelFunctionGenerationQueue.push(make_tuple(_name, _inArgs, _outArgs, _generator));
 		return tag;
 	}
+	else
+		return it->second;
+}
+
+evmasm::AssemblyItem CompilerContext::lowLevelFunctionTagIfExists(std::string const& _name)
+{
+	auto it = m_lowLevelFunctions.find(_name);
+	if (it == m_lowLevelFunctions.end())
+		return evmasm::AssemblyItem(evmasm::UndefinedItem);
 	else
 		return it->second;
 }
@@ -359,14 +374,25 @@ CompilerContext& CompilerContext::appendConditionalRevert(bool _forwardReturnDat
 	if (_forwardReturnData && m_evmVersion.supportsReturndata())
 		appendInlineAssembly(R"({
 			if condition {
-				returndatacopy(0, 0, returndatasize())
-				revert(0, returndatasize())
+				let memPtr := mload(64)
+				returndatacopy(memPtr, 0, returndatasize())
+				revert(memPtr, returndatasize())
 			}
 		})", {"condition"});
 	else
 		appendInlineAssembly("{ if condition { " + revertReasonIfDebug(_message) + " } }", {"condition"});
 	*this << Instruction::POP;
 	return *this;
+}
+
+void CompilerContext::appendDupX(size_t _number)
+{
+	m_asm->appendDupX(_number);
+}
+
+void CompilerContext::appendSwapX(size_t _number)
+{
+	m_asm->appendSwapX(_number);
 }
 
 void CompilerContext::resetVisitedNodes(ASTNode const* _node)
@@ -418,17 +444,11 @@ void CompilerContext::appendInlineAssembly(
 		size_t stackDiff = static_cast<size_t>(_assembly.stackHeight()) - startStackHeight + stackDepth;
 		if (_context == yul::IdentifierContext::LValue)
 			stackDiff -= 1;
-		if (stackDiff < 1 || stackDiff > 16)
-			BOOST_THROW_EXCEPTION(
-				StackTooDeepError() <<
-				errinfo_sourceLocation(nativeLocationOf(_identifier)) <<
-				util::errinfo_comment(util::stackTooDeepString)
-			);
 		if (_context == yul::IdentifierContext::RValue)
-			_assembly.appendInstruction(dupInstruction(static_cast<unsigned>(stackDiff)));
+			_assembly.appendDupX(static_cast<unsigned>(stackDiff));
 		else
 		{
-			_assembly.appendInstruction(swapInstruction(static_cast<unsigned>(stackDiff)));
+			_assembly.appendSwapX(static_cast<unsigned>(stackDiff));
 			_assembly.appendInstruction(Instruction::POP);
 		}
 	};
@@ -515,13 +535,14 @@ void CompilerContext::appendInlineAssembly(
 	if (errorReporter.hasErrorsWarningsOrInfos())
 		reportError("Failed to analyze inline assembly block.");
 
-	solAssert(!errorReporter.hasErrorsWarningsOrInfos(), "Failed to analyze inline assembly block.");
+	std::shared_ptr<yul::CodeTransformContext> yulContext;
 	yul::CodeGenerator::assemble(
 		toBeAssembledAST->root(),
 		analysisInfo,
 		*m_asm,
 		m_evmVersion,
 		std::nullopt,
+		yulContext,
 		identifierAccess.generateCode,
 		_system,
 		_optimiserSettings.optimizeStackAllocation
