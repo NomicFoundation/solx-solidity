@@ -5,6 +5,7 @@ Language Features:
 Compiler Features:
 
 Bugfixes:
+* TypeChecker: Fix internal error when accessing getters of constant variables.
 
 
 ### 0.8.32 (2025-12-18)
