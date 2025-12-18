@@ -178,7 +178,7 @@ std::optional<Json> jsonValueByPath(Json const& _node, std::string_view _jsonPat
 		return {};
 
 	if (memberName == _jsonPath)
-		return _node[memberName];
+		return std::optional<Json>(std::in_place, _node[memberName]);
 
 	return jsonValueByPath(_node[memberName], _jsonPath.substr(memberName.size() + 1));
 }

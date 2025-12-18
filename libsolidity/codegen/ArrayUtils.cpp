@@ -407,6 +407,17 @@ void ArrayUtils::clearArray(ArrayType const& _typeIn) const
 			solAssert(_context.stackHeight() == stackHeightStart - 2, "");
 		}
 	);
+
+	if (auto* structType = dynamic_cast<StructType const*>(_typeIn.baseType()))
+	{
+		if (structType->recursive())
+		{
+			std::string name{"$clearArray_" + _typeIn.identifier()};
+			auto tag = m_context.lowLevelFunctionTagIfExists(name);
+			solAssert(tag != evmasm::AssemblyItem(evmasm::UndefinedItem), "");
+			m_context.addRecursiveLowLevelFunc({name, tag.data().convert_to<uint32_t>(), /*ins=*/2, /*outs=*/0});
+		}
+	}
 }
 
 void ArrayUtils::clearDynamicArray(ArrayType const& _type) const
