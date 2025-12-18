@@ -66,8 +66,10 @@ public:
 
 	std::string generatedYulUtilityCode() const { return m_context.generatedYulUtilityCode(); }
 	std::string runtimeGeneratedYulUtilityCode() const { return m_runtimeContext.generatedYulUtilityCode(); }
+	Json extraMetadata() const { return m_extraMetadata; }
 
 private:
+	Json m_extraMetadata;
 	OptimiserSettings const m_optimiserSettings;
 	CompilerContext m_runtimeContext;
 	evmasm::SubAssemblyID m_runtimeSub{}; ///< Identifier of the runtime sub-assembly, if present.
