@@ -40,6 +40,7 @@
 
 #include <libyul/AsmAnalysisInfo.h>
 #include <libyul/backends/evm/EVMDialect.h>
+#include <libyul/backends/evm/EVMCodeTransform.h>
 
 #include <functional>
 #include <ostream>
@@ -90,6 +91,12 @@ public:
 	size_t immutableMemoryOffset(VariableDeclaration const& _variable) const;
 	/// @returns a list of slot names referring to the stack slots of an immutable variable.
 	static std::vector<std::string> immutableVariableSlotNames(VariableDeclaration const& _variable);
+
+	/// @returns the spill area size.
+	size_t spillAreaSize() const;
+
+	/// Sets the spill area size.
+	void setSpillAreaSize(size_t s);
 
 	/// @returns the reserved memory and resets it to mark it as used.
 	size_t reservedMemory();
@@ -164,6 +171,10 @@ public:
 		unsigned _outArgs,
 		std::function<void(CompilerContext&)> const& _generator
 	);
+	/// Returns the entry tag of the low-level function with the name @a _name if already generated; Returns
+	/// evmasm::AssemblyItem(evmasm::UndefinedItem) if the entry tag is not generated.
+	evmasm::AssemblyItem lowLevelFunctionTagIfExists(std::string const& _name);
+
 	/// Generates the code for missing low-level functions, i.e. calls the generators passed above.
 	void appendMissingLowLevelFunctions();
 	ABIFunctions& abiFunctions() { return m_abiFunctions; }
@@ -228,6 +239,8 @@ public:
 	evmasm::AssemblyItem addSubroutine(evmasm::AssemblyPointer const& _assembly) { return m_asm->appendSubroutine(_assembly); }
 	/// Pushes the size of the subroutine.
 	void pushSubroutineSize(evmasm::SubAssemblyID _subRoutine) { m_asm->pushSubroutineSize(_subRoutine); }
+	void appendDupX(size_t _number);
+	void appendSwapX(size_t _number);
 	/// Pushes the offset of the subroutine.
 	void pushSubroutineOffset(evmasm::SubAssemblyID _subRoutine) { m_asm->pushSubroutineOffset(_subRoutine); }
 	/// Pushes the size of the final program
@@ -253,6 +266,13 @@ public:
 	/// Append elements to the current instruction list and adjust @a m_stackOffset.
 	CompilerContext& operator<<(evmasm::AssemblyItem const& _item) { m_asm->append(_item); return *this; }
 	CompilerContext& operator<<(evmasm::Instruction _instruction) { m_asm->append(_instruction); return *this; }
+	CompilerContext& operator<<(std::pair<evmasm::Instruction, std::optional<uint64_t>> _i)
+	{
+		if (_i.second)
+			m_asm->append(evmasm::AssemblyItem(u256(*_i.second)));
+		m_asm->append(_i.first);
+		return *this;
+	}
 	CompilerContext& operator<<(u256 const& _value) { m_asm->append(_value); return *this; }
 	CompilerContext& operator<<(bytes const& _data) { m_asm->append(_data); return *this; }
 
@@ -296,6 +316,40 @@ public:
 	/// @returns a shared pointer to the assembly.
 	/// Should be avoided except when adding sub-assemblies.
 	std::shared_ptr<evmasm::Assembly> assemblyPtr() const { return m_asm; }
+
+	/// Adds the @a _p_asm -> @a _context mapping in the internal inline assembly to context mapping
+	void addInlineAsmContextMapping(InlineAssembly const* _p_asm, std::shared_ptr<yul::CodeTransformContext> _context)
+	{
+		m_inlineAsmContextMap[_p_asm] = _context;
+	}
+
+	/// Returns the context for @a _p_asm; nullptr if not found
+	yul::CodeTransformContext const* findInlineAsmContextMapping(InlineAssembly const* _p_asm) const
+	{
+		auto findIt = m_inlineAsmContextMap.find(_p_asm);
+		if (findIt == m_inlineAsmContextMap.end())
+			return nullptr;
+		return findIt->second.get();
+	}
+
+	struct FunctionInfo
+	{
+		std::string const name;
+		unsigned tag;
+		unsigned ins;
+		unsigned outs;
+
+		bool operator<(FunctionInfo const& _other) const
+		{
+			return tie(name, tag, ins, outs) < tie(_other.name, _other.tag, _other.ins, _other.outs);
+		}
+	};
+
+	/// Adds @a _func to the set of low level utility functions that are recursive
+	void addRecursiveLowLevelFunc(FunctionInfo _func) { m_recursiveLowLevelFuncs.insert(_func); }
+
+	/// Returns the set of low level utility functions that are recursive
+	std::set<FunctionInfo> const& recursiveLowLevelFuncs() const { return m_recursiveLowLevelFuncs; }
 
 	/**
 	 * Helper class to pop the visited nodes stack when a scope closes
@@ -358,6 +412,9 @@ private:
 	std::map<Declaration const*, std::pair<u256, unsigned>> m_stateVariables;
 	/// Memory offsets reserved for the values of immutable variables during contract creation.
 	std::map<VariableDeclaration const*, size_t> m_immutableVariables;
+	/// Size of the spill area in bytes. Configurable via settings.  This region is placed immediately after
+	/// CompilerUtils::generalPurposeMemoryStart, and is reserved by the backend for spilling stack slots to memory.
+	size_t m_spillAreaSize = 0;
 	/// Total amount of reserved memory. Reserved memory is used to store immutable variables during contract creation.
 	/// This has to be finalized before initialiseFreeMemoryPointer() is called. That function
 	/// will reset the optional to verify that.
@@ -394,6 +451,10 @@ private:
 	std::queue<std::tuple<std::string, unsigned, unsigned, std::function<void(CompilerContext&)>>> m_lowLevelFunctionGenerationQueue;
 	/// Flag to check that appendYulUtilityFunctions() was called exactly once
 	bool m_appendYulUtilityFunctionsRan = false;
+	/// Maps an InlineAssembly AST node to its CodeTransformContext created during its lowering
+	std::map<InlineAssembly const*, std::shared_ptr<yul::CodeTransformContext>> m_inlineAsmContextMap;
+	/// Set of low level utility functions generated in this context that are recursive
+	std::set<FunctionInfo> m_recursiveLowLevelFuncs;
 };
 
 }

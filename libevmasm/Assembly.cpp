@@ -831,9 +831,33 @@ AssemblyItem Assembly::newDupN(size_t _depth) const
 	return AssemblyItem::dupN(_depth);
 }
 
+void Assembly::appendSwapX(size_t _number)
+{
+	solAssert(_number > 0);
+	if (_number <= 16)
+	{
+		append(evmasm::legacySwapInstruction(static_cast<unsigned>(_number)));
+		return;
+	}
+	append(evmasm::AssemblyItem(u256(_number)));
+	append(evmasm::AssemblyItem(evmasm::Instruction::SWAPX));
+}
+
+void Assembly::appendDupX(size_t _number)
+{
+	solAssert(_number > 0);
+	if (_number <= 16)
+	{
+		append(evmasm::legacyDupInstruction(static_cast<unsigned>(_number)));
+		return;
+	}
+	append(evmasm::AssemblyItem(u256(_number)));
+	append(evmasm::AssemblyItem(evmasm::Instruction::DUPX));
+}
+
 Assembly& Assembly::optimise(OptimiserSettings const& _settings)
 {
-	optimiseInternal(_settings, {});
+	(void) _settings;
 	return *this;
 }
 
