@@ -53,9 +53,10 @@ static_assert(CompilerUtils::generalPurposeMemoryStart >= CompilerUtils::zeroPoi
 
 void CompilerUtils::initialiseFreeMemoryPointer()
 {
+	size_t spillAreaSize = m_context.spillAreaSize();
 	size_t reservedMemory = m_context.reservedMemory();
-	solAssert(bigint(generalPurposeMemoryStart) + bigint(reservedMemory) < bigint(1) << 63);
-	m_context << (u256(generalPurposeMemoryStart) + reservedMemory);
+	solAssert(bigint(generalPurposeMemoryStart) + bigint(spillAreaSize) + bigint(reservedMemory) < bigint(1) << 63);
+	m_context << (u256(generalPurposeMemoryStart) + spillAreaSize + reservedMemory) << Instruction::MEMORYGUARD;
 	storeFreeMemoryPointer();
 }
 
@@ -473,11 +474,6 @@ void CompilerUtils::encodeToMemory(
 			// leave end_of_mem as dyn head pointer
 			m_context << Instruction::DUP1 << u256(32) << Instruction::ADD;
 			dynPointers++;
-			assertThrow(
-				(argSize + dynPointers) < 16,
-				StackTooDeepError,
-				util::stackTooDeepString
-			);
 		}
 		else
 		{
@@ -534,11 +530,6 @@ void CompilerUtils::encodeToMemory(
 		if (targetType->isDynamicallySized() && !_copyDynamicDataInPlace)
 		{
 			// copy tail pointer (=mem_end - mem_start) to memory
-			assertThrow(
-				(2 + dynPointers) <= 16,
-				StackTooDeepError,
-				util::stackTooDeepString
-			);
 			m_context << dupInstruction(2 + dynPointers) << Instruction::DUP2;
 			m_context << Instruction::SUB;
 			m_context << dupInstruction(2 + dynPointers - thisDynPointer);
@@ -1203,12 +1194,21 @@ void CompilerUtils::convertType(
 					_context << Instruction::POP << Instruction::POP;
 				};
 				if (typeOnStack.recursive())
+				{
 					m_context.callLowLevelFunction(
 						"$convertRecursiveArrayStorageToMemory_" + typeOnStack.identifier() + "_to_" + targetType.identifier(),
 						1,
 						1,
 						conversionImpl
 					);
+					std::string name{
+						"$convertRecursiveArrayStorageToMemory_" + typeOnStack.identifier() + "_to_"
+						+ targetType.identifier()};
+					auto tag = m_context.lowLevelFunctionTagIfExists(name);
+					solAssert(tag != evmasm::AssemblyItem(evmasm::UndefinedItem), "");
+					m_context.addRecursiveLowLevelFunc(
+						{name, tag.data().convert_to<uint32_t>(), /*ins=*/1, /*outs=*/1});
+				}
 				else
 					conversionImpl(m_context);
 				break;
@@ -1423,23 +1423,12 @@ void CompilerUtils::moveToStackVariable(VariableDeclaration const& _variable)
 	unsigned const size = _variable.annotation().type->sizeOnStack();
 	solAssert(stackPosition >= size, "Variable size and position mismatch.");
 	// move variable starting from its top end in the stack
-	if (stackPosition - size + 1 > 16)
-		BOOST_THROW_EXCEPTION(
-			StackTooDeepError() <<
-			errinfo_sourceLocation(_variable.location()) <<
-			util::errinfo_comment(util::stackTooDeepString)
-		);
 	for (unsigned i = 0; i < size; ++i)
 		m_context << swapInstruction(stackPosition - size + 1) << Instruction::POP;
 }
 
 void CompilerUtils::copyToStackTop(unsigned _stackDepth, unsigned _itemSize)
 {
-	assertThrow(
-		_stackDepth <= 16,
-		StackTooDeepError,
-		util::stackTooDeepString
-	);
 	for (unsigned i = 0; i < _itemSize; ++i)
 		m_context << dupInstruction(_stackDepth);
 }
@@ -1461,22 +1450,12 @@ void CompilerUtils::moveIntoStack(unsigned _stackDepth, unsigned _itemSize)
 
 void CompilerUtils::rotateStackUp(unsigned _items)
 {
-	assertThrow(
-		_items - 1 <= 16,
-		StackTooDeepError,
-		util::stackTooDeepString
-	);
 	for (unsigned i = 1; i < _items; ++i)
 		m_context << swapInstruction(_items - i);
 }
 
 void CompilerUtils::rotateStackDown(unsigned _items)
 {
-	assertThrow(
-		_items - 1 <= 16,
-		StackTooDeepError,
-		util::stackTooDeepString
-	);
 	for (unsigned i = 1; i < _items; ++i)
 		m_context << swapInstruction(i);
 }
