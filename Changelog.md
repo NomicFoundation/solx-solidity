@@ -1,11 +1,8 @@
-### 0.8.32 (unreleased)
+### 0.8.32 (2025-12-18)
 
 Important Bugfixes:
 * Code Generator: Fix a bug in clearing/copying of arrays that straddle the end of storage, potentially resulting in assignment/initialization/`delete`/`push()`/`pop()` skipping some or all of the intended storage writes.
 
-Language Features:
-
-Compiler Features:
 
 Bugfixes:
 * Codegen: Fix internal compiler error when emitting events via module member access.
