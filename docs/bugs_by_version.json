@@ -2053,6 +2053,10 @@
         "bugs": [],
         "released": "2025-12-18"
     },
+    "0.8.33": {
+        "bugs": [],
+        "released": "2025-12-18"
+    },
     "0.8.4": {
         "bugs": [
             "LostStorageArrayWriteOnSlotOverflow",
