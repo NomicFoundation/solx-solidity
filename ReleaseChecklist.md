@@ -36,10 +36,11 @@ At least a day before the release:
 - [ ] Create drafts of blog posts.
 - [ ] Prepare drafts of Twitter, Reddit and Solidity Forum announcements.
 
-### Blog Post
+### Website/Blog Updates
 - [ ] Create a post on [solidity-website](https://github.com/argotorg/solidity-website/tree/main/src/posts) in the `Releases` category and explain some of the new features or concepts.
 - [ ] Create a post on [solidity-website](https://github.com/argotorg/solidity-website/tree/main/src/posts) in the `Security Alerts` category in case of important bug(s).
-- [ ] Get the posts reviewed and approved **before the release starts**.
+- [ ] Update the release information section [in the source of soliditylang.org](https://github.com/argotorg/solidity-website/blob/main/src/pages/index.tsx).
+- [ ] Get the PR(s) for the above reviewed and approved **before the release starts**, but don't merge them yet.
 
 ### Changelog
 - [ ] Ensure that all changelog entries are correctly classified as language or compiler features.
@@ -95,8 +96,7 @@ At least a day before the release:
 - [ ] Remove "still in progress" warning from the [release notes](https://github.com/argotorg/solidity/releases).
 
 ### Comms
-- [ ] Merge the [blog posts](https://github.com/argotorg/solidity-website/pulls) related to the release.
-- [ ] Update the release information section [in the source of soliditylang.org](https://github.com/argotorg/solidity-website/blob/main/src/pages/index.tsx).
+- [ ] Merge the blog posts and website updates prepared for the release.
 - [ ] Verify that the link to the blog post in [release notes](https://github.com/argotorg/solidity/releases) is not broken.
 - [ ] Announce on [Twitter](https://twitter.com/solidity_lang), including links to the release and the blog post.
 - [ ] Announce on [Fosstodon](https://fosstodon.org/@solidity/), including links to the release and the blog post.
