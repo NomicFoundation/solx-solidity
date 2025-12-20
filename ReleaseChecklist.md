@@ -97,6 +97,7 @@ At least a day before the release:
 ### Comms
 - [ ] Merge the [blog posts](https://github.com/argotorg/solidity-website/pulls) related to the release.
 - [ ] Update the release information section [in the source of soliditylang.org](https://github.com/argotorg/solidity-website/blob/main/src/pages/index.tsx).
+- [ ] Verify that the link to the blog post in [release notes](https://github.com/argotorg/solidity/releases) is not broken.
 - [ ] Announce on [Twitter](https://twitter.com/solidity_lang), including links to the release and the blog post.
 - [ ] Announce on [Fosstodon](https://fosstodon.org/@solidity/), including links to the release and the blog post.
 - [ ] Share the announcement on Reddit in [`/r/ethdev`](https://reddit.com/r/ethdev/), cross-posted to [`/r/ethereum`](https://reddit.com/r/ethereum/).
