@@ -18,7 +18,7 @@
 #
 # (c) 2019 solidity contributors.
 #------------------------------------------------------------------------------
-set -e
+set -eo pipefail
 
 # Requires $REPO_ROOT to be defined and "${REPO_ROOT}/scripts/common.sh" to be included before.
 
