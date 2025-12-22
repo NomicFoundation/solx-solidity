@@ -1304,12 +1304,6 @@ jobs:
     steps:
       - soltest
 
-  t_ubu_soltest_all: &t_ubu_soltest_all
-    <<: *base_ubuntu2404_large
-    parallelism: 50
-    steps:
-      - soltest_all
-
   t_ubu_arm_soltest: &t_ubu_arm_soltest
     <<: *base_ubuntu2404_arm_medium
     parallelism: 20
@@ -1384,9 +1378,10 @@ jobs:
       - soltest
 
   t_ubu_force_release_soltest_all: &t_ubu_force_release_soltest_all
-    # NOTE: This definition is identical to t_ubu_soltest_all but in the workflow we make it depend on
-    # a different job (b_ubu_force_release) so the workspace it attaches contains a different executable.
-    <<: *t_ubu_soltest_all
+    <<: *base_ubuntu2404_large
+    parallelism: 50
+    steps:
+      - soltest_all
 
   t_ubu_cli: &t_ubu_cli
     <<: *base_ubuntu2404_small
