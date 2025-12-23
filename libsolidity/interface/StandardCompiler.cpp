@@ -835,14 +835,14 @@ std::variant<StandardCompiler::InputsAndSettings, Json> StandardCompiler::parseI
 		ret.viaIR = settings["viaIR"].get<bool>();
 	}
 
+	ret.mlirJobSpec.action = mlirgen::Action::GenObj;
 	if (settings.contains("codegen"))
 	{
 		if (!settings["codegen"].is_string())
 			return formatFatalError(Error::Type::JSONError, "\"settings.codegen\" must be a string.");
-		solAssert(settings["codegen"].get<std::string>() == "mlir", "");
 
-		// FIXME: We should check if the bytecode was requested.
-		ret.mlirJobSpec.action = mlirgen::Action::GenObj;
+		if (settings["codegen"].get<std::string>() != "mlir")
+			ret.mlirJobSpec.action = mlirgen::Action::Undefined;
 	}
 
 	if (settings.contains("target"))
