@@ -119,6 +119,12 @@ def Sol_AggType : AnyTypeOf<[Sol_StringType, Sol_ArrayType, Sol_StructType],
 def Sol_RefType : AnyTypeOf<[Sol_PtrType, Sol_AggType],
                              "Solidity aggregate types and pointers">;
 
+// This represents a reference to a function in the context of indirect call.
+def Sol_FuncRefType : Sol_Type<"FuncRef", "func_ref"> {
+  let parameters = (ins "FunctionType":$funcTy);
+  let assemblyFormat = [{ `<` $funcTy `>` }];
+}
+
 //===----------------------------------------------------------------------===//
 // Attributes
 //===----------------------------------------------------------------------===//

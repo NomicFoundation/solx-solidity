@@ -22,11 +22,11 @@ contract C is I, A {
 // CHECK-NEXT:     sol.func @C_30() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     sol.func @f_29() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 638722032 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @f_29() -> ui256 attributes {id = 29 : i64, orig_fn_type = () -> ui256, selector = 638722032 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.call @g_8() : () -> ui256 loc(#loc3)
 // CHECK-NEXT:       sol.return %0 : ui256 loc(#loc4)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:     sol.func @g_8() -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @g_8() -> ui256 attributes {id = 8 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %c42_ui8 = sol.constant 42 : ui8 loc(#loc6)
 // CHECK-NEXT:       %0 = sol.cast %c42_ui8 : ui8 to ui256 loc(#loc6)
 // CHECK-NEXT:       sol.return %0 : ui256 loc(#loc7)

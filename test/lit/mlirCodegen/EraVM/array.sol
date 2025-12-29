@@ -29,14 +29,14 @@ function malloc_2d() {
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT:   func.func private @__revert(i256, i256, i256) attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
 // CHECK-NEXT:   func.func private @__personality() -> i32 attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
-// CHECK-NEXT:   func.func @ui_1d_16(%arg0: i256 loc({{.*}}:2:15), %arg1: i256 loc({{.*}}:2:36)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @ui_1d_16(%arg0: i256 loc({{.*}}:2:15), %arg1: i256 loc({{.*}}:2:36)) -> i256 attributes {id = 16 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c32_i256 = arith.constant 32 : i256 loc(#loc)
 // CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256 loc(#loc)
 // CHECK-NEXT:     %c36_i256 = arith.constant 36 : i256 loc(#loc)
 // CHECK-NEXT:     %c50_i256 = arith.constant 50 : i256 loc(#loc)
 // CHECK-NEXT:     %c4_i256 = arith.constant 4 : i256 loc(#loc)
-// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:     %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256 = arith.constant 35408467139433450592217433187231851964531694900788300625387963629091585785856 : i256 loc(#loc)
+// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:     %c3_i256 = arith.constant 3 : i256 loc(#loc)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc3)
@@ -60,14 +60,14 @@ function malloc_2d() {
 // CHECK-NEXT:     %8 = llvm.load %7 {alignment = 1 : i64} : !llvm.ptr<1> -> i256 loc(#loc1)
 // CHECK-NEXT:     return %8 : i256 loc(#loc6)
 // CHECK-NEXT:   } loc(#loc2)
-// CHECK-NEXT:   func.func @ui_2d_36(%arg0: i256 loc({{.*}}:5:15), %arg1: i256 loc({{.*}}:5:39)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @ui_2d_36(%arg0: i256 loc({{.*}}:5:15), %arg1: i256 loc({{.*}}:5:39)) -> i256 attributes {id = 36 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c3_i256 = arith.constant 3 : i256 loc(#loc)
 // CHECK-NEXT:     %c32_i256 = arith.constant 32 : i256 loc(#loc)
 // CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256 loc(#loc)
 // CHECK-NEXT:     %c36_i256 = arith.constant 36 : i256 loc(#loc)
 // CHECK-NEXT:     %c50_i256 = arith.constant 50 : i256 loc(#loc)
-// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:     %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256 = arith.constant 35408467139433450592217433187231851964531694900788300625387963629091585785856 : i256 loc(#loc)
+// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:     %c4_i256 = arith.constant 4 : i256 loc(#loc)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc8)
@@ -105,7 +105,7 @@ function malloc_2d() {
 // CHECK-NEXT:     %14 = llvm.load %13 {alignment = 1 : i64} : !llvm.ptr<1> -> i256 loc(#loc10)
 // CHECK-NEXT:     return %14 : i256 loc(#loc13)
 // CHECK-NEXT:   } loc(#loc7)
-// CHECK-NEXT:   func.func @malloc_1d_47() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @malloc_1d_47() attributes {id = 47 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = llvm.mlir.addressof @ptr_calldata : !llvm.ptr loc(#loc)
 // CHECK-NEXT:     %1 = llvm.mlir.addressof @calldatasize : !llvm.ptr loc(#loc)
 // CHECK-NEXT:     %c64_i256 = arith.constant 64 : i256 loc(#loc)
@@ -125,7 +125,7 @@ function malloc_2d() {
 // CHECK-NEXT:     llvm.store %4, %2 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc15)
 // CHECK-NEXT:     return loc(#loc14)
 // CHECK-NEXT:   } loc(#loc14)
-// CHECK-NEXT:   func.func @malloc_2d_60() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @malloc_2d_60() attributes {id = 60 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c128 = arith.constant 128 : index loc(#loc)
 // CHECK-NEXT:     %0 = llvm.mlir.addressof @ptr_calldata : !llvm.ptr loc(#loc)
 // CHECK-NEXT:     %1 = llvm.mlir.addressof @calldatasize : !llvm.ptr loc(#loc)

@@ -177,7 +177,7 @@ contract C {
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)
-// CHECK-NEXT:   func.func @_12(%arg0: i256 loc({{.*}}:4:14)) attributes {kind = #Constructor, llvm.linkage = #llvm.linkage<private>, orig_fn_type = (ui256) -> (), passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @_12(%arg0: i256 loc({{.*}}:4:14)) attributes {id = 12 : i64, kind = #Constructor, llvm.linkage = #llvm.linkage<private>, orig_fn_type = (ui256) -> (), passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc3)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc3)

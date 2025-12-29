@@ -26,7 +26,7 @@ contract D {
 // CHECK-NEXT:     sol.func @C_9() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     sol.func @f_8() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 638722032 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @f_8() -> ui256 attributes {id = 8 : i64, orig_fn_type = () -> ui256, selector = 638722032 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %c42_ui8 = sol.constant 42 : ui8 loc(#loc3)
 // CHECK-NEXT:       %0 = sol.cast %c42_ui8 : ui8 to ui256 loc(#loc3)
 // CHECK-NEXT:       sol.return %0 : ui256 loc(#loc4)
@@ -47,7 +47,7 @@ contract D {
 // CHECK-NEXT:     sol.func @D_55() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     sol.func @g_34() -> !sol.string<Memory> attributes {orig_fn_type = () -> !sol.string<Memory>, selector = -501769330 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @g_34() -> !sol.string<Memory> attributes {id = 34 : i64, orig_fn_type = () -> !sol.string<Memory>, selector = -501769330 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc3)
 // CHECK-NEXT:       %0 = sol.new "C_9" value = %c0_ui256 ctor() : ui256 loc(#loc3)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc4)
@@ -59,7 +59,7 @@ contract D {
 // CHECK-NEXT:       %5 = sol.code %4 : ui256 -> !sol.string<Memory> loc(#loc8)
 // CHECK-NEXT:       sol.return %5 : !sol.string<Memory> loc(#loc9)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:     sol.func @h_54() -> !sol.bytes<32> attributes {orig_fn_type = () -> !sol.bytes<32>, selector = -1194732699 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @h_54() -> !sol.bytes<32> attributes {id = 54 : i64, orig_fn_type = () -> !sol.bytes<32>, selector = -1194732699 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc11)
 // CHECK-NEXT:       %0 = sol.new "C_9" value = %c0_ui256 ctor() : ui256 loc(#loc11)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc12)

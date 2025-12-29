@@ -19,13 +19,13 @@ contract C {
 // CHECK-NEXT:     sol.func @C_13() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     sol.func @f_4() attributes {orig_fn_type = () -> (), selector = 638722032 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @f_4() attributes {id = 4 : i64, orig_fn_type = () -> (), selector = 638722032 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:     sol.func @_8() attributes {kind = #Receive, state_mutability = #Payable} {
+// CHECK-NEXT:     sol.func @_8() attributes {id = 8 : i64, kind = #Receive, state_mutability = #Payable} {
 // CHECK-NEXT:       sol.return loc(#loc3)
 // CHECK-NEXT:     } loc(#loc3)
-// CHECK-NEXT:     sol.func @_12() attributes {kind = #Fallback, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @_12() attributes {id = 12 : i64, kind = #Fallback, state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc4)
 // CHECK-NEXT:     } loc(#loc4)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)

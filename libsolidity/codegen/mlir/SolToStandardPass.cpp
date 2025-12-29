@@ -127,6 +127,8 @@ struct ConvertSolToStandard
     convTgt.addIllegalOp<
         // clang-format off
         sol::ConstantOp,
+        sol::FuncConstantOp,
+        sol::DefaultFuncConstantOp,
         sol::CastOp,
         sol::EnumCastOp,
         sol::BytesCastOp,
@@ -182,7 +184,7 @@ struct ConvertSolToStandard
     convTgt.addDynamicallyLegalOp<sol::FuncOp>([&](sol::FuncOp op) {
       return tyConv.isSignatureLegal(op.getFunctionType());
     });
-    convTgt.addDynamicallyLegalOp<sol::CallOp, sol::ReturnOp,
+    convTgt.addDynamicallyLegalOp<sol::CallOp, sol::ICallOp, sol::ReturnOp,
                                   sol::LoadImmutableOp>(
         [&](Operation *op) { return tyConv.isLegal(op); });
 
@@ -190,6 +192,7 @@ struct ConvertSolToStandard
     pats.add<ConvCastOpLowering>(tyConv, &getContext());
     populateAnyFunctionOpInterfaceTypeConversionPattern(pats, tyConv);
     pats.add<GenericTypeConversion<sol::CallOp>,
+             GenericTypeConversion<sol::ICallOp>,
              GenericTypeConversion<sol::ReturnOp>>(tyConv, &getContext());
 
     switch (tgt) {

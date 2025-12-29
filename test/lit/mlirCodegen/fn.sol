@@ -61,91 +61,91 @@ contract C {
 // CHECK-NEXT:     sol.func @C_180() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     sol.func @i1_10(%arg0: i1 loc({{.*}}:3:14)) -> i1 attributes {orig_fn_type = (i1) -> i1, selector = -948490518 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @i1_10(%arg0: i1 loc({{.*}}:3:14)) -> i1 attributes {id = 10 : i64, orig_fn_type = (i1) -> i1, selector = -948490518 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc3)
 // CHECK-NEXT:       sol.store %arg0, %0 : i1, !sol.ptr<i1, Stack> loc(#loc3)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<i1, Stack>, i1 loc(#loc4)
 // CHECK-NEXT:       sol.return %1 : i1 loc(#loc5)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:     sol.func @ui64_20(%arg0: ui64 loc({{.*}}:4:16)) -> ui64 attributes {orig_fn_type = (ui64) -> ui64, selector = 1090974155 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @ui64_20(%arg0: ui64 loc({{.*}}:4:16)) -> ui64 attributes {id = 20 : i64, orig_fn_type = (ui64) -> ui64, selector = 1090974155 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui64, Stack> loc(#loc7)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui64, !sol.ptr<ui64, Stack> loc(#loc7)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui64, Stack>, ui64 loc(#loc8)
 // CHECK-NEXT:       sol.return %1 : ui64 loc(#loc9)
 // CHECK-NEXT:     } loc(#loc6)
-// CHECK-NEXT:     sol.func @ui256_32(%arg0: ui256 loc({{.*}}:5:17)) -> ui256 attributes {orig_fn_type = (ui256) -> ui256, selector = -1867629089 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @ui256_32(%arg0: ui256 loc({{.*}}:5:17)) -> ui256 attributes {id = 32 : i64, orig_fn_type = (ui256) -> ui256, selector = -1867629089 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc11)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc11)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc12)
 // CHECK-NEXT:       %2 = sol.call @ui256_internal_42(%1) : (ui256) -> ui256 loc(#loc13)
 // CHECK-NEXT:       sol.return %2 : ui256 loc(#loc14)
 // CHECK-NEXT:     } loc(#loc10)
-// CHECK-NEXT:     sol.func @ui256_internal_42(%arg0: ui256 loc({{.*}}:6:26)) -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @ui256_internal_42(%arg0: ui256 loc({{.*}}:6:26)) -> ui256 attributes {id = 42 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc16)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc16)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc17)
 // CHECK-NEXT:       sol.return %1 : ui256 loc(#loc18)
 // CHECK-NEXT:     } loc(#loc15)
-// CHECK-NEXT:     sol.func @e_58(%arg0: !sol.enum<2> loc({{.*}}:8:13)) -> !sol.enum<2> attributes {orig_fn_type = (!sol.enum<2>) -> !sol.enum<2>, selector = -1545665851 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @e_58(%arg0: !sol.enum<2> loc({{.*}}:8:13)) -> !sol.enum<2> attributes {id = 58 : i64, orig_fn_type = (!sol.enum<2>) -> !sol.enum<2>, selector = -1545665851 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.enum<2>, Stack> loc(#loc20)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.enum<2>, !sol.ptr<!sol.enum<2>, Stack> loc(#loc20)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.enum<2>, Stack>, !sol.enum<2> loc(#loc21)
 // CHECK-NEXT:       sol.return %1 : !sol.enum<2> loc(#loc22)
 // CHECK-NEXT:     } loc(#loc19)
-// CHECK-NEXT:     sol.func @arr_76(%arg0: !sol.array<3 x !sol.array<2 x ui256, Memory>, Memory> loc({{.*}}:10:15)) -> !sol.array<3 x !sol.array<2 x ui256, Memory>, Memory> attributes {orig_fn_type = (!sol.array<3 x !sol.array<2 x ui256, Memory>, Memory>) -> !sol.array<3 x !sol.array<2 x ui256, Memory>, Memory>, selector = 870754610 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @arr_76(%arg0: !sol.array<3 x !sol.array<2 x ui256, Memory>, Memory> loc({{.*}}:10:15)) -> !sol.array<3 x !sol.array<2 x ui256, Memory>, Memory> attributes {id = 76 : i64, orig_fn_type = (!sol.array<3 x !sol.array<2 x ui256, Memory>, Memory>) -> !sol.array<3 x !sol.array<2 x ui256, Memory>, Memory>, selector = 870754610 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.array<3 x !sol.array<2 x ui256, Memory>, Memory>, Stack> loc(#loc24)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.array<3 x !sol.array<2 x ui256, Memory>, Memory>, !sol.ptr<!sol.array<3 x !sol.array<2 x ui256, Memory>, Memory>, Stack> loc(#loc24)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.array<3 x !sol.array<2 x ui256, Memory>, Memory>, Stack>, !sol.array<3 x !sol.array<2 x ui256, Memory>, Memory> loc(#loc25)
 // CHECK-NEXT:       sol.return %1 : !sol.array<3 x !sol.array<2 x ui256, Memory>, Memory> loc(#loc26)
 // CHECK-NEXT:     } loc(#loc23)
-// CHECK-NEXT:     sol.func @darr_88(%arg0: !sol.array<? x ui256, Memory> loc({{.*}}:13:16)) -> !sol.array<? x ui256, Memory> attributes {orig_fn_type = (!sol.array<? x ui256, Memory>) -> !sol.array<? x ui256, Memory>, selector = 1795411533 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @darr_88(%arg0: !sol.array<? x ui256, Memory> loc({{.*}}:13:16)) -> !sol.array<? x ui256, Memory> attributes {id = 88 : i64, orig_fn_type = (!sol.array<? x ui256, Memory>) -> !sol.array<? x ui256, Memory>, selector = 1795411533 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.array<? x ui256, Memory>, Stack> loc(#loc28)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.array<? x ui256, Memory>, !sol.ptr<!sol.array<? x ui256, Memory>, Stack> loc(#loc28)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.array<? x ui256, Memory>, Stack>, !sol.array<? x ui256, Memory> loc(#loc29)
 // CHECK-NEXT:       sol.return %1 : !sol.array<? x ui256, Memory> loc(#loc30)
 // CHECK-NEXT:     } loc(#loc27)
-// CHECK-NEXT:     sol.func @darr2_104(%arg0: !sol.array<2 x !sol.array<? x ui256, Memory>, Memory> loc({{.*}}:16:17)) -> !sol.array<2 x !sol.array<? x ui256, Memory>, Memory> attributes {orig_fn_type = (!sol.array<2 x !sol.array<? x ui256, Memory>, Memory>) -> !sol.array<2 x !sol.array<? x ui256, Memory>, Memory>, selector = -341729454 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @darr2_104(%arg0: !sol.array<2 x !sol.array<? x ui256, Memory>, Memory> loc({{.*}}:16:17)) -> !sol.array<2 x !sol.array<? x ui256, Memory>, Memory> attributes {id = 104 : i64, orig_fn_type = (!sol.array<2 x !sol.array<? x ui256, Memory>, Memory>) -> !sol.array<2 x !sol.array<? x ui256, Memory>, Memory>, selector = -341729454 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.array<2 x !sol.array<? x ui256, Memory>, Memory>, Stack> loc(#loc32)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.array<2 x !sol.array<? x ui256, Memory>, Memory>, !sol.ptr<!sol.array<2 x !sol.array<? x ui256, Memory>, Memory>, Stack> loc(#loc32)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.array<2 x !sol.array<? x ui256, Memory>, Memory>, Stack>, !sol.array<2 x !sol.array<? x ui256, Memory>, Memory> loc(#loc33)
 // CHECK-NEXT:       sol.return %1 : !sol.array<2 x !sol.array<? x ui256, Memory>, Memory> loc(#loc34)
 // CHECK-NEXT:     } loc(#loc31)
-// CHECK-NEXT:     sol.func @str_116(%arg0: !sol.string<Memory> loc({{.*}}:20:15)) -> !sol.string<Memory> attributes {orig_fn_type = (!sol.string<Memory>) -> !sol.string<Memory>, selector = 167553359 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @str_116(%arg0: !sol.string<Memory> loc({{.*}}:20:15)) -> !sol.string<Memory> attributes {id = 116 : i64, orig_fn_type = (!sol.string<Memory>) -> !sol.string<Memory>, selector = 167553359 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc36)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc36)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc37)
 // CHECK-NEXT:       %2 = sol.call @str_internal_126(%1) : (!sol.string<Memory>) -> !sol.string<Memory> loc(#loc38)
 // CHECK-NEXT:       sol.return %2 : !sol.string<Memory> loc(#loc39)
 // CHECK-NEXT:     } loc(#loc35)
-// CHECK-NEXT:     sol.func @str_internal_126(%arg0: !sol.string<Memory> loc({{.*}}:23:24)) -> !sol.string<Memory> attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @str_internal_126(%arg0: !sol.string<Memory> loc({{.*}}:23:24)) -> !sol.string<Memory> attributes {id = 126 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc41)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc41)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc42)
 // CHECK-NEXT:       sol.return %1 : !sol.string<Memory> loc(#loc43)
 // CHECK-NEXT:     } loc(#loc40)
-// CHECK-NEXT:     sol.func @b1_136(%arg0: !sol.bytes<1> loc({{.*}}:27:14)) -> !sol.bytes<1> attributes {orig_fn_type = (!sol.bytes<1>) -> !sol.bytes<1>, selector = -1094027182 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @b1_136(%arg0: !sol.bytes<1> loc({{.*}}:27:14)) -> !sol.bytes<1> attributes {id = 136 : i64, orig_fn_type = (!sol.bytes<1>) -> !sol.bytes<1>, selector = -1094027182 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.bytes<1>, Stack> loc(#loc45)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.bytes<1>, !sol.ptr<!sol.bytes<1>, Stack> loc(#loc45)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.bytes<1>, Stack>, !sol.bytes<1> loc(#loc46)
 // CHECK-NEXT:       sol.return %1 : !sol.bytes<1> loc(#loc47)
 // CHECK-NEXT:     } loc(#loc44)
-// CHECK-NEXT:     sol.func @b2_146(%arg0: !sol.bytes<2> loc({{.*}}:28:14)) -> !sol.bytes<2> attributes {orig_fn_type = (!sol.bytes<2>) -> !sol.bytes<2>, selector = -1660006140 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @b2_146(%arg0: !sol.bytes<2> loc({{.*}}:28:14)) -> !sol.bytes<2> attributes {id = 146 : i64, orig_fn_type = (!sol.bytes<2>) -> !sol.bytes<2>, selector = -1660006140 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.bytes<2>, Stack> loc(#loc49)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.bytes<2>, !sol.ptr<!sol.bytes<2>, Stack> loc(#loc49)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.bytes<2>, Stack>, !sol.bytes<2> loc(#loc50)
 // CHECK-NEXT:       sol.return %1 : !sol.bytes<2> loc(#loc51)
 // CHECK-NEXT:     } loc(#loc48)
-// CHECK-NEXT:     sol.func @bts_156(%arg0: !sol.string<Memory> loc({{.*}}:30:15)) -> !sol.string<Memory> attributes {orig_fn_type = (!sol.string<Memory>) -> !sol.string<Memory>, selector = -12492371 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @bts_156(%arg0: !sol.string<Memory> loc({{.*}}:30:15)) -> !sol.string<Memory> attributes {id = 156 : i64, orig_fn_type = (!sol.string<Memory>) -> !sol.string<Memory>, selector = -12492371 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc53)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc53)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc54)
 // CHECK-NEXT:       sol.return %1 : !sol.string<Memory> loc(#loc55)
 // CHECK-NEXT:     } loc(#loc52)
-// CHECK-NEXT:     sol.func @tuple_167() -> (ui256, ui256) attributes {orig_fn_type = () -> (ui256, ui256), selector = 829795042 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @tuple_167() -> (ui256, ui256) attributes {id = 167 : i64, orig_fn_type = () -> (ui256, ui256), selector = 829795042 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0:2 = sol.call @tuple_internal_179() : () -> (ui256, ui256) loc(#loc57)
 // CHECK-NEXT:       sol.return %0#0, %0#1 : ui256, ui256 loc(#loc58)
 // CHECK-NEXT:     } loc(#loc56)
-// CHECK-NEXT:     sol.func @tuple_internal_179() -> (ui256, ui256) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @tuple_internal_179() -> (ui256, ui256) attributes {id = 179 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %c1_ui8 = sol.constant 1 : ui8 loc(#loc60)
 // CHECK-NEXT:       %c2_ui8 = sol.constant 2 : ui8 loc(#loc61)
 // CHECK-NEXT:       %0 = sol.cast %c1_ui8 : ui8 to ui256 loc(#loc60)

@@ -13,17 +13,17 @@ function main() returns (uint) {
 // CHECK-NEXT: #loc5 = loc({{.*}}:3:16)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   func.func private @__personality() -> i32 attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
-// CHECK-NEXT:   func.func @ret_8() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @ret_8() -> i256 attributes {id = 8 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c42_i256 = arith.constant 42 : i256 loc(#loc2)
 // CHECK-NEXT:     return %c42_i256 : i256 loc(#loc3)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   func.func @no_ret_14(%arg0: i256 loc({{.*}}:3:16)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @no_ret_14(%arg0: i256 loc({{.*}}:3:16)) attributes {id = 14 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc5)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc5)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc5)
 // CHECK-NEXT:     return loc(#loc4)
 // CHECK-NEXT:   } loc(#loc4)
-// CHECK-NEXT:   func.func @main_27() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @main_27() -> i256 attributes {id = 27 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c42_i256 = arith.constant 42 : i256 loc(#loc7)
 // CHECK-NEXT:     call @no_ret_14(%c42_i256) : (i256) -> () loc(#loc8)
 // CHECK-NEXT:     %0 = call @ret_8() : () -> i256 loc(#loc9)

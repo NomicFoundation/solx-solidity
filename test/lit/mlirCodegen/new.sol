@@ -18,7 +18,7 @@ contract D {
 // CHECK-NEXT:     sol.func @C_9() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     sol.func @f_8() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 638722032 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @f_8() -> ui256 attributes {id = 8 : i64, orig_fn_type = () -> ui256, selector = 638722032 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %c42_ui8 = sol.constant 42 : ui8 loc(#loc3)
 // CHECK-NEXT:       %0 = sol.cast %c42_ui8 : ui8 to ui256 loc(#loc3)
 // CHECK-NEXT:       sol.return %0 : ui256 loc(#loc4)
@@ -39,7 +39,7 @@ contract D {
 // CHECK-NEXT:     sol.func @D_23() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     sol.func @g_22() -> ui256 attributes {orig_fn_type = () -> ui256, selector = -501769330 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @g_22() -> ui256 attributes {id = 22 : i64, orig_fn_type = () -> ui256, selector = -501769330 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc3)
 // CHECK-NEXT:       %0 = sol.new "C_9" value = %c0_ui256 ctor() : ui256 loc(#loc3)
 // CHECK-NEXT:       %1 = yul.gas loc(#loc3)

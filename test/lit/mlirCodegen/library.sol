@@ -18,7 +18,7 @@ contract C {
 // CHECK-NEXT: #loc2 = loc({{.*}}:5:13)
 // CHECK-NEXT: #loc12 = loc({{.*}}:6:13)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.func @f_23(%arg0: ui256 loc({{.*}}:5:13)) -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @f_23(%arg0: ui256 loc({{.*}}:5:13)) -> ui256 attributes {id = 23 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc3)
@@ -27,14 +27,14 @@ contract C {
 // CHECK-NEXT:     %3 = sol.cadd %1, %2 : ui256 loc(#loc3)
 // CHECK-NEXT:     sol.return %3 : ui256 loc(#loc5)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   sol.func @ff_11() -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @ff_11() -> ui256 attributes {id = 11 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_ui8 = sol.constant 1 : ui8 loc(#loc7)
 // CHECK-NEXT:     %0 = sol.cast %c1_ui8 : ui8 to ui256 loc(#loc7)
 // CHECK-NEXT:     %1 = sol.call @f_23(%0) : (ui256) -> ui256 loc(#loc8)
 // CHECK-NEXT:     sol.return %1 : ui256 loc(#loc9)
 // CHECK-NEXT:   } loc(#loc6)
 // CHECK-NEXT:   sol.contract @L_39 {
-// CHECK-NEXT:     sol.func @f_23(%arg0: ui256 loc({{.*}}:5:13)) -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @f_23(%arg0: ui256 loc({{.*}}:5:13)) -> ui256 attributes {id = 23 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc3)
@@ -43,13 +43,13 @@ contract C {
 // CHECK-NEXT:       %3 = sol.cadd %1, %2 : ui256 loc(#loc3)
 // CHECK-NEXT:       sol.return %3 : ui256 loc(#loc5)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     sol.func @ff_11() -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @ff_11() -> ui256 attributes {id = 11 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %c1_ui8 = sol.constant 1 : ui8 loc(#loc7)
 // CHECK-NEXT:       %0 = sol.cast %c1_ui8 : ui8 to ui256 loc(#loc7)
 // CHECK-NEXT:       %1 = sol.call @f_23(%0) : (ui256) -> ui256 loc(#loc8)
 // CHECK-NEXT:       sol.return %1 : ui256 loc(#loc9)
 // CHECK-NEXT:     } loc(#loc6)
-// CHECK-NEXT:     sol.func @g_38(%arg0: ui256 loc({{.*}}:6:13)) -> ui256 attributes {orig_fn_type = (ui256) -> ui256, selector = -467655094 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @g_38(%arg0: ui256 loc({{.*}}:6:13)) -> ui256 attributes {id = 38 : i64, orig_fn_type = (ui256) -> ui256, selector = -467655094 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc12)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc12)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc13)
@@ -81,7 +81,7 @@ contract C {
 // CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
 // CHECK-NEXT: #loc2 = loc({{.*}}:5:13)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.func @f_23(%arg0: ui256 loc({{.*}}:5:13)) -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @f_23(%arg0: ui256 loc({{.*}}:5:13)) -> ui256 attributes {id = 23 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc3)
@@ -90,7 +90,7 @@ contract C {
 // CHECK-NEXT:     %3 = sol.cadd %1, %2 : ui256 loc(#loc3)
 // CHECK-NEXT:     sol.return %3 : ui256 loc(#loc5)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   sol.func @ff_11() -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @ff_11() -> ui256 attributes {id = 11 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_ui8 = sol.constant 1 : ui8 loc(#loc7)
 // CHECK-NEXT:     %0 = sol.cast %c1_ui8 : ui8 to ui256 loc(#loc7)
 // CHECK-NEXT:     %1 = sol.call @f_23(%0) : (ui256) -> ui256 loc(#loc8)
@@ -100,7 +100,7 @@ contract C {
 // CHECK-NEXT:     sol.func @C_51() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc10)
 // CHECK-NEXT:     } loc(#loc10)
-// CHECK-NEXT:     sol.func @f_23(%arg0: ui256 loc({{.*}}:5:13)) -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @f_23(%arg0: ui256 loc({{.*}}:5:13)) -> ui256 attributes {id = 23 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc3)
@@ -109,7 +109,7 @@ contract C {
 // CHECK-NEXT:       %3 = sol.cadd %1, %2 : ui256 loc(#loc3)
 // CHECK-NEXT:       sol.return %3 : ui256 loc(#loc5)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     sol.func @f_50() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 638722032 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @f_50() -> ui256 attributes {id = 50 : i64, orig_fn_type = () -> ui256, selector = 638722032 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %c1_ui8 = sol.constant 1 : ui8 loc(#loc12)
 // CHECK-NEXT:       %0 = sol.cast %c1_ui8 : ui8 to ui256 loc(#loc12)
 // CHECK-NEXT:       %1 = sol.call @f_23(%0) : (ui256) -> ui256 loc(#loc13)

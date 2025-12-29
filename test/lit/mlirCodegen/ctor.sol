@@ -27,7 +27,7 @@ contract C is D {
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Storage>, ui256 loc(#loc2)
 // CHECK-NEXT:       sol.return %1 : ui256 loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:     sol.func @_14(%arg0: ui256 loc({{.*}}:4:14)) attributes {kind = #Constructor, orig_fn_type = (ui256) -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @_14(%arg0: ui256 loc({{.*}}:4:14)) attributes {id = 14 : i64, kind = #Constructor, orig_fn_type = (ui256) -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc4)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc4)
 // CHECK-NEXT:       %1 = sol.addr_of @m_2 : !sol.ptr<ui256, Storage> loc(#loc2)
@@ -64,7 +64,7 @@ contract C is D {
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Storage>, ui256 loc(#loc2)
 // CHECK-NEXT:       sol.return %1 : ui256 loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:     sol.func @_36(%arg0: ui256 loc({{.*}}:8:14), %arg1: ui256 loc({{.*}}:8:22)) attributes {kind = #Constructor, orig_fn_type = (ui256, ui256) -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @_36(%arg0: ui256 loc({{.*}}:8:14), %arg1: ui256 loc({{.*}}:8:22)) attributes {id = 36 : i64, kind = #Constructor, orig_fn_type = (ui256, ui256) -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc4)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc4)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc5)
@@ -84,7 +84,7 @@ contract C is D {
 // CHECK-NEXT:       sol.store %10, %5 : ui256, !sol.ptr<ui256, Storage> loc(#loc10)
 // CHECK-NEXT:       sol.return loc(#loc3)
 // CHECK-NEXT:     } loc(#loc3)
-// CHECK-NEXT:     sol.func @_14(%arg0: ui256 loc({{.*}}:4:14)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @_14(%arg0: ui256 loc({{.*}}:4:14)) attributes {id = 14 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc12)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc12)
 // CHECK-NEXT:       %1 = sol.addr_of @m_2 : !sol.ptr<ui256, Storage> loc(#loc2)
@@ -128,7 +128,7 @@ contract C is D {
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Storage>, ui256 loc(#loc2)
 // CHECK-NEXT:       sol.return %1 : ui256 loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:     sol.func @_57(%arg0: ui256 loc({{.*}}:12:14)) attributes {kind = #Constructor, orig_fn_type = (ui256) -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @_57(%arg0: ui256 loc({{.*}}:12:14)) attributes {id = 57 : i64, kind = #Constructor, orig_fn_type = (ui256) -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc4)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc4)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc5)
@@ -147,7 +147,7 @@ contract C is D {
 // CHECK-NEXT:       sol.store %10, %7 : ui256, !sol.ptr<ui256, Storage> loc(#loc10)
 // CHECK-NEXT:       sol.return loc(#loc3)
 // CHECK-NEXT:     } loc(#loc3)
-// CHECK-NEXT:     sol.func @_36(%arg0: ui256 loc({{.*}}:8:14), %arg1: ui256 loc({{.*}}:8:22)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @_36(%arg0: ui256 loc({{.*}}:8:14), %arg1: ui256 loc({{.*}}:8:22)) attributes {id = 36 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc12)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc12)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc13)
@@ -167,7 +167,7 @@ contract C is D {
 // CHECK-NEXT:       sol.store %10, %5 : ui256, !sol.ptr<ui256, Storage> loc(#loc18)
 // CHECK-NEXT:       sol.return loc(#loc11)
 // CHECK-NEXT:     } loc(#loc11)
-// CHECK-NEXT:     sol.func @_14(%arg0: ui256 loc({{.*}}:4:14)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @_14(%arg0: ui256 loc({{.*}}:4:14)) attributes {id = 14 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc20)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc20)
 // CHECK-NEXT:       %1 = sol.addr_of @m_2 : !sol.ptr<ui256, Storage> loc(#loc2)

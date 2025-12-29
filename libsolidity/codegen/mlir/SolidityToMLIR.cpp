@@ -51,6 +51,7 @@
 #include "mlir/IR/TypeRange.h"
 #include "mlir/IR/Value.h"
 #include "mlir/IR/Verifier.h"
+#include "mlir/Interfaces/CallInterfaces.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Support/LLVM.h"
 #include "range/v3/view/zip.hpp"
@@ -136,7 +137,7 @@ private:
   mlir::Location getLoc(ASTNode const &ast) { return getLoc(ast.location()); }
 
   /// Returns the corresponding mlir type for the solidity type `ty`.
-  mlir::Type getType(Type const *ty);
+  mlir::Type getType(Type const *ty, bool indirectFn = true);
 
   /// Tracks the address of the local variable.
   void trackLocalVarAddr(VariableDeclaration const &decl, mlir::Value addr) {
@@ -202,7 +203,8 @@ private:
 
     // Create the function.
     auto astFnTy = FunctionType(stateVar);
-    auto fnTy = cast<mlir::FunctionType>(getType(&astFnTy));
+    auto fnTy =
+        cast<mlir::FunctionType>(getType(&astFnTy, /*indirectFn=*/false));
     auto fn = b.create<mlir::sol::FuncOp>(
         loc, "get_" + getMangledName(stateVar), fnTy);
     assert(selectorMap.find(&stateVar) != selectorMap.end());
@@ -403,7 +405,7 @@ static mlir::sol::DataLocation getDataLocation(ReferenceType const *ty) {
   }
 }
 
-mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
+mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
   switch (ty->category()) {
   case Type::Category::Bool:
     return b.getIntegerType(/*width=*/1);
@@ -474,7 +476,10 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty) {
     for (Type const *outTy : fnTy->returnParameterTypes())
       outTys.push_back(getType(outTy));
 
-    return b.getFunctionType(inTys, outTys);
+    mlir::FunctionType mlirFnTy = b.getFunctionType(inTys, outTys);
+    if (indirectFn)
+      return mlir::sol::FuncRefType::get(b.getContext(), mlirFnTy);
+    return mlirFnTy;
   }
   case Type::Category::Contract:
     // FIXME: 256 -> 160
@@ -513,6 +518,10 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
                                           contr->fullyQualifiedName());
   }
 
+  if (const auto *fn = dynamic_cast<FunctionDefinition const *>(decl))
+    return b.create<mlir::sol::FuncConstantOp>(getLoc(id), getType(fn->type()),
+                                               getMangledName(*fn));
+
   llvm_unreachable("NYI");
 }
 
@@ -527,14 +536,15 @@ void SolidityToMLIRPass::genZeroedVal(mlir::sol::AllocaOp addr) {
     val = b.create<mlir::sol::ConstantOp>(
         loc, b.getIntegerAttr(intTy, llvm::APInt(intTy.getWidth(), 0)));
 
+  } else if (auto fnRefTy = mlir::dyn_cast<mlir::sol::FuncRefType>(pointeeTy)) {
+    val = b.create<mlir::sol::DefaultFuncConstantOp>(loc);
+
   } else if (auto arrTy = mlir::dyn_cast<mlir::sol::ArrayType>(pointeeTy)) {
     val = b.create<mlir::sol::MallocOp>(loc, arrTy, /*zeroInit=*/true,
                                         /*size=*/mlir::Value{});
-
   } else if (auto structTy = mlir::dyn_cast<mlir::sol::StructType>(pointeeTy)) {
     val = b.create<mlir::sol::MallocOp>(loc, structTy, /*zeroInit=*/true,
                                         /*size=*/mlir::Value{});
-
   } else if (auto stringTy = mlir::dyn_cast<mlir::sol::StringType>(pointeeTy)) {
     // TODO: Do we need to zero-init here?
     val = b.create<mlir::sol::MallocOp>(loc, stringTy, /*zeroInit=*/false,
@@ -718,11 +728,11 @@ mlir::Value SolidityToMLIRPass::genExpr(BinaryOperation const &binOp) {
 
   // Handle logical operators that can short-circuit.
   //
-  // We generate `if` ops for the short-circuiting and an alloca op to track the
-  // final value.
+  // We generate `if` ops for the short-circuiting and an alloca op to track
+  // the final value.
   //
-  // TODO: We won't need the alloca for the short-circuting codegen if the `if`
-  // ops can yield values.
+  // TODO: We won't need the alloca for the short-circuting codegen if the
+  // `if` ops can yield values.
   if (binOp.getOperator() == Token::And) {
     mlir::Type allocTy = mlir::sol::PointerType::get(
         b.getContext(), argTy, mlir::sol::DataLocation::Stack);
@@ -864,6 +874,18 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
   switch (calleeTy->kind()) {
   // Internal call
   case FunctionType::Kind::Internal: {
+    // Lower args.
+    std::vector<mlir::Value> args;
+    for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes())) {
+      args.push_back(genRValExpr(*arg, getType(dstTy)));
+    }
+
+    // Collect return types.
+    std::vector<mlir::Type> resTys;
+    for (Type const *ty : calleeTy->returnParameterTypes()) {
+      resTys.push_back(getType(ty));
+    }
+
     // Get callee.
     FunctionDefinition const *callee = nullptr;
     if (currContract)
@@ -871,7 +893,21 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     else
       callee = dynamic_cast<FunctionDefinition const *>(
           ASTNode::referencedDeclaration(call.expression()));
-    assert(callee && "NYI: Internal function dispatch");
+
+    // Generate the call op.
+    mlir::CallOpInterface callOp;
+    if (!callee)
+      callOp = b.create<mlir::sol::ICallOp>(
+          loc, resTys, genRValExpr(call.expression()), args);
+    else
+      callOp = b.create<mlir::sol::CallOp>(loc, getMangledName(*callee), resTys,
+                                           args);
+    for (mlir::Value val : callOp->getResults())
+      resVals.push_back(val);
+
+    if (!callee)
+      return resVals;
+
     bool calleeInLib = callee->annotation().contract &&
                        callee->annotation().contract->isLibrary();
     bool currContrNotInLib = !currContract || !currContract->isLibrary();
@@ -886,23 +922,6 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       lower(*callee);
     }
 
-    // Lower args.
-    std::vector<mlir::Value> args;
-    for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes())) {
-      args.push_back(genRValExpr(*arg, getType(dstTy)));
-    }
-
-    // Collect return types.
-    std::vector<mlir::Type> resTys;
-    for (Type const *ty : calleeTy->returnParameterTypes()) {
-      resTys.push_back(getType(ty));
-    }
-
-    // Generate the call op.
-    auto callOp =
-        b.create<mlir::sol::CallOp>(loc, getMangledName(*callee), resTys, args);
-    for (mlir::Value val : callOp.getResults())
-      resVals.push_back(val);
     return resVals;
   }
 
@@ -947,7 +966,8 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     }
 
     // Collect the return types.
-    // TODO: The builder should prepend the bool type for the status flag here.
+    // TODO: The builder should prepend the bool type for the status flag
+    // here.
     std::vector<mlir::Type> resTys{b.getI1Type()};
     for (Type const *ty : calleeTy->returnParameterTypes()) {
       resTys.push_back(getType(ty));
@@ -986,7 +1006,9 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
         /*staticCall=*/calleeTy->stateMutability() <= StateMutability::View,
         /*delegateCall=*/calleeTy->kind() == FunctionType::Kind::DelegateCall,
         selector,
-        /*calleeType=*/mlir::cast<mlir::FunctionType>(getType(calleeTy)));
+        /*calleeType=*/
+        mlir::cast<mlir::FunctionType>(getType(calleeTy,
+                                               /*indirectFn=*/false)));
     for (mlir::Value val : llvm::drop_begin(callOp.getResults()))
       resVals.push_back(val);
     return resVals;
@@ -1209,10 +1231,9 @@ void SolidityToMLIRPass::lower(Assignment const &asgnStmt) {
 
 mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
   // TODO: We should do a faster dispatch here. We could:
-  // (a) Get frontend::ASTConstVisitor and ASTNode::accept to be able to return
-  // mlir::Value(s).
-  // (b) Adopt llvm's rtti in the ast so that we can switch over the enum that
-  // discriminates the derived ast's.
+  // (a) Get frontend::ASTConstVisitor and ASTNode::accept to be able to
+  // return mlir::Value(s). (b) Adopt llvm's rtti in the ast so that we can
+  // switch over the enum that discriminates the derived ast's.
 
   // Literal
   if (const auto *lit = dynamic_cast<Literal const *>(&expr))
@@ -1325,7 +1346,7 @@ void SolidityToMLIRPass::lower(
        llvm::zip(varDeclStmt.declarations(), initExprs)) {
     VariableDeclaration const &varDecl = *varDeclPtr;
 
-    mlir::Type varTy = getType(varDecl.type());
+    mlir::Type varTy = getType(varDecl.type(), /*indirectFn=*/true);
     mlir::Type allocTy = mlir::sol::PointerType::get(
         b.getContext(), varTy, mlir::sol::DataLocation::Stack);
 
@@ -1481,8 +1502,8 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
     mlir::Block *blk = &tryOp.getPanicRegion().emplaceBlock();
     b.setInsertionPointToStart(blk);
 
-    // Add block argument for the error code which is expected to be replaced by
-    // the error code from the external call by the sol.try lowering.
+    // Add block argument for the error code which is expected to be replaced
+    // by the error code from the external call by the sol.try lowering.
     assert(panicClause->parameters() &&
            panicClause->parameters()->parameters().size() == 1);
     auto ui256 = b.getIntegerType(256, /*isSigned=*/false);
@@ -1688,6 +1709,9 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   auto op = b.create<mlir::sol::FuncOp>(fnLoc, getMangledName(fn), fnTy,
                                         getStateMutability(fn));
 
+  // Set id.
+  op.setId(fn.id());
+
   if (fn.isPartOfExternalInterface()) {
     assert(selectorMap.find(&fn) != selectorMap.end());
     op.setSelectorAttr(b.getIntegerAttr(
@@ -1722,8 +1746,8 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
     auto modifierCallBlk = b.create<mlir::sol::ModifierCallBlkOp>(loc);
     mlir::OpBuilder::InsertionGuard insertGuard(b);
 
-    // sol.modifier_call_blk's block args should match that of the function. We
-    // don't need to generate stack allocations since the block args are
+    // sol.modifier_call_blk's block args should match that of the function.
+    // We don't need to generate stack allocations since the block args are
     // "forwarded" in the call chain of modifiers and the modified function.
     for (auto &&[inpTy, inpLoc, param] :
          ranges::views::zip(inpTys, inpLocs, fn.parameters()))

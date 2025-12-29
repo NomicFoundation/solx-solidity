@@ -21,7 +21,7 @@ function f(uint i, uint n) {
 // CHECK-NEXT: #loc3 = loc({{.*}}:2:19)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   func.func private @__personality() -> i32 attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
-// CHECK-NEXT:   func.func @f_42(%arg0: i256 loc({{.*}}:2:11), %arg1: i256 loc({{.*}}:2:19)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @f_42(%arg0: i256 loc({{.*}}:2:11), %arg1: i256 loc({{.*}}:2:19)) attributes {id = 42 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256 loc(#loc)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc2)

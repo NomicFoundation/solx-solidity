@@ -22,7 +22,7 @@ function toUint(E x) returns (uint) {
 // CHECK-NEXT: #loc10 = loc({{.*}}:8:18)
 // CHECK-NEXT: #loc14 = loc({{.*}}:12:16)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.func @cmp_26(%arg0: !sol.enum<2> loc({{.*}}:4:13), %arg1: !sol.enum<2> loc({{.*}}:4:18)) -> (i1, i1) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @cmp_26(%arg0: !sol.enum<2> loc({{.*}}:4:13), %arg1: !sol.enum<2> loc({{.*}}:4:18)) -> (i1, i1) attributes {id = 26 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.enum<2>, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.enum<2>, !sol.ptr<!sol.enum<2>, Stack> loc(#loc2)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<!sol.enum<2>, Stack> loc(#loc3)
@@ -35,14 +35,14 @@ function toUint(E x) returns (uint) {
 // CHECK-NEXT:     %7 = sol.cmp lt, %5, %6 : !sol.enum<2> loc(#loc6)
 // CHECK-NEXT:     sol.return %4, %7 : i1, i1 loc(#loc8)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   sol.func @fromUint_39(%arg0: ui256 loc({{.*}}:8:18)) -> !sol.enum<2> attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @fromUint_39(%arg0: ui256 loc({{.*}}:8:18)) -> !sol.enum<2> attributes {id = 39 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc10)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc10)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc11)
 // CHECK-NEXT:     %2 = sol.enum_cast %1 : ui256 to <2> loc(#loc11)
 // CHECK-NEXT:     sol.return %2 : !sol.enum<2> loc(#loc12)
 // CHECK-NEXT:   } loc(#loc9)
-// CHECK-NEXT:   sol.func @toUint_53(%arg0: !sol.enum<2> loc({{.*}}:12:16)) -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @toUint_53(%arg0: !sol.enum<2> loc({{.*}}:12:16)) -> ui256 attributes {id = 53 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.enum<2>, Stack> loc(#loc14)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.enum<2>, !sol.ptr<!sol.enum<2>, Stack> loc(#loc14)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<!sol.enum<2>, Stack>, !sol.enum<2> loc(#loc15)

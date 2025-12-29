@@ -251,27 +251,27 @@ function unary(int a) {
 // CHECK-NEXT: #loc446 = loc({{.*}}:209:31)
 // CHECK-NEXT: #loc453 = loc({{.*}}:215:15)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.func @f_ui_6(%arg0: ui256 loc({{.*}}:2:14)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @f_ui_6(%arg0: ui256 loc({{.*}}:2:14)) attributes {id = 6 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.return loc(#loc1)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   sol.func @f_si_12(%arg0: si256 loc({{.*}}:3:14)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @f_si_12(%arg0: si256 loc({{.*}}:3:14)) attributes {id = 12 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<si256, Stack> loc(#loc4)
 // CHECK-NEXT:     sol.store %arg0, %0 : si256, !sol.ptr<si256, Stack> loc(#loc4)
 // CHECK-NEXT:     sol.return loc(#loc3)
 // CHECK-NEXT:   } loc(#loc3)
-// CHECK-NEXT:   sol.func @f_ui8_18(%arg0: ui8 loc({{.*}}:4:15)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @f_ui8_18(%arg0: ui8 loc({{.*}}:4:15)) attributes {id = 18 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui8, Stack> loc(#loc6)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui8, !sol.ptr<ui8, Stack> loc(#loc6)
 // CHECK-NEXT:     sol.return loc(#loc5)
 // CHECK-NEXT:   } loc(#loc5)
-// CHECK-NEXT:   sol.func @f_si8_24(%arg0: si8 loc({{.*}}:5:15)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @f_si8_24(%arg0: si8 loc({{.*}}:5:15)) attributes {id = 24 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<si8, Stack> loc(#loc8)
 // CHECK-NEXT:     sol.store %arg0, %0 : si8, !sol.ptr<si8, Stack> loc(#loc8)
 // CHECK-NEXT:     sol.return loc(#loc7)
 // CHECK-NEXT:   } loc(#loc7)
-// CHECK-NEXT:   sol.func @unchk_ui_139(%arg0: ui256 loc({{.*}}:7:18), %arg1: ui256 loc({{.*}}:7:26)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @unchk_ui_139(%arg0: ui256 loc({{.*}}:7:18), %arg1: ui256 loc({{.*}}:7:26)) attributes {id = 139 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc10)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc10)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc11)
@@ -362,7 +362,7 @@ function unary(int a) {
 // CHECK-NEXT:     sol.call @f_ui_6(%64) : (ui256) -> () loc(#loc64)
 // CHECK-NEXT:     sol.return loc(#loc9)
 // CHECK-NEXT:   } loc(#loc9)
-// CHECK-NEXT:   sol.func @unchk_si_250(%arg0: si256 loc({{.*}}:34:18), %arg1: si256 loc({{.*}}:34:25), %arg2: ui256 loc({{.*}}:34:32)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @unchk_si_250(%arg0: si256 loc({{.*}}:34:18), %arg1: si256 loc({{.*}}:34:25), %arg2: ui256 loc({{.*}}:34:32)) attributes {id = 250 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<si256, Stack> loc(#loc66)
 // CHECK-NEXT:     sol.store %arg0, %0 : si256, !sol.ptr<si256, Stack> loc(#loc66)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<si256, Stack> loc(#loc67)
@@ -455,7 +455,7 @@ function unary(int a) {
 // CHECK-NEXT:     sol.call @f_si_12(%66) : (si256) -> () loc(#loc118)
 // CHECK-NEXT:     sol.return loc(#loc65)
 // CHECK-NEXT:   } loc(#loc65)
-// CHECK-NEXT:   sol.func @unchk_ui8_365(%arg0: ui8 loc({{.*}}:60:19), %arg1: ui8 loc({{.*}}:60:28)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @unchk_ui8_365(%arg0: ui8 loc({{.*}}:60:19), %arg1: ui8 loc({{.*}}:60:28)) attributes {id = 365 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui8, Stack> loc(#loc120)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui8, !sol.ptr<ui8, Stack> loc(#loc120)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<ui8, Stack> loc(#loc121)
@@ -546,7 +546,7 @@ function unary(int a) {
 // CHECK-NEXT:     sol.call @f_ui8_18(%64) : (ui8) -> () loc(#loc174)
 // CHECK-NEXT:     sol.return loc(#loc119)
 // CHECK-NEXT:   } loc(#loc119)
-// CHECK-NEXT:   sol.func @unchk_si8_476(%arg0: si8 loc({{.*}}:87:19), %arg1: si8 loc({{.*}}:87:27), %arg2: ui8 loc({{.*}}:87:35)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @unchk_si8_476(%arg0: si8 loc({{.*}}:87:19), %arg1: si8 loc({{.*}}:87:27), %arg2: ui8 loc({{.*}}:87:35)) attributes {id = 476 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<si8, Stack> loc(#loc176)
 // CHECK-NEXT:     sol.store %arg0, %0 : si8, !sol.ptr<si8, Stack> loc(#loc176)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<si8, Stack> loc(#loc177)
@@ -639,7 +639,7 @@ function unary(int a) {
 // CHECK-NEXT:     sol.call @f_si8_24(%66) : (si8) -> () loc(#loc228)
 // CHECK-NEXT:     sol.return loc(#loc175)
 // CHECK-NEXT:   } loc(#loc175)
-// CHECK-NEXT:   sol.func @chk_ui_584(%arg0: ui256 loc({{.*}}:113:16), %arg1: ui256 loc({{.*}}:113:24)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @chk_ui_584(%arg0: ui256 loc({{.*}}:113:16), %arg1: ui256 loc({{.*}}:113:24)) attributes {id = 584 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc230)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc230)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc231)
@@ -726,7 +726,7 @@ function unary(int a) {
 // CHECK-NEXT:     sol.call @f_ui_6(%61) : (ui256) -> () loc(#loc281)
 // CHECK-NEXT:     sol.return loc(#loc229)
 // CHECK-NEXT:   } loc(#loc229)
-// CHECK-NEXT:   sol.func @chk_si_694(%arg0: si256 loc({{.*}}:137:16), %arg1: si256 loc({{.*}}:137:23), %arg2: ui256 loc({{.*}}:137:30)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @chk_si_694(%arg0: si256 loc({{.*}}:137:16), %arg1: si256 loc({{.*}}:137:23), %arg2: ui256 loc({{.*}}:137:30)) attributes {id = 694 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<si256, Stack> loc(#loc283)
 // CHECK-NEXT:     sol.store %arg0, %0 : si256, !sol.ptr<si256, Stack> loc(#loc283)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<si256, Stack> loc(#loc284)
@@ -819,7 +819,7 @@ function unary(int a) {
 // CHECK-NEXT:     sol.call @f_si_12(%66) : (si256) -> () loc(#loc335)
 // CHECK-NEXT:     sol.return loc(#loc282)
 // CHECK-NEXT:   } loc(#loc282)
-// CHECK-NEXT:   sol.func @chk_ui8_802(%arg0: ui8 loc({{.*}}:161:17), %arg1: ui8 loc({{.*}}:161:26)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @chk_ui8_802(%arg0: ui8 loc({{.*}}:161:17), %arg1: ui8 loc({{.*}}:161:26)) attributes {id = 802 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui8, Stack> loc(#loc337)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui8, !sol.ptr<ui8, Stack> loc(#loc337)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<ui8, Stack> loc(#loc338)
@@ -906,7 +906,7 @@ function unary(int a) {
 // CHECK-NEXT:     sol.call @f_ui8_18(%61) : (ui8) -> () loc(#loc388)
 // CHECK-NEXT:     sol.return loc(#loc336)
 // CHECK-NEXT:   } loc(#loc336)
-// CHECK-NEXT:   sol.func @chk_si8_912(%arg0: si8 loc({{.*}}:185:17), %arg1: si8 loc({{.*}}:185:25), %arg2: ui8 loc({{.*}}:185:33)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @chk_si8_912(%arg0: si8 loc({{.*}}:185:17), %arg1: si8 loc({{.*}}:185:25), %arg2: ui8 loc({{.*}}:185:33)) attributes {id = 912 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<si8, Stack> loc(#loc390)
 // CHECK-NEXT:     sol.store %arg0, %0 : si8, !sol.ptr<si8, Stack> loc(#loc390)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<si8, Stack> loc(#loc391)
@@ -999,7 +999,7 @@ function unary(int a) {
 // CHECK-NEXT:     sol.call @f_si8_24(%66) : (si8) -> () loc(#loc442)
 // CHECK-NEXT:     sol.return loc(#loc389)
 // CHECK-NEXT:   } loc(#loc389)
-// CHECK-NEXT:   sol.func @tuple_932(%arg0: ui256 loc({{.*}}:209:15), %arg1: ui256 loc({{.*}}:209:23), %arg2: ui256 loc({{.*}}:209:31)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @tuple_932(%arg0: ui256 loc({{.*}}:209:15), %arg1: ui256 loc({{.*}}:209:23), %arg2: ui256 loc({{.*}}:209:31)) attributes {id = 932 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc444)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc444)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc445)
@@ -1014,7 +1014,7 @@ function unary(int a) {
 // CHECK-NEXT:     sol.call @f_ui_6(%7) : (ui256) -> () loc(#loc451)
 // CHECK-NEXT:     sol.return loc(#loc443)
 // CHECK-NEXT:   } loc(#loc443)
-// CHECK-NEXT:   sol.func @unary_963(%arg0: si256 loc({{.*}}:215:15)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @unary_963(%arg0: si256 loc({{.*}}:215:15)) attributes {id = 963 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<si256, Stack> loc(#loc453)
 // CHECK-NEXT:     sol.store %arg0, %0 : si256, !sol.ptr<si256, Stack> loc(#loc453)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<si256, Stack>, si256 loc(#loc453)

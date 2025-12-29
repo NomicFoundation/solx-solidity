@@ -8,7 +8,7 @@ function ret_42() returns (uint256) {
 // CHECK: #NonPayable = #sol<StateMutability NonPayable>
 // CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.func @ret_42_8() -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @ret_42_8() -> ui256 attributes {id = 8 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c42_ui8 = sol.constant 42 : ui8 loc(#loc2)
 // CHECK-NEXT:     %0 = sol.cast %c42_ui8 : ui8 to ui256 loc(#loc2)
 // CHECK-NEXT:     sol.return %0 : ui256 loc(#loc3)

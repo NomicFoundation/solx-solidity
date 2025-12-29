@@ -16,7 +16,7 @@ contract C {
 // CHECK-NEXT:   sol.contract @C_29 {
 // CHECK-NEXT:     sol.immutable @i_2 : ui256 loc(#loc2)
 // CHECK-NEXT:     sol.immutable @j_4 : ui256 loc(#loc3)
-// CHECK-NEXT:     sol.func @_16() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @_16() attributes {id = 16 : i64, kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.addr_of @i_2 : !sol.ptr<ui256, Immutable> loc(#loc2)
 // CHECK-NEXT:       %c1_ui8 = sol.constant 1 : ui8 loc(#loc5)
 // CHECK-NEXT:       %1 = sol.cast %c1_ui8 : ui8 to ui256 loc(#loc5)
@@ -27,7 +27,7 @@ contract C {
 // CHECK-NEXT:       sol.store %3, %2 : ui256, !sol.ptr<ui256, Immutable> loc(#loc8)
 // CHECK-NEXT:       sol.return loc(#loc4)
 // CHECK-NEXT:     } loc(#loc4)
-// CHECK-NEXT:     sol.func @f_28() -> (ui256, ui256) attributes {orig_fn_type = () -> (ui256, ui256), selector = 638722032 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @f_28() -> (ui256, ui256) attributes {id = 28 : i64, orig_fn_type = () -> (ui256, ui256), selector = 638722032 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.load_immutable @i_2 : ui256 loc(#loc2)
 // CHECK-NEXT:       %1 = sol.load_immutable @j_4 : ui256 loc(#loc3)
 // CHECK-NEXT:       sol.return %0, %1 : ui256, ui256 loc(#loc10)

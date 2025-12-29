@@ -32,6 +32,8 @@ def Yul_UpdFreePtrOp : Yul_Op<"upd_free_ptr"> {
   let assemblyFormat = "$size attr-dict";
 }
 
+// FIXME: Wrap the entry code to an entry function so that we can add the
+// SingleBlock trait.
 def Yul_ObjectOp : Yul_Op<"object", [Symbol, SymbolTable, NoTerminator,
                                      IsolatedFromAbove]> {
   let summary = "Represents an `object` in yul";

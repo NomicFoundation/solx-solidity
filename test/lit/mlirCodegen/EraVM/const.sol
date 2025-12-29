@@ -8,11 +8,11 @@ function ui256() returns (uint256) { return 578960446186580977117854925043439539
 // CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   func.func private @__personality() -> i32 attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
-// CHECK-NEXT:   func.func @ui8_8() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @ui8_8() -> i256 attributes {id = 8 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c42_i256 = arith.constant 42 : i256 loc(#loc2)
 // CHECK-NEXT:     return %c42_i256 : i256 loc(#loc3)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   func.func @ui256_16() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @ui256_16() -> i256 attributes {id = 16 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c-57896044618658097711785492504343953926634992332820282019728792003956564819968_i256 = arith.constant -57896044618658097711785492504343953926634992332820282019728792003956564819968 : i256 loc(#loc5)
 // CHECK-NEXT:     return %c-57896044618658097711785492504343953926634992332820282019728792003956564819968_i256 : i256 loc(#loc6)
 // CHECK-NEXT:   } loc(#loc4)

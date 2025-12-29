@@ -299,6 +299,8 @@ public:
                   std::optional<mlir::Location> locArg = std::nullopt);
 
   /// Generates the panic code.
+  void genPanic(solidity::util::PanicCode code,
+                std::optional<mlir::Location> locArg = std::nullopt);
   void genPanic(solidity::util::PanicCode code, mlir::Value cond,
                 std::optional<mlir::Location> locArg = std::nullopt);
 

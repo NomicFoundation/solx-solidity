@@ -7,12 +7,12 @@ function ui256() returns (uint256) { return 578960446186580977117854925043439539
 // CHECK: #NonPayable = #sol<StateMutability NonPayable>
 // CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.func @ui8_8() -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @ui8_8() -> ui256 attributes {id = 8 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c42_ui8 = sol.constant 42 : ui8 loc(#loc2)
 // CHECK-NEXT:     %0 = sol.cast %c42_ui8 : ui8 to ui256 loc(#loc2)
 // CHECK-NEXT:     sol.return %0 : ui256 loc(#loc3)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   sol.func @ui256_16() -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @ui256_16() -> ui256 attributes {id = 16 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c-57896044618658097711785492504343953926634992332820282019728792003956564819968_ui256 = sol.constant 57896044618658097711785492504343953926634992332820282019728792003956564819968 : ui256 loc(#loc5)
 // CHECK-NEXT:     sol.return %c-57896044618658097711785492504343953926634992332820282019728792003956564819968_ui256 : ui256 loc(#loc6)
 // CHECK-NEXT:   } loc(#loc4)

@@ -29,12 +29,12 @@ function si(int256 a, int256 b) {
 // CHECK-NEXT: #loc25 = loc({{.*}}:13:12)
 // CHECK-NEXT: #loc26 = loc({{.*}}:13:22)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.func @f_6(%arg0: i1 loc({{.*}}:2:11)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @f_6(%arg0: i1 loc({{.*}}:2:11)) attributes {id = 6 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : i1, !sol.ptr<i1, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.return loc(#loc1)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   sol.func @ui_50(%arg0: ui256 loc({{.*}}:4:12), %arg1: ui256 loc({{.*}}:4:23)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @ui_50(%arg0: ui256 loc({{.*}}:4:12), %arg1: ui256 loc({{.*}}:4:23)) attributes {id = 50 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc4)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc4)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc5)
@@ -65,7 +65,7 @@ function si(int256 a, int256 b) {
 // CHECK-NEXT:     sol.call @f_6(%19) : (i1) -> () loc(#loc23)
 // CHECK-NEXT:     sol.return loc(#loc3)
 // CHECK-NEXT:   } loc(#loc3)
-// CHECK-NEXT:   sol.func @si_94(%arg0: si256 loc({{.*}}:13:12), %arg1: si256 loc({{.*}}:13:22)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @si_94(%arg0: si256 loc({{.*}}:13:12), %arg1: si256 loc({{.*}}:13:22)) attributes {id = 94 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<si256, Stack> loc(#loc25)
 // CHECK-NEXT:     sol.store %arg0, %0 : si256, !sol.ptr<si256, Stack> loc(#loc25)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<si256, Stack> loc(#loc26)

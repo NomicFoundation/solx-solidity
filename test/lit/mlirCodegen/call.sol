@@ -12,17 +12,17 @@ function main() returns (uint) {
 // CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
 // CHECK-NEXT: #loc5 = loc({{.*}}:3:16)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.func @ret_8() -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @ret_8() -> ui256 attributes {id = 8 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c42_ui8 = sol.constant 42 : ui8 loc(#loc2)
 // CHECK-NEXT:     %0 = sol.cast %c42_ui8 : ui8 to ui256 loc(#loc2)
 // CHECK-NEXT:     sol.return %0 : ui256 loc(#loc3)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   sol.func @no_ret_14(%arg0: ui256 loc({{.*}}:3:16)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @no_ret_14(%arg0: ui256 loc({{.*}}:3:16)) attributes {id = 14 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc5)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc5)
 // CHECK-NEXT:     sol.return loc(#loc4)
 // CHECK-NEXT:   } loc(#loc4)
-// CHECK-NEXT:   sol.func @main_27() -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @main_27() -> ui256 attributes {id = 27 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c42_ui8 = sol.constant 42 : ui8 loc(#loc7)
 // CHECK-NEXT:     %0 = sol.cast %c42_ui8 : ui8 to ui256 loc(#loc7)
 // CHECK-NEXT:     sol.call @no_ret_14(%0) : (ui256) -> () loc(#loc8)

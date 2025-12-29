@@ -25,7 +25,7 @@ contract C {
 // CHECK-NEXT:     sol.func @C_23() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     sol.func @f_22() attributes {orig_fn_type = () -> (), selector = 638722032 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @f_22() attributes {id = 22 : i64, orig_fn_type = () -> (), selector = 638722032 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.addr_of @ui_2 : !sol.ptr<ui256, Storage> loc(#loc2)
 // CHECK-NEXT:       %1 = sol.addr_of @ui_2 : !sol.ptr<ui256, Storage> loc(#loc2)
 // CHECK-NEXT:       %2 = sol.load %1 : !sol.ptr<ui256, Storage>, ui256 loc(#loc6)

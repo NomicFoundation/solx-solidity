@@ -10,7 +10,7 @@ function f(uint256 a) {
 // CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
 // CHECK-NEXT: #loc2 = loc({{.*}}:2:11)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.func @f_19(%arg0: ui256 loc({{.*}}:2:11)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @f_19(%arg0: ui256 loc({{.*}}:2:11)) attributes {id = 19 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc3)

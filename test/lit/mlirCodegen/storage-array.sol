@@ -23,7 +23,7 @@ function m(uint[] storage a) returns (uint[] memory) {
 // CHECK-NEXT: #loc12 = loc({{.*}}:8:12)
 // CHECK-NEXT: #loc22 = loc({{.*}}:14:11)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.func @d1_30(%arg0: !sol.array<? x ui256, Storage> loc({{.*}}:2:12)) -> (ui256, ui256) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @d1_30(%arg0: !sol.array<? x ui256, Storage> loc({{.*}}:2:12)) -> (ui256, ui256) attributes {id = 30 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.array<? x ui256, Storage>, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.array<? x ui256, Storage>, !sol.ptr<!sol.array<? x ui256, Storage>, Stack> loc(#loc2)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<!sol.array<? x ui256, Storage>, Stack>, !sol.array<? x ui256, Storage> loc(#loc3)
@@ -41,7 +41,7 @@ function m(uint[] storage a) returns (uint[] memory) {
 // CHECK-NEXT:     %9 = sol.load %8 : !sol.ptr<ui256, Storage>, ui256 loc(#loc9)
 // CHECK-NEXT:     sol.return %6, %9 : ui256, ui256 loc(#loc10)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   sol.func @d2_60(%arg0: !sol.array<? x !sol.array<? x ui256, Storage>, Storage> loc({{.*}}:8:12)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @d2_60(%arg0: !sol.array<? x !sol.array<? x ui256, Storage>, Storage> loc({{.*}}:8:12)) attributes {id = 60 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.array<? x !sol.array<? x ui256, Storage>, Storage>, Stack> loc(#loc12)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.array<? x !sol.array<? x ui256, Storage>, Storage>, !sol.ptr<!sol.array<? x !sol.array<? x ui256, Storage>, Storage>, Stack> loc(#loc12)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<!sol.array<? x !sol.array<? x ui256, Storage>, Storage>, Stack>, !sol.array<? x !sol.array<? x ui256, Storage>, Storage> loc(#loc13)
@@ -63,7 +63,7 @@ function m(uint[] storage a) returns (uint[] memory) {
 // CHECK-NEXT:     sol.pop %9 : !sol.array<? x !sol.array<? x ui256, Storage>, Storage> loc(#loc20)
 // CHECK-NEXT:     sol.return loc(#loc11)
 // CHECK-NEXT:   } loc(#loc11)
-// CHECK-NEXT:   sol.func @m_72(%arg0: !sol.array<? x ui256, Storage> loc({{.*}}:14:11)) -> !sol.array<? x ui256, Memory> attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @m_72(%arg0: !sol.array<? x ui256, Storage> loc({{.*}}:14:11)) -> !sol.array<? x ui256, Memory> attributes {id = 72 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.array<? x ui256, Storage>, Stack> loc(#loc22)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.array<? x ui256, Storage>, !sol.ptr<!sol.array<? x ui256, Storage>, Stack> loc(#loc22)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<!sol.array<? x ui256, Storage>, Stack>, !sol.array<? x ui256, Storage> loc(#loc23)

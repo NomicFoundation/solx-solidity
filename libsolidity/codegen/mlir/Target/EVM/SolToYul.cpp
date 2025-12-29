@@ -40,16 +40,43 @@ using namespace mlir;
 
 namespace {
 
-struct ConstantOpLowering : public OpConversionPattern<sol::ConstantOp> {
-  using OpConversionPattern<sol::ConstantOp>::OpConversionPattern;
+struct ConstantOpLowering : public OpRewritePattern<sol::ConstantOp> {
+  using OpRewritePattern<sol::ConstantOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(sol::ConstantOp op, OpAdaptor adaptor,
-                                ConversionPatternRewriter &r) const override {
+  LogicalResult matchAndRewrite(sol::ConstantOp op,
+                                PatternRewriter &r) const override {
     auto signlessTy =
         r.getIntegerType(cast<IntegerType>(op.getType()).getWidth());
     auto attr = cast<IntegerAttr>(op.getValue());
     r.replaceOpWithNewOp<arith::ConstantOp>(
         op, signlessTy, r.getIntegerAttr(signlessTy, attr.getValue()));
+    return success();
+  }
+};
+
+struct FuncConstantOpLowering : public OpRewritePattern<sol::FuncConstantOp> {
+  using OpRewritePattern<sol::FuncConstantOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::FuncConstantOp op,
+                                PatternRewriter &r) const override {
+    solidity::mlirgen::BuilderExt bExt(r, op.getLoc());
+    auto fn =
+        SymbolTable::lookupNearestSymbolFrom<sol::FuncOp>(op, op.getSymAttr());
+    std::optional<uint64_t> id = fn.getId();
+    assert(id);
+    r.replaceOp(op, bExt.genI256Const(*id));
+    return success();
+  }
+};
+
+struct DefaultFuncConstantOpLowering
+    : public OpRewritePattern<sol::DefaultFuncConstantOp> {
+  using OpRewritePattern<sol::DefaultFuncConstantOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(sol::DefaultFuncConstantOp op,
+                                PatternRewriter &r) const override {
+    solidity::mlirgen::BuilderExt bExt(r, op.getLoc());
+    r.replaceOp(op, bExt.genI256Const(0));
     return success();
   }
 };
@@ -2110,11 +2137,17 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
   void getReachableFuncs(sol::FuncOp fn,
                          llvm::SetVector<sol::FuncOp> &reachableFns) const {
     reachableFns.insert(fn);
-    // FIXME! Handle indirect function references once we support it.
-    fn.walk([&](CallOpInterface callOp) {
-      auto calleeSym = cast<SymbolRefAttr>(callOp.getCallableForCallee());
-      auto callee = cast<sol::FuncOp>(
-          SymbolTable::lookupNearestSymbolFrom(fn, calleeSym));
+    fn.walk([&](Operation *op) {
+      FlatSymbolRefAttr calleeSym;
+      if (auto callOp = dyn_cast<sol::CallOp>(op))
+        calleeSym = callOp.getCalleeAttr();
+      else if (auto fnRef = dyn_cast<sol::FuncConstantOp>(op))
+        calleeSym = fnRef.getSymAttr();
+      else
+        return;
+
+      auto callee =
+          SymbolTable::lookupNearestSymbolFrom<sol::FuncOp>(fn, calleeSym);
       if (reachableFns.contains(callee))
         return;
       getReachableFuncs(callee, reachableFns);
@@ -2330,8 +2363,10 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 // debug builds?)
 
 void evm::populateArithPats(RewritePatternSet &pats, TypeConverter &tyConv) {
-  pats.add<ConstantOpLowering, CastOpLowering, EnumCastOpLowering,
-           BytesCastOpLowering, ArithBinOpLowering<sol::AddOp, arith::AddIOp>,
+  pats.add<ConstantOpLowering, FuncConstantOpLowering,
+           DefaultFuncConstantOpLowering>(pats.getContext());
+  pats.add<CastOpLowering, EnumCastOpLowering, BytesCastOpLowering,
+           ArithBinOpLowering<sol::AddOp, arith::AddIOp>,
            ArithBinOpLowering<sol::SubOp, arith::SubIOp>,
            ArithBinOpLowering<sol::MulOp, arith::MulIOp>,
            ArithBinOpLowering<sol::AndOp, arith::AndIOp>,

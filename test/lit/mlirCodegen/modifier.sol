@@ -19,7 +19,7 @@ contract C {
 // CHECK-NEXT:     sol.func @C_31() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     sol.func @f_30(%arg0: ui256 loc({{.*}}:5:13)) attributes {orig_fn_type = (ui256) -> (), selector = -1277270901 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @f_30(%arg0: ui256 loc({{.*}}:5:13)) attributes {id = 30 : i64, orig_fn_type = (ui256) -> (), selector = -1277270901 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.modifier_call_blk {
 // CHECK-NEXT:       ^bb0(%arg1: ui256 loc({{.*}}:5:13)):
 // CHECK-NEXT:         sol.call @m_6(%arg1) : (ui256) -> () loc(#loc4)

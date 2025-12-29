@@ -181,13 +181,13 @@ contract C {
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)
-// CHECK-NEXT:   func.func @get_ui_22() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @get_ui_22() -> i256 attributes {id = 22 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc3)
 // CHECK-NEXT:     %0 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<5> loc(#loc4)
 // CHECK-NEXT:     %1 = llvm.load %0 {alignment = 1 : i64} : !llvm.ptr<5> -> i256 loc(#loc4)
 // CHECK-NEXT:     return %1 : i256 loc(#loc5)
 // CHECK-NEXT:   } loc(#loc2)
-// CHECK-NEXT:   func.func @get_m0_34(%arg0: i256 loc({{.*}}:9:18)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @get_m0_34(%arg0: i256 loc({{.*}}:9:18)) -> i256 attributes {id = 34 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %false = arith.constant false loc(#loc)
 // CHECK-NEXT:     %c64_i256 = arith.constant 64 : i256 loc(#loc)
 // CHECK-NEXT:     %c32_i256 = arith.constant 32 : i256 loc(#loc)
@@ -206,7 +206,7 @@ contract C {
 // CHECK-NEXT:     %7 = llvm.load %6 {alignment = 1 : i64} : !llvm.ptr<5> -> i256 loc(#loc9)
 // CHECK-NEXT:     return %7 : i256 loc(#loc10)
 // CHECK-NEXT:   } loc(#loc6)
-// CHECK-NEXT:   func.func @get_m1_50(%arg0: i256 loc({{.*}}:10:18), %arg1: i256 loc({{.*}}:10:29)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @get_m1_50(%arg0: i256 loc({{.*}}:10:18), %arg1: i256 loc({{.*}}:10:29)) -> i256 attributes {id = 50 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %false = arith.constant false loc(#loc)
 // CHECK-NEXT:     %c64_i256 = arith.constant 64 : i256 loc(#loc)
 // CHECK-NEXT:     %c32_i256 = arith.constant 32 : i256 loc(#loc)
@@ -235,7 +235,7 @@ contract C {
 // CHECK-NEXT:     %13 = llvm.load %12 {alignment = 1 : i64} : !llvm.ptr<5> -> i256 loc(#loc15)
 // CHECK-NEXT:     return %13 : i256 loc(#loc17)
 // CHECK-NEXT:   } loc(#loc11)
-// CHECK-NEXT:   func.func @get_s_58() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @get_s_58() -> i256 attributes {id = 58 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1 = arith.constant 1 : index loc(#loc)
 // CHECK-NEXT:     %c0 = arith.constant 0 : index loc(#loc)
 // CHECK-NEXT:     %c64_i256 = arith.constant 64 : i256 loc(#loc)
@@ -277,7 +277,7 @@ contract C {
 // CHECK-NEXT:     } loc(#loc19)
 // CHECK-NEXT:     return %9 : i256 loc(#loc20)
 // CHECK-NEXT:   } loc(#loc18)
-// CHECK-NEXT:   func.func @set_s_68(%arg0: i256 loc({{.*}}:13:17)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @set_s_68(%arg0: i256 loc({{.*}}:13:17)) attributes {id = 68 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1 = arith.constant 1 : index loc(#loc)
 // CHECK-NEXT:     %c0 = arith.constant 0 : index loc(#loc)
 // CHECK-NEXT:     %c-32_i256 = arith.constant -32 : i256 loc(#loc)

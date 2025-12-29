@@ -24,17 +24,17 @@ function decode(bytes memory a) returns (uint, uint8, int32) {
 // CHECK-NEXT: #loc10 = loc({{.*}}:10:36)
 // CHECK-NEXT: #loc17 = loc({{.*}}:14:16)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.func @msgSender_9() -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @msgSender_9() -> ui256 attributes {id = 9 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = yul.caller loc(#loc2)
 // CHECK-NEXT:     %1 = sol.conv_cast %0 : i256 -> ui256 loc(#loc2)
 // CHECK-NEXT:     sol.return %1 : ui256 loc(#loc3)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   sol.func @addr_20() -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @addr_20() -> ui256 attributes {id = 20 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c0_ui8 = sol.constant 0 : ui8 loc(#loc5)
 // CHECK-NEXT:     %0 = sol.cast %c0_ui8 : ui8 to ui256 loc(#loc5)
 // CHECK-NEXT:     sol.return %0 : ui256 loc(#loc6)
 // CHECK-NEXT:   } loc(#loc4)
-// CHECK-NEXT:   sol.func @encode_39(%arg0: ui256 loc({{.*}}:10:16), %arg1: ui8 loc({{.*}}:10:25), %arg2: si32 loc({{.*}}:10:36)) -> !sol.string<Memory> attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @encode_39(%arg0: ui256 loc({{.*}}:10:16), %arg1: ui8 loc({{.*}}:10:25), %arg2: si32 loc({{.*}}:10:36)) -> !sol.string<Memory> attributes {id = 39 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc8)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc8)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<ui8, Stack> loc(#loc9)
@@ -47,7 +47,7 @@ function decode(bytes memory a) returns (uint, uint8, int32) {
 // CHECK-NEXT:     %6 = sol.encode %3, %4, %5 : ui256, ui8, si32 : !sol.string<Memory> loc(#loc14)
 // CHECK-NEXT:     sol.return %6 : !sol.string<Memory> loc(#loc15)
 // CHECK-NEXT:   } loc(#loc7)
-// CHECK-NEXT:   sol.func @decode_63(%arg0: !sol.string<Memory> loc({{.*}}:14:16)) -> (ui256, ui8, si32) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @decode_63(%arg0: !sol.string<Memory> loc({{.*}}:14:16)) -> (ui256, ui8, si32) attributes {id = 63 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc17)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc17)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc18)

@@ -52,6 +52,13 @@ evm::SolTypeConverter::SolTypeConverter() {
     return IntegerType::get(ty.getContext(), 256, IntegerType::Signless);
   });
 
+  // Function ref type
+  addConversion([&](sol::FuncRefType ty) -> Type {
+    // Maps to the sol.func id used in the dispatch table generated during the
+    // indirect call lowering.
+    return IntegerType::get(ty.getContext(), 256, IntegerType::Signless);
+  });
+
   // Function type
   addConversion([&](FunctionType ty) -> Type {
     SmallVector<Type> convertedInpTys, convertedResTys;

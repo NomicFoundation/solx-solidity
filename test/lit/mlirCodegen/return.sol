@@ -24,7 +24,7 @@ function h(bool a) {
 // CHECK-NEXT: #loc10 = loc({{.*}}:8:11)
 // CHECK-NEXT: #loc16 = loc({{.*}}:14:11)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.func @f_14(%arg0: i1 loc({{.*}}:2:11)) -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @f_14(%arg0: i1 loc({{.*}}:2:11)) -> ui256 attributes {id = 14 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : i1, !sol.ptr<i1, Stack> loc(#loc2)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<i1, Stack>, i1 loc(#loc3)
@@ -40,7 +40,7 @@ function h(bool a) {
 // CHECK-NEXT:     %2 = sol.cast %c0_ui8 : ui8 to ui256 loc(#loc7)
 // CHECK-NEXT:     sol.return %2 : ui256 loc(#loc8)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   sol.func @g_24(%arg0: i1 loc({{.*}}:8:11)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @g_24(%arg0: i1 loc({{.*}}:8:11)) attributes {id = 24 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc10)
 // CHECK-NEXT:     sol.store %arg0, %0 : i1, !sol.ptr<i1, Stack> loc(#loc10)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<i1, Stack>, i1 loc(#loc11)
@@ -54,7 +54,7 @@ function h(bool a) {
 // CHECK-NEXT:   ^bb1:  // no predecessors
 // CHECK-NEXT:     sol.return loc(#loc9)
 // CHECK-NEXT:   } loc(#loc9)
-// CHECK-NEXT:   sol.func @h_33(%arg0: i1 loc({{.*}}:14:11)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @h_33(%arg0: i1 loc({{.*}}:14:11)) attributes {id = 33 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc16)
 // CHECK-NEXT:     sol.store %arg0, %0 : i1, !sol.ptr<i1, Stack> loc(#loc16)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<i1, Stack>, i1 loc(#loc17)

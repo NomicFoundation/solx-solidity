@@ -15,7 +15,7 @@ function f(uint256 a) {
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT:   func.func private @__revert(i256, i256, i256) attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
 // CHECK-NEXT:   func.func private @__personality() -> i32 attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
-// CHECK-NEXT:   func.func @f_19(%arg0: i256 loc({{.*}}:2:11)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @f_19(%arg0: i256 loc({{.*}}:2:11)) attributes {id = 19 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c100_i256 = arith.constant 100 : i256 loc(#loc)
 // CHECK-NEXT:     %c68_i256 = arith.constant 68 : i256 loc(#loc)
 // CHECK-NEXT:     %c36_i256 = arith.constant 36 : i256 loc(#loc)

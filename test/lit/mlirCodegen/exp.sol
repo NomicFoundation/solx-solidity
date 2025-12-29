@@ -11,7 +11,7 @@ function power(uint256 base, uint256 exponent) pure returns (uint256) {
 // CHECK-NEXT: #loc2 = loc({{.*}}:2:15)
 // CHECK-NEXT: #loc3 = loc({{.*}}:2:29)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.func @power_15(%arg0: ui256 loc({{.*}}:2:15), %arg1: ui256 loc({{.*}}:2:29)) -> ui256 attributes {state_mutability = #Pure} {
+// CHECK-NEXT:   sol.func @power_15(%arg0: ui256 loc({{.*}}:2:15), %arg1: ui256 loc({{.*}}:2:29)) -> ui256 attributes {id = 15 : i64, state_mutability = #Pure} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc3)

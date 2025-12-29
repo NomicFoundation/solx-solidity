@@ -219,7 +219,7 @@ contract C {
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)
-// CHECK-NEXT:   func.func @f_24(%arg0: i256 loc({{.*}}:4:13), %arg1: i256 loc({{.*}}:4:24), %arg2: i256 loc({{.*}}:4:35)) attributes {llvm.linkage = #llvm.linkage<private>, orig_fn_type = (ui256, ui256, ui256) -> (), passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, selector = -1790387060 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @f_24(%arg0: i256 loc({{.*}}:4:13), %arg1: i256 loc({{.*}}:4:24), %arg2: i256 loc({{.*}}:4:35)) attributes {id = 24 : i64, llvm.linkage = #llvm.linkage<private>, orig_fn_type = (ui256, ui256, ui256) -> (), passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, runtime, selector = -1790387060 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:     %false = arith.constant false loc(#loc)
 // CHECK-NEXT:     %0 = llvm.mlir.undef : i256 loc(#loc)

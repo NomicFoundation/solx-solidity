@@ -18,7 +18,7 @@ function malloc() {
 // CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
 // CHECK-NEXT: #loc2 = loc({{.*}}:7:12)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.func @ui_24(%arg0: !sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory> loc({{.*}}:7:12)) -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @ui_24(%arg0: !sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory> loc({{.*}}:7:12)) -> ui256 attributes {id = 24 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory>, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory>, !sol.ptr<!sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory>, Stack> loc(#loc2)
 // CHECK-NEXT:     %c0_ui64 = sol.constant 0 : ui64 loc(#loc3)
@@ -35,7 +35,7 @@ function malloc() {
 // CHECK-NEXT:     %9 = sol.cadd %3, %8 : ui256 loc(#loc3)
 // CHECK-NEXT:     sol.return %9 : ui256 loc(#loc6)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   sol.func @malloc_32() attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @malloc_32() attributes {id = 32 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory>, Stack> loc(#loc8)
 // CHECK-NEXT:     %1 = sol.malloc zero_init :  !sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory> loc(#loc8)
 // CHECK-NEXT:     sol.store %1, %0 : !sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory>, !sol.ptr<!sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory>, Stack> loc(#loc8)

@@ -131,31 +131,31 @@ function unary(int a) {
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT:   func.func private @__revert(i256, i256, i256) attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
 // CHECK-NEXT:   func.func private @__personality() -> i32 attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality} loc(#loc)
-// CHECK-NEXT:   func.func @f_ui_6(%arg0: i256 loc({{.*}}:2:14)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @f_ui_6(%arg0: i256 loc({{.*}}:2:14)) attributes {id = 6 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc3)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc3)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc3)
 // CHECK-NEXT:     return loc(#loc2)
 // CHECK-NEXT:   } loc(#loc2)
-// CHECK-NEXT:   func.func @f_si_12(%arg0: i256 loc({{.*}}:3:14)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @f_si_12(%arg0: i256 loc({{.*}}:3:14)) attributes {id = 12 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc5)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc5)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc5)
 // CHECK-NEXT:     return loc(#loc4)
 // CHECK-NEXT:   } loc(#loc4)
-// CHECK-NEXT:   func.func @f_ui8_18(%arg0: i8 loc({{.*}}:4:15)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @f_ui8_18(%arg0: i8 loc({{.*}}:4:15)) attributes {id = 18 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc7)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc7)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i8, !llvm.ptr loc(#loc7)
 // CHECK-NEXT:     return loc(#loc6)
 // CHECK-NEXT:   } loc(#loc6)
-// CHECK-NEXT:   func.func @f_si8_24(%arg0: i8 loc({{.*}}:5:15)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @f_si8_24(%arg0: i8 loc({{.*}}:5:15)) attributes {id = 24 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc9)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc9)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i8, !llvm.ptr loc(#loc9)
 // CHECK-NEXT:     return loc(#loc8)
 // CHECK-NEXT:   } loc(#loc8)
-// CHECK-NEXT:   func.func @unchk_ui_63(%arg0: i256 loc({{.*}}:7:18), %arg1: i256 loc({{.*}}:7:26)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @unchk_ui_63(%arg0: i256 loc({{.*}}:7:18), %arg1: i256 loc({{.*}}:7:26)) attributes {id = 63 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc11)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc11)
@@ -187,7 +187,7 @@ function unary(int a) {
 // CHECK-NEXT:     call @f_ui_6(%19) : (i256) -> () loc(#loc27)
 // CHECK-NEXT:     return loc(#loc10)
 // CHECK-NEXT:   } loc(#loc10)
-// CHECK-NEXT:   func.func @unchk_si_102(%arg0: i256 loc({{.*}}:19:18), %arg1: i256 loc({{.*}}:19:25)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @unchk_si_102(%arg0: i256 loc({{.*}}:19:18), %arg1: i256 loc({{.*}}:19:25)) attributes {id = 102 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc29)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc29)
@@ -219,7 +219,7 @@ function unary(int a) {
 // CHECK-NEXT:     call @f_si_12(%19) : (i256) -> () loc(#loc45)
 // CHECK-NEXT:     return loc(#loc28)
 // CHECK-NEXT:   } loc(#loc28)
-// CHECK-NEXT:   func.func @unchk_ui8_141(%arg0: i8 loc({{.*}}:31:19), %arg1: i8 loc({{.*}}:31:28)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @unchk_ui8_141(%arg0: i8 loc({{.*}}:31:19), %arg1: i8 loc({{.*}}:31:28)) attributes {id = 141 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc47)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i8, !llvm.ptr loc(#loc47)
@@ -251,7 +251,7 @@ function unary(int a) {
 // CHECK-NEXT:     call @f_ui8_18(%19) : (i8) -> () loc(#loc63)
 // CHECK-NEXT:     return loc(#loc46)
 // CHECK-NEXT:   } loc(#loc46)
-// CHECK-NEXT:   func.func @unchk_si8_180(%arg0: i8 loc({{.*}}:43:19), %arg1: i8 loc({{.*}}:43:27)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @unchk_si8_180(%arg0: i8 loc({{.*}}:43:19), %arg1: i8 loc({{.*}}:43:27)) attributes {id = 180 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc65)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i8, !llvm.ptr loc(#loc65)
@@ -283,13 +283,13 @@ function unary(int a) {
 // CHECK-NEXT:     call @f_si8_24(%19) : (i8) -> () loc(#loc81)
 // CHECK-NEXT:     return loc(#loc64)
 // CHECK-NEXT:   } loc(#loc64)
-// CHECK-NEXT:   func.func @chk_ui_208(%arg0: i256 loc({{.*}}:56:16), %arg1: i256 loc({{.*}}:56:24)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @chk_ui_208(%arg0: i256 loc({{.*}}:56:16), %arg1: i256 loc({{.*}}:56:24)) attributes {id = 208 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256 loc(#loc)
 // CHECK-NEXT:     %c36_i256 = arith.constant 36 : i256 loc(#loc)
 // CHECK-NEXT:     %c17_i256 = arith.constant 17 : i256 loc(#loc)
 // CHECK-NEXT:     %c4_i256 = arith.constant 4 : i256 loc(#loc)
-// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:     %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256 = arith.constant 35408467139433450592217433187231851964531694900788300625387963629091585785856 : i256 loc(#loc)
+// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc83)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc83)
@@ -349,7 +349,7 @@ function unary(int a) {
 // CHECK-NEXT:     call @f_ui_6(%16) : (i256) -> () loc(#loc93)
 // CHECK-NEXT:     return loc(#loc82)
 // CHECK-NEXT:   } loc(#loc82)
-// CHECK-NEXT:   func.func @chk_si_236(%arg0: i256 loc({{.*}}:64:16), %arg1: i256 loc({{.*}}:64:23)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @chk_si_236(%arg0: i256 loc({{.*}}:64:16), %arg1: i256 loc({{.*}}:64:23)) attributes {id = 236 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256 loc(#loc)
 // CHECK-NEXT:     %c36_i256 = arith.constant 36 : i256 loc(#loc)
 // CHECK-NEXT:     %c17_i256 = arith.constant 17 : i256 loc(#loc)
@@ -439,13 +439,13 @@ function unary(int a) {
 // CHECK-NEXT:     call @f_si_12(%34) : (i256) -> () loc(#loc106)
 // CHECK-NEXT:     return loc(#loc94)
 // CHECK-NEXT:   } loc(#loc94)
-// CHECK-NEXT:   func.func @chk_ui8_264(%arg0: i8 loc({{.*}}:72:17), %arg1: i8 loc({{.*}}:72:26)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @chk_ui8_264(%arg0: i8 loc({{.*}}:72:17), %arg1: i8 loc({{.*}}:72:26)) attributes {id = 264 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256 loc(#loc)
 // CHECK-NEXT:     %c36_i256 = arith.constant 36 : i256 loc(#loc)
 // CHECK-NEXT:     %c17_i256 = arith.constant 17 : i256 loc(#loc)
 // CHECK-NEXT:     %c4_i256 = arith.constant 4 : i256 loc(#loc)
-// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:     %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256 = arith.constant 35408467139433450592217433187231851964531694900788300625387963629091585785856 : i256 loc(#loc)
+// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc108)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i8, !llvm.ptr loc(#loc108)
@@ -505,13 +505,13 @@ function unary(int a) {
 // CHECK-NEXT:     call @f_ui8_18(%16) : (i8) -> () loc(#loc119)
 // CHECK-NEXT:     return loc(#loc107)
 // CHECK-NEXT:   } loc(#loc107)
-// CHECK-NEXT:   func.func @chk_si8_292(%arg0: i8 loc({{.*}}:80:17), %arg1: i8 loc({{.*}}:80:25)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @chk_si8_292(%arg0: i8 loc({{.*}}:80:17), %arg1: i8 loc({{.*}}:80:25)) attributes {id = 292 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256 loc(#loc)
 // CHECK-NEXT:     %c36_i256 = arith.constant 36 : i256 loc(#loc)
 // CHECK-NEXT:     %c17_i256 = arith.constant 17 : i256 loc(#loc)
 // CHECK-NEXT:     %c4_i256 = arith.constant 4 : i256 loc(#loc)
-// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:     %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256 = arith.constant 35408467139433450592217433187231851964531694900788300625387963629091585785856 : i256 loc(#loc)
+// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:     %c0_i8 = arith.constant 0 : i8 loc(#loc)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc121)
@@ -596,7 +596,7 @@ function unary(int a) {
 // CHECK-NEXT:     call @f_si8_24(%34) : (i8) -> () loc(#loc132)
 // CHECK-NEXT:     return loc(#loc120)
 // CHECK-NEXT:   } loc(#loc120)
-// CHECK-NEXT:   func.func @tuple_312(%arg0: i256 loc({{.*}}:88:15), %arg1: i256 loc({{.*}}:88:23), %arg2: i256 loc({{.*}}:88:31)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @tuple_312(%arg0: i256 loc({{.*}}:88:15), %arg1: i256 loc({{.*}}:88:23), %arg2: i256 loc({{.*}}:88:31)) attributes {id = 312 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc134)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc134)
@@ -612,7 +612,7 @@ function unary(int a) {
 // CHECK-NEXT:     call @f_ui_6(%7) : (i256) -> () loc(#loc141)
 // CHECK-NEXT:     return loc(#loc133)
 // CHECK-NEXT:   } loc(#loc133)
-// CHECK-NEXT:   func.func @unary_343(%arg0: i256 loc({{.*}}:94:15)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
+// CHECK-NEXT:   func.func @unary_343(%arg0: i256 loc({{.*}}:94:15)) attributes {id = 343 : i64, llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"], personality = @__personality, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256 loc(#loc)
 // CHECK-NEXT:     %c36_i256 = arith.constant 36 : i256 loc(#loc)
 // CHECK-NEXT:     %c17_i256 = arith.constant 17 : i256 loc(#loc)

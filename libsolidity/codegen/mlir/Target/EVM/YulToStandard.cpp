@@ -20,6 +20,8 @@
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/mlir/Util.h"
 #include "libsolidity/codegen/mlir/Yul/Yul.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/IRMapping.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/IntrinsicsEVM.h"
@@ -1050,6 +1052,61 @@ struct InvalidOpLowering : public OpRewritePattern<yul::InvalidOp> {
   }
 };
 
+struct ICallOpLowering : public OpConversionPattern<sol::ICallOp> {
+  // This lowering cannot be done in the SolToYul pass because the function
+  // signature matching requires all function signatures to be legalized (i.e.
+  // yul dialect compatible types). This can't be guaranteed if we do this in
+  // the SolToYul pass.
+  using OpConversionPattern<sol::ICallOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::ICallOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+    evm::Builder evmB(r, loc);
+
+    auto calleeArgs = adaptor.getOperands().drop_front();
+    auto calleeTy = mlir::FunctionType::get(
+        r.getContext(), calleeArgs.getTypes(), op.getResultTypes());
+
+    // Collect functions with matching signature.
+    Operation *symTab = SymbolTable::getNearestSymbolTable(op);
+    assert(symTab->hasTrait<OpTrait::SingleBlock>());
+    SmallVector<int64_t> caseIds;
+    SmallVector<sol::FuncOp> caseFns;
+    for (Operation &op : symTab->getRegions().front().front()) {
+      auto fn = dyn_cast<sol::FuncOp>(op);
+      if (!fn)
+        continue;
+      if (fn.getId() && fn.getFunctionType() == calleeTy) {
+        caseFns.push_back(fn);
+        caseIds.push_back(*fn.getId());
+      }
+    }
+
+    // Generate the dispatch table
+    auto switchOp = r.create<scf::IndexSwitchOp>(
+        loc, op.getResultTypes(), bExt.genCastToIdx(adaptor.getCallee()),
+        caseIds, caseIds.size());
+    for (size_t i = 0; i < caseFns.size(); ++i) {
+      r.setInsertionPointToStart(&switchOp.getCaseRegions()[i].emplaceBlock());
+      auto call = r.create<sol::CallOp>(loc, caseFns[i], calleeArgs);
+      r.create<scf::YieldOp>(loc, call.getResults());
+    }
+
+    // Generate the default case region that panics.
+    r.setInsertionPointToStart(&switchOp.getDefaultRegion().emplaceBlock());
+    evmB.genPanic(solidity::util::PanicCode::InvalidInternalFunction);
+    SmallVector<Value> undefs;
+    undefs.reserve(op.getNumResults());
+    for (Type ty : op.getResultTypes())
+      undefs.push_back(r.create<LLVM::UndefOp>(loc, ty));
+    r.create<scf::YieldOp>(loc, undefs);
+    r.replaceOp(op, switchOp.getResults());
+    return success();
+  }
+};
+
 struct ObjectOpLowering : public OpRewritePattern<yul::ObjectOp> {
   using OpRewritePattern<yul::ObjectOp>::OpRewritePattern;
 
@@ -1185,6 +1242,7 @@ void evm::populateYulPats(RewritePatternSet &pats) {
       StaticCallOpLowering,
       DelegateCallOpLowering,
       BuiltinRetOpLowering,
+      ICallOpLowering,
       ObjectOpLowering
       // clang-format on
       >(pats.getContext());

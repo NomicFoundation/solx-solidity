@@ -75,7 +75,7 @@ int64_t evm::getMallocSize(Type ty) {
 unsigned evm::getStorageSlotCount(Type ty) {
   if (isa<IntegerType>(ty) || isa<sol::EnumType>(ty) ||
       isa<sol::BytesType>(ty) || isa<sol::MappingType>(ty) ||
-      sol::hasDynamicallySizedElt(ty))
+      isa<sol::FuncRefType>(ty) || sol::hasDynamicallySizedElt(ty))
     return 1;
 
   if (auto arrTy = dyn_cast<sol::ArrayType>(ty))
@@ -897,23 +897,27 @@ Value evm::Builder::genI256Selector(std::string const &signature,
       solidity::util::selectorFromSignatureU256(signature).str());
 }
 
+void evm::Builder::genPanic(solidity::util::PanicCode code,
+                            std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+  solidity::mlirgen::BuilderExt bExt(b, loc);
+
+  b.create<yul::MStoreOp>(loc, bExt.genI256Const(0),
+                          genI256Selector("Panic(uint256)", loc));
+  b.create<yul::MStoreOp>(loc, bExt.genI256Const(4),
+                          bExt.genI256Const(static_cast<int64_t>(code)));
+  b.create<yul::RevertOp>(loc, bExt.genI256Const(0), bExt.genI256Const(0x24));
+}
+
 void evm::Builder::genPanic(solidity::util::PanicCode code, Value cond,
                             std::optional<Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;
   solidity::mlirgen::BuilderExt bExt(b, loc);
 
-  Value selector = genI256Selector("Panic(uint256)", loc);
-
-  b.create<scf::IfOp>(
-      loc, cond,
-      /*thenBuilder=*/[&](OpBuilder &b, Location loc) {
-        b.create<yul::MStoreOp>(loc, bExt.genI256Const(0), selector);
-        b.create<yul::MStoreOp>(loc, bExt.genI256Const(4),
-                                bExt.genI256Const(static_cast<int64_t>(code)));
-        b.create<yul::RevertOp>(loc, bExt.genI256Const(0),
-                                bExt.genI256Const(0x24));
-        b.create<scf::YieldOp>(loc);
-      });
+  auto ifOp = b.create<scf::IfOp>(loc, cond, /*addThenBlock=*/true);
+  b.setInsertionPointToStart(ifOp.thenBlock());
+  genPanic(code, loc);
+  b.setInsertionPointAfter(ifOp);
 }
 
 void evm::Builder::genForwardingRevert(std::optional<Location> locArg) {

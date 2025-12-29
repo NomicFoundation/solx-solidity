@@ -16,7 +16,7 @@ function g(bytes memory a) returns (uint) {
 // CHECK-NEXT: #loc3 = loc({{.*}}:2:27)
 // CHECK-NEXT: #loc11 = loc({{.*}}:7:11)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.func @f_26(%arg0: !sol.string<Memory> loc({{.*}}:2:11), %arg1: ui8 loc({{.*}}:2:27)) -> ui8 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @f_26(%arg0: !sol.string<Memory> loc({{.*}}:2:11), %arg1: ui8 loc({{.*}}:2:27)) -> ui8 attributes {id = 26 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc2)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<ui8, Stack> loc(#loc3)
@@ -34,7 +34,7 @@ function g(bytes memory a) returns (uint) {
 // CHECK-NEXT:     %9 = sol.bytes_cast %8 : !sol.bytes<1> to ui8 loc(#loc7)
 // CHECK-NEXT:     sol.return %9 : ui8 loc(#loc9)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   sol.func @g_37(%arg0: !sol.string<Memory> loc({{.*}}:7:11)) -> ui256 attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @g_37(%arg0: !sol.string<Memory> loc({{.*}}:7:11)) -> ui256 attributes {id = 37 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc11)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc11)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc12)

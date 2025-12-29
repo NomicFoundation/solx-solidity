@@ -563,10 +563,64 @@ def Sol_ModifierOp : Sol_Op<"modifier",
 }
 
 //
-// FIXME: What's wrong with using func.func and related ops? We could schedule a
-// custom conversion to do solidity specific things before the func dialect
-// conversion.
+// TODO: Move function ops to another dialect
 //
+
+def Sol_DefaultFuncConstantOp : Sol_Op<"default_func_constant", [Pure]> {
+  let results = (outs AnyType:$addr);
+
+  let builders = [
+    OpBuilder<(ins), [{
+      auto fnTy = $_builder.getFunctionType({}, {});
+      $_state.addTypes(sol::FuncRefType::get($_builder.getContext(), fnTy));
+    }]>
+  ];
+
+  let assemblyFormat = "attr-dict `:` type($addr)";
+}
+
+def Sol_FuncConstantOp : Sol_Op<"func_constant", [Pure]> {
+  let arguments = (ins FlatSymbolRefAttr:$sym);
+  let results = (outs AnyType:$addr);
+
+  let assemblyFormat = "$sym attr-dict `:` type($addr)";
+}
+
+def ICallOp : Sol_Op<"icall", [CallOpInterface]> {
+  // FIXME: AnyType -> Sol_FuncRefType causes the asm printer to miss the prefix!
+  let arguments = (ins AnyType:$callee,
+                       Variadic<AnyType>:$callee_operands);
+  let results = (outs Variadic<AnyType>);
+
+  let extraClassDeclaration = [{
+    ValueRange operands() { return getCalleeOperands(); }
+
+    /// Get the argument operands to the called function.
+    operand_range getArgOperands() {
+      return {arg_operand_begin(), arg_operand_end()};
+    }
+
+    MutableOperandRange getArgOperandsMutable() {
+      return getCalleeOperandsMutable();
+    }
+
+    operand_iterator arg_operand_begin() { return ++operand_begin(); }
+    operand_iterator arg_operand_end() { return operand_end(); }
+
+    /// Return the callee of this operation.
+    CallInterfaceCallable getCallableForCallee() { return getCallee(); }
+
+    /// Set the callee for this operation.
+    void setCalleeFromCallable(CallInterfaceCallable callee) {
+      setOperand(0, callee.get<Value>());
+    }
+  }];
+
+  let assemblyFormat = [{
+    $callee `(` $callee_operands `)` attr-dict `:`
+      type($callee) `,` functional-type($callee_operands, results)
+  }];
+}
 
 def CallOp : Sol_Op<"call", [CallOpInterface]> {
   let arguments = (ins FlatSymbolRefAttr:$callee, Variadic<AnyType>:$operands);
@@ -716,7 +770,10 @@ def Sol_FuncOp : Sol_Op<"func", [AutomaticAllocationScope, CallableOpInterface,
                        UnitAttr:$runtime,
                        OptionalAttr<Sol_FunctionKindAttr>:$kind,
                        OptionalAttr<Sol_StateMutabilityAttr>:$state_mutability,
-                       OptionalAttr<StrAttr>:$sym_visibility);
+                       OptionalAttr<StrAttr>:$sym_visibility,
+                       // Unique id used for generating dispatch table in the
+                       // indirect call lowering
+                       OptionalAttr<I64Attr>:$id);
   let regions = (region AnyRegion:$body);
 
   let builders = [
