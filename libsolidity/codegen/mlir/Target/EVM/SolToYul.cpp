@@ -225,6 +225,8 @@ struct ExpOpLowering : public OpConversionPattern<sol::ExpOp> {
   }
 };
 
+} // namespace
+
 template <bool isLeftShift>
 static Value genYulShiftOp(ConversionPatternRewriter &r, Location loc,
                            Value val, Value shiftVal, bool isSigned) {
@@ -249,6 +251,8 @@ static Value genYulShiftOp(ConversionPatternRewriter &r, Location loc,
   // Cast back to the original bitwidth.
   return bExt.genIntCast(resWidth, isSigned, shifted256);
 }
+
+namespace {
 
 struct ShlOpLowering : public OpConversionPattern<sol::ShlOp> {
   using OpConversionPattern<sol::ShlOp>::OpConversionPattern;

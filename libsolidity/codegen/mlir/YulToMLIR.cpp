@@ -837,16 +837,14 @@ solidity::mlirgen::Bytecode solidity::mlirgen::runYulToMLIRPass(
     llvm_unreachable("");
   }
 
-  mlirgen::JobSpec m_mlirGenJob = job;
-  if (requiresLinking(m_mlirGenJob.action)) {
+  if (requiresLinking(job.action)) {
     // Create the llvm target machine.
-    std::unique_ptr<llvm::TargetMachine> tgtMach =
-        createTargetMachine(m_mlirGenJob.tgt);
-    mlirgen::setTgtMachOpt(tgtMach.get(), m_mlirGenJob.optLevel);
+    std::unique_ptr<llvm::TargetMachine> tgtMach = createTargetMachine(job.tgt);
+    mlirgen::setTgtMachOpt(tgtMach.get(), job.optLevel);
 
     // Generate the object.
     evm::UnlinkedObj unlinkedObj =
-        mlirgen::genEvmObj(mod, m_mlirGenJob.optLevel, *tgtMach);
+        mlirgen::genEvmObj(mod, job.optLevel, *tgtMach);
     evm::BytecodeGen::UnlinkedMap unlinkedMap; // FIXME
     evm::BytecodeGen bcGen(unlinkedMap, libAddrMap);
     return bcGen.genEvmBytecode(unlinkedObj);
