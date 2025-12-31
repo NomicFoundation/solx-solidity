@@ -888,22 +888,13 @@ void evm::Builder::genABITupleDecoding(TypeRange tys, Value tupleStart,
   }
 }
 
-Value evm::Builder::genI256Selector(std::string const &signature,
-                                    std::optional<Location> locArg) {
-  Location loc = locArg ? *locArg : defLoc;
-  solidity::mlirgen::BuilderExt bExt(b, loc);
-
-  return bExt.genI256Const(
-      solidity::util::selectorFromSignatureU256(signature).str());
-}
-
 void evm::Builder::genPanic(solidity::util::PanicCode code,
                             std::optional<Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;
   solidity::mlirgen::BuilderExt bExt(b, loc);
 
   b.create<yul::MStoreOp>(loc, bExt.genI256Const(0),
-                          genI256Selector("Panic(uint256)", loc));
+                          bExt.genI256Selector("Panic(uint256)"));
   b.create<yul::MStoreOp>(loc, bExt.genI256Const(4),
                           bExt.genI256Const(static_cast<int64_t>(code)));
   b.create<yul::RevertOp>(loc, bExt.genI256Const(0), bExt.genI256Const(0x24));
@@ -963,7 +954,7 @@ void evm::Builder::genRevertWithMsg(std::string const &msg,
 
   // Generate the "Error(string)" selector store at free ptr.
   Value freePtr = genFreePtr(loc);
-  b.create<yul::MStoreOp>(loc, freePtr, genI256Selector("Error(string)", loc));
+  b.create<yul::MStoreOp>(loc, freePtr, bExt.genI256Selector("Error(string)"));
 
   // Generate the tuple encoding of the message after the selector.
   auto freePtrPostSelector =

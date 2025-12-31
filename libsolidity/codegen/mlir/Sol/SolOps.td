@@ -382,6 +382,12 @@ def Sol_EmitOp : Sol_Op<"emit"> {
   let hasCustomAssemblyFormat = 1;
 }
 
+def Sol_RevertOp : Sol_Op<"revert"> {
+  let arguments = (ins Variadic<AnyType>:$args, StrAttr:$signature);
+
+  let assemblyFormat = "$signature ($args^ `:` type($args))? attr-dict";
+}
+
 def Sol_RequireOp : Sol_Op<"require"> {
   // FIXME: $msg should be an OptionalAttr, but it doesn't reflect in the
   // generated build API.

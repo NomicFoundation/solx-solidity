@@ -170,6 +170,7 @@ struct ConvertSolToStandard
         sol::ExtCallOp,
         sol::NewOp,
         sol::CodeOp,
+        sol::RevertOp,
         sol::EmitOp,
         sol::RequireOp,
         sol::ConvCastOp,

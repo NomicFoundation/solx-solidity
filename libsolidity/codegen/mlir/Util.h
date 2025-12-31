@@ -22,6 +22,7 @@
 #pragma once
 
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
+#include "libsolutil/FunctionSelector.h"
 #include "libsolutil/Numeric.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
@@ -169,6 +170,16 @@ public:
     auto op =
         b.create<mlir::LLVM::ConstantOp>(locArg ? *locArg : defLoc, ty, attr);
     return op.getResult();
+  }
+
+  /// Generates an i256 constant with the selector in the high 32 bits.
+  mlir::Value
+  genI256Selector(mlir::StringRef signature,
+                  std::optional<mlir::Location> locArg = std::nullopt) {
+    mlir::Location loc = locArg ? *locArg : defLoc;
+
+    return genI256Const(
+        solidity::util::selectorFromSignatureU256(signature.str()).str(), loc);
   }
 
   /// Generates the round-up to a power-of-2 multiple.

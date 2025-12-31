@@ -1720,6 +1720,29 @@ struct EmitOpLowering : public OpConversionPattern<sol::EmitOp> {
   }
 };
 
+struct RevertOpLowering : public OpConversionPattern<sol::RevertOp> {
+  using OpConversionPattern<sol::RevertOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::RevertOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    evm::Builder evmB(r, loc);
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+
+    Value selectorAddr = evmB.genFreePtr();
+    r.create<yul::MStoreOp>(loc, selectorAddr,
+                            bExt.genI256Selector(op.getSignature()));
+    Value tupleStart =
+        r.create<arith::AddIOp>(loc, selectorAddr, bExt.genI256Const(4));
+    Value tupleEnd = evmB.genABITupleEncoding(op.getArgs().getTypes(),
+                                              adaptor.getArgs(), tupleStart);
+    Value size = r.create<arith::SubIOp>(loc, tupleEnd, selectorAddr);
+    r.replaceOpWithNewOp<yul::RevertOp>(op, selectorAddr, size);
+
+    return success();
+  }
+};
+
 // (Copied and modified from clangir).
 struct IfOpLowering : public OpRewritePattern<sol::IfOp> {
   using OpRewritePattern<sol::IfOp>::OpRewritePattern;
@@ -2423,7 +2446,7 @@ void evm::populateExtCallPat(RewritePatternSet &pats, TypeConverter &tyConv) {
 }
 
 void evm::populateEmitPat(RewritePatternSet &pats, TypeConverter &tyConv) {
-  pats.add<EmitOpLowering>(tyConv, pats.getContext());
+  pats.add<EmitOpLowering, RevertOpLowering>(tyConv, pats.getContext());
 }
 
 void evm::populateRequirePat(RewritePatternSet &pats) {

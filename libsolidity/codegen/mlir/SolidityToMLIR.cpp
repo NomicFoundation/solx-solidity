@@ -343,6 +343,9 @@ private:
   /// Lowers the emit statement.
   void lower(EmitStatement const &);
 
+  /// Lowers the revert statement.
+  void lower(RevertStatement const &);
+
   /// Lowers the break statement.
   void lower(Break const &);
 
@@ -1092,6 +1095,15 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     return {};
   }
 
+  // Revert invocation
+  case FunctionType::Kind::Error: {
+    mlir::SmallVector<mlir::Value> args;
+    for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes()))
+      args.push_back(genRValExpr(*arg, getType(dstTy)));
+    b.create<mlir::sol::RevertOp>(loc, args, calleeTy->externalSignature());
+    return {};
+  }
+
   // Require statement
   case FunctionType::Kind::Require: {
     if (call.arguments().size() == 2) {
@@ -1363,6 +1375,10 @@ void SolidityToMLIRPass::lower(EmitStatement const &emit) {
   genLValExprs(emit.eventCall());
 }
 
+void SolidityToMLIRPass::lower(RevertStatement const &rev) {
+  genLValExprs(rev.errorCall());
+}
+
 void SolidityToMLIRPass::lower(Break const &brkStmt) {
   b.create<mlir::sol::BreakOp>(getLoc(brkStmt));
   mlir::Block *newBlock = b.getBlock()->splitBlock(b.getInsertionPoint());
@@ -1594,6 +1610,10 @@ void SolidityToMLIRPass::lower(Statement const &stmt) {
   // Emit
   else if (const auto *emitStmt = dynamic_cast<EmitStatement const *>(&stmt))
     lower(*emitStmt);
+
+  // Revert
+  else if (const auto *revStmt = dynamic_cast<RevertStatement const *>(&stmt))
+    lower(*revStmt);
 
   // Placeholder
   else if (const auto *placeholderStmt =
