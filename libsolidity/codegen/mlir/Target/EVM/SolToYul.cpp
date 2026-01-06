@@ -250,7 +250,8 @@ struct CExpOpLowering : public OpConversionPattern<sol::CExpOp> {
     solidity::mlirgen::BuilderExt bExt(r, loc);
     evm::Builder evmB(r, loc);
 
-    Value one = bExt.genI256Const(1);
+    auto ty = cast<IntegerType>(initBase.getType());
+    Value one = bExt.genConst(1, ty.getWidth(), loc);
     ValueRange whileInitVals{initPow, initBase, initExp};
     TypeRange whileArgTypes(whileInitVals);
     SmallVector<Location> whileBbArgLocs(whileInitVals.size(), loc);
@@ -279,13 +280,14 @@ struct CExpOpLowering : public OpConversionPattern<sol::CExpOp> {
       Value curBase = afterBlock->getArgument(1);
       Value curExp = afterBlock->getArgument(2);
       {
-        Value tmpDiv = r.create<yul::DivOp>(loc, maxPow, curBase);
+        auto base256 = bExt.genIntCast(256, /*isSigned=*/false, curBase);
+        Value tmpDiv = r.create<yul::DivOp>(loc, maxPow, base256);
         Value panicCond = r.create<arith::CmpIOp>(
-            loc, arith::CmpIPredicate::ugt, curBase, tmpDiv);
+            loc, arith::CmpIPredicate::ugt, base256, tmpDiv);
         evmB.genPanic(solidity::util::PanicCode::UnderOverflow, panicCond);
       }
       Value lsb = r.create<arith::AndIOp>(loc, curExp, one);
-      Value zero = bExt.genI256Const(0);
+      Value zero = bExt.genConst(0, ty.getWidth(), loc);
       Value expIsOdd =
           r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ne, lsb, zero);
       Value newPow = r.create<arith::SelectOp>(
@@ -293,7 +295,7 @@ struct CExpOpLowering : public OpConversionPattern<sol::CExpOp> {
                           r.create<arith::MulIOp>(loc, curPow, curBase), curPow)
                          .getResult();
       Value newBase = r.create<arith::MulIOp>(loc, curBase, curBase);
-      Value newExp = r.create<yul::ShrOp>(loc, one, curExp);
+      Value newExp = r.create<arith::ShRUIOp>(loc, curExp, one);
       r.create<scf::YieldOp>(loc, ValueRange{newPow, newBase, newExp});
     }
 
@@ -333,12 +335,15 @@ struct CExpOpLowering : public OpConversionPattern<sol::CExpOp> {
     solidity::mlirgen::BuilderExt bExt(r, loc);
     evm::Builder evmB(r, loc);
 
-    auto ty = cast<IntegerType>(op.getType());
-    Value max = bExt.genI256Const(llvm::APInt::getMaxValue(ty.getWidth()), loc);
-    Value base = bExt.genIntCast(256, ty.isSigned(), adaptor.getLhs());
-    Value exp = bExt.genIntCast(256, ty.isSigned(), adaptor.getRhs());
-    Value zero = bExt.genI256Const(0);
-    Value one = bExt.genI256Const(1);
+    Value base = adaptor.getLhs();
+    Value exp = adaptor.getRhs();
+
+    // The type of the result is the type of 'base'.
+    auto ty = cast<IntegerType>(base.getType());
+    Value max256 =
+        bExt.genI256Const(llvm::APInt::getMaxValue(ty.getWidth()), loc);
+    Value zero = bExt.genConst(0, ty.getWidth(), loc);
+    Value one = bExt.genConst(1, ty.getWidth(), loc);
 
     auto expEqZero =
         r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq, exp, zero);
@@ -347,8 +352,7 @@ struct CExpOpLowering : public OpConversionPattern<sol::CExpOp> {
     auto powOneCond = r.create<arith::OrIOp>(loc, expEqZero, baseEqOne);
 
     // If 1 begin
-    auto ifExpEqZero =
-        r.create<scf::IfOp>(loc, r.getIntegerType(256), powOneCond, true);
+    auto ifExpEqZero = r.create<scf::IfOp>(loc, ty, powOneCond, true);
     // If 1 then
     r.setInsertionPointToStart(&ifExpEqZero.getThenRegion().front());
     r.create<scf::YieldOp>(loc, one);
@@ -359,69 +363,92 @@ struct CExpOpLowering : public OpConversionPattern<sol::CExpOp> {
         r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq, base, zero);
 
     // If 2 begin
-    auto ifBaseEqZero =
-        r.create<scf::IfOp>(loc, r.getIntegerType(256), baseEqZero, true);
+    auto ifBaseEqZero = r.create<scf::IfOp>(loc, ty, baseEqZero, true);
     // If 2 then
     r.setInsertionPointToStart(&ifBaseEqZero.getThenRegion().front());
     r.create<scf::YieldOp>(loc, zero);
 
     // If 2 else
     r.setInsertionPointToStart(&ifBaseEqZero.getElseRegion().front());
-    Value two = bExt.genI256Const(2);
+    Value two = bExt.genConst(2, ty.getWidth(), loc);
     auto baseEqTwo =
         r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq, base, two);
 
     // If 3 begin
-    auto ifBaseEqTwo =
-        r.create<scf::IfOp>(loc, r.getIntegerType(256), baseEqTwo, true);
+    auto ifBaseEqTwo = r.create<scf::IfOp>(loc, ty, baseEqTwo, true);
     // If 3 then
     r.setInsertionPointToStart(&ifBaseEqTwo.getThenRegion().front());
     {
-      auto expGt255 = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt,
-                                              exp, bExt.genI256Const(255));
+      auto expGt255 = r.create<arith::CmpIOp>(
+          loc, arith::CmpIPredicate::ugt, exp,
+          bExt.genConst(APInt(ty.getWidth(), 255, /*isSigned=*/false), loc));
       evmB.genPanic(solidity::util::PanicCode::UnderOverflow, expGt255);
-      Value tmpPow = r.create<yul::ExpOp>(loc, two, exp);
-      auto panicCond =
-          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt, tmpPow, max);
+
+      auto two256 = bExt.genI256Const(2, loc);
+      auto expZExt = bExt.genIntCast(256, /*isSigned=*/false, exp, loc);
+      auto tmpPow = r.create<yul::ExpOp>(loc, two256, expZExt);
+      auto panicCond = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt,
+                                               tmpPow, max256);
       evmB.genPanic(solidity::util::PanicCode::UnderOverflow, panicCond);
-      r.create<scf::YieldOp>(loc, tmpPow);
+
+      // Cast the result back to the original bitwidth.
+      auto powCasted =
+          bExt.genIntCast(ty.getWidth(), /*isSigned=*/false, tmpPow, loc);
+      r.create<scf::YieldOp>(loc, powCasted);
     }
     // If 3 else
     r.setInsertionPointToStart(&ifBaseEqTwo.getElseRegion().front());
-    auto baseLT11 = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ult,
-                                            base, bExt.genI256Const(11));
-    auto baseLT307 = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ult,
-                                             base, bExt.genI256Const(307));
-    auto expLT78 = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ult, exp,
-                                           bExt.genI256Const(78));
-    auto expLT32 = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ult, exp,
-                                           bExt.genI256Const(32));
+    auto baseLT11 =
+        r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ult, base,
+                                bExt.genConst(11, ty.getWidth(), loc));
+    Value baseLT307 =
+        (ty.getWidth() > 8)
+            ? r.create<arith::CmpIOp>(
+                  loc, arith::CmpIPredicate::ult, base,
+                  bExt.genConst(APInt(ty.getWidth(), 307, /*isSigned*/ false),
+                                loc))
+            : bExt.genBool(true, loc);
+
+    auto expLT78 =
+        r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ult, exp,
+                                bExt.genConst(78, ty.getWidth(), loc));
+    auto expLT32 =
+        r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ult, exp,
+                                bExt.genConst(32, ty.getWidth(), loc));
 
     auto viaExpBuitinCond = r.create<arith::OrIOp>(
         loc, r.create<arith::AndIOp>(loc, baseLT11, expLT78),
         r.create<arith::AndIOp>(loc, baseLT307, expLT32));
     // If 4 begin
     auto ifViaExpBuitinCond =
-        r.create<scf::IfOp>(loc, r.getIntegerType(256), viaExpBuitinCond, true);
+        r.create<scf::IfOp>(loc, ty, viaExpBuitinCond, true);
     // If 4 then
     r.setInsertionPointToStart(&ifViaExpBuitinCond.getThenRegion().front());
 
     {
-      Value tmpPow = r.create<yul::ExpOp>(loc, base, exp);
-      Value panicCond =
-          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt, tmpPow, max);
+      auto expZExt = bExt.genIntCast(256, /*isSigned=*/false, exp, loc);
+      auto baseZExt = bExt.genIntCast(256, /*isSigned=*/false, base, loc);
+      Value tmpPow = r.create<yul::ExpOp>(loc, baseZExt, expZExt);
+      Value panicCond = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt,
+                                                tmpPow, max256);
       evmB.genPanic(solidity::util::PanicCode::UnderOverflow, panicCond);
-      r.create<scf::YieldOp>(loc, tmpPow);
+
+      // Cast the result back to the original bitwidth.
+      auto powCasted =
+          bExt.genIntCast(ty.getWidth(), /*isSigned=*/false, tmpPow, loc);
+      r.create<scf::YieldOp>(loc, powCasted);
     }
     // If 4 else
     r.setInsertionPointToStart(&ifViaExpBuitinCond.getElseRegion().front());
-    auto [pow2, base2] = genExpHelper(r, loc, one, base, exp, max);
+    auto [pow2, base2] = genExpHelper(r, loc, one, base, exp, max256);
 
     {
       r.setInsertionPointToEnd(&ifViaExpBuitinCond.getElseRegion().front());
-      Value tmpDiv = r.create<yul::DivOp>(loc, max, base2);
-      Value panicCond =
-          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt, pow2, tmpDiv);
+      auto baseZExt = bExt.genIntCast(256, /*isSigned=*/false, base2, loc);
+      Value tmpDiv = r.create<yul::DivOp>(loc, max256, baseZExt);
+      auto pow256 = bExt.genIntCast(256, /*isSigned=*/false, pow2, loc);
+      Value panicCond = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt,
+                                                pow256, tmpDiv);
       evmB.genPanic(solidity::util::PanicCode::UnderOverflow, panicCond);
       Value res = r.create<arith::MulIOp>(loc, base2, pow2);
       r.create<scf::YieldOp>(loc, res);
@@ -441,8 +468,7 @@ struct CExpOpLowering : public OpConversionPattern<sol::CExpOp> {
 
     r.setInsertionPointAfter(ifExpEqZero);
 
-    return bExt.genIntCast(ty.getWidth(), ty.isSigned(),
-                           ifExpEqZero.getResult(0));
+    return ifExpEqZero.getResult(0);
   }
 
   // Below is the implementation of signed exponentiation based on the
@@ -478,23 +504,23 @@ struct CExpOpLowering : public OpConversionPattern<sol::CExpOp> {
     solidity::mlirgen::BuilderExt bExt(r, loc);
     evm::Builder evmB(r, loc);
 
-    auto ty = cast<IntegerType>(op.getType());
-    Value max = bExt.genI256Const(
-        llvm::APInt::getSignedMaxValue(ty.getWidth()).sext(256), loc);
-    Value min = bExt.genI256Const(
-        llvm::APInt::getSignedMinValue(ty.getWidth()).sext(256), loc);
+    Value base = adaptor.getLhs();
+    Value exp = adaptor.getRhs();
 
-    Value base = bExt.genIntCast(256, ty.isSigned(), adaptor.getLhs());
-    Value exp = bExt.genIntCast(256, ty.isSigned(), adaptor.getRhs());
-    auto zero = bExt.genI256Const(0);
-    auto one = bExt.genI256Const(1);
+    // The type of the result is the type of 'base'.
+    auto ty = cast<IntegerType>(base.getType());
+    Value zero = bExt.genConst(0, ty.getWidth(), loc);
+    Value one = bExt.genConst(1, ty.getWidth(), loc);
+    Value max256 = bExt.genI256Const(
+        llvm::APInt::getSignedMaxValue(ty.getWidth()).sext(256), loc);
+    Value min256 = bExt.genI256Const(
+        llvm::APInt::getSignedMinValue(ty.getWidth()).sext(256), loc);
 
     auto expEqZero =
         r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq, exp, zero);
 
     // If 1 begin
-    auto ifExpEqZero =
-        r.create<scf::IfOp>(loc, r.getIntegerType(256), expEqZero, true);
+    auto ifExpEqZero = r.create<scf::IfOp>(loc, ty, expEqZero, true);
     // If 1 then
     r.setInsertionPointToStart(&ifExpEqZero.getThenRegion().front());
     r.create<scf::YieldOp>(loc, one);
@@ -505,8 +531,7 @@ struct CExpOpLowering : public OpConversionPattern<sol::CExpOp> {
         r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq, base, zero);
 
     // If 2 begin
-    auto ifBaseEqZero =
-        r.create<scf::IfOp>(loc, r.getIntegerType(256), baseEqZero, true);
+    auto ifBaseEqZero = r.create<scf::IfOp>(loc, ty, baseEqZero, true);
     // If 2 then
     r.setInsertionPointToStart(&ifBaseEqZero.getThenRegion().front());
     r.create<scf::YieldOp>(loc, zero);
@@ -517,8 +542,7 @@ struct CExpOpLowering : public OpConversionPattern<sol::CExpOp> {
         r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq, exp, one);
 
     // If 3 begin
-    auto ifExpEqOne =
-        r.create<scf::IfOp>(loc, r.getIntegerType(256), expEqOne, true);
+    auto ifExpEqOne = r.create<scf::IfOp>(loc, ty, expEqOne, true);
     // If 3 then
     r.setInsertionPointToStart(&ifExpEqOne.getThenRegion().front());
     r.create<scf::YieldOp>(loc, base);
@@ -533,17 +557,19 @@ struct CExpOpLowering : public OpConversionPattern<sol::CExpOp> {
     // If 4 then
     r.setInsertionPointToStart(&ifBaseSgtZero.getThenRegion().front());
     {
-      Value tmpDiv = r.create<yul::DivOp>(loc, max, base);
-      Value panicCond =
-          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt, base, tmpDiv);
+      auto baseZExt = bExt.genIntCast(256, /*isSigned=*/false, base, loc);
+      Value tmpDiv = r.create<yul::DivOp>(loc, max256, baseZExt);
+      Value panicCond = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt,
+                                                baseZExt, tmpDiv);
       evmB.genPanic(solidity::util::PanicCode::UnderOverflow, panicCond);
     }
     // If 4 else
     r.setInsertionPointToStart(&ifBaseSgtZero.getElseRegion().front());
     {
-      Value tmpDiv = r.create<yul::SDivOp>(loc, max, base);
-      Value panicCond =
-          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, base, tmpDiv);
+      auto baseSExt = bExt.genIntCast(256, /*isSigned=*/true, base, loc);
+      Value tmpDiv = r.create<yul::SDivOp>(loc, max256, baseSExt);
+      Value panicCond = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt,
+                                                baseSExt, tmpDiv);
       evmB.genPanic(solidity::util::PanicCode::UnderOverflow, panicCond);
     }
     // If 4 end
@@ -555,25 +581,32 @@ struct CExpOpLowering : public OpConversionPattern<sol::CExpOp> {
     Value pow2 =
         r.create<arith::SelectOp>(loc, expIsOdd, base, one).getResult();
     Value base2 = r.create<arith::MulIOp>(loc, base, base);
-    Value exp2 = r.create<yul::ShrOp>(loc, one, exp);
-    auto [pow3, base3] = genExpHelper(r, loc, pow2, base2, exp2, max);
+    Value exp2 = r.create<arith::ShRUIOp>(loc, exp, one);
+    auto [pow3, base3] = genExpHelper(r, loc, pow2, base2, exp2, max256);
 
     r.setInsertionPointToEnd(&ifExpEqOne.getElseRegion().front());
     {
-      Value div = r.create<yul::DivOp>(loc, max, base3);
+      auto baseZExt = bExt.genIntCast(256, /*isSigned=*/false, base3, loc);
+      auto powZExt = bExt.genIntCast(256, /*isSigned=*/false, pow3, loc);
+      auto powSExt = bExt.genIntCast(256, /*isSigned=*/true, pow3, loc);
+      auto zero256 = bExt.genI256Const(0, loc);
+      Value div = r.create<yul::DivOp>(loc, max256, baseZExt);
       Value cmp =
-          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt, pow3, div);
-      Value cmp2 =
-          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::sgt, pow3, zero);
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt, powZExt, div);
+      Value cmp2 = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::sgt,
+                                           powSExt, zero256);
       Value panicCond = r.create<arith::AndIOp>(loc, cmp, cmp2);
       evmB.genPanic(solidity::util::PanicCode::UnderOverflow, panicCond);
     }
     {
-      Value div = r.create<yul::SDivOp>(loc, min, base3);
+      auto baseSExt = bExt.genIntCast(256, /*isSigned=*/true, base3, loc);
+      auto powSExt = bExt.genIntCast(256, /*isSigned=*/true, pow3, loc);
+      auto zero256 = bExt.genI256Const(0, loc);
+      Value div = r.create<yul::SDivOp>(loc, min256, baseSExt);
       Value cmp =
-          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, pow3, div);
-      Value cmp2 =
-          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, pow3, zero);
+          r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt, powSExt, div);
+      Value cmp2 = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::slt,
+                                           powSExt, zero256);
       Value panicCond = r.create<arith::AndIOp>(loc, cmp, cmp2);
       evmB.genPanic(solidity::util::PanicCode::UnderOverflow, panicCond);
     }
@@ -592,8 +625,7 @@ struct CExpOpLowering : public OpConversionPattern<sol::CExpOp> {
 
     r.setInsertionPointAfter(ifExpEqZero);
 
-    return bExt.genIntCast(ty.getWidth(), ty.isSigned(),
-                           ifExpEqZero.getResult(0));
+    return ifExpEqZero.getResult(0);
   }
 
   LogicalResult matchAndRewrite(sol::CExpOp op, OpAdaptor adaptor,
