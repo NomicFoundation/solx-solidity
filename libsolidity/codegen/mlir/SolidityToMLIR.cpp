@@ -1170,6 +1170,45 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     return resVals;
   }
 
+  case FunctionType::Kind::AddMod:
+  case FunctionType::Kind::MulMod: {
+    std::vector<mlir::Value> args;
+    for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes()))
+      args.push_back(genRValExpr(*arg, getType(dstTy)));
+
+    if (calleeTy->kind() == FunctionType::Kind::AddMod)
+      resVals.push_back(b.create<mlir::sol::AddModOp>(loc, args));
+    else
+      resVals.push_back(b.create<mlir::sol::MulModOp>(loc, args));
+
+    return resVals;
+  }
+
+  case FunctionType::Kind::KECCAK256:
+  case FunctionType::Kind::SHA256:
+  case FunctionType::Kind::ECRecover:
+  case FunctionType::Kind::RIPEMD160: {
+    mlirgen::BuilderExt bExt(b);
+    std::vector<mlir::Type> resTys;
+    for (Type const *ty : calleeTy->returnParameterTypes())
+      resTys.push_back(getType(ty));
+
+    std::vector<mlir::Value> args;
+    for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes()))
+      args.push_back(genRValExpr(*arg, getType(dstTy)));
+
+    if (calleeTy->kind() == FunctionType::Kind::KECCAK256)
+      resVals.push_back(b.create<mlir::sol::Keccak256Op>(loc, resTys, args));
+    else if (calleeTy->kind() == FunctionType::Kind::SHA256)
+      resVals.push_back(b.create<mlir::sol::Sha256Op>(loc, resTys, args));
+    else if (calleeTy->kind() == FunctionType::Kind::RIPEMD160)
+      resVals.push_back(b.create<mlir::sol::Ripemd160Op>(loc, resTys, args));
+    else if (calleeTy->kind() == FunctionType::Kind::ECRecover)
+      resVals.push_back(b.create<mlir::sol::EcrecoverOp>(loc, resTys, args));
+
+    return resVals;
+  }
+
   default:
     break;
   }

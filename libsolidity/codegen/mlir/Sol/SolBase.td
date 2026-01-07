@@ -216,4 +216,17 @@ class Sol_IntArithOp<string mnemonic, list<Trait> traits = []> :
 class Sol_UncheckedIntArithOp<string mnemonic, list<Trait> traits = []> :
     Sol_IntArithOp<mnemonic, traits # [Pure]>;
 
+class Sol_ModOp<string mnemonic, list<Trait> traits = []>
+    : Sol_Op<mnemonic, traits#[SameOperandsAndResultType]> {
+  let arguments = (ins AnyUnsignedInteger:$x, AnyUnsignedInteger:$y,
+      AnyUnsignedInteger:$mod);
+  let results = (outs AnyUnsignedInteger:$result);
+  let assemblyFormat = "$x `,` $y `,` $mod attr-dict `:` type($result)";
+}
+
+class Sol_HashPreCompileOp<string mnemonic> : Sol_Op<mnemonic> {
+  let arguments = (ins Sol_StringType:$data);
+  let results = (outs Sol_BytesType:$result);
+}
+
 #endif // MLIR_SOL_SOLBASE_TD
