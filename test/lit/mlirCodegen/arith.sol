@@ -1057,7 +1057,7 @@ function f_mulmod(uint8 a, uint8 b, uint8 mod) {
 // CHECK-NEXT:     sol.call @f_si_12(%10) : (si256) -> () loc(#loc464)
 // CHECK-NEXT:     sol.return loc(#loc452)
 // CHECK-NEXT:   } loc(#loc452)
-// CHECK-NEXT:   sol.func @f_addmod_981(%arg0: ui8 loc({{.*}}:221:18), %arg1: ui8 loc({{.*}}:221:27), %arg2: ui8 loc({{.*}}:221:36)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @f_addmod_981(%arg0: ui8 loc({{.*}}:221:18), %arg1: ui8 loc({{.*}}:221:27), %arg2: ui8 loc({{.*}}:221:36)) attributes {id = 981 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui8, Stack> loc(#loc466)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui8, !sol.ptr<ui8, Stack> loc(#loc466)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<ui8, Stack> loc(#loc467)
@@ -1074,7 +1074,7 @@ function f_mulmod(uint8 a, uint8 b, uint8 mod) {
 // CHECK-NEXT:     sol.call @f_ui_6(%9) : (ui256) -> () loc(#loc473)
 // CHECK-NEXT:     sol.return loc(#loc465)
 // CHECK-NEXT:   } loc(#loc465)
-// CHECK-NEXT:   sol.func @f_mulmod_999(%arg0: ui8 loc({{.*}}:225:18), %arg1: ui8 loc({{.*}}:225:27), %arg2: ui8 loc({{.*}}:225:36)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @f_mulmod_999(%arg0: ui8 loc({{.*}}:225:18), %arg1: ui8 loc({{.*}}:225:27), %arg2: ui8 loc({{.*}}:225:36)) attributes {id = 999 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui8, Stack> loc(#loc475)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui8, !sol.ptr<ui8, Stack> loc(#loc475)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<ui8, Stack> loc(#loc476)

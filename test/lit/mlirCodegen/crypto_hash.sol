@@ -33,22 +33,22 @@ function recover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) {
 // CHECK-NEXT: #loc25 = loc({{.*}}:18:40)
 // CHECK-NEXT: #loc26 = loc({{.*}}:18:51)
 // CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
-// CHECK-NEXT:   sol.func @f_bytes32_6(%arg0: !sol.bytes<32> loc({{.*}}:2:19)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @f_bytes32_6(%arg0: !sol.bytes<32> loc({{.*}}:2:19)) attributes {id = 6 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.bytes<32>, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.bytes<32>, !sol.ptr<!sol.bytes<32>, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.return loc(#loc1)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   sol.func @f_bytes20_12(%arg0: !sol.bytes<20> loc({{.*}}:3:19)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @f_bytes20_12(%arg0: !sol.bytes<20> loc({{.*}}:3:19)) attributes {id = 12 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.bytes<20>, Stack> loc(#loc4)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.bytes<20>, !sol.ptr<!sol.bytes<20>, Stack> loc(#loc4)
 // CHECK-NEXT:     sol.return loc(#loc3)
 // CHECK-NEXT:   } loc(#loc3)
-// CHECK-NEXT:   sol.func @f_address_18(%arg0: ui256 loc({{.*}}:4:19)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @f_address_18(%arg0: ui256 loc({{.*}}:4:19)) attributes {id = 18 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc6)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc6)
 // CHECK-NEXT:     sol.return loc(#loc5)
 // CHECK-NEXT:   } loc(#loc5)
-// CHECK-NEXT:   sol.func @keccak_30(%arg0: !sol.string<Memory> loc({{.*}}:6:16)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @keccak_30(%arg0: !sol.string<Memory> loc({{.*}}:6:16)) attributes {id = 30 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc8)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc8)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc9)
@@ -56,7 +56,7 @@ function recover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) {
 // CHECK-NEXT:     sol.call @f_bytes32_6(%2) : (!sol.bytes<32>) -> () loc(#loc11)
 // CHECK-NEXT:     sol.return loc(#loc7)
 // CHECK-NEXT:   } loc(#loc7)
-// CHECK-NEXT:   sol.func @sha_42(%arg0: !sol.string<Memory> loc({{.*}}:10:13)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @sha_42(%arg0: !sol.string<Memory> loc({{.*}}:10:13)) attributes {id = 42 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc13)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc13)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc14)
@@ -64,7 +64,7 @@ function recover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) {
 // CHECK-NEXT:     sol.call @f_bytes32_6(%2) : (!sol.bytes<32>) -> () loc(#loc16)
 // CHECK-NEXT:     sol.return loc(#loc12)
 // CHECK-NEXT:   } loc(#loc12)
-// CHECK-NEXT:   sol.func @rip_54(%arg0: !sol.string<Memory> loc({{.*}}:14:13)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @rip_54(%arg0: !sol.string<Memory> loc({{.*}}:14:13)) attributes {id = 54 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc18)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc18)
 // CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc19)
@@ -72,7 +72,7 @@ function recover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) {
 // CHECK-NEXT:     sol.call @f_bytes20_12(%2) : (!sol.bytes<20>) -> () loc(#loc21)
 // CHECK-NEXT:     sol.return loc(#loc17)
 // CHECK-NEXT:   } loc(#loc17)
-// CHECK-NEXT:   sol.func @recover_75(%arg0: !sol.bytes<32> loc({{.*}}:18:17), %arg1: ui8 loc({{.*}}:18:31), %arg2: !sol.bytes<32> loc({{.*}}:18:40), %arg3: !sol.bytes<32> loc({{.*}}:18:51)) attributes {state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @recover_75(%arg0: !sol.bytes<32> loc({{.*}}:18:17), %arg1: ui8 loc({{.*}}:18:31), %arg2: !sol.bytes<32> loc({{.*}}:18:40), %arg3: !sol.bytes<32> loc({{.*}}:18:51)) attributes {id = 75 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.bytes<32>, Stack> loc(#loc23)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.bytes<32>, !sol.ptr<!sol.bytes<32>, Stack> loc(#loc23)
 // CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<ui8, Stack> loc(#loc24)
