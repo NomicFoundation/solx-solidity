@@ -11,6 +11,7 @@ cd "$ROOTDIR"
 "${ROOTDIR}/scripts/prerelease_suffix.sh" "$prerelease_source" "$CIRCLE_TAG" > prerelease.txt
 
 if [[ "${CCACHE_ENABLED:-}" == "1" ]]; then
+  export CCACHE_DIR="$HOME/.ccache"
   export CCACHE_BASEDIR="$ROOTDIR"
   export CCACHE_NOHASHDIR=1
   export CCACHE_COMPILERTYPE=msvc
@@ -24,6 +25,7 @@ if [[ "${CCACHE_ENABLED:-}" == "1" ]]; then
   # Visual Studio generator doesn't use compiler launchers; use ccache masquerade.
   # See https://github.com/ccache/ccache/wiki/MS-Visual-Studio
   CMAKE_OPTIONS="${CMAKE_OPTIONS:-} -DCMAKE_VS_GLOBALS=CLToolPath=${WIN_PWD}/deps/ccache;UseMultiToolTask=true"
+  mkdir -p "$CCACHE_DIR"
 fi
 
 mkdir -p build/

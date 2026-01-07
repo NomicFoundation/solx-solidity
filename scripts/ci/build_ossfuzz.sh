@@ -19,9 +19,11 @@ function build_fuzzers
 {
   cd "${BUILDDIR}"
   if [[ "${CCACHE_ENABLED:-}" == "1" ]]; then
+    export CCACHE_DIR="$HOME/.ccache"
     export CCACHE_BASEDIR="$ROOTDIR"
     export CCACHE_NOHASHDIR=1
     CMAKE_OPTIONS="${CMAKE_OPTIONS:-} -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+    mkdir -p "$CCACHE_DIR"
   fi
   # shellcheck disable=SC2086
   cmake .. -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}" \
