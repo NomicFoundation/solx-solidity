@@ -18,9 +18,22 @@ function generate_protobuf_bindings
 function build_fuzzers
 {
   cd "${BUILDDIR}"
-  cmake .. -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}" -DCCACHE=OFF \
-    -DCMAKE_TOOLCHAIN_FILE="${ROOTDIR}"/cmake/toolchains/libfuzzer.cmake
+  if [[ "${CCACHE_ENABLED:-}" == "1" ]]; then
+    export CCACHE_BASEDIR="$ROOTDIR"
+    export CCACHE_NOHASHDIR=1
+    CMAKE_OPTIONS="${CMAKE_OPTIONS:-} -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+  fi
+  # shellcheck disable=SC2086
+  cmake .. -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Release}" \
+    -DCMAKE_TOOLCHAIN_FILE="${ROOTDIR}"/cmake/toolchains/libfuzzer.cmake \
+    $CMAKE_OPTIONS
+  if [[ "${CCACHE_ENABLED:-}" == "1" ]]; then
+    ccache -z
+  fi
   make ossfuzz ossfuzz_proto ossfuzz_abiv2 -j 4
+  if [[ "${CCACHE_ENABLED:-}" == "1" ]]; then
+    ccache -s
+  fi
 }
 
 generate_protobuf_bindings

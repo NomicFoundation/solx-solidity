@@ -13,25 +13,25 @@ parameters:
     default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:1f387a77be889f65a2a25986a5c5eccc88cec23fabe6aeaf351790751145c81e"
   ubuntu-2404-docker-image:
     type: string
-    # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu2404-6
-    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:c0412c53e59ce0c96bde4c08e7332ea12e4cadba9bbac829621947897fa21272"
+    # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu2404-7
+    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:e52bd8fbb38908f203c6866e39562548faf26e5b7a5174f9860b44aae2b8f0cd"
   ubuntu-2404-arm-docker-image:
     type: string
-    # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu2404.arm-2
-    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:27b03c1c4688e5d69b10e0539460346a3dee3b10b0e04fb406b9707c6f0dd95e"
+    # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu2404.arm-3
+    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:1e6dbf9a9173f2645449281a1e11918a95ca6dc04e59aa9d70824cffc44697ed"
   ubuntu-2404-clang-docker-image:
     type: string
-    # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu2404.clang-7
-    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:7466ed23590cf14e60da884894723bcdab064742f017dcfcce015999b4f9143b"
+    # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu2404.clang-8
+    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:e283c8ec6a59c76565c89b856d8019af2fa5beb96f27d3064fc4dda42bf3524d"
   ubuntu-clang-ossfuzz-docker-image:
     type: string
-    # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu.clang.ossfuzz-12
-    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:c7088af5082bf764244a6251ecf3dd29d280d2cd2cd071f011f7f32e0326f426"
+    # ghcr.io/argotorg/solidity-buildpack-deps:ubuntu.clang.ossfuzz-13
+    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:2acb5d6f254ece25a96096f26960b5fe114eb86ceca92312cd20d59c096bf6e4"
   emscripten-docker-image:
     type: string
     # NOTE: Please remember to update the `scripts/build_emscripten.sh` whenever the hash of this image changes.
-    # ghcr.io/argotorg/solidity-buildpack-deps:emscripten-21
-    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:fc53d68a4680ffa7d5f70164e13a903478964f15bcc07434d74833a05f4fbc19"
+    # ghcr.io/argotorg/solidity-buildpack-deps:emscripten-22
+    default: "ghcr.io/argotorg/solidity-buildpack-deps@sha256:b9c953144d82cca5553f65626bc43b8af456dbc8966f8732ff9522f33ca8d722"
   evm-version:
     type: string
     default: osaka
@@ -208,15 +208,98 @@ commands:
 
   run_build:
     steps:
-      - run:
-          name: Build
-          command: scripts/ci/build.sh
+      # TODO: remove the line below
+      # Before merging this PR we need to use an alternative develop branch to test the functionality, `ci-ccache`
+
+      # On `ci-ccache` and `breaking` we intentionally do NOT restore any ccache, so every run starts from scratch.
+      # Tags always skip ccache. Other branches restore the most recent cache produced on `ci-ccache`.
+      - when:
+          condition:
+            and:
+              - equal: ["", << pipeline.git.tag >>]
+              - not:
+                  or:
+                    - equal: ["ci-ccache", << pipeline.git.branch >>]
+                    - equal: ["breaking", << pipeline.git.branch >>]
+          steps:
+            - restore_cache:
+                keys:
+                  # Reuse cache produced on ci-ccache (prefix match; restores the most recent).
+                  - v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-
+      # WARNING! If you edit anything between here and save_cache, remember to bump version or invalidate the cache manually.
+      - when:
+          condition:
+            and:
+              - equal: ["", << pipeline.git.tag >>]
+          steps:
+            - run:
+                name: Build (ccache)
+                command: CCACHE_ENABLED=1 scripts/ci/build.sh
+      - when:
+          condition:
+            or:
+              - not:
+                  equal: ["", << pipeline.git.tag >>]
+          steps:
+            - run:
+                name: Build (no ccache)
+                command: scripts/ci/build.sh
+
+      # On `ci-ccache` we always generate a fresh cache by never restoring and by saving under a unique key.
+      - when:
+          condition:
+            equal: ["ci-ccache", << pipeline.git.branch >>]
+          steps:
+            - save_cache:
+                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-{{ .Revision }}
+                paths:
+                  - ~/.ccache
 
   run_build_ossfuzz:
     steps:
-      - run:
-          name: Build_ossfuzz
-          command: scripts/ci/build_ossfuzz.sh
+      # On `ci-ccache` and `breaking` we intentionally do NOT restore any ccache, so every run starts from scratch.
+      # Tags always skip ccache. Other branches restore the most recent cache produced on `ci-ccache`.
+      - when:
+          condition:
+            and:
+              - equal: ["", << pipeline.git.tag >>]
+              - not:
+                  or:
+                    - equal: ["ci-ccache", << pipeline.git.branch >>]
+                    - equal: ["breaking", << pipeline.git.branch >>]
+          steps:
+            - restore_cache:
+                keys:
+                  # Reuse cache produced on ci-ccache (prefix match; restores the most recent).
+                  - v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-
+      # WARNING! If you edit anything between here and save_cache, remember to bump version or invalidate the cache manually.
+      - when:
+          condition:
+            and:
+              - equal: ["", << pipeline.git.tag >>]
+          steps:
+            - run:
+                name: Build_ossfuzz (ccache)
+                command: CCACHE_ENABLED=1 scripts/ci/build_ossfuzz.sh
+      - when:
+          condition:
+            or:
+              - not:
+                  equal: ["", << pipeline.git.tag >>]
+          steps:
+            - run:
+                name: Build_ossfuzz (no ccache)
+                command: scripts/ci/build_ossfuzz.sh
+
+      # On `ci-ccache` we always generate a fresh cache by never restoring and by saving under a unique key.
+      - when:
+          condition:
+            equal: ["ci-ccache", << pipeline.git.branch >>]
+          steps:
+            - save_cache:
+                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-{{ .Revision }}
+                paths:
+                  - ~/.ccache
 
   run_proofs:
     steps:
@@ -1197,7 +1280,7 @@ jobs:
       - run:
           name: Install build dependencies
           command: |
-            pacman --noconfirm -Syu --noprogressbar --needed base-devel boost cmake git openssh tar
+            pacman --noconfirm -Syu --noprogressbar --needed base-devel boost cmake ccache git openssh tar
       - checkout
       - run_build
       - store_artifacts_solc
@@ -1257,10 +1340,50 @@ jobs:
       MAKEFLAGS: -j 10
     steps:
       - checkout
-      - run:
-          name: Build
-          command: |
-            scripts/ci/build_emscripten.sh
+      # On `ci-ccache` and `breaking` we intentionally do NOT restore any ccache, so every run starts from scratch.
+      # Tags always skip ccache. Other branches restore the most recent cache produced on `ci-ccache`.
+      - when:
+          condition:
+            and:
+              - equal: ["", << pipeline.git.tag >>]
+              - not:
+                  or:
+                    - equal: ["ci-ccache", << pipeline.git.branch >>]
+                    - equal: ["breaking", << pipeline.git.branch >>]
+          steps:
+            - restore_cache:
+                keys:
+                  # Reuse cache produced on ci-ccache (prefix match; restores the most recent).
+                  - v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-
+      # WARNING! If you edit anything between here and save_cache, remember to bump version or invalidate the cache manually.
+      - when:
+          condition:
+            and:
+              - equal: ["", << pipeline.git.tag >>]
+          steps:
+            - run:
+                name: Build (ccache)
+                command: CCACHE_ENABLED=1 scripts/ci/build_emscripten.sh
+      - when:
+          condition:
+            or:
+              - not:
+                  equal: ["", << pipeline.git.tag >>]
+          steps:
+            - run:
+                name: Build (no ccache)
+                command: |
+                  scripts/ci/build_emscripten.sh
+
+      # On `ci-ccache` we always generate a fresh cache by never restoring and by saving under a unique key.
+      - when:
+          condition:
+            equal: ["ci-ccache", << pipeline.git.branch >>]
+          steps:
+            - save_cache:
+                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-{{ .Revision }}
+                paths:
+                  - ~/.ccache
       - store_artifacts:
           path: upload/soljson.js
           destination: soljson.js
@@ -1737,9 +1860,48 @@ jobs:
           key: dependencies-win-{{ arch }}-{{ checksum "scripts/install_deps.ps1" }}
           paths:
             - .\deps
-      - run:
-          name: "Building solidity"
-          command: scripts/ci/build_win.sh
+      # On `ci-ccache` and `breaking` we intentionally do NOT restore any ccache, so every run starts from scratch.
+      # Tags always skip ccache. Other branches restore the most recent cache produced on `ci-ccache`.
+      - when:
+          condition:
+            and:
+              - equal: ["", << pipeline.git.tag >>]
+              - not:
+                  or:
+                    - equal: ["ci-ccache", << pipeline.git.branch >>]
+                    - equal: ["breaking", << pipeline.git.branch >>]
+          steps:
+            - restore_cache:
+                keys:
+                  # Reuse cache produced on ci-ccache (prefix match; restores the most recent).
+                  - v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-
+      # WARNING! If you edit anything between here and save_cache, remember to bump version or invalidate the cache manually.
+      - when:
+          condition:
+            and:
+              - equal: ["", << pipeline.git.tag >>]
+          steps:
+            - run:
+                name: "Building solidity (ccache)"
+                command: CCACHE_ENABLED=1 scripts/ci/build_win.sh
+      - when:
+          condition:
+            or:
+              - not:
+                  equal: ["", << pipeline.git.tag >>]
+          steps:
+            - run:
+                name: "Building solidity (no ccache)"
+                command: scripts/ci/build_win.sh
+      # On `ci-ccache` we always generate a fresh cache by never restoring and by saving under a unique key.
+      - when:
+          condition:
+            equal: ["ci-ccache", << pipeline.git.branch >>]
+          steps:
+            - save_cache:
+                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-{{ .Revision }}
+                paths:
+                  - ~/.ccache
       - run:
           name: "Run solc.exe to make sure build was successful."
           command: .\build\solc\Release\solc.exe --version
