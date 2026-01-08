@@ -75,6 +75,17 @@ commands:
           event: release
           condition: on_success
 
+  ensure_ccache_key:
+    description: "Fail fast when CCACHE_KEY is missing."
+    steps:
+      - run:
+          name: Check CCACHE_KEY
+          command: |
+            if [ -z "${CCACHE_KEY:-}" ]; then
+              echo "CCACHE_KEY is not set. Please set it in CircleCI environment settings."
+              exit 1
+            fi
+
   prepare_bytecode_report:
     description: "Generate bytecode report and upload it as an artifact."
     parameters:
@@ -208,6 +219,11 @@ commands:
 
   run_build:
     steps:
+      - when:
+          condition:
+            equal: ["", << pipeline.git.tag >>]
+          steps:
+            - ensure_ccache_key
       # TODO: remove the line below
       # Before merging this PR we need to use an alternative develop branch to test the functionality, `ci-ccache`
 
@@ -226,7 +242,7 @@ commands:
                 keys:
                   # Reuse cache produced on ci-ccache (prefix match; restores the most recent).
                   - v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-
-      # WARNING! If you edit anything between here and save_cache, remember to bump version or invalidate the cache manually.
+      # WARNING! If you edit anything between here and save_cache, remember to bump the CCACHE_KEY version in CircleCI environment settings
       - when:
           condition:
             and:
@@ -234,7 +250,7 @@ commands:
           steps:
             - run:
                 name: Build (ccache)
-                command: CCACHE_ENABLED=1 scripts/ci/build.sh
+                command: CCACHE_ENABLED=${CCACHE_ENABLED:-1} scripts/ci/build.sh
       - when:
           condition:
             or:
@@ -251,12 +267,17 @@ commands:
             equal: ["ci-ccache", << pipeline.git.branch >>]
           steps:
             - save_cache:
-                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-{{ .Revision }}
+                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache
                 paths:
                   - ~/.ccache
 
   run_build_ossfuzz:
     steps:
+      - when:
+          condition:
+            equal: ["", << pipeline.git.tag >>]
+          steps:
+            - ensure_ccache_key
       # On `ci-ccache` and `breaking` we intentionally do NOT restore any ccache, so every run starts from scratch.
       # Tags always skip ccache. Other branches restore the most recent cache produced on `ci-ccache`.
       - when:
@@ -272,7 +293,7 @@ commands:
                 keys:
                   # Reuse cache produced on ci-ccache (prefix match; restores the most recent).
                   - v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-
-      # WARNING! If you edit anything between here and save_cache, remember to bump version or invalidate the cache manually.
+      # WARNING! If you edit anything between here and save_cache, remember to bump the CCACHE_KEY version in CircleCI environment settings
       - when:
           condition:
             and:
@@ -280,7 +301,7 @@ commands:
           steps:
             - run:
                 name: Build_ossfuzz (ccache)
-                command: CCACHE_ENABLED=1 scripts/ci/build_ossfuzz.sh
+                command: CCACHE_ENABLED=${CCACHE_ENABLED:-1} scripts/ci/build_ossfuzz.sh
       - when:
           condition:
             or:
@@ -297,7 +318,7 @@ commands:
             equal: ["ci-ccache", << pipeline.git.branch >>]
           steps:
             - save_cache:
-                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-{{ .Revision }}
+                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache
                 paths:
                   - ~/.ccache
 
@@ -1340,6 +1361,11 @@ jobs:
       MAKEFLAGS: -j 10
     steps:
       - checkout
+      - when:
+          condition:
+            equal: ["", << pipeline.git.tag >>]
+          steps:
+            - ensure_ccache_key
       # On `ci-ccache` and `breaking` we intentionally do NOT restore any ccache, so every run starts from scratch.
       # Tags always skip ccache. Other branches restore the most recent cache produced on `ci-ccache`.
       - when:
@@ -1355,7 +1381,7 @@ jobs:
                 keys:
                   # Reuse cache produced on ci-ccache (prefix match; restores the most recent).
                   - v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-
-      # WARNING! If you edit anything between here and save_cache, remember to bump version or invalidate the cache manually.
+      # WARNING! If you edit anything between here and save_cache, remember to bump the CCACHE_KEY version in CircleCI environment settings
       - when:
           condition:
             and:
@@ -1363,7 +1389,7 @@ jobs:
           steps:
             - run:
                 name: Build (ccache)
-                command: CCACHE_ENABLED=1 scripts/ci/build_emscripten.sh
+                command: CCACHE_ENABLED=${CCACHE_ENABLED:-1} scripts/ci/build_emscripten.sh
       - when:
           condition:
             or:
@@ -1381,7 +1407,7 @@ jobs:
             equal: ["ci-ccache", << pipeline.git.branch >>]
           steps:
             - save_cache:
-                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-{{ .Revision }}
+                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache
                 paths:
                   - ~/.ccache
       - store_artifacts:
@@ -1860,6 +1886,11 @@ jobs:
           key: dependencies-win-{{ arch }}-{{ checksum "scripts/install_deps.ps1" }}
           paths:
             - .\deps
+      - when:
+          condition:
+            equal: ["", << pipeline.git.tag >>]
+          steps:
+            - ensure_ccache_key
       # On `ci-ccache` and `breaking` we intentionally do NOT restore any ccache, so every run starts from scratch.
       # Tags always skip ccache. Other branches restore the most recent cache produced on `ci-ccache`.
       - when:
@@ -1875,7 +1906,7 @@ jobs:
                 keys:
                   # Reuse cache produced on ci-ccache (prefix match; restores the most recent).
                   - v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-
-      # WARNING! If you edit anything between here and save_cache, remember to bump version or invalidate the cache manually.
+      # WARNING! If you edit anything between here and save_cache, remember to bump the CCACHE_KEY version in CircleCI environment settings
       - when:
           condition:
             and:
@@ -1883,7 +1914,7 @@ jobs:
           steps:
             - run:
                 name: "Building solidity (ccache)"
-                command: CCACHE_ENABLED=1 scripts/ci/build_win.sh
+                command: CCACHE_ENABLED=${CCACHE_ENABLED:-1} scripts/ci/build_win.sh
       - when:
           condition:
             or:
@@ -1899,7 +1930,7 @@ jobs:
             equal: ["ci-ccache", << pipeline.git.branch >>]
           steps:
             - save_cache:
-                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-{{ .Revision }}
+                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache
                 paths:
                   - ~/.ccache
       - run:
