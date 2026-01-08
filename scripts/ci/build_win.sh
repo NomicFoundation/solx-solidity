@@ -16,10 +16,12 @@ if [[ "${CCACHE_ENABLED:-}" == "1" ]]; then
   export CCACHE_BASEDIR="$ROOTDIR"
   export CCACHE_NOHASHDIR=1
   export CCACHE_COMPILERTYPE=msvc
-  VSWHERE="C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe"
-  CCACHE_COMPILER="$("$VSWHERE" -latest -products "*" \
+  VSWHERE="${VSWHERE:-C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe}"
+  VS_INSTALL="$("$VSWHERE" -latest -products "*" \
     -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 \
-    -find "VC/Tools/MSVC/*/bin/Hostx64/x64/cl.exe" | head -n 1 | tr -d '\r')"
+    -property installationPath | tr -d '\r')"
+  VCTOOLS_VERSION="$(tr -d '\r' < "$VS_INSTALL/VC/Auxiliary/Build/Microsoft.VCToolsVersion.default.txt")"
+  CCACHE_COMPILER="$VS_INSTALL/VC/Tools/MSVC/$VCTOOLS_VERSION/bin/Hostx64/x64/cl.exe"
   CCACHE_COMPILER="${CCACHE_COMPILER//\\//}"
   export CCACHE_COMPILER
   PATH="$ROOTDIR/deps/ccache:$(dirname "$CCACHE_COMPILER"):$PATH"
