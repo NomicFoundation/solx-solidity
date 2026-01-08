@@ -19,7 +19,6 @@ if [[ "${CCACHE_ENABLED:-}" == "1" ]]; then
   VSWHERE="C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe"
   CCACHE_COMPILER="$("$VSWHERE" -latest -products "*" \
     -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 \
-    -version "[16.0,17.0)" \
     -find "VC/Tools/MSVC/*/bin/Hostx64/x64/cl.exe" | sort -V | tail -n 1 | tr -d '\r')"
   CCACHE_COMPILER="${CCACHE_COMPILER//\\//}"
   export CCACHE_COMPILER
