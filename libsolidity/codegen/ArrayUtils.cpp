@@ -105,17 +105,6 @@ void ArrayUtils::copyArrayToStorage(ArrayType const& _targetType, ArrayType cons
 		0
 	);
 	// stack: target_ref
-
-	if (auto* structType = dynamic_cast<StructType const*>(_sourceType.baseType()))
-	{
-		if (structType->recursive())
-		{
-			std::string name{m_context.utilFunctions().copyArrayToStorageFunction(_sourceType, _targetType)};
-			auto tag = m_context.lowLevelFunctionTagIfExists(name);
-			solAssert(tag != evmasm::AssemblyItem(evmasm::UndefinedItem), "");
-			m_context.addRecursiveLowLevelFunc({name, tag.data().convert_to<uint32_t>(), /*ins=*/3, /*outs=*/1});
-		}
-	}
 }
 
 void ArrayUtils::copyArrayToMemory(ArrayType const& _sourceType, bool _padToWordBoundaries) const

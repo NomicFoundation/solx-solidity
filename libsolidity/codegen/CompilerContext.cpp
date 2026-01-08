@@ -149,9 +149,7 @@ void CompilerContext::callYulFunction(
 	m_externallyUsedYulFunctions.insert(_name);
 	auto const retTag = pushNewTag();
 	CompilerUtils(*this).moveIntoStack(_inArgs);
-	auto tag = namedTag(_name, _inArgs, _outArgs, {});
-	appendJumpTo(tag, evmasm::AssemblyItem::JumpType::IntoFunction);
-	m_lowLevelFunctions.insert(make_pair(_name, tag));
+	appendJumpTo(namedTag(_name, _inArgs, _outArgs, {}), evmasm::AssemblyItem::JumpType::IntoFunction);
 	adjustStackOffset(static_cast<int>(_outArgs) - 1 - static_cast<int>(_inArgs));
 	*this << retTag.tag();
 }
@@ -547,6 +545,16 @@ void CompilerContext::appendInlineAssembly(
 		_system,
 		_optimiserSettings.optimizeStackAllocation
 	);
+	for (auto fnHandle: yulContext->functionInfoMap)
+	{
+		for (auto fnInfo: fnHandle.second)
+		{
+			auto tag = static_cast<unsigned>(fnInfo.label);
+			auto numIns = static_cast<unsigned>(fnInfo.ast->parameters.size());
+			auto numOuts = static_cast<unsigned>(fnInfo.ast->returnVariables.size());
+			addRecursiveLowLevelFunc({fnInfo.ast->name.str(), tag, numIns, numOuts});
+		}
+	}
 
 	// Reset the source location to the one of the node (instead of the CODEGEN source location)
 	updateSourceLocation();
