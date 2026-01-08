@@ -16,8 +16,12 @@ if [[ "${CCACHE_ENABLED:-}" == "1" ]]; then
   export CCACHE_BASEDIR="$ROOTDIR"
   export CCACHE_NOHASHDIR=1
   export CCACHE_COMPILERTYPE=msvc
-  # Hard-coded MSVC cl.exe path
-  CCACHE_COMPILER="C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/VC/Tools/MSVC/14.29.30133/bin/Hostx64/x64/cl.exe"
+  VSWHERE="C:/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe"
+  CCACHE_COMPILER="$("$VSWHERE" -latest -products "*" \
+    -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 \
+    -version "[16.0,17.0)" \
+    -find "VC/Tools/MSVC/*/bin/Hostx64/x64/cl.exe" | sort -V | tail -n 1 | tr -d '\r')"
+  CCACHE_COMPILER="${CCACHE_COMPILER//\\//}"
   export CCACHE_COMPILER
   PATH="$ROOTDIR/deps/ccache:$(dirname "$CCACHE_COMPILER"):$PATH"
   export PATH
