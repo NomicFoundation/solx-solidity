@@ -86,6 +86,44 @@ commands:
               exit 1
             fi
 
+  restore_ccache_if_allowed:
+    description: "Restore ccache unless on a tag or a skipped branch."
+    parameters:
+      # TODO: remove the line below
+      # Before merging this PR we need to use an alternative develop branch to test the functionality, `ci-ccache`
+      skip_branches_regex:
+        description: "Regex of branches that should skip restoring the cache."
+        type: string
+        default: "^(ci-ccache|breaking)$"
+    steps:
+      # Tags always skip ccache. Selected branches intentionally start from scratch.
+      - when:
+          condition:
+            and:
+              - equal: ["", << pipeline.git.tag >>]
+              - not:
+                  matches:
+                    pattern: "<< parameters.skip_branches_regex >>"
+                    value: << pipeline.git.branch >>
+          steps:
+            - restore_cache:
+                keys:
+                  # Reuse cache produced on ci-ccache (prefix match; restores the most recent).
+                  - v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-
+
+  save_ccache_if_develop:
+    description: "Save a fresh ccache only on the ci-ccache branch."
+    steps:
+      # On `ci-ccache` we always generate a fresh cache by never restoring and by saving under a unique key.
+      - when:
+          condition:
+            equal: ["ci-ccache", << pipeline.git.branch >>]
+          steps:
+            - save_cache:
+                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache
+                paths:
+                  - ~/.ccache
+
   prepare_bytecode_report:
     description: "Generate bytecode report and upload it as an artifact."
     parameters:
@@ -224,24 +262,7 @@ commands:
             equal: ["", << pipeline.git.tag >>]
           steps:
             - ensure_ccache_key
-      # TODO: remove the line below
-      # Before merging this PR we need to use an alternative develop branch to test the functionality, `ci-ccache`
-
-      # On `ci-ccache` and `breaking` we intentionally do NOT restore any ccache, so every run starts from scratch.
-      # Tags always skip ccache. Other branches restore the most recent cache produced on `ci-ccache`.
-      - when:
-          condition:
-            and:
-              - equal: ["", << pipeline.git.tag >>]
-              - not:
-                  or:
-                    - equal: ["ci-ccache", << pipeline.git.branch >>]
-                    - equal: ["breaking", << pipeline.git.branch >>]
-          steps:
-            - restore_cache:
-                keys:
-                  # Reuse cache produced on ci-ccache (prefix match; restores the most recent).
-                  - v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-
+      - restore_ccache_if_allowed
       # WARNING! If you edit anything between here and save_cache, remember to bump the CCACHE_KEY version in CircleCI environment settings
       - when:
           condition:
@@ -261,15 +282,7 @@ commands:
                 name: Build (no ccache)
                 command: scripts/ci/build.sh
 
-      # On `ci-ccache` we always generate a fresh cache by never restoring and by saving under a unique key.
-      - when:
-          condition:
-            equal: ["ci-ccache", << pipeline.git.branch >>]
-          steps:
-            - save_cache:
-                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache
-                paths:
-                  - ~/.ccache
+      - save_ccache_if_develop
 
   run_build_ossfuzz:
     steps:
@@ -278,21 +291,7 @@ commands:
             equal: ["", << pipeline.git.tag >>]
           steps:
             - ensure_ccache_key
-      # On `ci-ccache` and `breaking` we intentionally do NOT restore any ccache, so every run starts from scratch.
-      # Tags always skip ccache. Other branches restore the most recent cache produced on `ci-ccache`.
-      - when:
-          condition:
-            and:
-              - equal: ["", << pipeline.git.tag >>]
-              - not:
-                  or:
-                    - equal: ["ci-ccache", << pipeline.git.branch >>]
-                    - equal: ["breaking", << pipeline.git.branch >>]
-          steps:
-            - restore_cache:
-                keys:
-                  # Reuse cache produced on ci-ccache (prefix match; restores the most recent).
-                  - v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-
+      - restore_ccache_if_allowed
       # WARNING! If you edit anything between here and save_cache, remember to bump the CCACHE_KEY version in CircleCI environment settings
       - when:
           condition:
@@ -312,15 +311,7 @@ commands:
                 name: Build_ossfuzz (no ccache)
                 command: scripts/ci/build_ossfuzz.sh
 
-      # On `ci-ccache` we always generate a fresh cache by never restoring and by saving under a unique key.
-      - when:
-          condition:
-            equal: ["ci-ccache", << pipeline.git.branch >>]
-          steps:
-            - save_cache:
-                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache
-                paths:
-                  - ~/.ccache
+      - save_ccache_if_develop
 
   run_proofs:
     steps:
@@ -1366,21 +1357,7 @@ jobs:
             equal: ["", << pipeline.git.tag >>]
           steps:
             - ensure_ccache_key
-      # On `ci-ccache` and `breaking` we intentionally do NOT restore any ccache, so every run starts from scratch.
-      # Tags always skip ccache. Other branches restore the most recent cache produced on `ci-ccache`.
-      - when:
-          condition:
-            and:
-              - equal: ["", << pipeline.git.tag >>]
-              - not:
-                  or:
-                    - equal: ["ci-ccache", << pipeline.git.branch >>]
-                    - equal: ["breaking", << pipeline.git.branch >>]
-          steps:
-            - restore_cache:
-                keys:
-                  # Reuse cache produced on ci-ccache (prefix match; restores the most recent).
-                  - v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-
+      - restore_ccache_if_allowed
       # WARNING! If you edit anything between here and save_cache, remember to bump the CCACHE_KEY version in CircleCI environment settings
       - when:
           condition:
@@ -1401,15 +1378,7 @@ jobs:
                 command: |
                   scripts/ci/build_emscripten.sh
 
-      # On `ci-ccache` we always generate a fresh cache by never restoring and by saving under a unique key.
-      - when:
-          condition:
-            equal: ["ci-ccache", << pipeline.git.branch >>]
-          steps:
-            - save_cache:
-                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache
-                paths:
-                  - ~/.ccache
+      - save_ccache_if_develop
       - store_artifacts:
           path: upload/soljson.js
           destination: soljson.js
@@ -1891,21 +1860,7 @@ jobs:
             equal: ["", << pipeline.git.tag >>]
           steps:
             - ensure_ccache_key
-      # On `ci-ccache` and `breaking` we intentionally do NOT restore any ccache, so every run starts from scratch.
-      # Tags always skip ccache. Other branches restore the most recent cache produced on `ci-ccache`.
-      - when:
-          condition:
-            and:
-              - equal: ["", << pipeline.git.tag >>]
-              - not:
-                  or:
-                    - equal: ["ci-ccache", << pipeline.git.branch >>]
-                    - equal: ["breaking", << pipeline.git.branch >>]
-          steps:
-            - restore_cache:
-                keys:
-                  # Reuse cache produced on ci-ccache (prefix match; restores the most recent).
-                  - v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-
+      - restore_ccache_if_allowed
       # WARNING! If you edit anything between here and save_cache, remember to bump the CCACHE_KEY version in CircleCI environment settings
       - when:
           condition:
