@@ -120,7 +120,7 @@ commands:
             equal: ["ci-ccache", << pipeline.git.branch >>]
           steps:
             - save_cache:
-                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache
+                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-{{ .Revision }}
                 paths:
                   - ~/.ccache
 
