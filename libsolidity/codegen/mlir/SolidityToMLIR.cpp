@@ -1108,11 +1108,34 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
   case FunctionType::Kind::Require: {
     if (call.arguments().size() == 2) {
       const auto *msg = dynamic_cast<Literal const *>(astArgs[1].get());
-      assert(msg && "NYI: Magic vars");
-      b.create<mlir::sol::RequireOp>(loc, genRValExpr(*astArgs[0]),
-                                     b.getStringAttr(msg->value()));
+      mlir::Value cond = genRValExpr(*astArgs[0]);
+      if (msg) {
+        // require(cond, "message") form.
+
+        b.create<mlir::sol::RequireOp>(loc, cond, b.getStringAttr(msg->value()),
+                                       mlir::ValueRange{});
+      } else {
+        // require(cond, Error(...)) form.
+
+        const auto *errorCall =
+            dynamic_cast<FunctionCall const *>(astArgs[1].get());
+        assert(errorCall);
+        const auto *errorDef = dynamic_cast<ErrorDefinition const *>(
+            ASTNode::referencedDeclaration(errorCall->expression()));
+        assert(errorDef);
+
+        mlir::SmallVector<mlir::Value> args;
+        for (auto [callArg, argDef] :
+             llvm::zip(errorCall->arguments(), errorDef->parameters()))
+          args.push_back(genRValExpr(*callArg, getType(argDef->type())));
+
+        b.create<mlir::sol::RequireOp>(
+            loc, cond, errorDef->functionType(true)->externalSignature(), args,
+            /*errorCall=*/true);
+      }
     } else {
-      b.create<mlir::sol::RequireOp>(loc, genRValExpr(*astArgs[0]));
+      b.create<mlir::sol::RequireOp>(loc, genRValExpr(*astArgs[0]), "",
+                                     mlir::ValueRange{});
     }
     return {};
   }

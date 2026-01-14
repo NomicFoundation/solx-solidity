@@ -1820,20 +1820,29 @@ struct TryOpLowering : public OpConversionPattern<sol::TryOp> {
   }
 };
 
-struct RequireOpLowering : public OpRewritePattern<sol::RequireOp> {
-  using OpRewritePattern<sol::RequireOp>::OpRewritePattern;
+struct RequireOpLowering : public OpConversionPattern<sol::RequireOp> {
+  using OpConversionPattern<sol::RequireOp>::OpConversionPattern;
 
-  LogicalResult matchAndRewrite(sol::RequireOp op,
-                                PatternRewriter &r) const override {
+  LogicalResult matchAndRewrite(sol::RequireOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
     Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+    evm::Builder evmB(r, loc);
 
     // Generate the revert condition.
     mlir::Value falseVal =
         r.create<arith::ConstantIntOp>(loc, 0, r.getI1Type());
     mlir::Value negCond = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq,
                                                   op.getCond(), falseVal);
+    if (op.getCall()) {
+      assert(op.getMsg().size());
+      evmB.genRevert(negCond, op.getArgs().getTypes(), adaptor.getArgs(),
+                     op.getMsg());
+      r.eraseOp(op);
+      return success();
+    }
+
     // Generate the revert.
-    evm::Builder evmB(r, loc);
     if (!op.getMsg().empty())
       evmB.genRevertWithMsg(negCond, op.getMsg().str());
     else
@@ -1894,20 +1903,10 @@ struct RevertOpLowering : public OpConversionPattern<sol::RevertOp> {
 
   LogicalResult matchAndRewrite(sol::RevertOp op, OpAdaptor adaptor,
                                 ConversionPatternRewriter &r) const override {
-    Location loc = op.getLoc();
-    evm::Builder evmB(r, loc);
-    solidity::mlirgen::BuilderExt bExt(r, loc);
-
-    Value selectorAddr = evmB.genFreePtr();
-    r.create<yul::MStoreOp>(loc, selectorAddr,
-                            bExt.genI256Selector(op.getSignature()));
-    Value tupleStart =
-        r.create<arith::AddIOp>(loc, selectorAddr, bExt.genI256Const(4));
-    Value tupleEnd = evmB.genABITupleEncoding(op.getArgs().getTypes(),
-                                              adaptor.getArgs(), tupleStart);
-    Value size = r.create<arith::SubIOp>(loc, tupleEnd, selectorAddr);
-    r.replaceOpWithNewOp<yul::RevertOp>(op, selectorAddr, size);
-
+    evm::Builder evmB(r, op.getLoc());
+    evmB.genRevert(op.getArgs().getTypes(), adaptor.getArgs(),
+                   op.getSignature());
+    r.eraseOp(op);
     return success();
   }
 };

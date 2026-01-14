@@ -406,11 +406,13 @@ def Sol_RevertOp : Sol_Op<"revert"> {
 }
 
 def Sol_RequireOp : Sol_Op<"require"> {
-  // FIXME: $msg should be an OptionalAttr, but it doesn't reflect in the
-  // generated build API.
-  let arguments = (ins I1:$cond, DefaultValuedStrAttr<StrAttr, "">:$msg);
+  // $msg represents the error call's signature if $call is set.
+  let arguments = (ins I1:$cond, StrAttr:$msg,
+                       Variadic<AnyType>:$args, UnitAttr:$call);
 
-  let assemblyFormat = "$cond `,` $msg attr-dict";
+  let assemblyFormat = [{
+    $cond `,` $msg `(` ($args^ `:` type($args))? `)` attr-dict
+  }];
 }
 
 // TODO: Implement verifiers for sol.break and sol.continue that checks if it

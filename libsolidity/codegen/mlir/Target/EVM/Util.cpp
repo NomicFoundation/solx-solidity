@@ -946,6 +946,32 @@ void evm::Builder::genRevert(Value cond, std::optional<Location> locArg) {
   b.create<yul::RevertOp>(loc, zero, zero);
 }
 
+void evm::Builder::genRevert(TypeRange tys, ValueRange vals,
+                             StringRef signature,
+                             std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+  solidity::mlirgen::BuilderExt bExt(b, loc);
+
+  Value selectorAddr = genFreePtr(loc);
+  b.create<yul::MStoreOp>(loc, selectorAddr, bExt.genI256Selector(signature));
+  Value tupleStart =
+      b.create<arith::AddIOp>(loc, selectorAddr, bExt.genI256Const(4));
+  Value tupleEnd = genABITupleEncoding(tys, vals, tupleStart, loc);
+  Value size = b.create<arith::SubIOp>(loc, tupleEnd, selectorAddr);
+  b.create<yul::RevertOp>(loc, selectorAddr, size);
+}
+
+void evm::Builder::genRevert(Value cond, TypeRange tys, ValueRange vals,
+                             StringRef signature,
+                             std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+
+  auto ifOp = b.create<scf::IfOp>(loc, cond);
+  OpBuilder::InsertionGuard insertGuard(b);
+  b.setInsertionPointToStart(&ifOp.getThenRegion().front());
+  genRevert(tys, vals, signature, loc);
+}
+
 void evm::Builder::genRevertWithMsg(std::string const &msg,
                                     std::optional<mlir::Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;

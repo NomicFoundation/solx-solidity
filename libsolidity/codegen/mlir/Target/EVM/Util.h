@@ -314,6 +314,14 @@ public:
   void genRevert(mlir::Value cond,
                  std::optional<mlir::Location> locArg = std::nullopt);
 
+  /// Generates a revert with the abi encoded args.
+  void genRevert(mlir::Value cond, mlir::TypeRange tys, mlir::ValueRange vals,
+                 mlir::StringRef signature,
+                 std::optional<mlir::Location> locArg = std::nullopt);
+  void genRevert(mlir::TypeRange tys, mlir::ValueRange vals,
+                 mlir::StringRef signature,
+                 std::optional<mlir::Location> locArg = std::nullopt);
+
   /// Generates a revert with values. (Useful for debugging)
   void genDbgRevert(mlir::ValueRange vals,
                     std::optional<mlir::Location> locArg = std::nullopt);
