@@ -832,4 +832,11 @@ def Sol_ContractOp : Sol_Op<"contract", [Symbol, SymbolTable, SingleBlock,
   let assemblyFormat = "$sym_name $bodyRegion attr-dict";
 }
 
+def Sol_ConcatOp : Sol_Op<"concat"> {
+  let arguments = (ins Variadic<Sol_StringType>:$args);
+  let results = (outs Sol_StringType:$result);
+
+  let assemblyFormat = "($args^ `:` type($args))? attr-dict `->` type($result)";
+}
+
 #endif // MLIR_SOL_SOLOPS_TD

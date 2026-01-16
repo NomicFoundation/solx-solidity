@@ -231,6 +231,11 @@ public:
   genDataAddrPtr(mlir::Value addr, mlir::sol::DataLocation dataLoc,
                  std::optional<mlir::Location> locArg = std::nullopt);
 
+  /// Generates a size of bytes/string.
+  mlir::Value
+  genStringSize(mlir::Value lengthSlot, mlir::sol::DataLocation dataLoc,
+                std::optional<mlir::Location> locArg = std::nullopt);
+
   /// Generates the address computation of the array or string at index.
   // TODO: Data-location should be fetched from the type! Implement APIs to
   // "clone" reference types with different data-locations.
@@ -258,6 +263,17 @@ public:
                    mlir::sol::DataLocation srcDataLoc,
                    mlir::sol::DataLocation dstDataLoc,
                    std::optional<mlir::Location> locArg = std::nullopt);
+
+  /// Copies a string into memory. It does not store the string length.
+  void genCopyStringDataToMemory(
+      mlir::Value srcAddr, mlir::Value lengthSlot, mlir::Value length,
+      mlir::Value dstAddr, mlir::sol::DataLocation srcDataLoc,
+      std::optional<mlir::Location> locArg = std::nullopt);
+  // Copies a string into the storage.
+  void genCopyStringToStorage(mlir::Value srcAddr, mlir::Value length,
+                              mlir::Value dstAddr,
+                              mlir::sol::DataLocation srcDataLoc,
+                              std::optional<mlir::Location> locArg);
 
   /// Generates an assertion that the tuple size should be less than `size`.
   void
