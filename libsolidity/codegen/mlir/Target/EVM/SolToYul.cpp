@@ -1211,6 +1211,47 @@ struct GetCallDataOpLowering : public OpConversionPattern<sol::GetCallDataOp> {
   }
 };
 
+struct ConcatOpLowering : public OpConversionPattern<sol::ConcatOp> {
+  using OpConversionPattern<sol::ConcatOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::ConcatOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    evm::Builder evmB(r, loc);
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+
+    Value freePtr = evmB.genFreePtr();
+    Value dstStart =
+        r.create<arith::AddIOp>(loc, freePtr, bExt.genI256Const(32));
+
+    Value dstCur = dstStart;
+    for (auto [origData, data] : llvm::zip(op.getArgs(), adaptor.getArgs())) {
+      Type ty = origData.getType();
+      if (auto bytesTy = dyn_cast<sol::BytesType>(ty)) {
+        r.create<yul::MStoreOp>(loc, dstCur, data);
+        Value length = bExt.genI256Const(bytesTy.getSize());
+        dstCur = r.create<arith::AddIOp>(loc, dstCur, length);
+        continue;
+      }
+
+      assert(isa<sol::StringType>(ty));
+      sol::DataLocation dataLoc = sol::getDataLocation(ty);
+      Value lengthSlot = evmB.genLoad(data, dataLoc, loc);
+      Value length = evmB.genStringSize(lengthSlot, dataLoc, loc);
+      evmB.genCopyStringDataToMemory(data, lengthSlot, length, dstCur, dataLoc,
+                                     loc);
+      dstCur = r.create<arith::AddIOp>(loc, dstCur, length);
+    }
+    Value dataSize = r.create<arith::SubIOp>(loc, dstCur, dstStart);
+    r.create<yul::MStoreOp>(loc, freePtr, dataSize);
+    Value allocationSize = r.create<arith::SubIOp>(loc, dstCur, freePtr);
+    evmB.genFreePtrUpd(freePtr, bExt.genRoundUpToMultiple<32>(allocationSize));
+    r.replaceOp(op, freePtr);
+
+    return success();
+  }
+};
+
 struct PushOpLowering : public OpConversionPattern<sol::PushOp> {
   using OpConversionPattern<sol::PushOp>::OpConversionPattern;
 
@@ -1642,20 +1683,18 @@ struct DataLocCastOpLowering : public OpConversionPattern<sol::DataLocCastOp> {
         dstDataLoc == sol::DataLocation::Memory) {
       // String type
       if (isa<sol::StringType>(srcTy)) {
-        auto dataSlot = evmB.genDataAddrPtr(adaptor.getInp(), srcDataLoc);
-
         // Generate the memory allocation.
-        auto sizeInBytes = evmB.genLoad(adaptor.getInp(), srcDataLoc);
+        Value sizeSlot = evmB.genLoad(adaptor.getInp(), srcDataLoc);
+        Value sizeInBytes = evmB.genStringSize(sizeSlot, srcDataLoc, loc);
         Value memAddr = evmB.genMemAllocForDynArray(
             sizeInBytes, bExt.genRoundUpToMultiple<32>(sizeInBytes));
         resAddr = memAddr;
 
-        // Generate the loop to copy the data.
         auto dataMemAddr =
             r.create<arith::AddIOp>(loc, memAddr, bExt.genI256Const(32));
-        auto sizeInWords = bExt.genRoundUpToMultiple<32>(sizeInBytes);
-        evmB.genCopyLoop(dataSlot, dataMemAddr, sizeInWords, srcTy, dstTy,
-                         srcDataLoc, dstDataLoc);
+        // Generate the loop to copy the data.
+        evmB.genCopyStringDataToMemory(adaptor.getInp(), sizeSlot, sizeInBytes,
+                                       dataMemAddr, srcDataLoc, loc);
 
         r.replaceOp(op, memAddr);
         return success();
@@ -1713,22 +1752,20 @@ struct CopyOpLowering : public OpConversionPattern<sol::CopyOp> {
     Type dstTy = op.getDst().getType();
     sol::DataLocation srcDataLoc = sol::getDataLocation(srcTy);
     sol::DataLocation dstDataLoc = sol::getDataLocation(dstTy);
-    assert(srcDataLoc == sol::DataLocation::Memory &&
+    assert((srcDataLoc == sol::DataLocation::Memory ||
+            srcDataLoc == sol::DataLocation::CallData) &&
            dstDataLoc == sol::DataLocation::Storage && "NYI");
 
     if (isa<sol::StringType>(srcTy)) {
       assert(isa<sol::StringType>(dstTy));
 
-      // Generate the size update.
-      Value srcSize = evmB.genLoad(adaptor.getSrc(), srcDataLoc);
-      evmB.genStore(srcSize, adaptor.getDst(), dstDataLoc);
+      Value srcSize = evmB.genStringSize(
+          evmB.genLoad(adaptor.getSrc(), srcDataLoc, loc), srcDataLoc);
+      Value srcDataAddr = evmB.genDataAddrPtr(adaptor.getSrc(), srcDataLoc);
 
       // Generate the copy loop.
-      Value srcDataAddr = evmB.genDataAddrPtr(adaptor.getSrc(), srcDataLoc);
-      Value dstDataAddr = evmB.genDataAddrPtr(adaptor.getDst(), dstDataLoc);
-      Value sizeInWords = bExt.genRoundUpToMultiple<32>(srcSize);
-      evmB.genCopyLoop(srcDataAddr, dstDataAddr, sizeInWords, srcTy, dstTy,
-                       srcDataLoc, dstDataLoc);
+      evmB.genCopyStringToStorage(srcDataAddr, srcSize, adaptor.getDst(),
+                                  srcDataLoc, loc);
     } else {
       llvm_unreachable("NYI");
     }
@@ -3004,7 +3041,7 @@ void evm::populateMemPats(RewritePatternSet &pats, TypeConverter &tyConv) {
            GetCallDataOpLowering, PushOpLowering, PopOpLowering, GepOpLowering,
            MapOpLowering, LoadOpLowering, LoadImmutableOpLowering,
            StoreOpLowering, DataLocCastOpLowering, LengthOpLowering,
-           CopyOpLowering>(tyConv, pats.getContext());
+           CopyOpLowering, ConcatOpLowering>(tyConv, pats.getContext());
   pats.add<AddrOfOpLowering>(pats.getContext());
 }
 

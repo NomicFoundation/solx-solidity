@@ -1235,6 +1235,18 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
 
     return resVals;
   }
+  case FunctionType::Kind::BytesConcat: {
+    std::vector<mlir::Type> resTys;
+    for (Type const *ty : calleeTy->returnParameterTypes())
+      resTys.push_back(getType(ty));
+
+    std::vector<mlir::Value> args;
+    for (const auto &arg : astArgs)
+      args.push_back(genRValExpr(*arg));
+
+    resVals.push_back(b.create<mlir::sol::ConcatOp>(loc, resTys, args));
+    return resVals;
+  }
 
   default:
     break;
