@@ -562,7 +562,7 @@ u256 EVMInstructionInterpreter::evalBuiltin(
 		std::string const placeholder = formatLiteral(std::get<Literal>(_arguments[0]));
 		h256 const identifier(keccak256(placeholder));
 		m_linkerSymbols.emplace(identifier, placeholder);
-		return 0;
+		return u256(identifier);
 	}
 
 	if (fun == "loadimmutable")
