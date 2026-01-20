@@ -252,7 +252,7 @@ struct CExpOpLowering : public OpConversionPattern<sol::CExpOp> {
 
     auto ty = cast<IntegerType>(initBase.getType());
     Value one = bExt.genConst(1, ty.getWidth(), loc);
-    ValueRange whileInitVals{initPow, initBase, initExp};
+    SmallVector<Value> whileInitVals{initPow, initBase, initExp};
     TypeRange whileArgTypes(whileInitVals);
     SmallVector<Location> whileBbArgLocs(whileInitVals.size(), loc);
 
@@ -666,6 +666,66 @@ static Value genYulShiftOp(ConversionPatternRewriter &r, Location loc,
   return bExt.genIntCast(resWidth, isSigned, shifted256);
 }
 
+template <typename OpT>
+static Value getCryptoHashLowering(OpT op, uint32_t preCompieAddr,
+                                   typename OpT::Adaptor adaptor,
+                                   ConversionPatternRewriter &r) {
+  Location loc = op.getLoc();
+  solidity::mlirgen::BuilderExt bExt(r, loc);
+  evm::Builder evmB(r, loc);
+
+  Type ty = op.getData().getType();
+  sol::DataLocation dataLoc = sol::getDataLocation(ty);
+  assert(dataLoc == sol::DataLocation::Memory);
+
+  Value zero = bExt.genI256Const(0);
+  Value retSize = bExt.genI256Const(32);
+  Value dataLen = evmB.genLoad(adaptor.getData(), dataLoc);
+  Value dataSlot = evmB.genDataAddrPtr(adaptor.getData(), dataLoc);
+
+  Value gas = r.create<mlir::yul::GasOp>(loc);
+  // TODO: Solc (in YUL mode) copyies the input array one more time,
+  // so we end up having two copys in heap. Also it doesn the following
+  // store: mstore(add(dstAddr, dataLen), 0).
+  // It's not clear why do we need this.
+  // Hashing functions store their result in scratch space (0x00–0x3f).
+  mlir::Value status =
+      r.create<yul::StaticCallOp>(loc, gas,
+                                  /*address=*/bExt.genI256Const(preCompieAddr),
+                                  /*inpOffset=*/dataSlot, dataLen,
+                                  /*outOffset=*/zero, /*outSize=*/retSize);
+
+  auto statusIsZero = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq,
+                                              status, bExt.genI256Const(0));
+  evmB.genForwardingRevert(statusIsZero);
+
+  auto res = evmB.genLoad(zero, dataLoc);
+  // For ripemd160 the result must be shifted left by 96 bits.
+  if constexpr (std::is_same_v<std::decay_t<OpT>, sol::Ripemd160Op>)
+    res = r.create<yul::ShlOp>(loc, bExt.genI256Const(96), res);
+
+  return res;
+}
+
+template <typename ModOpT>
+static Value genYulModOp(ConversionPatternRewriter &r, Location loc, Value x,
+                         Value y, Value mod) {
+  solidity::mlirgen::BuilderExt bExt(r, loc);
+  evm::Builder evmB(r, loc);
+
+  // Yul mod ops work with unsigned i256 values.
+  Value x256 = bExt.genIntCast(256, /*isSigned=*/false, x);
+  Value y256 = bExt.genIntCast(256, /*isSigned=*/false, y);
+  Value mod256 = bExt.genIntCast(256, /*isSigned=*/false, mod);
+
+  auto zero = bExt.genI256Const(0, loc);
+  auto modEqZero =
+      r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq, mod, zero);
+  evmB.genPanic(solidity::util::PanicCode::DivisionByZero, modEqZero);
+
+  return r.create<ModOpT>(loc, x256, y256, mod256);
+}
+
 namespace {
 
 struct ShlOpLowering : public OpConversionPattern<sol::ShlOp> {
@@ -868,25 +928,6 @@ struct CMulOpLowering : public OpConversionPattern<sol::CMulOp> {
   }
 };
 
-template <typename ModOpT>
-static Value genYulModOp(ConversionPatternRewriter &r, Location loc, Value x,
-                         Value y, Value mod) {
-  solidity::mlirgen::BuilderExt bExt(r, loc);
-  evm::Builder evmB(r, loc);
-
-  // Yul mod ops work with unsigned i256 values.
-  Value x256 = bExt.genIntCast(256, /*isSigned=*/false, x);
-  Value y256 = bExt.genIntCast(256, /*isSigned=*/false, y);
-  Value mod256 = bExt.genIntCast(256, /*isSigned=*/false, mod);
-
-  auto zero = bExt.genI256Const(0, loc);
-  auto modEqZero =
-      r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq, mod, zero);
-  evmB.genPanic(solidity::util::PanicCode::DivisionByZero, modEqZero);
-
-  return r.create<ModOpT>(loc, x256, y256, mod256);
-}
-
 struct AddModOpLowering : public OpConversionPattern<sol::AddModOp> {
   using OpConversionPattern<sol::AddModOp>::OpConversionPattern;
 
@@ -977,47 +1018,6 @@ struct Keccak256OpLowering : public OpConversionPattern<sol::Keccak256Op> {
     return success();
   }
 };
-
-template <typename OpT>
-static Value getCryptoHashLowering(OpT op, uint32_t preCompieAddr,
-                                   typename OpT::Adaptor adaptor,
-                                   ConversionPatternRewriter &r) {
-  Location loc = op.getLoc();
-  solidity::mlirgen::BuilderExt bExt(r, loc);
-  evm::Builder evmB(r, loc);
-
-  Type ty = op.getData().getType();
-  sol::DataLocation dataLoc = sol::getDataLocation(ty);
-  assert(dataLoc == sol::DataLocation::Memory);
-
-  Value zero = bExt.genI256Const(0);
-  Value retSize = bExt.genI256Const(32);
-  Value dataLen = evmB.genLoad(adaptor.getData(), dataLoc);
-  Value dataSlot = evmB.genDataAddrPtr(adaptor.getData(), dataLoc);
-
-  Value gas = r.create<mlir::yul::GasOp>(loc);
-  // TODO: Solc (in YUL mode) copyies the input array one more time,
-  // so we end up having two copys in heap. Also it doesn the following
-  // store: mstore(add(dstAddr, dataLen), 0).
-  // It's not clear why do we need this.
-  // Hashing functions store their result in scratch space (0x00–0x3f).
-  mlir::Value status =
-      r.create<yul::StaticCallOp>(loc, gas,
-                                  /*address=*/bExt.genI256Const(preCompieAddr),
-                                  /*inpOffset=*/dataSlot, dataLen,
-                                  /*outOffset=*/zero, /*outSize=*/retSize);
-
-  auto statusIsZero = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq,
-                                              status, bExt.genI256Const(0));
-  evmB.genForwardingRevert(statusIsZero);
-
-  auto res = evmB.genLoad(zero, dataLoc);
-  // For ripemd160 the result must be shifted left by 96 bits.
-  if constexpr (std::is_same_v<std::decay_t<OpT>, sol::Ripemd160Op>)
-    res = r.create<yul::ShlOp>(loc, bExt.genI256Const(96), res);
-
-  return res;
-}
 
 struct Sha256OpLowering : public OpConversionPattern<sol::Sha256Op> {
   using OpConversionPattern<sol::Sha256Op>::OpConversionPattern;
