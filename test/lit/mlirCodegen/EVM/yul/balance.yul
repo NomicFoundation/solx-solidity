@@ -11,7 +11,7 @@ object "Test" {
 // CHECK-NEXT:   func.func @__entry() attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc1)
-// CHECK-NEXT:     %0 = "llvm.intrcall"(%c0_i256) <{id = 3686 : i32, name = "evm.balance"}> : (i256) -> i256 loc(#loc2)
+// CHECK-NEXT:     %0 = "llvm.intrcall"(%c0_i256) <{id = 4029 : i32, name = "evm.balance"}> : (i256) -> i256 loc(#loc2)
 // CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc3)
 // CHECK-NEXT:     llvm.store %0, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc4)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)

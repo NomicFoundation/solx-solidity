@@ -279,9 +279,9 @@ Value evm::Builder::genMemAlloc(Type ty, bool zeroInit, ValueRange initVals,
       b.create<scf::ForOp>(
           loc, /*lowerBound=*/bExt.genIdxConst(0),
           /*upperBound=*/bExt.genCastToIdx(sizeInBytes),
-          /*step=*/bExt.genIdxConst(32), /*iterArgs=*/std::nullopt,
+          /*step=*/bExt.genIdxConst(32), /*initArgs=*/ValueRange{},
           /*builder=*/
-          [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
+          [&](OpBuilder &b, Location loc, Value indVar, ValueRange initArgs) {
             Value incrMemPtr = b.create<arith::AddIOp>(
                 loc, dataPtr, bExt.genCastToI256(indVar));
             b.create<yul::MStoreOp>(
@@ -455,9 +455,9 @@ void evm::Builder::genCopyLoop(Value srcAddr, Value dstAddr, Value sizeInWords,
       loc, /*lowerBound=*/bExt.genIdxConst(0),
       /*upperBound=*/bExt.genCastToIdx(sizeInWords),
       /*step=*/bExt.genIdxConst(1),
-      /*iterArgs=*/std::nullopt,
+      /*initArgs=*/ValueRange{},
       /*builder=*/
-      [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
+      [&](OpBuilder &b, Location loc, Value indVar, ValueRange initArgs) {
         Value i256IndVar = bExt.genCastToI256(indVar);
 
         Value srcAddrAtIdx =
@@ -552,12 +552,12 @@ Value evm::Builder::genABITupleEncoding(Type ty, Value src, Value dstAddr,
         loc, /*lowerBound=*/bExt.genIdxConst(0),
         /*upperBound=*/size,
         /*step=*/bExt.genIdxConst(1),
-        /*iterArgs=*/ValueRange{dstArrAddr, srcArrAddr, tailAddr},
+        /*initArgs=*/ValueRange{dstArrAddr, srcArrAddr, tailAddr},
         /*builder=*/
-        [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
-          Value iDstAddr = iterArgs[0];
-          Value iSrcAddr = iterArgs[1];
-          Value iTailAddr = iterArgs[2];
+        [&](OpBuilder &b, Location loc, Value indVar, ValueRange initArgs) {
+          Value iDstAddr = initArgs[0];
+          Value iSrcAddr = initArgs[1];
+          Value iTailAddr = initArgs[2];
 
           Value srcVal = genLoad(iSrcAddr, arrTy.getDataLocation(), loc);
           Value nextTailAddr;
@@ -750,11 +750,11 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
         loc, /*lowerBound=*/bExt.genIdxConst(0),
         /*upperBound=*/size,
         /*step=*/bExt.genIdxConst(1),
-        /*iterArgs=*/ValueRange{dstAddr, srcAddr},
+        /*initArgs=*/ValueRange{dstAddr, srcAddr},
         /*builder=*/
-        [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
-          Value iDstAddr = iterArgs[0];
-          Value iSrcAddr = iterArgs[1];
+        [&](OpBuilder &b, Location loc, Value indVar, ValueRange initArgs) {
+          Value iDstAddr = initArgs[0];
+          Value iSrcAddr = initArgs[1];
           if (sol::hasDynamicallySizedElt(arrTy.getEltType())) {
             // The elements are offset wrt to the start of this array (after the
             // size field if dynamic) that contain the inner element.

@@ -233,8 +233,6 @@ set(mlir_sources
 	codegen/mlir/Target/EVM/TypeConverter.cpp
 	codegen/mlir/Target/EVM/SolToYul.cpp
 	codegen/mlir/Target/EVM/YulToStandard.cpp
-	codegen/mlir/Target/EraVM/Util.cpp
-	codegen/mlir/Target/EraVM/YulToStandard.cpp
 )
 
 set(mlir_sol_dialect_sources
@@ -313,7 +311,7 @@ set(mlir_libs
 	MLIRDialect
 )
 
-set(LLVM_TARGETS_TO_BUILD "EVM" "EraVM")
+set(LLVM_TARGETS_TO_BUILD "EVM")
 
 llvm_map_components_to_libnames(llvm_libs
 	${LLVM_TARGETS_TO_BUILD}

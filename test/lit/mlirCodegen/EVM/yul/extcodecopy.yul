@@ -15,7 +15,7 @@ object "Test" {
 // CHECK-NEXT:     %c128_i256 = arith.constant 128 : i256 loc(#loc4)
 // CHECK-NEXT:     %0 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc5)
 // CHECK-NEXT:     %1 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<4> loc(#loc5)
-// CHECK-NEXT:     "llvm.intrcall"(%c2863311530_i256, %0, %1, %c128_i256) <{id = 3709 : i32, name = "evm.extcodecopy"}> : (i256, !llvm.ptr<1>, !llvm.ptr<4>, i256) -> () loc(#loc5)
+// CHECK-NEXT:     "llvm.intrcall"(%c2863311530_i256, %0, %1, %c128_i256) <{id = 4052 : i32, name = "evm.extcodecopy"}> : (i256, !llvm.ptr<1>, !llvm.ptr<4>, i256) -> () loc(#loc5)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)

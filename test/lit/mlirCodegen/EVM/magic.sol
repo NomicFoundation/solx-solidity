@@ -27,7 +27,7 @@ function decode(bytes memory a) returns (uint, uint8, int32) {
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT:   func.func @msgSender_9() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
-// CHECK-NEXT:     %0 = "llvm.intrcall"() <{id = 3696 : i32, name = "evm.caller"}> : () -> i256 loc(#loc3)
+// CHECK-NEXT:     %0 = "llvm.intrcall"() <{id = 4039 : i32, name = "evm.caller"}> : () -> i256 loc(#loc3)
 // CHECK-NEXT:     return %0 : i256 loc(#loc4)
 // CHECK-NEXT:   } loc(#loc2)
 // CHECK-NEXT:   func.func @addr_20() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
@@ -86,7 +86,7 @@ function decode(bytes memory a) returns (uint, uint8, int32) {
 // CHECK-NEXT:     %5 = arith.cmpi slt, %3, %c96_i256 : i256 loc(#loc1)
 // CHECK-NEXT:     scf.if %5 {
 // CHECK-NEXT:       %20 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       "llvm.intrcall"(%20, %c0_i256) <{id = 3737 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:       "llvm.intrcall"(%20, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     %6 = llvm.inttoptr %4 : i256 to !llvm.ptr<1> loc(#loc1)
@@ -99,7 +99,7 @@ function decode(bytes memory a) returns (uint, uint8, int32) {
 // CHECK-NEXT:     %13 = arith.cmpi ne, %10, %12 : i256 loc(#loc1)
 // CHECK-NEXT:     scf.if %13 {
 // CHECK-NEXT:       %20 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       "llvm.intrcall"(%20, %c0_i256) <{id = 3737 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:       "llvm.intrcall"(%20, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     %14 = arith.addi %1, %c96_i256 : i256 loc(#loc1)
@@ -110,7 +110,7 @@ function decode(bytes memory a) returns (uint, uint8, int32) {
 // CHECK-NEXT:     %19 = arith.cmpi ne, %16, %18 : i256 loc(#loc1)
 // CHECK-NEXT:     scf.if %19 {
 // CHECK-NEXT:       %20 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       "llvm.intrcall"(%20, %c0_i256) <{id = 3737 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:       "llvm.intrcall"(%20, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     return %7, %11, %17 : i256, i8, i32 loc(#loc20)

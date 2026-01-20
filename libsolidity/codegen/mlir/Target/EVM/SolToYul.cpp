@@ -1606,9 +1606,9 @@ struct DataLocCastOpLowering : public OpConversionPattern<sol::DataLocCastOp> {
           loc, /*lowerBound=*/bExt.genIdxConst(0),
           /*upperBound=*/bExt.genCastToIdx(size),
           /*step=*/bExt.genIdxConst(1),
-          /*iterArgs=*/std::nullopt,
+          /*initArgs=*/ValueRange{},
           /*builder=*/
-          [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
+          [&](OpBuilder &b, Location loc, Value indVar, ValueRange initArgs) {
             Value i256IndVar = bExt.genCastToI256(indVar);
             Value srcAddrI = evmB.genAddrAtIdx(srcDataAddr, i256IndVar, arrTy,
                                                srcDataLoc, loc);
@@ -2245,11 +2245,11 @@ struct RequireOpLowering : public OpConversionPattern<sol::RequireOp> {
 
     // Generate the revert condition.
     mlir::Value falseVal =
-        r.create<arith::ConstantIntOp>(loc, 0, r.getI1Type());
+        r.create<arith::ConstantIntOp>(loc, r.getI1Type(), 0);
     mlir::Value negCond = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq,
                                                   op.getCond(), falseVal);
     if (op.getCall()) {
-      assert(op.getMsg().size());
+      assert(!op.getMsg().empty());
       evmB.genRevert(negCond, op.getArgs().getTypes(), adaptor.getArgs(),
                      op.getMsg());
       r.eraseOp(op);
@@ -2679,7 +2679,7 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
 
     // Generate the switch op.
     auto switchOp = r.create<mlir::scf::IntSwitchOp>(
-        loc, /*resultTypes=*/std::nullopt, callDataSelector, selectorsAttr,
+        loc, /*resultTypes=*/TypeRange{}, callDataSelector, selectorsAttr,
         selectors.size());
 
     // Generate the default block.

@@ -89,9 +89,6 @@ genEvmBytecode(frontend::ContractDefinition const *cont,
                         frontend::ASTNode::CompareByID> &objMap,
                std::map<std::string, util::h160> const &libAddrMap);
 
-/// Don't use this! EraVM impl broke recently!
-Bytecode genEraVMBytecode(llvm::Module &llvmMod, llvm::TargetMachine &tgtMach);
-
 } // namespace solidity::mlirgen
 
 namespace llvm {

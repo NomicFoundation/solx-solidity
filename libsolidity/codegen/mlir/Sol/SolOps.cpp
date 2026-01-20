@@ -573,10 +573,10 @@ void FuncOp::build(OpBuilder &builder, OperationState &state, StringRef name,
   if (argAttrs.empty())
     return;
   assert(type.getNumInputs() == argAttrs.size());
-  function_interface_impl::addArgAndResultAttrs(
-      builder, state, argAttrs,
-      /*resultAttrs=*/{}, getArgAttrsAttrName(state.name),
-      getResAttrsAttrName(state.name));
+  call_interface_impl::addArgAndResultAttrs(builder, state, argAttrs,
+                                            /*resultAttrs=*/{},
+                                            getArgAttrsAttrName(state.name),
+                                            getResAttrsAttrName(state.name));
 }
 
 void FuncOp::build(OpBuilder &builder, OperationState &state, StringRef name,

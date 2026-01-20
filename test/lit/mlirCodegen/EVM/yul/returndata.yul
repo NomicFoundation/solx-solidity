@@ -11,7 +11,7 @@ object "Test" {
 // CHECK-NEXT: module @Test attributes {sol.evm_version = #Prague} {
 // CHECK-NEXT:   func.func @__entry() attributes {llvm.linkage = #llvm.linkage<external>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
-// CHECK-NEXT:     %0 = "llvm.intrcall"() <{id = 3736 : i32, name = "evm.returndatasize"}> : () -> i256 loc(#loc1)
+// CHECK-NEXT:     %0 = "llvm.intrcall"() <{id = 4079 : i32, name = "evm.returndatasize"}> : () -> i256 loc(#loc1)
 // CHECK-NEXT:     %1 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc2)
 // CHECK-NEXT:     %2 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<3> loc(#loc2)
 // CHECK-NEXT:     "llvm.intr.memcpy"(%1, %2, %0) <{isVolatile = false}> : (!llvm.ptr<1>, !llvm.ptr<3>, i256) -> () loc(#loc2)

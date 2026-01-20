@@ -618,8 +618,9 @@ void YulToMLIRPass::operator()(Switch const &switchStmt) {
     return;
   }
 
-  auto switchOp = b.create<mlir::sol::SwitchOp>(
-      loc, /*resultTypes=*/std::nullopt, arg, caseValsAttr, caseVals.size());
+  auto switchOp =
+      b.create<mlir::sol::SwitchOp>(loc, /*resultTypes=*/mlir::TypeRange{}, arg,
+                                    caseValsAttr, caseVals.size());
   mlir::OpBuilder::InsertionGuard insertGuard(b);
 
   // Create blocks for all the case values and the default case. Then, lower

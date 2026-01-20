@@ -12,7 +12,7 @@ object "Test" {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256 loc(#loc1)
 // CHECK-NEXT:     %c10_i256 = arith.constant 10 : i256 loc(#loc2)
-// CHECK-NEXT:     %0 = "llvm.intrcall"(%c2_i256, %c10_i256) <{id = 3708 : i32, name = "evm.exp"}> : (i256, i256) -> i256 loc(#loc3)
+// CHECK-NEXT:     %0 = "llvm.intrcall"(%c2_i256, %c10_i256) <{id = 4051 : i32, name = "evm.exp"}> : (i256, i256) -> i256 loc(#loc3)
 // CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc4)
 // CHECK-NEXT:     llvm.store %0, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc5)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)

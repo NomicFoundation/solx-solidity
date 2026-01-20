@@ -64,12 +64,6 @@ void solidity::mlirgen::addConversionPasses(mlir::PassManager &passMgr,
         /*indexBitwidth=*/256,
         /*dataLayout=*/"E-p:256:256-i256:256:256-S256-a:256:256"));
     break;
-  case Target::EraVM:
-    passMgr.addPass(mlir::sol::createConvertStandardToLLVMPass(
-        /*triple=*/"eravm-unknown-unknown",
-        /*indexBitwidth=*/256,
-        /*dataLayout=*/"E-p:256:256-i256:256:256-S32-a:256:256"));
-    break;
   default:
     llvm_unreachable("");
   }
@@ -104,39 +98,12 @@ solidity::mlirgen::createTargetMachine(Target tgt) {
     // Create and return the llvm::TargetMachine.
     llvm::TargetOptions options;
     std::lock_guard<std::mutex> l(tgtMachMtx);
-    return std::unique_ptr<llvm::TargetMachine>(
-        llvmTgt->createTargetMachine("evm", /*CPU=*/"", /*Features=*/"",
-                                     options, /*Reloc::Model=*/std::nullopt));
+    return std::unique_ptr<llvm::TargetMachine>(llvmTgt->createTargetMachine(
+        llvm::Triple("evm"), /*CPU=*/"", /*Features=*/"", options,
+        /*Reloc::Model=*/std::nullopt));
 
     // TODO: Set code-model?
     // tgtMach->setCodeModel(?);
-  }
-  case Target::EraVM: {
-    // Initialize and register the target.
-    std::call_once(initTargetOnceFlag, []() {
-      LLVMInitializeEraVMTarget();
-      LLVMInitializeEraVMTargetInfo();
-      LLVMInitializeEraVMTargetMC();
-      LLVMInitializeEraVMAsmPrinter();
-    });
-
-    // Lookup llvm::Target.
-    std::string errMsg;
-    llvm::Target const *llvmTgt =
-        llvm::TargetRegistry::lookupTarget("eravm", errMsg);
-    if (!llvmTgt)
-      llvm_unreachable(errMsg.c_str());
-
-    // Create and return the llvm::TargetMachine.
-    llvm::TargetOptions options;
-    std::lock_guard<std::mutex> l(tgtMachMtx);
-    return std::unique_ptr<llvm::TargetMachine>(
-        llvmTgt->createTargetMachine("eravm", /*CPU=*/"", /*Features=*/"",
-                                     options, /*Reloc::Model=*/std::nullopt));
-
-    // TODO: Set code-model?
-    // tgtMach->setCodeModel(?);
-    break;
   }
   case Target::Undefined:
     llvm_unreachable("Invalid target");
@@ -150,14 +117,11 @@ void solidity::mlirgen::setTgtSpecificInfoInModule(
   case Target::EVM:
     triple = "evm-unknown-unknown";
     break;
-  case Target::EraVM:
-    triple = "eravm-unknown-unknown";
-    break;
   case Target::Undefined:
     llvm_unreachable("Undefined target");
   }
 
-  llvmMod.setTargetTriple(llvm::Triple::normalize(triple));
+  llvmMod.setTargetTriple(llvm::Triple(triple));
   llvmMod.setDataLayout(tgtMach.createDataLayout());
 }
 
@@ -357,13 +321,6 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
       ss << *runtimeLlvmMod;
       return ret;
     }
-    case Target::EraVM: {
-      std::unique_ptr<llvm::Module> llvmMod =
-          genLLVMIR(mod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
-
-      ss << *llvmMod;
-      return ret;
-    }
     default:
       break;
     }
@@ -396,11 +353,6 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
             *tgtMach);
       return ret;
     }
-    case Target::EraVM: {
-      std::unique_ptr<llvm::Module> llvmMod =
-          genLLVMIR(mod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
-      return getAsm(*llvmMod, *tgtMach);
-    }
     default:
       break;
     };
@@ -409,37 +361,6 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
   default:
     break;
   }
+
   llvm_unreachable("Undefined action/target");
-}
-
-solidity::mlirgen::Bytecode
-solidity::mlirgen::genEraVMBytecode(llvm::Module &llvmMod,
-                                    llvm::TargetMachine &tgtMach) {
-  llvm::legacy::PassManager llvmPassMgr;
-  llvm::SmallString<0> outStreamData;
-  llvm::raw_svector_ostream outStream(outStreamData);
-  tgtMach.addPassesToEmitFile(llvmPassMgr, outStream,
-                              /*DwoOut=*/nullptr,
-                              llvm::CodeGenFileType::ObjectFile);
-  llvmPassMgr.run(llvmMod);
-
-  LLVMMemoryBufferRef obj = LLVMCreateMemoryBufferWithMemoryRange(
-      outStream.str().data(), outStream.str().size(), "Input",
-      /*RequiresNullTerminator=*/0);
-  LLVMMemoryBufferRef bytecode = nullptr;
-  char *errMsg = nullptr;
-  if (LLVMLinkEraVM(obj, &bytecode, /*linkerSymbolNames=*/nullptr,
-                    /*linkerSymbolValues=*/nullptr, /*numLinkerSymbols=*/0,
-                    /*factoryDependencySymbolNames=*/nullptr,
-                    /*factoryDependencySymbolValues=*/nullptr,
-                    /*numFactoryDependencySymbols=*/0, &errMsg))
-    llvm_unreachable(errMsg);
-
-  solidity::mlirgen::Bytecode ret;
-  ret.creation = llvm::unwrap(bytecode)->getBuffer();
-  ret.runtime = ret.creation;
-
-  LLVMDisposeMemoryBuffer(obj);
-  LLVMDisposeMemoryBuffer(bytecode);
-  return ret;
 }

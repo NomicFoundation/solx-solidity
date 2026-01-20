@@ -615,8 +615,12 @@ def Sol_FuncConstantOp : Sol_Op<"func_constant", [Pure]> {
 def ICallOp : Sol_Op<"icall", [CallOpInterface]> {
   // FIXME: AnyType -> Sol_FuncRefType causes the asm printer to miss the prefix!
   let arguments = (ins AnyType:$callee,
-                       Variadic<AnyType>:$callee_operands);
+                       Variadic<AnyType>:$callee_operands,
+                       OptionalAttr<DictArrayAttr>:$arg_attrs,
+                       OptionalAttr<DictArrayAttr>:$res_attrs);
   let results = (outs Variadic<AnyType>);
+
+  // TODO: Custom builder that doesn't ask for arg/res attrs.
 
   let extraClassDeclaration = [{
     ValueRange operands() { return getCalleeOperands(); }
@@ -638,7 +642,7 @@ def ICallOp : Sol_Op<"icall", [CallOpInterface]> {
 
     /// Set the callee for this operation.
     void setCalleeFromCallable(CallInterfaceCallable callee) {
-      setOperand(0, callee.get<Value>());
+      setOperand(0, cast<Value>(callee));
     }
   }];
 
@@ -649,7 +653,10 @@ def ICallOp : Sol_Op<"icall", [CallOpInterface]> {
 }
 
 def CallOp : Sol_Op<"call", [CallOpInterface]> {
-  let arguments = (ins FlatSymbolRefAttr:$callee, Variadic<AnyType>:$operands);
+  let arguments = (ins FlatSymbolRefAttr:$callee,
+                       Variadic<AnyType>:$operands,
+                       OptionalAttr<DictArrayAttr>:$arg_attrs,
+                       OptionalAttr<DictArrayAttr>:$res_attrs);
   let results = (outs Variadic<AnyType>);
 
   let builders = [
@@ -689,7 +696,7 @@ def CallOp : Sol_Op<"call", [CallOpInterface]> {
       return (*this)->getAttrOfType<SymbolRefAttr>("callee");
     }
     void setCalleeFromCallable(CallInterfaceCallable callee) {
-      (*this)->setAttr("callee", callee.get<SymbolRefAttr>());
+      (*this)->setAttr("callee", cast<SymbolRefAttr>(callee));
     }
   }];
 
@@ -709,8 +716,12 @@ def Sol_ExtCallOp : Sol_Op<"ext_call", [CallOpInterface]> {
                        Sol_AddressType:$addr, UI256:$gas, UI256:$val, UnitAttr:$try_call,
                        UnitAttr:$static_call, UnitAttr:$delegate_call,
                        I32Attr:$selector,
-                       TypeAttrOf<FunctionType>:$callee_type);
+                       TypeAttrOf<FunctionType>:$callee_type,
+                       OptionalAttr<DictArrayAttr>:$arg_attrs,
+                       OptionalAttr<DictArrayAttr>:$res_attrs);
   let results = (outs I1:$status, Variadic<AnyType>);
+
+  // TODO: Custom builder that doesn't ask for arg/res attrs.
 
   let extraClassDeclaration = [{
     //===------------------------------------------------------------------===//
@@ -727,7 +738,7 @@ def Sol_ExtCallOp : Sol_Op<"ext_call", [CallOpInterface]> {
       return (*this)->getAttrOfType<SymbolRefAttr>("callee");
     }
     void setCalleeFromCallable(CallInterfaceCallable callee) {
-      (*this)->setAttr("callee", callee.get<SymbolRefAttr>());
+      (*this)->setAttr("callee", cast<SymbolRefAttr>(callee));
     }
   }];
 
@@ -778,7 +789,7 @@ def Sol_ReturnOp : Sol_Op<"return", [Pure, Terminator]> {
   let arguments = (ins Variadic<AnyType>:$operands);
 
   let builders = [OpBuilder<(ins), [{
-    build($_builder, $_state, std::nullopt);
+    build($_builder, $_state, {});
   }]>];
 
   let assemblyFormat = "attr-dict ($operands^ `:` type($operands))?";

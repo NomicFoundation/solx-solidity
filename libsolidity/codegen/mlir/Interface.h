@@ -78,7 +78,6 @@ constexpr bool requiresLinking(Action a) {
 
 enum class Target {
   EVM,
-  EraVM,
   Undefined,
 };
 

@@ -66,14 +66,13 @@ def Sol_BytesType : Sol_Type<"Bytes", "bytes"> {
   let assemblyFormat = [{ `<` $size `>` }];
 }
 
-def Sol_DataLocation : I32EnumAttr<"DataLocation",
-                                   "Data-location in reference-types",
-                                   [I32EnumAttrCase<"Storage", 0>,
-                                    I32EnumAttrCase<"CallData", 1>,
-                                    I32EnumAttrCase<"Memory", 2>,
-                                    I32EnumAttrCase<"Stack", 3>,
-                                    I32EnumAttrCase<"Immutable", 4>]> {
-  let genSpecializedAttr = 0;
+def Sol_DataLocation : I32Enum<"DataLocation",
+                               "Data-location in reference-types",
+                               [I32EnumCase<"Storage", 0>,
+                                I32EnumCase<"CallData", 1>,
+                                I32EnumCase<"Memory", 2>,
+                                I32EnumCase<"Stack", 3>,
+                                I32EnumCase<"Immutable", 4>]> {
   let cppNamespace = "::mlir::sol";
 }
 

@@ -1,7 +1,17 @@
-# Copied from llvm-project (19) root and mlir subdirectory.
+# Copied from llvm-project (21) root and mlir subdirectory.
 
 Checks: >
-        -*,clang-diagnostic-*,llvm-*,misc-*,-misc-const-correctness,-misc-unused-parameters,-misc-non-private-member-variables-in-classes,-misc-no-recursion,-misc-use-anonymous-namespace,readability-identifier-naming,-misc-include-cleaner,
+        -*,
+        clang-diagnostic-*,
+        llvm-*,
+        misc-*,
+        -misc-const-correctness,
+        -misc-include-cleaner,
+        -misc-no-recursion,
+        -misc-non-private-member-variables-in-classes,
+        -misc-unused-parameters,
+        -misc-use-anonymous-namespace,
+        readability-identifier-naming,
         -misc-const-correctness,
         bugprone-argument-comment,
         bugprone-assert-side-effect,

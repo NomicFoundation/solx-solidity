@@ -903,7 +903,8 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     mlir::CallOpInterface callOp;
     if (!callee)
       callOp = b.create<mlir::sol::ICallOp>(
-          loc, resTys, genRValExpr(call.expression()), args);
+          loc, resTys, genRValExpr(call.expression()), args, mlir::ArrayAttr{},
+          mlir::ArrayAttr{});
     else
       callOp = b.create<mlir::sol::CallOp>(loc, getMangledName(*callee), resTys,
                                            args);
@@ -1013,7 +1014,8 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
         selector,
         /*calleeType=*/
         mlir::cast<mlir::FunctionType>(getType(calleeTy,
-                                               /*indirectFn=*/false)));
+                                               /*indirectFn=*/false)),
+        mlir::ArrayAttr{}, mlir::ArrayAttr{});
     for (mlir::Value val : llvm::drop_begin(callOp.getResults()))
       resVals.push_back(val);
     return resVals;
@@ -2204,7 +2206,5 @@ solidity::mlirgen::strToTarget(std::string const &str) {
 
   if (inLowerCase == "evm")
     return Target::EVM;
-  if (inLowerCase == "eravm")
-    return Target::EraVM;
   return Target::Undefined;
 }

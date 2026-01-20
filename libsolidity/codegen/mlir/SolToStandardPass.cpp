@@ -23,8 +23,6 @@
 #include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Target/EVM/SolToYul.h"
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
-#include "libsolidity/codegen/mlir/Target/EraVM/Util.h"
-#include "libsolidity/codegen/mlir/Target/EraVM/YulToStandard.h"
 #include "libsolidity/codegen/mlir/Yul/Yul.h"
 #include "mlir/Dialect/ControlFlow/IR/ControlFlow.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
@@ -108,16 +106,6 @@ struct ConvertSolToStandard
   LogicalResult runStage1Conversion(ModuleOp mod,
                                     evm::SolTypeConverter &tyConv) {
     OpBuilder b(mod.getContext());
-
-    // FIXME: DialectConversion complains "pattern was already applied" if we do
-    // this in the sol.func lowering (might work if we generate a llvm/func.func
-    // op instead? Should we switch all such external functions to
-    // llvm/func.func? (dealing with sol.func and func.func has been a major
-    // pain point!)).
-    if (tgt == solidity::mlirgen::Target::EraVM) {
-      eravm::Builder eraB(b);
-      eraB.getOrInsertPersonality(mod);
-    }
 
     ConversionTarget convTgt(getContext());
     convTgt.addLegalOp<ModuleOp>();
@@ -207,9 +195,6 @@ struct ConvertSolToStandard
     case solidity::mlirgen::Target::EVM:
       evm::populateStage1Pats(pats, tyConv);
       break;
-    case solidity::mlirgen::Target::EraVM:
-      eravm::populateStage1Pats(pats, tyConv);
-      break;
     default:
       llvm_unreachable("Invalid target");
     };
@@ -254,9 +239,6 @@ struct ConvertSolToStandard
     case solidity::mlirgen::Target::EVM:
       evm::populateStage2Pats(pats);
       break;
-    case solidity::mlirgen::Target::EraVM:
-      eravm::populateStage2Pats(pats);
-      break;
     default:
       llvm_unreachable("Invalid target");
     };
@@ -280,9 +262,6 @@ struct ConvertSolToStandard
     switch (tgt) {
     case solidity::mlirgen::Target::EVM:
       evm::populateFuncPats(pats, tyConv);
-      break;
-    case solidity::mlirgen::Target::EraVM:
-      eravm::populateFuncPats(pats, tyConv);
       break;
     default:
       llvm_unreachable("Invalid target");
@@ -325,9 +304,7 @@ protected:
       *this, "target", llvm::cl::desc("Target for the sol lowering"),
       llvm::cl::init(solidity::mlirgen::Target::Undefined),
       llvm::cl::values(
-          clEnumValN(solidity::mlirgen::Target::EVM, "evm", "EVM target"),
-          clEnumValN(solidity::mlirgen::Target::EraVM, "eravm",
-                     "EraVM target"))};
+          clEnumValN(solidity::mlirgen::Target::EVM, "evm", "EVM target"))};
 };
 
 } // namespace

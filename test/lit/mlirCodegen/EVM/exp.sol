@@ -18,7 +18,7 @@ function power(uint256 base, uint256 exponent) pure returns (uint256) {
 // CHECK-NEXT:     llvm.store %arg1, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc3)
 // CHECK-NEXT:     %2 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc4)
 // CHECK-NEXT:     %3 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc5)
-// CHECK-NEXT:     %4 = "llvm.intrcall"(%2, %3) <{id = 3708 : i32, name = "evm.exp"}> : (i256, i256) -> i256 loc(#loc4)
+// CHECK-NEXT:     %4 = "llvm.intrcall"(%2, %3) <{id = 4051 : i32, name = "evm.exp"}> : (i256, i256) -> i256 loc(#loc4)
 // CHECK-NEXT:     return %4 : i256 loc(#loc6)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT: } loc(#loc)

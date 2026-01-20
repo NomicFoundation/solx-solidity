@@ -183,9 +183,13 @@ bool BytecodeGen::isCreationDep(ASTNode const *ast) {
         memAcc->expression().annotation().type));
     return memName == "creationCode";
   }
+
+#ifndef NDEBUG
   auto *newExpr = dynamic_cast<NewExpression const *>(ast);
   assert(newExpr);
   assert(dynamic_cast<ContractType const *>(
       newExpr->typeName().annotation().type));
+#endif
+
   return true;
 }
