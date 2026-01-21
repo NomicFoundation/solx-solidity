@@ -366,6 +366,54 @@ Value evm::Builder::genDataAddrPtr(Value addr, sol::DataLocation dataLoc,
   llvm_unreachable("NYI");
 }
 
+Value evm::Builder::genStringSize(Value lengthSlot, sol::DataLocation dataLoc,
+                                  std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+  solidity::mlirgen::BuilderExt bExt(b, loc);
+
+  if (dataLoc == sol::DataLocation::Memory ||
+      dataLoc == sol::DataLocation::CallData) {
+    return lengthSlot;
+  }
+
+  if (dataLoc != sol::DataLocation::Storage)
+    llvm_unreachable("NYI");
+
+  // For the storage we have to implement the following algorithm,
+  // obtained from YUL:
+  //   length := div(data, 2)
+  //   let outOfPlaceEncoding := and(data, 1)
+  //   if iszero(outOfPlaceEncoding) {
+  //     length := and(length, 0x7f)
+  //   }
+
+  //  if eq(outOfPlaceEncoding, lt(length, 32)) {
+  //    panic_error_0x22()
+  //  }
+  //
+  Value one = bExt.genI256Const(1);
+  Value length = b.create<arith::ShRUIOp>(loc, lengthSlot, one);
+  Value isOutOfPlaceEnc = b.create<arith::AndIOp>(loc, lengthSlot, one);
+  Value isInPlace = b.create<arith::CmpIOp>(
+      loc, arith::CmpIPredicate::eq, isOutOfPlaceEnc, bExt.genI256Const(0));
+
+  length = b.create<arith::SelectOp>(
+                loc, isInPlace,
+                b.create<arith::AndIOp>(loc, length, bExt.genI256Const(0x7F)),
+                length)
+               .getResult();
+
+  Value lengthLT32 = b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ult,
+                                             length, bExt.genI256Const(32));
+  Value panicCond = b.create<arith::CmpIOp>(
+      loc, arith::CmpIPredicate::eq,
+      bExt.genIntCast(1, /*isSigned=*/false, isOutOfPlaceEnc, loc), lengthLT32);
+
+  genPanic(solidity::util::PanicCode::StorageEncodingError, panicCond);
+
+  return length;
+}
+
 Value evm::Builder::genAddrAtIdx(Value baseAddr, Value idx, Type ty,
                                  sol::DataLocation dataLoc,
                                  std::optional<Location> locArg) {
@@ -469,6 +517,229 @@ void evm::Builder::genCopyLoop(Value srcAddr, Value dstAddr, Value sizeInWords,
 
         b.create<scf::YieldOp>(loc);
       });
+}
+
+void evm::Builder::genCopyStringDataToMemory(Value srcAddr, Value lengthSlot,
+                                             Value length, Value dstAddr,
+                                             sol::DataLocation srcDataLoc,
+                                             std::optional<Location> locArg) {
+  // See 'genCopyStringToStorage' regarding the storage layout for
+  // `bytes` / `string` in Solidity.
+
+  Location loc = locArg ? *locArg : defLoc;
+  solidity::mlirgen::BuilderExt bExt(b, loc);
+
+  if (srcDataLoc == sol::DataLocation::Memory) {
+    Value dataSlot = genDataAddrPtr(srcAddr, srcDataLoc, loc);
+    b.create<yul::MCopyOp>(loc, dstAddr, dataSlot, length);
+    return;
+  }
+
+  if (srcDataLoc == sol::DataLocation::CallData) {
+    Value dataSlot = genDataAddrPtr(srcAddr, srcDataLoc, loc);
+    b.create<yul::CallDataCopyOp>(loc, dstAddr, dataSlot, length);
+    return;
+  }
+
+  assert(srcDataLoc == sol::DataLocation::Storage);
+
+  Value one = bExt.genI256Const(1);
+  Value zero = bExt.genI256Const(0);
+  Value isOutOfPlaceEnc = b.create<arith::AndIOp>(loc, lengthSlot, one);
+  Value isInPlace = b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq,
+                                            isOutOfPlaceEnc, zero);
+
+  auto ifInPlace = b.create<scf::IfOp>(loc, isInPlace, true);
+  // In place path
+  b.setInsertionPointToStart(&ifInPlace.getThenRegion().front());
+  {
+    Value val = b.create<arith::AndIOp>(
+        loc, lengthSlot, bExt.genI256Const(~APInt(256, 0xFF), loc));
+    b.create<yul::MStoreOp>(loc, dstAddr, val);
+  }
+  // Out of place path
+  b.setInsertionPointToStart(&ifInPlace.getElseRegion().front());
+  {
+    // Generate the loop to copy the data.
+    Value dataSlot = genDataAddrPtr(srcAddr, srcDataLoc, loc);
+    b.create<scf::ForOp>(
+        loc, /*lowerBound=*/bExt.genIdxConst(0),
+        /*upperBound=*/bExt.genCastToIdx(length),
+        /*step=*/bExt.genIdxConst(32),
+        /*iterArgs=*/ArrayRef<Value>(),
+        /*builder=*/
+        [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
+          Value i256IndVar = bExt.genCastToI256(indVar);
+          Value storageIdx = b.create<arith::ShRUIOp>(
+              loc, i256IndVar, bExt.genI256Const(5, loc));
+          Value src = b.create<arith::AddIOp>(loc, dataSlot, storageIdx);
+          Value val = b.create<yul::SLoadOp>(loc, src);
+          Value dst = b.create<arith::AddIOp>(loc, dstAddr, i256IndVar);
+          b.create<yul::MStoreOp>(loc, dst, val);
+          b.create<scf::YieldOp>(loc);
+        });
+  }
+  b.setInsertionPointAfter(ifInPlace);
+}
+
+static Value getI256MSBMaskedValue(OpBuilder &b, Value val, Value maskLen,
+                                   Location loc) {
+  solidity::mlirgen::BuilderExt bExt(b, loc);
+  Value nbits =
+      b.create<arith::ShLIOp>(loc, maskLen, bExt.genI256Const(3, loc));
+  Value shiftVal =
+      b.create<arith::SubIOp>(loc, bExt.genI256Const(256, loc), nbits);
+  Value mask = b.create<arith::ShLIOp>(
+      loc, bExt.genI256Const(APInt::getAllOnes(256), loc), shiftVal);
+  return b.create<mlir::arith::AndIOp>(loc, val, mask);
+}
+
+void evm::Builder::genCopyStringToStorage(Value srcAddr, Value length,
+                                          Value dstAddr,
+                                          sol::DataLocation srcDataLoc,
+                                          std::optional<Location> locArg) {
+  // Storage layout for `bytes` / `string` in Solidity:
+  //
+  // - These types use two different encodings depending on their length.
+  //
+  // 1) Short form (length ≤ 31 bytes):
+  //    - Entire value is stored in a single storage slot.
+  //    - Data is left-aligned (stored in the high-order bytes).
+  //    - The lowest-order byte stores `length * 2`.
+  //    - Lowest bit = 0 indicates short form.
+  //
+  //    slot[p] = [ data (≤31 bytes) | padding | length * 2 ]
+  //
+  // 2) Long form (length ≥ 32 bytes):
+  //    - Storage slot `p` stores `length * 2 + 1`.
+  //    - Lowest bit = 1 indicates long form.
+  //    - Actual data is stored separately starting at `keccak256(p)`.
+  //    - Data occupies consecutive slots, 32 bytes per slot, left-aligned.
+  //
+  //    slot[p]               = length * 2 + 1
+  //    slot[keccak256(p)+0]  = bytes[0..31]
+  //    slot[keccak256(p)+1]  = bytes[32..63]
+  //    ...
+  //
+  Location loc = locArg ? *locArg : defLoc;
+  solidity::mlirgen::BuilderExt bExt(b, loc);
+
+  Value oldLength =
+      genStringSize(genLoad(dstAddr, sol::DataLocation::Storage, loc),
+                    sol::DataLocation::Storage, loc);
+  // Remove the old string data by zeroing storage slots that are no longer
+  // part of the new value. We do this if the old string has length > 31 bytes.
+  {
+    Value cleanCond = b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt,
+                                              oldLength, bExt.genI256Const(31));
+
+    auto ifClean = b.create<scf::IfOp>(loc, cleanCond);
+
+    b.setInsertionPointToStart(&ifClean.getThenRegion().front());
+    Value dstDataArea =
+        genDataAddrPtr(dstAddr, sol::DataLocation::Storage, loc);
+    Value deleteStart = b.create<mlir::arith::AddIOp>(
+        loc, dstDataArea, bExt.genCeilDivision<32>(length));
+    Value shortStringCond = b.create<arith::CmpIOp>(
+        loc, arith::CmpIPredicate::ult, length, bExt.genI256Const(32));
+
+    deleteStart = b.create<arith::SelectOp>(loc, shortStringCond, dstDataArea,
+                                            deleteStart);
+    Value deleteEnd = b.create<mlir::arith::AddIOp>(
+        loc, dstDataArea, bExt.genCeilDivision<32>(oldLength));
+    b.create<scf::ForOp>(
+        loc, /*lowerBound=*/bExt.genCastToIdx(deleteStart),
+        /*upperBound=*/bExt.genCastToIdx(deleteEnd),
+        /*step=*/bExt.genIdxConst(1),
+        /*iterArgs=*/ArrayRef<Value>(),
+        /*builder=*/
+        [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
+          Value i256IndVar = bExt.genCastToI256(indVar);
+          b.create<yul::SStoreOp>(loc, i256IndVar, bExt.genI256Const(0, loc));
+          b.create<scf::YieldOp>(loc);
+        });
+
+    b.setInsertionPointAfter(ifClean);
+  }
+
+  // Handle out of place case.
+  Value outOfPlaceCond = b.create<arith::CmpIOp>(
+      loc, arith::CmpIPredicate::ugt, length, bExt.genI256Const(31, loc));
+
+  auto ifOutOfPlace = b.create<scf::IfOp>(loc, outOfPlaceCond, true);
+  b.setInsertionPointToStart(&ifOutOfPlace.getThenRegion().front());
+
+  Value dstDataArea = genDataAddrPtr(dstAddr, sol::DataLocation::Storage, loc);
+  Value loopEnd = b.create<mlir::arith::AndIOp>(
+      loc, length, bExt.genI256Const(~APInt(256, 0x1F), loc));
+
+  // Copy the data in 32-byte chunks first.
+  b.create<scf::ForOp>(
+      loc, /*lowerBound=*/bExt.genIdxConst(0),
+      /*upperBound=*/bExt.genCastToIdx(loopEnd),
+      /*step=*/bExt.genIdxConst(32),
+      /*iterArgs=*/ArrayRef<Value>(),
+      /*builder=*/
+      [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
+        Value i256IndVar = bExt.genCastToI256(indVar);
+        Value src = b.create<arith::AddIOp>(loc, srcAddr, i256IndVar);
+        Value val = genLoad(src, srcDataLoc, loc);
+        Value dst = b.create<arith::AddIOp>(
+            loc, dstDataArea,
+            b.create<arith::ShRUIOp>(loc, i256IndVar,
+                                     bExt.genI256Const(5, loc)));
+        b.create<yul::SStoreOp>(loc, dst, val);
+        b.create<scf::YieldOp>(loc);
+      });
+
+  Value residualCond =
+      b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ult, loopEnd, length);
+
+  // Copy the remaining bytes (< 32) if the string length is not divisible
+  // by 32.
+  auto ifResidual = b.create<scf::IfOp>(loc, residualCond);
+  {
+    b.setInsertionPointToStart(&ifResidual.getThenRegion().front());
+    Value residualLength = b.create<mlir::arith::AndIOp>(
+        loc, length, bExt.genI256Const(0x1F, loc));
+    Value lastVal = genLoad(b.create<arith::AddIOp>(loc, srcAddr, loopEnd),
+                            srcDataLoc, loc);
+    Value maskedVal = getI256MSBMaskedValue(b, lastVal, residualLength, loc);
+    Value dst = b.create<arith::AddIOp>(
+        loc, dstDataArea,
+        b.create<arith::ShRUIOp>(loc, loopEnd, bExt.genI256Const(5, loc)));
+    b.create<yul::SStoreOp>(loc, dst, maskedVal);
+  }
+  b.setInsertionPointAfter(ifResidual);
+
+  // Store the string length.
+  Value doubleLength =
+      b.create<arith::ShLIOp>(loc, length, bExt.genI256Const(1, loc));
+  b.create<yul::SStoreOp>(loc, dstAddr,
+                          b.create<mlir::arith::OrIOp>(
+                              loc, doubleLength, bExt.genI256Const(1, loc)));
+
+  // Handle in place case.
+  b.setInsertionPointToStart(&ifOutOfPlace.getElseRegion().front());
+  {
+    Value isNotEmptyCond = b.create<arith::CmpIOp>(
+        loc, arith::CmpIPredicate::ne, length, bExt.genI256Const(0, loc));
+
+    auto ifIsNotEmpty = b.create<scf::IfOp>(loc, isNotEmptyCond, true);
+    b.setInsertionPointToStart(&ifIsNotEmpty.getThenRegion().front());
+
+    Value val = genLoad(srcAddr, srcDataLoc, loc);
+    Value maskedVal = getI256MSBMaskedValue(b, val, length, loc);
+    Value doubleLength =
+        b.create<arith::ShLIOp>(loc, length, bExt.genI256Const(1, loc));
+    Value packedData = b.create<arith::OrIOp>(loc, maskedVal, doubleLength);
+    b.create<yul::SStoreOp>(loc, dstAddr, packedData);
+
+    // String is empty
+    b.setInsertionPointToStart(&ifIsNotEmpty.getElseRegion().front());
+    b.create<yul::SStoreOp>(loc, dstAddr, bExt.genI256Const(0, loc));
+  }
+  b.setInsertionPointAfter(ifOutOfPlace);
 }
 
 void evm::Builder::genABITupleSizeAssert(TypeRange tys, Value tupleSize,
@@ -805,6 +1076,9 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
 
   // String type
   if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
+    if (stringTy.getDataLocation() == sol::DataLocation::CallData)
+      return addr;
+
     Value tailAddr = addr;
 
     // Copy the decoded string to a new memory allocation.
