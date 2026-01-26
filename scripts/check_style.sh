@@ -59,7 +59,7 @@ FORMATERROR=$(
     # unqualified move()/forward() checks, i.e. make sure that std::move() and std::forward() are used instead of move() and forward()
     preparedGrep "move\(.+\)" | grep -v "std::move" | grep -E "[^a-z]move"
     preparedGrep "forward\(.+\)" | grep -v "std::forward" | grep -E "[^a-z]forward"
-) | grep -E -v -e "^[a-zA-Z\./]*:[0-9]*:\s*\/(\/|\*)" -e "^test/" || true
+) | grep -E -v -e "^[a-zA-Z./]*:[0-9]*:\s*/[/*]" -e "^test/" || true
 )
 
 # Special error handling for `using namespace std;` exclusion, since said statement can be present in the test directory
