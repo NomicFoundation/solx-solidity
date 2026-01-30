@@ -211,7 +211,16 @@ void GepOp::build(OpBuilder &odsBuilder, OperationState &odsState,
                                      getDataLocation(baseAddrTy));
 
   // Don't generate pointers to reference types in storage.
+  // FIXME: have we listed all the types?
   if (auto eltArrTy = dyn_cast<ArrayType>(eltTy)) {
+    if (eltArrTy.getDataLocation() == sol::DataLocation::Storage)
+      resTy = eltTy;
+  }
+  if (auto eltArrTy = dyn_cast<StringType>(eltTy)) {
+    if (eltArrTy.getDataLocation() == sol::DataLocation::Storage)
+      resTy = eltTy;
+  }
+  if (auto eltArrTy = dyn_cast<StructType>(eltTy)) {
     if (eltArrTy.getDataLocation() == sol::DataLocation::Storage)
       resTy = eltTy;
   }

@@ -22,6 +22,7 @@
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/BuiltinTypes.h"
+#include "mlir/IR/SymbolTable.h"
 #include "mlir/IR/Types.h"
 #include <vector>
 
@@ -81,6 +82,36 @@ LLVM::GlobalOp BuilderExt::getOrInsertGlobalOp(llvm::StringRef name, Type ty,
   b.setInsertionPointToStart(mod.getBody());
   return b.create<LLVM::GlobalOp>(b.getUnknownLoc(), ty, /*isConstant=*/false,
                                   linkage, name, attr, alignment, addrSpace);
+}
+
+LLVM::GlobalOp BuilderExt::getConstantGlobalOp(llvm::StringRef init,
+                                               ModuleOp mod) {
+  OpBuilder::InsertionGuard insertGuard(b);
+  b.setInsertionPointToStart(mod.getBody());
+  auto strAttr = b.getStringAttr(init);
+  Type i8Type = b.getIntegerType(8);
+  Type arrayType = LLVM::LLVMArrayType::get(i8Type, init.size());
+
+  // Generate a unique name of a global that doesn't clash
+  // with existing symbols.
+  mlir::SymbolTable symbolTable(mod);
+  unsigned uniquingCounter = 0;
+  llvm::SmallString<128> globName = mlir::SymbolTable::generateSymbolName<128>(
+      "__data_in_code_",
+      [&](llvm::StringRef candidate) {
+        // Return true if name is already taken
+        return symbolTable.lookup(candidate) != nullptr;
+      },
+      uniquingCounter);
+
+  auto globConst = b.create<LLVM::GlobalOp>(
+      b.getUnknownLoc(), arrayType,
+      /*isConstant=*/true, LLVM::Linkage::Private, globName, strAttr,
+      /*alignment=*/0,
+      /*addrSpace=*/4);
+  globConst.setUnnamedAddr(LLVM::UnnamedAddr::Global);
+
+  return globConst;
 }
 
 LLVM::GlobalOp BuilderExt::getOrInsertI256GlobalOp(llvm::StringRef name,

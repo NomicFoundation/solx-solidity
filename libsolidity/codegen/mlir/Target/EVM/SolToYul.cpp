@@ -1183,6 +1183,47 @@ struct ArrayLitOpLowering : public OpConversionPattern<sol::ArrayLitOp> {
   }
 };
 
+struct StringLitOpLowering : public OpConversionPattern<sol::StringLitOp> {
+  using OpConversionPattern<sol::StringLitOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::StringLitOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+
+    Location loc = op.getLoc();
+    evm::Builder evmB(r, loc);
+    solidity::mlirgen::BuilderExt bExt(r, op.getLoc());
+
+    StringRef lit = adaptor.getValue();
+    Value litSize = bExt.genI256Const(lit.size());
+    Value allocPtr = evmB.genMemAlloc(op.getType(), false, {}, litSize, loc);
+
+    // Beyond a certain length, string literals are cheaper to embed as in-code
+    // data and load via CODECOPY than to construct directly.
+    // TODO: determine the exact size threshold.
+    if (lit.size() > 128) {
+      auto mod = op->getParentOfType<ModuleOp>();
+      // Create a global constant initialized with the given string literal.
+      LLVM::GlobalOp globConst = bExt.getConstantGlobalOp(lit, mod);
+      auto ptrToArray =
+          LLVM::LLVMPointerType::get(mod.getContext(), /*addressSpace=*/4);
+      auto addrOf = r.create<LLVM::AddressOfOp>(r.getUnknownLoc(), ptrToArray,
+                                                globConst.getSymName());
+      Value intAddr =
+          r.create<LLVM::PtrToIntOp>(loc, r.getIntegerType(256), addrOf);
+      // Generate the string size store.
+      r.create<yul::MStoreOp>(loc, allocPtr, bExt.genI256Const(lit.size()));
+      Value strPtr =
+          evmB.genDataAddrPtr(allocPtr, sol::DataLocation::Memory, loc);
+      r.create<yul::CodeCopyOp>(loc, strPtr, intAddr, litSize);
+    } else {
+      evmB.genStringStore(lit.str(), allocPtr, loc);
+    }
+
+    r.replaceOp(op, allocPtr);
+    return success();
+  }
+};
+
 struct GetCallDataOpLowering : public OpConversionPattern<sol::GetCallDataOp> {
   using OpConversionPattern<sol::GetCallDataOp>::OpConversionPattern;
 
@@ -1222,7 +1263,13 @@ struct PushBytesOpLowering : public OpConversionPattern<sol::PushBytesOp> {
     Location loc = op.getLoc();
     evm::Builder evmB(r, loc);
     solidity::mlirgen::BuilderExt bExt(r, loc);
-    evmB.genPushToString(adaptor.getAddr(), adaptor.getValue(), loc);
+
+    Type ty = op.getValue().getType();
+    Value val = adaptor.getValue();
+    val = isa<sol::BytesType>(ty)
+              ? r.create<yul::ByteOp>(loc, bExt.genI256Const(0), val)
+              : adaptor.getValue();
+    evmB.genPushToString(adaptor.getAddr(), val, loc);
 
     r.eraseOp(op);
     return success();
@@ -1645,7 +1692,6 @@ struct DataLocCastOpLowering : public OpConversionPattern<sol::DataLocCastOp> {
     sol::DataLocation srcDataLoc = sol::getDataLocation(srcTy);
     sol::DataLocation dstDataLoc = sol::getDataLocation(dstTy);
 
-    mlir::Value resAddr;
     // From storage to memory.
     if (srcDataLoc == sol::DataLocation::Storage &&
         dstDataLoc == sol::DataLocation::Memory) {
@@ -1654,17 +1700,14 @@ struct DataLocCastOpLowering : public OpConversionPattern<sol::DataLocCastOp> {
         // Generate the memory allocation.
         Value sizeSlot = evmB.genLoad(adaptor.getInp(), srcDataLoc);
         Value sizeInBytes = evmB.genStringSize(sizeSlot, srcDataLoc, loc);
-        Value memAddr = evmB.genMemAllocForDynArray(
+        Value dstAddr = evmB.genMemAllocForDynArray(
             sizeInBytes, bExt.genRoundUpToMultiple<32>(sizeInBytes));
-        resAddr = memAddr;
 
-        auto dataMemAddr =
-            r.create<arith::AddIOp>(loc, memAddr, bExt.genI256Const(32));
-
-        // Generate the loop to copy the data.
-        evmB.genCopyStringDataToMemory(adaptor.getInp(), sizeSlot, sizeInBytes,
-                                       dataMemAddr, srcDataLoc, loc);
-        r.replaceOp(op, memAddr);
+        Value srcDataPtr =
+            evmB.genDataAddrPtr(adaptor.getInp(), srcDataLoc, loc);
+        evmB.genCopyStringToMemory(srcDataPtr, sizeSlot, sizeInBytes, dstAddr,
+                                   srcDataLoc, loc);
+        r.replaceOp(op, dstAddr);
         return success();
       }
 
@@ -1675,7 +1718,6 @@ struct DataLocCastOpLowering : public OpConversionPattern<sol::DataLocCastOp> {
     }
 
     llvm_unreachable("NYI");
-    return failure();
   }
 };
 
@@ -1766,23 +1808,9 @@ struct CopyOpLowering : public OpConversionPattern<sol::CopyOp> {
     Type dstTy = op.getDst().getType();
     sol::DataLocation srcDataLoc = sol::getDataLocation(srcTy);
     sol::DataLocation dstDataLoc = sol::getDataLocation(dstTy);
-    assert(srcDataLoc == sol::DataLocation::Memory &&
-           dstDataLoc == sol::DataLocation::Storage && "NYI");
 
-    if (isa<sol::StringType>(srcTy)) {
-      assert(isa<sol::StringType>(dstTy));
-
-      Value srcSize = evmB.genDynSize(adaptor.getSrc(), srcTy, loc);
-      // enStringSize(
-      // evmB.genLoad(adaptor.getSrc(), srcDataLoc, loc), srcDataLoc);
-      Value srcDataAddr = evmB.genDataAddrPtr(adaptor.getSrc(), srcDataLoc);
-
-      evmB.genCopyStringToStorage(srcDataAddr, srcSize, adaptor.getDst(),
-                                  srcDataLoc, loc);
-    } else {
-      llvm_unreachable("NYI");
-    }
-
+    evmB.genCopy(srcTy, adaptor.getSrc(), adaptor.getDst(), srcDataLoc,
+                 dstDataLoc, loc);
     r.eraseOp(op);
     return success();
   }
@@ -3006,6 +3034,20 @@ struct ContractOpLowering : public OpRewritePattern<sol::ContractOp> {
       r.create<yul::RevertOp>(loc, bExt.genI256Const(0), bExt.genI256Const(0));
     }
 
+    // Relocate global constants into their corresponding
+    // Creation/Runtime objects.
+    ModuleOp mod = runtimeObj->getParentOfType<ModuleOp>();
+    mod->walk([&mod, &r](LLVM::AddressOfOp addrOf) {
+      StringRef name = addrOf.getGlobalName();
+      if (!name.starts_with("__data_in_code_"))
+        return;
+
+      auto obj = addrOf->getParentOfType<yul::ObjectOp>();
+      auto gOp = SymbolTable::lookupNearestSymbolFrom<LLVM::GlobalOp>(
+          mod, r.getStringAttr(name));
+      gOp->moveBefore(obj.getEntryBlock(), obj.getEntryBlock()->begin());
+    });
+
     // TODO? Make sure op.getBody() is either empty or has only ops marked for
     // deletion.
     r.eraseOp(op);
@@ -3054,8 +3096,8 @@ void evm::populateMemPats(RewritePatternSet &pats, TypeConverter &tyConv) {
            GetCallDataOpLowering, PushOpLowering, PushBytesOpLowering,
            PopOpLowering, GepOpLowering, MapOpLowering, LoadOpLowering,
            LoadImmutableOpLowering, StoreOpLowering, DataLocCastOpLowering,
-           LengthOpLowering, SliceOpLowering, CopyOpLowering>(
-      tyConv, pats.getContext());
+           LengthOpLowering, SliceOpLowering, CopyOpLowering,
+           StringLitOpLowering>(tyConv, pats.getContext());
   pats.add<AddrOfOpLowering>(pats.getContext());
 }
 

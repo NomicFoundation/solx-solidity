@@ -246,17 +246,22 @@ public:
   genStringSize(mlir::Value lengthSlot, mlir::sol::DataLocation dataLoc,
                 std::optional<mlir::Location> locArg = std::nullopt);
 
-  /// Copies a string into memory. It does not store the string length.
-  void genCopyStringDataToMemory(
-      mlir::Value srcAddr, mlir::Value lengthSlot, mlir::Value length,
-      mlir::Value dstAddr, mlir::sol::DataLocation srcDataLoc,
-      std::optional<mlir::Location> locArg = std::nullopt);
+  /// Copies a string into memory.
+  void
+  genCopyStringToMemory(mlir::Value srcDataAddr, mlir::Value lengthSlot,
+                        mlir::Value length, mlir::Value dstAddr,
+                        mlir::sol::DataLocation srcDataLoc,
+                        std::optional<mlir::Location> locArg = std::nullopt);
 
   /// Copies a string into the storage.
-  void genCopyStringToStorage(mlir::Value srcAddr, mlir::Value length,
+  void genCopyStringToStorage(mlir::Value srcDataAddr, mlir::Value length,
                               mlir::Value dstAddr,
                               mlir::sol::DataLocation srcDataLoc,
                               std::optional<mlir::Location> locArg);
+
+  void genCopy(mlir::Type ty, mlir::Value srcAddr, mlir::Value dstAddr,
+               mlir::sol::DataLocation srcDataLoc,
+               mlir::sol::DataLocation dstDataLoc, mlir::Location loc);
 
   /// Generates a load from the low level integral type address.
   mlir::Value genLoad(mlir::Value addr, mlir::sol::DataLocation dataLoc,

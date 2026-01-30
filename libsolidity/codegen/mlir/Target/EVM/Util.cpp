@@ -546,7 +546,65 @@ static Value getI256MSBMaskedValue(OpBuilder &b, Value val, Value maskLen,
   return b.create<mlir::arith::AndIOp>(loc, val, mask);
 }
 
-void evm::Builder::genCopyStringToStorage(Value srcAddr, Value length,
+void evm::Builder::genCopy(Type ty, Value srcAddr, Value dstAddr,
+                           sol::DataLocation srcDataLoc,
+                           sol::DataLocation dstDataLoc, Location loc) {
+  solidity::mlirgen::BuilderExt bExt(b, loc);
+
+  if (auto arrTy = dyn_cast<sol::ArrayType>(ty)) {
+    Value length, dstDataAddr, srcDataAddr;
+    if (arrTy.isDynSized()) {
+      length = genLoad(srcAddr, srcDataLoc, loc);
+      dstDataAddr = genDataAddrPtr(dstAddr, dstDataLoc, loc);
+      srcDataAddr = genDataAddrPtr(srcAddr, srcDataLoc, loc);
+    } else {
+      length = bExt.genI256Const(arrTy.getSize());
+      dstDataAddr = dstAddr;
+      srcDataAddr = srcAddr;
+    }
+    Type eltTy = arrTy.getEltType();
+
+    b.create<scf::ForOp>(
+        loc, /*lowerBound=*/bExt.genIdxConst(0),
+        /*upperBound=*/bExt.genCastToIdx(length),
+        /*step=*/bExt.genIdxConst(1),
+        /*initArgs=*/ValueRange{},
+        /*builder=*/
+        [&](OpBuilder &b, Location loc, Value indVar, ValueRange initArgs) {
+          Value i256IndVar = bExt.genCastToI256(indVar);
+          Value srcAddrI =
+              genAddrAtIdx(srcDataAddr, i256IndVar, arrTy, srcDataLoc, loc);
+          Value dstAddrI =
+              genAddrAtIdx(dstDataAddr, i256IndVar, arrTy, dstDataLoc, loc);
+
+          // Reference type elements store pointers to heap-allocated objects.
+          if (sol::isNonPtrRefType(eltTy)) {
+            if (srcDataLoc == sol::DataLocation::Memory)
+              srcAddrI = genLoad(srcAddrI, srcDataLoc, loc);
+            if (dstDataLoc == sol::DataLocation::Memory)
+              dstAddrI = genLoad(dstAddrI, dstDataLoc, loc);
+          }
+          genCopy(arrTy.getEltType(), srcAddrI, dstAddrI, srcDataLoc,
+                  dstDataLoc, loc);
+          b.create<scf::YieldOp>(loc);
+        });
+  } else if (isa<IntegerType>(ty)) {
+    genStore(genLoad(srcAddr, srcDataLoc, loc), dstAddr, dstDataLoc, loc);
+  } else if (isa<sol::StringType>(ty)) {
+    Value lengthSlot = genLoad(srcAddr, srcDataLoc, loc);
+    Value length = genStringSize(lengthSlot, srcDataLoc, loc);
+    Value srcDataAddr = genDataAddrPtr(srcAddr, srcDataLoc, loc);
+    if (dstDataLoc == sol::DataLocation::Storage)
+      genCopyStringToStorage(srcDataAddr, length, dstAddr, srcDataLoc, loc);
+    else if (dstDataLoc == sol::DataLocation::Memory)
+      genCopyStringToMemory(srcDataAddr, lengthSlot, length, dstAddr,
+                            srcDataLoc, loc);
+  } else {
+    llvm_unreachable("NYI");
+  }
+}
+
+void evm::Builder::genCopyStringToStorage(Value srcDataAddr, Value length,
                                           Value dstAddr,
                                           sol::DataLocation srcDataLoc,
                                           std::optional<Location> locArg) {
@@ -634,7 +692,7 @@ void evm::Builder::genCopyStringToStorage(Value srcAddr, Value length,
       /*builder=*/
       [&](OpBuilder &b, Location loc, Value indVar, ValueRange iterArgs) {
         Value i256IndVar = bExt.genCastToI256(indVar);
-        Value src = b.create<arith::AddIOp>(loc, srcAddr, i256IndVar);
+        Value src = b.create<arith::AddIOp>(loc, srcDataAddr, i256IndVar);
         Value val = genLoad(src, srcDataLoc, loc);
         Value dst = b.create<arith::AddIOp>(
             loc, dstDataArea,
@@ -654,7 +712,7 @@ void evm::Builder::genCopyStringToStorage(Value srcAddr, Value length,
     b.setInsertionPointToStart(&ifResidual.getThenRegion().front());
     Value residualLength = b.create<mlir::arith::AndIOp>(
         loc, length, bExt.genI256Const(0x1F, loc));
-    Value lastVal = genLoad(b.create<arith::AddIOp>(loc, srcAddr, loopEnd),
+    Value lastVal = genLoad(b.create<arith::AddIOp>(loc, srcDataAddr, loopEnd),
                             srcDataLoc, loc);
     Value maskedVal = getI256MSBMaskedValue(b, lastVal, residualLength, loc);
     Value dst = b.create<arith::AddIOp>(
@@ -680,7 +738,7 @@ void evm::Builder::genCopyStringToStorage(Value srcAddr, Value length,
     auto ifIsNotEmpty = b.create<scf::IfOp>(loc, isNotEmptyCond, true);
     b.setInsertionPointToStart(&ifIsNotEmpty.getThenRegion().front());
 
-    Value val = genLoad(srcAddr, srcDataLoc, loc);
+    Value val = genLoad(srcDataAddr, srcDataLoc, loc);
     Value maskedVal = getI256MSBMaskedValue(b, val, length, loc);
     Value doubleLength =
         b.create<arith::ShLIOp>(loc, length, bExt.genI256Const(1, loc));
@@ -694,10 +752,10 @@ void evm::Builder::genCopyStringToStorage(Value srcAddr, Value length,
   b.setInsertionPointAfter(ifOutOfPlace);
 }
 
-void evm::Builder::genCopyStringDataToMemory(Value srcAddr, Value lengthSlot,
-                                             Value length, Value dstAddr,
-                                             sol::DataLocation srcDataLoc,
-                                             std::optional<Location> locArg) {
+void evm::Builder::genCopyStringToMemory(Value srcDataAddr, Value lengthSlot,
+                                         Value length, Value dstAddr,
+                                         sol::DataLocation srcDataLoc,
+                                         std::optional<Location> locArg) {
   // See 'genCopyStringToStorage' regarding the storage layout for
   // `bytes` / `string` in Solidity.
 
@@ -705,18 +763,18 @@ void evm::Builder::genCopyStringDataToMemory(Value srcAddr, Value lengthSlot,
   solidity::mlirgen::BuilderExt bExt(b, loc);
 
   if (srcDataLoc == sol::DataLocation::Memory) {
-    Value dataSlot = genDataAddrPtr(srcAddr, srcDataLoc, loc);
-    b.create<yul::MCopyOp>(loc, dstAddr, dataSlot, length);
+    b.create<yul::MCopyOp>(loc, dstAddr, srcDataAddr, length);
     return;
   }
 
   if (srcDataLoc == sol::DataLocation::CallData) {
-    Value dataSlot = genDataAddrPtr(srcAddr, srcDataLoc, loc);
-    b.create<yul::CallDataCopyOp>(loc, dstAddr, dataSlot, length);
+    b.create<yul::CallDataCopyOp>(loc, dstAddr, srcDataAddr, length);
     return;
   }
 
   assert(srcDataLoc == sol::DataLocation::Storage);
+
+  Value dstDataAddr = genDataAddrPtr(dstAddr, sol::DataLocation::Memory, loc);
 
   Value one = bExt.genI256Const(1);
   Value zero = bExt.genI256Const(0);
@@ -730,13 +788,12 @@ void evm::Builder::genCopyStringDataToMemory(Value srcAddr, Value lengthSlot,
   {
     Value val = b.create<arith::AndIOp>(
         loc, lengthSlot, bExt.genI256Const(~APInt(256, 0xFF), loc));
-    b.create<yul::MStoreOp>(loc, dstAddr, val);
+    b.create<yul::MStoreOp>(loc, dstDataAddr, val);
   }
   // Out of place path
   b.setInsertionPointToStart(&ifInPlace.getElseRegion().front());
   {
     // Generate the loop to copy the data.
-    Value dataSlot = genDataAddrPtr(srcAddr, srcDataLoc, loc);
     b.create<scf::ForOp>(
         loc, /*lowerBound=*/bExt.genIdxConst(0),
         /*upperBound=*/bExt.genCastToIdx(length),
@@ -747,14 +804,16 @@ void evm::Builder::genCopyStringDataToMemory(Value srcAddr, Value lengthSlot,
           Value i256IndVar = bExt.genCastToI256(indVar);
           Value storageIdx = b.create<arith::ShRUIOp>(
               loc, i256IndVar, bExt.genI256Const(5, loc));
-          Value src = b.create<arith::AddIOp>(loc, dataSlot, storageIdx);
+          Value src = b.create<arith::AddIOp>(loc, srcDataAddr, storageIdx);
           Value val = b.create<yul::SLoadOp>(loc, src);
-          Value dst = b.create<arith::AddIOp>(loc, dstAddr, i256IndVar);
+          Value dst = b.create<arith::AddIOp>(loc, dstDataAddr, i256IndVar);
           b.create<yul::MStoreOp>(loc, dst, val);
           b.create<scf::YieldOp>(loc);
         });
   }
   b.setInsertionPointAfter(ifInPlace);
+
+  genStore(length, dstAddr, sol::DataLocation::Memory, loc);
 }
 
 std::pair<Value, Value> evm::Builder::genStringElmAddrInStorage(Value srcAddr,

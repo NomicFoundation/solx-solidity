@@ -216,6 +216,9 @@ public:
                       unsigned alignment, mlir::LLVM::Linkage linkage,
                       mlir::Attribute attr, mlir::ModuleOp mod);
 
+  mlir::LLVM::GlobalOp getConstantGlobalOp(llvm::StringRef init,
+                                           mlir::ModuleOp mod);
+
   /// Returns an existing or a new (if not found) i256 LLVM::GlobalOp.
   mlir::LLVM::GlobalOp getOrInsertI256GlobalOp(llvm::StringRef name,
                                                unsigned addrSpace,

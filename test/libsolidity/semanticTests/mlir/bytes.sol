@@ -38,6 +38,11 @@ contract C {
     str.push(0x78);
     return str;
   }
+  function push2(bytes memory a, bytes1 b) public returns (bytes memory) {
+    str = a;
+    str.push(b);
+    return str;
+  }
   function pop(bytes memory a) public returns (bytes memory) {
     str = a;
     str.pop();
@@ -67,6 +72,7 @@ contract C {
 // push(bytes): 32, 5, "hello" -> 0x20, 6, "hellox"
 // push(bytes): 32, 31, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" -> 0x20, 32, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaax"
 // push(bytes): 32, 32, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab" -> 0x20, 33, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab", "x"
+// push2(bytes, bytes1): 0x40, "!", 5, "hello" -> 0x20, 6, "hello!"
 // pop2(bytes): 32, 5, "hello" -> 0x20, 4, "hell"
 // pop2(bytes): 32, 32, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab" -> 0x20, 31, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 // pop2(bytes): 32, 31, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaabc" -> 0x20, 30, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaab"

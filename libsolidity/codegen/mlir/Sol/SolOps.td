@@ -221,7 +221,8 @@ def Sol_PushOp : Sol_Op<"push"> {
 }
 
 def Sol_PushBytesOp : Sol_Op<"push_bytes"> {
-  let arguments = (ins Sol_StringType:$addr, Sol_Int:$value);
+  let arguments = (ins Sol_StringType:$addr,
+      AnyTypeOf<[Sol_BytesType, Sol_Int]>:$value);
   let assemblyFormat =
       "$addr `,` $value attr-dict `:` type($addr) `,` type($value)";
 }
@@ -877,6 +878,12 @@ def Sol_ContractOp : Sol_Op<"contract", [Symbol, SymbolTable, SingleBlock,
   let regions = (region SizedRegion<1>:$bodyRegion);
 
   let assemblyFormat = "$sym_name $bodyRegion attr-dict";
+}
+
+def Sol_StringLitOp : Sol_Op<"string_lit"> {
+  let arguments = (ins StrAttr:$value);
+  let results = (outs AnyTypeOf<[Sol_BytesType, Sol_StringType]>:$addr);
+  let assemblyFormat = "$value attr-dict `->` type($addr)";
 }
 
 #endif // MLIR_SOL_SOLOPS_TD
