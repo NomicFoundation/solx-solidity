@@ -17,7 +17,6 @@
 
 #include "libsolidity/codegen/mlir/Target/EVM/SolToYul.h"
 #include "libsolidity/codegen/CompilerUtils.h"
-#include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/mlir/Target/EVM/YulToStandard.h"
 #include "libsolidity/codegen/mlir/Util.h"
@@ -27,6 +26,7 @@
 #include "mlir/Dialect/ControlFlow/IR/ControlFlowOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/Dialect/Sol/Sol.h"
 #include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/SymbolTable.h"

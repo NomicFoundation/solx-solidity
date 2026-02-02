@@ -23,8 +23,8 @@
 
 #include "libsolidity/ast/AST.h"
 #include "libsolidity/codegen/mlir/Interface.h"
-#include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolutil/ErrorCodes.h"
+#include "mlir/Dialect/Sol/Sol.h"
 #include "mlir/IR/Builders.h"
 #include "llvm-c/Core.h"
 

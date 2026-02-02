@@ -20,8 +20,8 @@
 //
 
 #include "libsolidity/codegen/mlir/Passes.h"
-#include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/Dialect/Sol/Sol.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/Value.h"
 #include "mlir/IR/Visitors.h"

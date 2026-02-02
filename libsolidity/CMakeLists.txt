@@ -235,29 +235,13 @@ set(mlir_sources
 	codegen/mlir/Target/EVM/YulToStandard.cpp
 )
 
-set(mlir_sol_dialect_sources
-	codegen/mlir/Sol/SolBase.cpp
-	codegen/mlir/Sol/SolOps.cpp
-)
-
 set(mlir_yul_dialect_sources
 	codegen/mlir/Yul/YulBase.cpp
 	codegen/mlir/Yul/YulOps.cpp
 )
 
 include_directories(${PROJECT_BINARY_DIR}/libsolidity/codegen/mlir)
-add_subdirectory(codegen/mlir/Sol)
 add_subdirectory(codegen/mlir/Yul)
-
-add_mlir_dialect_library(MLIRSolDialect
-	${mlir_sol_dialect_sources}
-
-	DEPENDS
-	MLIRSolOpsIncGen
-	MLIRSolExtraIncGen
-
-	LINK_LIBS PUBLIC
-)
 
 add_mlir_dialect_library(MLIRYulDialect
 	${mlir_yul_dialect_sources}

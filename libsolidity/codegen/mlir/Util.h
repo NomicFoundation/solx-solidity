@@ -21,13 +21,13 @@
 
 #pragma once
 
-#include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolutil/FunctionSelector.h"
 #include "libsolutil/Numeric.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
+#include "mlir/Dialect/Sol/Sol.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinAttributes.h"
