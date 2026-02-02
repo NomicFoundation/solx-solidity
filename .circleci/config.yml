@@ -93,12 +93,10 @@ commands:
   restore_ccache_if_allowed:
     description: "Restore ccache unless on a tag or a skipped branch."
     parameters:
-      # TODO: remove the line below
-      # Before merging this PR we need to use an alternative develop branch to test the functionality, `ci-ccache`
       skip_branches_regex:
         description: "Regex of branches that should skip restoring the cache."
         type: string
-        default: "^(ci-ccache|breaking)$"
+        default: "^(develop|breaking)$"
     steps:
       # Tags always skip ccache. Selected branches intentionally start from scratch.
       - when:
@@ -112,19 +110,19 @@ commands:
           steps:
             - restore_cache:
                 keys:
-                  # Reuse cache produced on ci-ccache (prefix match; restores the most recent).
-                  - v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-
+                  # Reuse cache produced on develop (prefix match; restores the most recent).
+                  - v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-develop-
 
   save_ccache_if_develop:
-    description: "Save a fresh ccache only on the ci-ccache branch."
+    description: "Save a fresh ccache only on the develop branch."
     steps:
-      # On `ci-ccache` we always generate a fresh cache by never restoring and by saving under a unique key.
+      # On `develop` we always generate a fresh cache by never restoring and by saving under a unique key.
       - when:
           condition:
-            equal: ["ci-ccache", << pipeline.git.branch >>]
+            equal: ["develop", << pipeline.git.branch >>]
           steps:
             - save_cache:
-                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-ci-ccache-{{ .Revision }}
+                key: v1-{{ .Environment.CCACHE_KEY }}-ccache-{{ .Environment.CIRCLE_JOB }}-develop-{{ .Revision }}
                 paths:
                   - ~/.ccache
   run_with_ccache_unless_tag:
