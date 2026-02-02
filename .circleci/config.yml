@@ -75,21 +75,6 @@ commands:
           event: release
           condition: on_success
 
-  ensure_ccache_key_unless_tag:
-    description: "Fail fast when CCACHE_KEY is missing (skipped on tags)."
-    steps:
-      - when:
-          condition:
-            equal: ["", << pipeline.git.tag >>]
-          steps:
-            - run:
-                name: Check CCACHE_KEY
-                command: |
-                  if [ -z "${CCACHE_KEY:-}" ]; then
-                    echo "CCACHE_KEY is not set. Please set it in CircleCI environment settings."
-                    exit 1
-                  fi
-
   restore_ccache_if_allowed:
     description: "Restore ccache unless on a tag or a skipped branch."
     parameters:
@@ -282,7 +267,6 @@ commands:
 
   run_build:
     steps:
-      - ensure_ccache_key_unless_tag
       - restore_ccache_if_allowed
       # WARNING! If you edit anything between here and save_cache, remember to bump the CCACHE_KEY version in CircleCI environment settings
       - run_with_ccache_unless_tag:
@@ -292,7 +276,6 @@ commands:
 
   run_build_ossfuzz:
     steps:
-      - ensure_ccache_key_unless_tag
       - restore_ccache_if_allowed
       # WARNING! If you edit anything between here and save_cache, remember to bump the CCACHE_KEY version in CircleCI environment settings
       - run_with_ccache_unless_tag:
@@ -1339,7 +1322,6 @@ jobs:
       MAKEFLAGS: -j 10
     steps:
       - checkout
-      - ensure_ccache_key_unless_tag
       - restore_ccache_if_allowed
       # WARNING! If you edit anything between here and save_cache, remember to bump the CCACHE_KEY version in CircleCI environment settings
       - run_with_ccache_unless_tag:
@@ -1822,7 +1804,6 @@ jobs:
           key: dependencies-win-{{ arch }}-{{ checksum "scripts/install_deps.ps1" }}
           paths:
             - .\deps
-      - ensure_ccache_key_unless_tag
       - restore_ccache_if_allowed
       # WARNING! If you edit anything between here and save_cache, remember to bump the CCACHE_KEY version in CircleCI environment settings
       - run_with_ccache_unless_tag:
