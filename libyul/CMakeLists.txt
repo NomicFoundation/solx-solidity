@@ -92,6 +92,8 @@ add_library(yul
 	backends/evm/ssa/SSACFGJsonExporter.h
 	backends/evm/ssa/Stack.cpp
 	backends/evm/ssa/Stack.h
+	backends/evm/ssa/StackShuffler.cpp
+	backends/evm/ssa/StackShuffler.h
 	optimiser/ASTCopier.cpp
 	optimiser/ASTCopier.h
 	optimiser/ASTWalker.cpp
