@@ -19,9 +19,9 @@
 // EVM specific type converter of the sol dialect
 //
 
-#include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Target/EVM/SolToYul.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
+#include "mlir/Dialect/Sol/Sol.h"
 
 using namespace mlir;
 

@@ -21,13 +21,13 @@
 
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolidity/codegen/CompilerUtils.h"
-#include "libsolidity/codegen/mlir/Sol/Sol.h"
 #include "libsolidity/codegen/mlir/Util.h"
 #include "libsolidity/codegen/mlir/Yul/Yul.h"
 #include "libsolutil/ErrorCodes.h"
 #include "libsolutil/FunctionSelector.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/Dialect/Sol/Sol.h"
 
 using namespace mlir;
 
