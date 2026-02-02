@@ -156,6 +156,31 @@ struct NoOpStackManipulationCallbacks
 };
 static_assert(StackManipulationCallbackConcept<NoOpStackManipulationCallbacks>);
 
+/// Array index into stack from the bottom (offset 0 = bottom).
+/// Natural for array-like access and iteration; used when treating the stack as a data structure.
+struct StackOffset
+{
+	explicit constexpr StackOffset(size_t _value) : value(_value) {}
+	size_t value;
+	auto operator<=>(StackOffset const&) const = default;
+};
+// comparison operations with size_t
+constexpr auto operator<=>(StackOffset const lhs, size_t const rhs) noexcept { return lhs.value <=> rhs; }
+constexpr auto operator<=>(size_t const lhs, StackOffset const rhs) noexcept { return lhs <=> rhs.value; }
+
+/// Distance from the stack top (depth 0 = top).
+/// Natural for stack operations (SWAP1 = swap with depth 1); used for operations that
+/// conceptually work "from the top".
+struct StackDepth
+{
+	explicit constexpr StackDepth(size_t _value) : value(_value) {}
+	size_t value;
+	auto operator<=>(StackDepth const&) const = default;
+};
+// comparison operations with size_t
+constexpr auto operator<=>(StackDepth const lhs, size_t const rhs) noexcept { return lhs.value <=> rhs; }
+constexpr auto operator<=>(size_t const lhs, StackDepth const rhs) noexcept { return lhs <=> rhs.value; }
+
 template<
 	StackManipulationCallbackConcept CallbacksType = NoOpStackManipulationCallbacks
 >
@@ -167,31 +192,8 @@ public:
 
 	using Slot = StackSlot;
 	using Data = StackData;
-
-	/// Array index into stack from the bottom (offset 0 = bottom).
-	/// Natural for array-like access and iteration; used when treating the stack as a data structure.
-	struct Offset
-	{
-		explicit constexpr Offset(size_t _value) : value(_value) {}
-		size_t value;
-		auto operator<=>(Offset const&) const = default;
-	};
-	// comparison operations with size_t
-	friend constexpr auto operator<=>(Offset lhs, size_t rhs) noexcept { return lhs.value <=> rhs; }
-	friend constexpr auto operator<=>(size_t lhs, Offset rhs) noexcept { return lhs <=> rhs.value; }
-
-	/// Distance from the stack top (depth 0 = top).
-	/// Natural for stack operations (SWAP1 = swap with depth 1); used for operations that
-	/// conceptually work "from the top".
-	struct Depth
-	{
-		explicit constexpr Depth(size_t _value) : value(_value) {}
-		size_t value;
-		auto operator<=>(Depth const&) const = default;
-	};
-	// comparison operations with size_t
-	friend constexpr auto operator<=>(Depth lhs, size_t rhs) noexcept { return lhs.value <=> rhs; }
-	friend constexpr auto operator<=>(size_t lhs, Depth rhs) noexcept { return lhs <=> rhs.value; }
+	using Depth = StackDepth;
+	using Offset = StackOffset;
 
 	Stack(
 		Data& _data,
