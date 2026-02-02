@@ -240,10 +240,11 @@ public:
 	void dup(Depth const& _depth) { dup(depthToOffset(_depth)); }
 	void dup(Offset const& _offset)
 	{
-		yulAssert(dupReachable(_offset), "Stack too deep");
+		auto const depth = offsetToDepth(_offset);
+		yulAssert(dupReachable(depth), "Stack too deep");
 		m_data->push_back((*m_data)[_offset.value]);
 		if constexpr (!std::is_same_v<Callbacks, NoOpStackManipulationCallbacks>)
-			m_callbacks.dup(offsetToDepth(_offset).value + 1);
+			m_callbacks.dup(depth.value + 1);
 	}
 
 	bool dupReachable(Offset const& _offset) const noexcept { return dupReachable(offsetToDepth(_offset)); }
