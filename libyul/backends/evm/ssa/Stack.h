@@ -130,8 +130,6 @@ static_assert(std::is_trivial_v<StackSlot>, "Want to have no init/cpy overhead")
 
 using StackData = std::vector<StackSlot>;
 std::string slotToString(StackSlot const& _slot);
-std::string slotToString(StackSlot const& _slot, SSACFG const& _cfg);
-std::string stackToString(StackData const& _stackData, SSACFG const& _cfg);
 std::string stackToString(StackData const& _stackData);
 
 template<typename StackManipulationCallback>
