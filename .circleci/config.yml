@@ -268,7 +268,7 @@ commands:
   run_build:
     steps:
       - restore_ccache_if_allowed
-      # WARNING! If you edit anything between here and save_cache, remember to bump the CCACHE_KEY version in CircleCI environment settings
+      # WARNING! If you edit anything between here and save_cache, remember to invalidate the cache manually by bumping the version
       - run_with_ccache_unless_tag:
           step_name: Build
           command: scripts/ci/build.sh
@@ -277,7 +277,7 @@ commands:
   run_build_ossfuzz:
     steps:
       - restore_ccache_if_allowed
-      # WARNING! If you edit anything between here and save_cache, remember to bump the CCACHE_KEY version in CircleCI environment settings
+      # WARNING! If you edit anything between here and save_cache, remember to invalidate the cache manually by bumping the version
       - run_with_ccache_unless_tag:
           step_name: Build_ossfuzz
           command: scripts/ci/build_ossfuzz.sh
@@ -1323,7 +1323,7 @@ jobs:
     steps:
       - checkout
       - restore_ccache_if_allowed
-      # WARNING! If you edit anything between here and save_cache, remember to bump the CCACHE_KEY version in CircleCI environment settings
+      # WARNING! If you edit anything between here and save_cache, remember to invalidate the cache manually by bumping the version
       - run_with_ccache_unless_tag:
           step_name: Build
           command: scripts/ci/build_emscripten.sh
@@ -1805,7 +1805,7 @@ jobs:
           paths:
             - .\deps
       - restore_ccache_if_allowed
-      # WARNING! If you edit anything between here and save_cache, remember to bump the CCACHE_KEY version in CircleCI environment settings
+      # WARNING! If you edit anything between here and save_cache, remember to invalidate the cache manually by bumping the version
       - run_with_ccache_unless_tag:
           step_name: "Building solidity"
           command: scripts/ci/build_win.sh
