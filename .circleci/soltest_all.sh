@@ -32,15 +32,14 @@ REPODIR="$(realpath "$(dirname "$0")"/..)"
 source "${REPODIR}/scripts/common.sh"
 
 DEFAULT_EVM_VALUES=(
+    homestead
     constantinople
-    petersburg
     istanbul
     berlin
     london
     paris
     shanghai
     cancun
-    prague
     osaka
 )
 EVMS_WITH_EOF=(osaka)
