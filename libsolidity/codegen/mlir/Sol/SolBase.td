@@ -190,7 +190,8 @@ def Sol_EvmVersion : I32EnumAttr<"EvmVersion",
                                     I32EnumAttrCase<"Paris", 9>,
                                     I32EnumAttrCase<"Shanghai", 10>,
                                     I32EnumAttrCase<"Cancun", 11>,
-                                    I32EnumAttrCase<"Prague", 12>]> {
+                                    I32EnumAttrCase<"Prague", 12>,
+                                    I32EnumAttrCase<"Osaka", 13>]> {
   let genSpecializedAttr = 0;
   let cppNamespace = "::mlir::sol";
 }

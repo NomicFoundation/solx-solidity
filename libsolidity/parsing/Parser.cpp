@@ -170,7 +170,7 @@ ASTPointer<SourceUnit> Parser::parse(CharStream& _charStream)
 					expectToken(Token::Semicolon);
 				}
 				else
-					fatalParserError(7858_error, "Expected pragma, import directive or contract/interface/library/struct/enum/constant/function/error definition.");
+					fatalParserError(7858_error, "Expected pragma, import directive or contract/interface/library/user-defined type/constant/function/error/event definition.");
 			}
 		}
 		solAssert(m_recursionDepth == 0, "");
@@ -217,7 +217,7 @@ void Parser::parsePragmaVersion(SourceLocation const& _location, std::vector<Tok
 
 ASTPointer<StructuredDocumentation> Parser::parseStructuredDocumentation()
 {
-	if (m_scanner->currentCommentLiteral() != "")
+	if (!m_scanner->currentCommentLiteral().empty())
 	{
 		ASTNodeFactory nodeFactory{*this};
 		nodeFactory.setLocation(m_scanner->currentCommentLocation());
@@ -1445,7 +1445,7 @@ ASTPointer<Statement> Parser::parseStatement(bool _allowUnchecked)
 	RecursionGuard recursionGuard(*this);
 	ASTPointer<ASTString> docString;
 	ASTPointer<Statement> statement;
-	if (m_scanner->currentCommentLiteral() != "")
+	if (!m_scanner->currentCommentLiteral().empty())
 		docString = std::make_shared<ASTString>(m_scanner->currentCommentLiteral());
 	switch (m_scanner->currentToken())
 	{
