@@ -235,22 +235,7 @@ set(mlir_sources
 	codegen/mlir/Target/EVM/YulToStandard.cpp
 )
 
-set(mlir_yul_dialect_sources
-	codegen/mlir/Yul/YulBase.cpp
-	codegen/mlir/Yul/YulOps.cpp
-)
-
 include_directories(${PROJECT_BINARY_DIR}/libsolidity/codegen/mlir)
-add_subdirectory(codegen/mlir/Yul)
-
-add_mlir_dialect_library(MLIRYulDialect
-	${mlir_yul_dialect_sources}
-
-	DEPENDS
-	MLIRYulOpsIncGen
-
-	LINK_LIBS PUBLIC
-)
 
 # FIXME: Remove this once we're good with the fine-grained library dependencies.
 # get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
