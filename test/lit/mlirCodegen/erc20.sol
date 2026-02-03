@@ -156,7 +156,7 @@ contract ERC20 {
 // CHECK: #Constructor = #sol<FunctionKind Constructor>
 // CHECK-NEXT: #Contract = #sol<ContractKind Contract>
 // CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
-// CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
+// CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: #View = #sol<StateMutability View>
 // CHECK-NEXT: #loc8 = loc({{.*}}:16:14)
 // CHECK-NEXT: #loc9 = loc({{.*}}:16:35)
@@ -184,7 +184,7 @@ contract ERC20 {
 // CHECK-NEXT: #loc173 = loc({{.*}}:142:20)
 // CHECK-NEXT: #loc174 = loc({{.*}}:142:35)
 // CHECK-NEXT: #loc175 = loc({{.*}}:142:52)
-// CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
+// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.contract @ERC20_470 {
 // CHECK-NEXT:     sol.state_var @_balances_5 : !sol.mapping<ui256, ui256> loc(#loc2)
 // CHECK-NEXT:     sol.state_var @_allowances_11 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc3)

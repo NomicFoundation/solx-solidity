@@ -12,8 +12,8 @@ contract C {
 // CHECK: #Constructor = #sol<FunctionKind Constructor>
 // CHECK-NEXT: #Contract = #sol<ContractKind Contract>
 // CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
-// CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
-// CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
+// CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
+// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.contract @C_17 {
 // CHECK-NEXT:     sol.state_var @ui256_2 : ui256 loc(#loc2)
 // CHECK-NEXT:     sol.state_var @addr_4 : ui256 loc(#loc3)

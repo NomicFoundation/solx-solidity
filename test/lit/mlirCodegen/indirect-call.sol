@@ -13,10 +13,10 @@ contract C {
 // CHECK: #Constructor = #sol<FunctionKind Constructor>
 // CHECK-NEXT: #Contract = #sol<ContractKind Contract>
 // CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
-// CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
+// CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: #loc3 = loc({{.*}}:3:13)
 // CHECK-NEXT: #loc8 = loc({{.*}}:4:13)
-// CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
+// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.contract @C_38 {
 // CHECK-NEXT:     sol.func @C_38() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)

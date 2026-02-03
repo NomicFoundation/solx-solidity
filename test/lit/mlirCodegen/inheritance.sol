@@ -17,8 +17,8 @@ contract C0 is C1 {
 // CHECK: #Constructor = #sol<FunctionKind Constructor>
 // CHECK-NEXT: #Contract = #sol<ContractKind Contract>
 // CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
-// CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
-// CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
+// CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
+// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.contract @C1_28 {
 // CHECK-NEXT:     sol.state_var @m_2 : ui256 loc(#loc2)
 // CHECK-NEXT:     sol.func @get_m_2() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 1513021465 : i32, state_mutability = #NonPayable} {
@@ -59,8 +59,8 @@ contract C0 is C1 {
 // CHECK-NEXT: #Constructor = #sol<FunctionKind Constructor>
 // CHECK-NEXT: #Contract = #sol<ContractKind Contract>
 // CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
-// CHECK-NEXT: #Prague = #sol<EvmVersion Prague>
-// CHECK-NEXT: module attributes {sol.evm_version = #Prague} {
+// CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
+// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.contract @C0_56 {
 // CHECK-NEXT:     sol.state_var @m_2 : ui256 loc(#loc2)
 // CHECK-NEXT:     sol.func @get_m_2() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 1513021465 : i32, state_mutability = #NonPayable} {
