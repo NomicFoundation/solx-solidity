@@ -228,6 +228,9 @@ public:
   /// Generates a low level integral type pointer to the address holding the
   /// data of a dynamic allocation.
   mlir::Value
+  genDataAddrPtr(mlir::Value addr, mlir::Type ty,
+                 std::optional<mlir::Location> locArg = std::nullopt);
+  mlir::Value
   genDataAddrPtr(mlir::Value addr, mlir::sol::DataLocation dataLoc,
                  std::optional<mlir::Location> locArg = std::nullopt);
 
@@ -241,6 +244,10 @@ public:
   /// Generates a load from the low level integral type address.
   mlir::Value genLoad(mlir::Value addr, mlir::sol::DataLocation dataLoc,
                       std::optional<mlir::Location> locArg = std::nullopt);
+
+  /// Generates a size load from addr of dynamic type.
+  mlir::Value genDynSize(mlir::Value addr, mlir::Type ty,
+                         std::optional<mlir::Location> locArg = std::nullopt);
 
   /// Generates a store to the low level integral type address.
   void genStore(mlir::Value val, mlir::Value addr,

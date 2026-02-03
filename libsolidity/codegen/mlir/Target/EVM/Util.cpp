@@ -345,13 +345,54 @@ Value evm::Builder::genMemAlloc(Type ty, bool zeroInit, ValueRange initVals,
                      /*recDepth=*/-1, loc);
 }
 
+Value evm::Builder::genDynSize(Value addr, Type ty,
+                               std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+
+  auto i256Ty = IntegerType::get(b.getContext(), 256);
+  sol::DataLocation dataLoc = sol::getDataLocation(ty);
+  if (dataLoc == sol::DataLocation::CallData)
+    return b.create<LLVM::ExtractValueOp>(loc, i256Ty, addr,
+                                          b.getDenseI64ArrayAttr({1}));
+  return genLoad(addr, dataLoc, loc);
+}
+
+Value evm::Builder::genDataAddrPtr(Value addr, Type ty,
+                                   std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+  solidity::mlirgen::BuilderExt bExt(b, loc);
+
+  auto i256Ty = IntegerType::get(b.getContext(), 256);
+  sol::DataLocation dataLoc = sol::getDataLocation(ty);
+  if (dataLoc == sol::DataLocation::CallData) {
+    assert(isa<LLVM::LLVMStructType>(addr.getType()));
+    return b.create<LLVM::ExtractValueOp>(loc, i256Ty, addr,
+                                          b.getDenseI64ArrayAttr({0}));
+  }
+
+  if (dataLoc == sol::DataLocation::Memory) {
+    // Return the address after the first word.
+    return b.create<arith::AddIOp>(loc, addr, bExt.genI256Const(32));
+  }
+
+  if (dataLoc == sol::DataLocation::Storage) {
+    // Return the keccak256 of addr.
+    auto zero = bExt.genI256Const(0);
+    b.create<yul::MStoreOp>(loc, zero, addr);
+    return b.create<yul::Keccak256Op>(loc, zero, bExt.genI256Const(32));
+  }
+
+  llvm_unreachable("NYI");
+}
+
 Value evm::Builder::genDataAddrPtr(Value addr, sol::DataLocation dataLoc,
                                    std::optional<Location> locArg) {
   Location loc = locArg ? *locArg : defLoc;
   solidity::mlirgen::BuilderExt bExt(b, loc);
 
-  if (dataLoc == sol::DataLocation::Memory ||
-      dataLoc == sol::DataLocation::CallData) {
+  assert(dataLoc != sol::DataLocation::CallData);
+
+  if (dataLoc == sol::DataLocation::Memory) {
     // Return the address after the first word.
     return b.create<arith::AddIOp>(loc, addr, bExt.genI256Const(32));
   }
@@ -523,13 +564,13 @@ Value evm::Builder::genABITupleEncoding(Type ty, Value src, Value dstAddr,
     Value dstArrAddr, srcArrAddr, size;
     if (arrTy.isDynSized()) {
       // Generate the size store.
-      Value i256Size = genLoad(src, arrTy.getDataLocation(), loc);
+      Value i256Size = genDynSize(src, arrTy, loc);
       assert(dstAddr == tailAddr);
       b.create<yul::MStoreOp>(loc, dstAddr, i256Size);
 
       size = bExt.genCastToIdx(i256Size);
       dstArrAddr = b.create<arith::AddIOp>(loc, dstAddr, thirtyTwo);
-      srcArrAddr = b.create<arith::AddIOp>(loc, src, thirtyTwo);
+      srcArrAddr = genDataAddrPtr(src, arrTy, loc);
 
       // Generate the tail address update.
       Value sizeInBytes = b.create<arith::MulIOp>(loc, i256Size, thirtyTwo);
@@ -562,11 +603,19 @@ Value evm::Builder::genABITupleEncoding(Type ty, Value src, Value dstAddr,
           Value srcVal = genLoad(iSrcAddr, arrTy.getDataLocation(), loc);
           Value nextTailAddr;
           if (sol::hasDynamicallySizedElt(arrTy.getEltType())) {
-            if (arrTy.getDataLocation() == sol::DataLocation::CallData)
+            if (arrTy.getDataLocation() == sol::DataLocation::CallData) {
               // Multi-dimensional dynamic arrays in calldata tracks inner
               // allocations using offsets wrt to the start array. Here `srcVal`
               // (on the rhs) is that offset.
-              srcVal = b.create<arith::AddIOp>(loc, srcArrAddr, srcVal);
+              Value innerAddr =
+                  b.create<arith::AddIOp>(loc, srcArrAddr, srcVal);
+              // Construct the fat pointer.
+              Value innerSize = b.create<yul::CallDataLoadOp>(loc, innerAddr);
+              Value innerDataAddr =
+                  b.create<arith::AddIOp>(loc, innerAddr, thirtyTwo);
+              solidity::mlirgen::BuilderExt bExt(b, loc);
+              srcVal = bExt.genLLVMStruct({innerDataAddr, innerSize});
+            }
 
             b.create<yul::MStoreOp>(
                 loc, iDstAddr,
@@ -594,11 +643,11 @@ Value evm::Builder::genABITupleEncoding(Type ty, Value src, Value dstAddr,
   // String type
   if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
     // Generate the length field copy.
-    auto size = genLoad(src, stringTy.getDataLocation(), loc);
+    auto size = genDynSize(src, stringTy, loc);
     b.create<yul::MStoreOp>(loc, tailAddr, size);
 
     // Generate the data copy.
-    auto dataAddr = b.create<arith::AddIOp>(loc, src, bExt.genI256Const(32));
+    auto dataAddr = genDataAddrPtr(src, stringTy, loc);
     auto tailDataAddr =
         b.create<arith::AddIOp>(loc, tailAddr, bExt.genI256Const(32));
     if (stringTy.getDataLocation() == sol::DataLocation::Memory)
@@ -713,7 +762,8 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
 
   // Array type
   if (auto arrTy = dyn_cast<sol::ArrayType>(ty)) {
-    if (arrTy.getDataLocation() == sol::DataLocation::CallData)
+    if (arrTy.getDataLocation() == sol::DataLocation::CallData &&
+        !arrTy.isDynSized())
       return addr;
 
     Value dstAddr, srcAddr, size, ret;
@@ -732,6 +782,9 @@ Value evm::Builder::genABITupleDecoding(Type ty, Value addr, bool fromMem,
       genRevertWithMsg(b.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt,
                                                endAddr, tupleEnd),
                        "ABI decoding: invalid array size", loc);
+
+      if (arrTy.getDataLocation() == sol::DataLocation::CallData)
+        return bExt.genLLVMStruct({srcAddr, i256Size});
 
       dstAddr = genMemAllocForDynArray(
           i256Size, b.create<arith::MulIOp>(loc, i256Size, thirtyTwo));

@@ -72,6 +72,8 @@ evm::SolTypeConverter::SolTypeConverter() {
 
   // Array type
   addConversion([&](sol::ArrayType ty) -> Type {
+    auto i256Ty = IntegerType::get(ty.getContext(), 256,
+                                   IntegerType::SignednessSemantics::Signless);
     switch (ty.getDataLocation()) {
     case sol::DataLocation::Stack: {
       Type eltTy = convertType(ty.getEltType());
@@ -81,6 +83,11 @@ evm::SolTypeConverter::SolTypeConverter() {
     // Map to the 256 bit address in calldata/memory.
     // FIXME: Generate fat pointer for calldata!
     case sol::DataLocation::CallData:
+      if (ty.isDynSized())
+        return LLVM::LLVMStructType::getLiteral(ty.getContext(),
+                                                {i256Ty, i256Ty});
+      return i256Ty;
+
     case sol::DataLocation::Memory:
     // Map to the 256 bit slot offset.
     case sol::DataLocation::Storage:
@@ -96,9 +103,13 @@ evm::SolTypeConverter::SolTypeConverter() {
 
   // String type
   addConversion([&](sol::StringType ty) -> Type {
+    auto i256Ty = IntegerType::get(ty.getContext(), 256,
+                                   IntegerType::SignednessSemantics::Signless);
     switch (ty.getDataLocation()) {
     // Map to the 256 bit address in calldata/memory.
     case sol::DataLocation::CallData:
+      return LLVM::LLVMStructType::getLiteral(ty.getContext(),
+                                              {i256Ty, i256Ty});
     case sol::DataLocation::Memory:
     // Map to the 256 bit slot offset.
     case sol::DataLocation::Storage:

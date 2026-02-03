@@ -1012,7 +1012,7 @@ struct Keccak256OpLowering : public OpConversionPattern<sol::Keccak256Op> {
     sol::DataLocation dataLoc = sol::getDataLocation(ty);
 
     Value dataLen = evmB.genLoad(adaptor.getAddr(), dataLoc);
-    auto dataSlot = evmB.genDataAddrPtr(adaptor.getAddr(), dataLoc);
+    auto dataSlot = evmB.genDataAddrPtr(adaptor.getAddr(), ty);
     r.replaceOpWithNewOp<yul::Keccak256Op>(op, dataSlot, dataLen);
 
     return success();
@@ -1345,7 +1345,7 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
           //
           Value size;
           if (arrTy.isDynSized())
-            size = evmB.genLoad(remappedBaseAddr, dataLoc);
+            size = evmB.genDynSize(remappedBaseAddr, baseAddrTy);
           else
             size = bExt.genI256Const(arrTy.getSize());
 
@@ -1365,7 +1365,7 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
                   : bExt.genI256Const(32);
           Value scaledIdx = r.create<arith::MulIOp>(loc, castedIdx, stride);
           if (arrTy.isDynSized()) {
-            Value dataAddr = evmB.genDataAddrPtr(remappedBaseAddr, dataLoc);
+            Value dataAddr = evmB.genDataAddrPtr(remappedBaseAddr, baseAddrTy);
             addrAtIdx = r.create<arith::AddIOp>(loc, dataAddr, scaledIdx);
           } else {
             addrAtIdx =
@@ -1392,16 +1392,14 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
 
         // Bytes (!sol.string)
       } else if (auto strTy = dyn_cast<sol::StringType>(baseAddrTy)) {
-        Value size = evmB.genLoad(remappedBaseAddr, dataLoc);
+        Value size = evmB.genDynSize(remappedBaseAddr, baseAddrTy);
         Value castedIdx =
             bExt.genIntCast(/*width=*/256, /*isSigned=*/false, idx);
         auto panicCond = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::uge,
                                                  castedIdx, size);
         evmB.genPanic(solidity::util::PanicCode::ArrayOutOfBounds, panicCond);
 
-        // Generate the address after the length-slot.
-        Value dataAddr = r.create<arith::AddIOp>(loc, remappedBaseAddr,
-                                                 bExt.genI256Const(32));
+        Value dataAddr = evmB.genDataAddrPtr(remappedBaseAddr, baseAddrTy);
         res = r.create<arith::AddIOp>(loc, dataAddr, castedIdx);
       }
 
@@ -1682,15 +1680,14 @@ struct LengthOpLowering : public OpConversionPattern<sol::LengthOp> {
     evm::Builder evmB(r, loc);
 
     Type ty = op.getInp().getType();
-    sol::DataLocation dataLoc = sol::getDataLocation(ty);
 
     if (auto stringTy = dyn_cast<sol::StringType>(ty)) {
-      r.replaceOp(op, evmB.genLoad(adaptor.getInp(), dataLoc));
+      r.replaceOp(op, evmB.genDynSize(adaptor.getInp(), ty));
       return success();
     }
     if (auto arrTy = dyn_cast<sol::ArrayType>(ty)) {
       if (arrTy.isDynSized()) {
-        r.replaceOp(op, evmB.genLoad(adaptor.getInp(), dataLoc));
+        r.replaceOp(op, evmB.genDynSize(adaptor.getInp(), ty));
         return success();
       }
       r.replaceOp(op, bExt.genI256Const(arrTy.getSize()));

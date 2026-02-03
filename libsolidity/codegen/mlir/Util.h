@@ -229,6 +229,11 @@ public:
   /// hack to create a non-terminator unreachable op
   void createCallToUnreachableWrapper(
       mlir::ModuleOp mod, std::optional<mlir::Location> locArg = std::nullopt);
+
+  /// Generates an LLVM literal struct from the given values.
+  mlir::Value
+  genLLVMStruct(mlir::ValueRange vals,
+                std::optional<mlir::Location> locArg = std::nullopt);
 };
 
 } // namespace mlirgen

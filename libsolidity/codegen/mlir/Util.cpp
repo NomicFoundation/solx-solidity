@@ -146,3 +146,19 @@ void BuilderExt::createCallToUnreachableWrapper(
     b.create<LLVM::UnreachableOp>(loc);
   }
 }
+
+Value BuilderExt::genLLVMStruct(ValueRange vals,
+                                std::optional<Location> locArg) {
+  Location loc = locArg ? *locArg : defLoc;
+
+  SmallVector<Type> eltTys;
+  for (Value v : vals)
+    eltTys.push_back(v.getType());
+  auto structTy = LLVM::LLVMStructType::getLiteral(b.getContext(), eltTys);
+
+  Value res = b.create<LLVM::UndefOp>(loc, structTy);
+  for (auto [i, v] : llvm::enumerate(vals))
+    res = b.create<LLVM::InsertValueOp>(loc, structTy, res, v,
+                                        b.getDenseI64ArrayAttr(i));
+  return res;
+}
