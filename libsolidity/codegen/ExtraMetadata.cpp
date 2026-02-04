@@ -140,6 +140,7 @@ Json ExtraMetadataRecorder::run(ContractDefinition const& _contract)
 
 			Json func = Json::object();
 			func["name"] = fn->name();
+			func["astId"] = fn->id();
 
 			// Assembly::new[Push]Tag() asserts that the tag is 32 bits
 			auto tagNum = tag.data().convert_to<uint32_t>();
