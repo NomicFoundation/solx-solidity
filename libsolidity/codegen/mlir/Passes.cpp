@@ -17,9 +17,10 @@
 
 #include "libsolidity/codegen/mlir/Passes.h"
 #include "libsolidity/codegen/mlir/Interface.h"
-#include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "lld-c/LLDAsLibraryC.h"
 #include "mlir/Dialect/LLVMIR/Transforms/Passes.h"
+#include "mlir/Dialect/Sol/Target.h"
+#include "mlir/Dialect/Sol/Transforms/Immutables.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
@@ -43,11 +44,22 @@
 
 // FIXME: Define an interface for targets!
 
+// Convert between solidity::mlirgen::Target and mlir::sol::Target
+static mlir::sol::Target toMlirTarget(solidity::mlirgen::Target tgt) {
+  switch (tgt) {
+  case solidity::mlirgen::Target::EVM:
+    return mlir::sol::Target::EVM;
+  case solidity::mlirgen::Target::Undefined:
+    return mlir::sol::Target::Undefined;
+  }
+  llvm_unreachable("Invalid target");
+}
+
 void solidity::mlirgen::addConversionPasses(mlir::PassManager &passMgr,
                                             Target tgt, bool enableDI) {
   passMgr.addPass(mlir::createCanonicalizerPass());
   passMgr.addPass(mlir::sol::createModifierOpLoweringPass());
-  passMgr.addPass(mlir::sol::createConvertSolToStandardPass(tgt));
+  passMgr.addPass(mlir::sol::createConvertSolToStandardPass(toMlirTarget(tgt)));
   // Canonicalizer removes unreachable blocks, which is important for getting
   // the translation to llvm-ir working correctly.
   passMgr.addPass(mlir::createCanonicalizerPass());
@@ -238,10 +250,10 @@ evm::UnlinkedObj solidity::mlirgen::genEvmObj(mlir::ModuleOp mod, char optLevel,
     immMap[immIDs[i]].push_back(immOffsets[i]);
   if (immCount) {
     LLVMDisposeImmutablesEVM(immIDs, immOffsets, immCount);
-    evm::lowerSetImmutables(creationMod, immMap);
+    mlir::evm::lowerSetImmutables(creationMod, immMap);
   } else {
     // llvm might have optimized away the immutable references.
-    evm::removeSetImmutables(creationMod);
+    mlir::evm::removeSetImmutables(creationMod);
   }
 
   // Lower the creation object.
@@ -278,7 +290,8 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
     assert(job.tgt != Target::Undefined);
     passMgr.addPass(mlir::createCanonicalizerPass());
     passMgr.addPass(mlir::sol::createModifierOpLoweringPass());
-    passMgr.addPass(mlir::sol::createConvertSolToStandardPass(job.tgt));
+    passMgr.addPass(
+        mlir::sol::createConvertSolToStandardPass(toMlirTarget(job.tgt)));
     passMgr.addPass(mlir::createCanonicalizerPass());
     if (mlir::failed(passMgr.run(mod))) {
       mod.print(ss);
@@ -310,7 +323,7 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
       mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
       assert(runtimeMod);
 
-      evm::removeSetImmutables(creationMod);
+      mlir::evm::removeSetImmutables(creationMod);
 
       std::unique_ptr<llvm::Module> creationLlvmMod =
           genLLVMIR(creationMod, job.tgt, job.optLevel, *tgtMach, llvmCtx);
@@ -341,7 +354,7 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
       auto creationMod = mod;
       mlir::ModuleOp runtimeMod = extractRuntimeModule(creationMod);
 
-      evm::removeSetImmutables(creationMod);
+      mlir::evm::removeSetImmutables(creationMod);
 
       std::string ret;
       ret = getAsm(

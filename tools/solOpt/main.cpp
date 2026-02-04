@@ -25,6 +25,7 @@
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Sol/Sol.h"
+#include "mlir/Dialect/Yul/Transforms/Passes.h"
 #include "mlir/Dialect/Yul/Yul.h"
 #include "mlir/IR/BuiltinDialect.h"
 #include "mlir/IR/DialectRegistry.h"
@@ -44,7 +45,7 @@ int main(int argc, char **argv) {
     return sol::createLoopInvariantCodeMotionPass();
   });
   registerPass([](void) -> std::unique_ptr<Pass> {
-    return sol::createFuseFreePtrPass();
+    return yul::createFuseFreePtrPass();
   });
 
   registerTransformsPasses();

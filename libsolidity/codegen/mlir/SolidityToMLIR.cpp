@@ -35,6 +35,7 @@
 #include "libsolidity/codegen/mlir/Util.h"
 #include "libsolidity/interface/CompilerStack.h"
 #include "libsolutil/CommonIO.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Sol/Sol.h"
@@ -66,6 +67,7 @@
 
 using namespace solidity::langutil;
 using namespace solidity::frontend;
+using namespace solidity::mlirgen;
 
 namespace solidity::frontend {
 
@@ -703,7 +705,7 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const &unaryOp) {
     auto intTy = mlir::cast<mlir::IntegerType>(mlirTy);
     u256 val = ty->literalValue(nullptr);
     return b.create<mlir::sol::ConstantOp>(
-        loc, b.getIntegerAttr(intTy, mlirgen::getAPInt(val, intTy.getWidth())));
+        loc, b.getIntegerAttr(intTy, getAPInt(val, intTy.getWidth())));
   }
 
   switch (unaryOp.getOperator()) {
@@ -737,7 +739,7 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const &unaryOp) {
 mlir::Value SolidityToMLIRPass::genExpr(BinaryOperation const &binOp) {
   mlir::Type argTy = getType(binOp.annotation().commonType);
   auto loc = getLoc(binOp);
-  mlirgen::BuilderExt bExt(b, loc);
+  BuilderExt bExt(b, loc);
 
   mlir::Value lhs = genRValExpr(binOp.leftExpression(), argTy);
 
@@ -1014,7 +1016,7 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     }
 
     // FIXME: Don't use signless int operands.
-    mlirgen::BuilderExt bExt(b, loc);
+    BuilderExt bExt(b, loc);
 
     // Generate gas.
     if (!gas) {
@@ -1249,7 +1251,7 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
   case FunctionType::Kind::SHA256:
   case FunctionType::Kind::ECRecover:
   case FunctionType::Kind::RIPEMD160: {
-    mlirgen::BuilderExt bExt(b);
+    BuilderExt bExt(b);
     std::vector<mlir::Type> resTys;
     for (Type const *ty : calleeTy->returnParameterTypes())
       resTys.push_back(getType(ty));
@@ -1554,7 +1556,7 @@ void SolidityToMLIRPass::lower(WhileStatement const &whileStmt) {
 }
 
 void SolidityToMLIRPass::lower(ForStatement const &forStmt) {
-  mlirgen::BuilderExt bExt(b);
+  BuilderExt bExt(b);
 
   // Lower init expression.
   if (forStmt.initializationExpression())
@@ -1697,8 +1699,7 @@ void SolidityToMLIRPass::lower(InlineAssembly const &inAsm) {
 
   // TODO: YulToMLIRPass has an expensive ctor (Due to things like
   // populateBuiltinGenMap() etc.). Can we ctor once?
-  mlirgen::runYulToMLIRPass(inAsm.operations(), *stream, externalRefResolver,
-                            b);
+  runYulToMLIRPass(inAsm.operations(), *stream, externalRefResolver, b);
 }
 
 void SolidityToMLIRPass::lower(Statement const &stmt) {
@@ -2110,7 +2111,7 @@ bool CompilerStack::runMlirPipeline() {
           // Run the ast lowering pass.
           SolidityToMLIRPass gen(ctx, m_evmVersion,
                                  /*genUnkLoc=*/m_mlirGenJob.action ==
-                                     mlirgen::Action::GenObj);
+                                     Action::GenObj);
           gen.init(src->charStream);
           // Lower free functions.
           gen.lowerFreeFuncs(*src->ast);
@@ -2126,21 +2127,21 @@ bool CompilerStack::runMlirPipeline() {
             return;
           }
 
-          if (mlirgen::requiresLinking(m_mlirGenJob.action)) {
+          if (requiresLinking(m_mlirGenJob.action)) {
             // Create the llvm target machine.
             std::unique_ptr<llvm::TargetMachine> tgtMach =
                 createTargetMachine(m_mlirGenJob.tgt);
-            mlirgen::setTgtMachOpt(tgtMach.get(), m_mlirGenJob.optLevel);
+            setTgtMachOpt(tgtMach.get(), m_mlirGenJob.optLevel);
 
             // Generate the object.
             evm::UnlinkedObj obj =
-                mlirgen::genEvmObj(mod, m_mlirGenJob.optLevel, *tgtMach);
+                genEvmObj(mod, m_mlirGenJob.optLevel, *tgtMach);
             std::lock_guard<std::mutex> g(outMtx);
             unlinkedObjMap[contr] = obj;
 
           } else {
             // Generate the print output.
-            std::string out = mlirgen::printJob(m_mlirGenJob, mod);
+            std::string out = printJob(m_mlirGenJob, mod);
             std::lock_guard<std::mutex> g(outMtx);
             outputMap[contr] = out;
           }
@@ -2154,7 +2155,7 @@ bool CompilerStack::runMlirPipeline() {
 
       SolidityToMLIRPass gen(ctx, m_evmVersion,
                              /*genUnkLoc=*/m_mlirGenJob.action ==
-                                 mlirgen::Action::GenObj);
+                                 Action::GenObj);
       // Then lower free functions. This is handy in testing.
       gen.init(src->charStream);
       gen.lowerFreeFuncs(*src->ast);
@@ -2167,9 +2168,9 @@ bool CompilerStack::runMlirPipeline() {
         return false;
       }
 
-      if (m_mlirGenJob.action != mlirgen::Action::GenObj) {
+      if (m_mlirGenJob.action != Action::GenObj) {
         std::lock_guard<std::mutex> g(outMtx);
-        llvm::outs() << mlirgen::printJob(m_mlirGenJob, mod);
+        llvm::outs() << printJob(m_mlirGenJob, mod);
       }
     }
   }
@@ -2179,7 +2180,7 @@ bool CompilerStack::runMlirPipeline() {
     return false;
 
   // Combine all the outputs.
-  if (!mlirgen::requiresLinking(m_mlirGenJob.action)) {
+  if (!requiresLinking(m_mlirGenJob.action)) {
     for (auto const &i : outputMap)
       llvm::outs() << i.second;
   } else {
@@ -2190,10 +2191,10 @@ bool CompilerStack::runMlirPipeline() {
           bcGen.genEvmBytecode(i.first);
     }
 
-    if (m_mlirGenJob.action == mlirgen::Action::PrintObj) {
+    if (m_mlirGenJob.action == Action::PrintObj) {
       for (auto const &i : unlinkedObjMap) {
         ContractDefinition const *cont = i.first;
-        mlirgen::Bytecode const &bc =
+        Bytecode const &bc =
             m_contracts.at(cont->fullyQualifiedName()).mlirPipeline;
         llvm::outs() << "Binary:" << "\n";
         llvm::outs() << llvm::toHex(bc.creation, /*LowerCase=*/true) << "\n";
