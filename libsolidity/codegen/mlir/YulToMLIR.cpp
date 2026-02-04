@@ -59,6 +59,7 @@
 
 using namespace solidity::langutil;
 using namespace solidity::yul;
+using namespace solidity::mlirgen;
 
 namespace solidity::mlirgen {
 
@@ -265,7 +266,7 @@ mlir::Value YulToMLIRPass::getLocalVarAddr(YulString var) {
 
 mlir::Value YulToMLIRPass::convToBool(mlir::Value val) {
   mlir::Location loc = val.getLoc();
-  mlirgen::BuilderExt bExt(b, loc);
+  BuilderExt bExt(b, loc);
 
   auto ty = mlir::cast<mlir::IntegerType>(val.getType());
   if (ty.getWidth() == 1)
@@ -300,7 +301,7 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   builtinGenMap["not"] = [&](std::vector<Expression> const &args,
                              mlir::Location loc) {
     mlir::SmallVector<mlir::Value, 1> resVals;
-    mlirgen::BuilderExt bExt(b, loc);
+    BuilderExt bExt(b, loc);
     resVals.push_back(b.create<mlir::arith::XOrIOp>(loc, genDefTyExpr(args[0]),
                                                     bExt.genI256Const(-1)));
     return resVals;
@@ -308,7 +309,7 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   builtinGenMap["iszero"] = [&](std::vector<Expression> const &args,
                                 mlir::Location loc) {
     mlir::SmallVector<mlir::Value, 2> resVals;
-    mlirgen::BuilderExt bExt(b, loc);
+    BuilderExt bExt(b, loc);
     resVals.push_back(b.create<mlir::arith::CmpIOp>(
         loc, mlir::arith::CmpIPredicate::eq, genDefTyExpr(args[0]),
         bExt.genI256Const(0)));
@@ -454,7 +455,7 @@ YulToMLIRPass::genExprs(FunctionCall const &call) {
   BuiltinFunction const *builtin =
       yul::resolveBuiltinFunction(call.functionName, yulDialect);
   mlir::Location loc = getLoc(call.debugData);
-  mlirgen::BuilderExt bExt(b, loc);
+  BuilderExt bExt(b, loc);
 
   mlir::SmallVector<mlir::Value> resVals;
   if (builtin) {
@@ -550,7 +551,7 @@ void YulToMLIRPass::operator()(Assignment const &asgn) {
 
 void YulToMLIRPass::operator()(VariableDeclaration const &decl) {
   mlir::Location loc = getLoc(decl.debugData);
-  mlirgen::BuilderExt bExt(b, loc);
+  BuilderExt bExt(b, loc);
 
   // If no initializer is specified, the variable defaults to zero.
   mlir::SmallVector<mlir::Value> rhsExprs =
@@ -658,7 +659,7 @@ void YulToMLIRPass::operator()(Continue const &contStmt) {
 }
 
 void YulToMLIRPass::operator()(ForLoop const &forStmt) {
-  mlirgen::BuilderExt bExt(b);
+  BuilderExt bExt(b);
 
   // Lower pre block.
   ASTWalker::operator()(forStmt.pre);
@@ -685,7 +686,7 @@ void YulToMLIRPass::operator()(ForLoop const &forStmt) {
 
 void YulToMLIRPass::operator()(FunctionDefinition const &fn) {
   mlir::Location loc = getLoc(fn.debugData);
-  mlirgen::BuilderExt bExt(b, loc);
+  BuilderExt bExt(b, loc);
 
   // Lookup FuncOp (should be declared by the yul block lowering).
   auto fnOp = lookupSymbol<mlir::sol::FuncOp>(fn.name.str());
@@ -841,11 +842,10 @@ solidity::mlirgen::Bytecode solidity::mlirgen::runYulToMLIRPass(
   if (requiresLinking(job.action)) {
     // Create the llvm target machine.
     std::unique_ptr<llvm::TargetMachine> tgtMach = createTargetMachine(job.tgt);
-    mlirgen::setTgtMachOpt(tgtMach.get(), job.optLevel);
+    setTgtMachOpt(tgtMach.get(), job.optLevel);
 
     // Generate the object.
-    evm::UnlinkedObj unlinkedObj =
-        mlirgen::genEvmObj(mod, job.optLevel, *tgtMach);
+    evm::UnlinkedObj unlinkedObj = genEvmObj(mod, job.optLevel, *tgtMach);
     evm::BytecodeGen::UnlinkedMap unlinkedMap; // FIXME
     evm::BytecodeGen bcGen(unlinkedMap, libAddrMap);
     return bcGen.genEvmBytecode(unlinkedObj);
