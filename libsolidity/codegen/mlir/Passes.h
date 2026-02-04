@@ -25,6 +25,9 @@
 #include "libsolidity/codegen/mlir/Interface.h"
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolutil/FixedHash.h"
+#include "mlir/Conversion/SolToStandard/SolToStandard.h"
+#include "mlir/Conversion/StandardToLLVM/StandardToLLVM.h"
+#include "mlir/Dialect/Sol/Transforms/Passes.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
@@ -34,30 +37,6 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Target/TargetMachine.h"
 #include <memory>
-
-namespace mlir {
-class Pass;
-
-namespace sol {
-
-/// Creates a pass to lower sol dialect to standard dialects.
-std::unique_ptr<Pass> createConvertSolToStandardPass();
-std::unique_ptr<Pass>
-createConvertSolToStandardPass(solidity::mlirgen::Target tgt);
-
-std::unique_ptr<Pass> createModifierOpLoweringPass();
-std::unique_ptr<Pass> createFuseFreePtrPass();
-std::unique_ptr<Pass> createLoopInvariantCodeMotionPass();
-
-// TODO: Is mlir::sol the right namespace for this?
-/// Creates a pass to convert standard dialects to llvm dialect.
-std::unique_ptr<Pass> createConvertStandardToLLVMPass(StringRef triple,
-                                                      unsigned indexBitwidth,
-                                                      StringRef dataLayout);
-
-} // namespace sol
-
-} // namespace mlir
 
 namespace solidity::mlirgen {
 

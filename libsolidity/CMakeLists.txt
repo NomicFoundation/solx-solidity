@@ -219,20 +219,10 @@ set(sources
 )
 
 set(mlir_sources
-	codegen/mlir/Util.cpp
 	codegen/mlir/Passes.cpp
 	codegen/mlir/SolidityToMLIR.cpp
-	codegen/mlir/ModifierOpLowering.cpp
-	codegen/mlir/LoopInvariantCodeMotion.cpp
-	codegen/mlir/FuseFreePtr.cpp
-	codegen/mlir/StandardToLLVM.cpp
 	codegen/mlir/YulToMLIR.cpp
-	codegen/mlir/SolToStandardPass.cpp
-	codegen/mlir/Target/EVM/Util.cpp
 	codegen/mlir/Target/EVM/BytecodeGen.cpp
-	codegen/mlir/Target/EVM/TypeConverter.cpp
-	codegen/mlir/Target/EVM/SolToYul.cpp
-	codegen/mlir/Target/EVM/YulToStandard.cpp
 )
 
 include_directories(${PROJECT_BINARY_DIR}/libsolidity/codegen/mlir)
@@ -256,11 +246,16 @@ include_directories(${PROJECT_BINARY_DIR}/libsolidity/codegen/mlir)
 
 set(mlir_libs
 	MLIRSolDialect
+	MLIRSolTransforms
+	MLIRSolToStandard
+	MLIRStandardToLLVM
+	MLIRYulTransforms
 	MLIRYulDialect
 	MLIRFuncDialect
 	MLIRSCFDialect
 	MLIRArithDialect
 	MLIRLLVMDialect
+	MLIRControlFlowDialect
 
 	MLIRFuncToLLVM
 	MLIRSCFToControlFlow
