@@ -300,6 +300,9 @@ private:
   /// Returns the mlir expression for the index access in an l-value context.
   mlir::Value genExpr(IndexAccess const &idxAcc);
 
+  /// Returns the mlir expression for the index range access (array slice).
+  mlir::Value genExpr(IndexRangeAccess const &idxRangeAcc);
+
   /// Returns the mlir expression for the member access in an r-value context.
   mlir::Value genExpr(MemberAccess const &memberAcc);
 
@@ -456,6 +459,13 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
                        : arrTy->length().convert_to<int64_t>();
     return mlir::sol::ArrayType::get(b.getContext(), size, eltTy,
                                      getDataLocation(arrTy));
+  }
+  case Type::Category::ArraySlice: {
+    const auto *sliceTy = static_cast<ArraySliceType const *>(ty);
+    ArrayType const &arrTy = sliceTy->arrayType();
+    mlir::Type eltTy = getType(arrTy.baseType());
+    return mlir::sol::ArrayType::get(b.getContext(), /*size=*/-1, eltTy,
+                                     getDataLocation(&arrTy));
   }
   case Type::Category::Struct: {
     const auto *structTy = static_cast<StructType const *>(ty);
@@ -803,6 +813,30 @@ mlir::Value SolidityToMLIRPass::genExpr(IndexAccess const &idxAcc) {
     return b.create<mlir::sol::GepOp>(loc, baseExpr, idxExpr);
 
   llvm_unreachable("Invalid IndexAccess");
+}
+
+mlir::Value SolidityToMLIRPass::genExpr(IndexRangeAccess const &idxRangeAcc) {
+  mlir::Location loc = getLoc(idxRangeAcc);
+
+  mlir::Value baseExpr = genRValExpr(idxRangeAcc.baseExpression());
+  mlir::Type resTy = getType(idxRangeAcc.annotation().type);
+
+  // Start defaults to 0 if not provided.
+  mlir::Value startExpr;
+  if (idxRangeAcc.startExpression())
+    startExpr = genRValExpr(*idxRangeAcc.startExpression());
+  else
+    startExpr = b.create<mlir::sol::ConstantOp>(
+        loc, b.getIntegerAttr(b.getIntegerType(256, /*isSigned=*/false), 0));
+
+  // End defaults to array length if not provided.
+  mlir::Value endExpr;
+  if (idxRangeAcc.endExpression())
+    endExpr = genRValExpr(*idxRangeAcc.endExpression());
+  else
+    endExpr = b.create<mlir::sol::LengthOp>(loc, baseExpr);
+
+  return b.create<mlir::sol::SliceOp>(loc, resTy, baseExpr, startExpr, endExpr);
 }
 
 mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
@@ -1324,6 +1358,10 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
   // Index access
   if (const auto *idxAcc = dynamic_cast<IndexAccess const *>(&expr))
     return genExpr(*idxAcc);
+
+  // Index range access (array slice)
+  if (const auto *idxRangeAcc = dynamic_cast<IndexRangeAccess const *>(&expr))
+    return genExpr(*idxRangeAcc);
 
   // Member access
   if (const auto *memAcc = dynamic_cast<MemberAccess const *>(&expr))

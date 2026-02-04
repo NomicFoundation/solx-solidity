@@ -12,9 +12,9 @@ function power(uint256 base, uint256 exponent) pure returns (uint256) {
 // CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
 // CHECK-NEXT:   func.func @power_15(%arg0: i256 loc({{.*}}:2:15), %arg1: i256 loc({{.*}}:2:29)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
-// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc2)
+// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc2)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc2)
-// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc3)
+// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc3)
 // CHECK-NEXT:     llvm.store %arg1, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc3)
 // CHECK-NEXT:     %2 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc4)
 // CHECK-NEXT:     %3 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc5)

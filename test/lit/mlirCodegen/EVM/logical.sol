@@ -15,19 +15,19 @@ function f(bool a, bool b, bool c) returns (bool) {
 // CHECK-NEXT:   func.func @f_34(%arg0: i1 loc({{.*}}:2:11), %arg1: i1 loc({{.*}}:2:19), %arg2: i1 loc({{.*}}:2:27)) -> i1 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %false = arith.constant false loc(#loc)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
-// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc2)
+// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i1 : (i256) -> !llvm.ptr loc(#loc2)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i1, !llvm.ptr loc(#loc2)
-// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc3)
+// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x i1 : (i256) -> !llvm.ptr loc(#loc3)
 // CHECK-NEXT:     llvm.store %arg1, %1 {alignment = 32 : i64} : i1, !llvm.ptr loc(#loc3)
-// CHECK-NEXT:     %2 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc4)
+// CHECK-NEXT:     %2 = llvm.alloca %c1_i256 x i1 : (i256) -> !llvm.ptr loc(#loc4)
 // CHECK-NEXT:     llvm.store %arg2, %2 {alignment = 32 : i64} : i1, !llvm.ptr loc(#loc4)
 // CHECK-NEXT:     %3 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i1 loc(#loc5)
-// CHECK-NEXT:     %4 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc5)
+// CHECK-NEXT:     %4 = llvm.alloca %c1_i256 x i1 : (i256) -> !llvm.ptr loc(#loc5)
 // CHECK-NEXT:     llvm.store %false, %4 {alignment = 32 : i64} : i1, !llvm.ptr loc(#loc5)
 // CHECK-NEXT:     cf.cond_br %3, ^bb1, ^bb4 loc(#loc5)
 // CHECK-NEXT:   ^bb1:  // pred: ^bb0
 // CHECK-NEXT:     %5 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i1 loc(#loc6)
-// CHECK-NEXT:     %6 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc6)
+// CHECK-NEXT:     %6 = llvm.alloca %c1_i256 x i1 : (i256) -> !llvm.ptr loc(#loc6)
 // CHECK-NEXT:     llvm.store %false, %6 {alignment = 32 : i64} : i1, !llvm.ptr loc(#loc6)
 // CHECK-NEXT:     cf.cond_br %5, ^bb2, ^bb3 loc(#loc6)
 // CHECK-NEXT:   ^bb2:  // pred: ^bb1
@@ -40,15 +40,15 @@ function f(bool a, bool b, bool c) returns (bool) {
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc5)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb0, ^bb3
 // CHECK-NEXT:     %9 = llvm.load %4 {alignment = 32 : i64} : !llvm.ptr -> i1 loc(#loc5)
-// CHECK-NEXT:     %10 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc8)
+// CHECK-NEXT:     %10 = llvm.alloca %c1_i256 x i1 : (i256) -> !llvm.ptr loc(#loc8)
 // CHECK-NEXT:     llvm.store %9, %10 {alignment = 32 : i64} : i1, !llvm.ptr loc(#loc8)
 // CHECK-NEXT:     %11 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i1 loc(#loc9)
-// CHECK-NEXT:     %12 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc9)
+// CHECK-NEXT:     %12 = llvm.alloca %c1_i256 x i1 : (i256) -> !llvm.ptr loc(#loc9)
 // CHECK-NEXT:     llvm.store %11, %12 {alignment = 32 : i64} : i1, !llvm.ptr loc(#loc9)
 // CHECK-NEXT:     cf.cond_br %11, ^bb8, ^bb5 loc(#loc9)
 // CHECK-NEXT:   ^bb5:  // pred: ^bb4
 // CHECK-NEXT:     %13 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i1 loc(#loc10)
-// CHECK-NEXT:     %14 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc10)
+// CHECK-NEXT:     %14 = llvm.alloca %c1_i256 x i1 : (i256) -> !llvm.ptr loc(#loc10)
 // CHECK-NEXT:     llvm.store %13, %14 {alignment = 32 : i64} : i1, !llvm.ptr loc(#loc10)
 // CHECK-NEXT:     cf.cond_br %13, ^bb7, ^bb6 loc(#loc10)
 // CHECK-NEXT:   ^bb6:  // pred: ^bb5
@@ -61,10 +61,10 @@ function f(bool a, bool b, bool c) returns (bool) {
 // CHECK-NEXT:     cf.br ^bb8 loc(#loc9)
 // CHECK-NEXT:   ^bb8:  // 2 preds: ^bb4, ^bb7
 // CHECK-NEXT:     %17 = llvm.load %12 {alignment = 32 : i64} : !llvm.ptr -> i1 loc(#loc9)
-// CHECK-NEXT:     %18 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc12)
+// CHECK-NEXT:     %18 = llvm.alloca %c1_i256 x i1 : (i256) -> !llvm.ptr loc(#loc12)
 // CHECK-NEXT:     llvm.store %17, %18 {alignment = 32 : i64} : i1, !llvm.ptr loc(#loc12)
 // CHECK-NEXT:     %19 = llvm.load %10 {alignment = 32 : i64} : !llvm.ptr -> i1 loc(#loc13)
-// CHECK-NEXT:     %20 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc13)
+// CHECK-NEXT:     %20 = llvm.alloca %c1_i256 x i1 : (i256) -> !llvm.ptr loc(#loc13)
 // CHECK-NEXT:     llvm.store %false, %20 {alignment = 32 : i64} : i1, !llvm.ptr loc(#loc13)
 // CHECK-NEXT:     cf.cond_br %19, ^bb9, ^bb10 loc(#loc13)
 // CHECK-NEXT:   ^bb9:  // pred: ^bb8

@@ -86,7 +86,7 @@ contract C {
 // CHECK-NEXT:       %false = arith.constant false loc(#loc)
 // CHECK-NEXT:       %c42_i256 = arith.constant 42 : i256 loc(#loc)
 // CHECK-NEXT:       %c1_i256 = arith.constant 1 : i256 loc(#loc3)
-// CHECK-NEXT:       %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc3)
+// CHECK-NEXT:       %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc3)
 // CHECK-NEXT:       llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc3)
 // CHECK-NEXT:       %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc4)
 // CHECK-NEXT:       %2 = arith.cmpi ugt, %1, %c42_i256 : i256 loc(#loc4)

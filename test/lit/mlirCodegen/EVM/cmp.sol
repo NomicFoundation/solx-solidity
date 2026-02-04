@@ -30,15 +30,15 @@ function si(int256 a, int256 b) {
 // CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
 // CHECK-NEXT:   func.func @f_6(%arg0: i1 loc({{.*}}:2:11)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc2)
-// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc2)
+// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i1 : (i256) -> !llvm.ptr loc(#loc2)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i1, !llvm.ptr loc(#loc2)
 // CHECK-NEXT:     return loc(#loc1)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT:   func.func @ui_50(%arg0: i256 loc({{.*}}:4:12), %arg1: i256 loc({{.*}}:4:23)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
-// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc4)
+// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc4)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc4)
-// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc5)
+// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc5)
 // CHECK-NEXT:     llvm.store %arg1, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc5)
 // CHECK-NEXT:     %2 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc6)
 // CHECK-NEXT:     %3 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc7)
@@ -68,9 +68,9 @@ function si(int256 a, int256 b) {
 // CHECK-NEXT:   } loc(#loc3)
 // CHECK-NEXT:   func.func @si_94(%arg0: i256 loc({{.*}}:13:12), %arg1: i256 loc({{.*}}:13:22)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
-// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc25)
+// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc25)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc25)
-// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc26)
+// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc26)
 // CHECK-NEXT:     llvm.store %arg1, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc26)
 // CHECK-NEXT:     %2 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc27)
 // CHECK-NEXT:     %3 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc28)

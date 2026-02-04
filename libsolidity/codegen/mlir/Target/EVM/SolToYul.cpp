@@ -1140,37 +1140,20 @@ struct CmpOpLowering : public OpConversionPattern<sol::CmpOp> {
   }
 };
 
-using AllocSize = int64_t;
-
 struct AllocaOpLowering : public OpConversionPattern<sol::AllocaOp> {
   using OpConversionPattern<sol::AllocaOp>::OpConversionPattern;
 
-  /// Returns the total size (in bytes) of type (recursively).
-  template <AllocSize ValSize>
-  AllocSize getTotalSize(Type ty) const {
-    // Array type.
-    if (auto arrayTy = dyn_cast<sol::ArrayType>(ty)) {
-      return arrayTy.getSize() * getTotalSize<ValSize>(arrayTy.getEltType());
-    }
-    // Struct type.
-    if (auto structTy = dyn_cast<sol::StructType>(ty)) {
-      assert(false && "NYI: Struct type");
-    }
-
-    // Value type.
-    return ValSize;
-  }
-
   LogicalResult matchAndRewrite(sol::AllocaOp op, OpAdaptor adaptor,
                                 ConversionPatternRewriter &r) const override {
-    Location loc = op.getLoc();
-    solidity::mlirgen::BuilderExt bExt(r, loc);
+    solidity::mlirgen::BuilderExt bExt(r, op.getLoc());
 
-    Type convertedEltTy = getTypeConverter()->convertType(op.getAllocType());
-    AllocSize size = getTotalSize<1>(op.getAllocType());
+    auto ptrTy = cast<sol::PointerType>(op.getAllocType());
+    Type convertedEltTy =
+        getTypeConverter()->convertType(ptrTy.getPointeeType());
+
     r.replaceOpWithNewOp<LLVM::AllocaOp>(
-        op, /*resTy=*/LLVM::LLVMPointerType::get(r.getContext()),
-        /*eltTy=*/convertedEltTy, bExt.genI256Const(size));
+        op, LLVM::LLVMPointerType::get(r.getContext()), convertedEltTy,
+        bExt.genI256Const(1));
     return success();
   }
 };
@@ -1694,6 +1677,53 @@ struct LengthOpLowering : public OpConversionPattern<sol::LengthOp> {
       return success();
     }
     llvm_unreachable("NYI");
+  }
+};
+
+struct SliceOpLowering : public OpConversionPattern<sol::SliceOp> {
+  using OpConversionPattern<sol::SliceOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::SliceOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+    evm::Builder evmB(r, loc);
+
+    Type arrTy = op.getArr().getType();
+    assert(sol::getDataLocation(arrTy) == sol::DataLocation::CallData);
+
+    Value arr = adaptor.getArr();
+    Value start = bExt.genIntCast(256, false, adaptor.getStart());
+    Value end = bExt.genIntCast(256, false, adaptor.getEnd());
+
+    Value dataAddr = evmB.genDataAddrPtr(arr, arrTy);
+    Value length = evmB.genDynSize(arr, arrTy);
+
+    // Validate: start <= end
+    auto startGtEnd =
+        r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt, start, end);
+    evmB.genRevertWithMsg(startGtEnd, "Slice starts after end", loc);
+
+    // Validate: end <= length
+    auto endGtLen =
+        r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::ugt, end, length);
+    evmB.genRevertWithMsg(endGtLen, "Slice is greater than length", loc);
+
+    // Compute stride (element size in calldata)
+    unsigned stride = 32;
+    if (auto arrType = dyn_cast<sol::ArrayType>(arrTy))
+      stride = evm::getCallDataHeadSize(arrType.getEltType());
+
+    // newOffset = dataAddr + start * stride
+    Value scaledStart =
+        r.create<arith::MulIOp>(loc, start, bExt.genI256Const(stride));
+    Value newOffset = r.create<arith::AddIOp>(loc, dataAddr, scaledStart);
+
+    // newLength = end - start
+    Value newLength = r.create<arith::SubIOp>(loc, end, start);
+
+    r.replaceOp(op, bExt.genLLVMStruct({newOffset, newLength}));
+    return success();
   }
 };
 
@@ -3001,7 +3031,7 @@ void evm::populateMemPats(RewritePatternSet &pats, TypeConverter &tyConv) {
            GetCallDataOpLowering, PushOpLowering, PopOpLowering, GepOpLowering,
            MapOpLowering, LoadOpLowering, LoadImmutableOpLowering,
            StoreOpLowering, DataLocCastOpLowering, LengthOpLowering,
-           CopyOpLowering>(tyConv, pats.getContext());
+           SliceOpLowering, CopyOpLowering>(tyConv, pats.getContext());
   pats.add<AddrOfOpLowering>(pats.getContext());
 }
 

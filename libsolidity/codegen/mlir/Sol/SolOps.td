@@ -346,6 +346,16 @@ def Sol_LengthOp : Sol_Op<"length"> {
   let assemblyFormat = [{ $inp attr-dict `:` type($inp) }];
 }
 
+def Sol_SliceOp : Sol_Op<"slice"> {
+  let arguments = (ins AnyType:$arr, Sol_Int:$start, Sol_Int:$end);
+  let results = (outs AnyType:$res);
+
+  let assemblyFormat = [{
+    $arr `[` $start `:` $end `]` attr-dict `:` type($arr) `,` type($start) `,`
+                                               type($end) `->` type($res)
+  }];
+}
+
 def Sol_EncodeOp : Sol_Op<"encode"> {
   let arguments = (ins Variadic<AnyType>:$ins);
   // FIXME: AnyType -> Sol_StringType causes the asm printer to miss the prefix!

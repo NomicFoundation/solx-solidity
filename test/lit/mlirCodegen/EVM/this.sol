@@ -110,7 +110,7 @@ contract C {
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     func.func @f_13(%arg0: i256 loc({{.*}}:3:13)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       %c1_i256 = arith.constant 1 : i256 loc(#loc3)
-// CHECK-NEXT:       %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc3)
+// CHECK-NEXT:       %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc3)
 // CHECK-NEXT:       llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc3)
 // CHECK-NEXT:       %1 = "llvm.intrcall"() <{id = 4028 : i32, name = "evm.address"}> : () -> i256 loc(#loc4)
 // CHECK-NEXT:       llvm.store %1, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc5)

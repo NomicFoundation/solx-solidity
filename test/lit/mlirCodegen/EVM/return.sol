@@ -27,7 +27,7 @@ function h(bool a) {
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256 loc(#loc)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc2)
-// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc2)
+// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i1 : (i256) -> !llvm.ptr loc(#loc2)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i1, !llvm.ptr loc(#loc2)
 // CHECK-NEXT:     %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i1 loc(#loc3)
 // CHECK-NEXT:     cf.cond_br %1, ^bb1, ^bb2 loc(#loc4)
@@ -38,7 +38,7 @@ function h(bool a) {
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT:   func.func @g_24(%arg0: i1 loc({{.*}}:8:11)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc8)
-// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc8)
+// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i1 : (i256) -> !llvm.ptr loc(#loc8)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i1, !llvm.ptr loc(#loc8)
 // CHECK-NEXT:     %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i1 loc(#loc9)
 // CHECK-NEXT:     cf.cond_br %1, ^bb1, ^bb2 loc(#loc10)
@@ -49,7 +49,7 @@ function h(bool a) {
 // CHECK-NEXT:   } loc(#loc7)
 // CHECK-NEXT:   func.func @h_33(%arg0: i1 loc({{.*}}:14:11)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc14)
-// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc14)
+// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i1 : (i256) -> !llvm.ptr loc(#loc14)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i1, !llvm.ptr loc(#loc14)
 // CHECK-NEXT:     %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i1 loc(#loc15)
 // CHECK-NEXT:     cf.cond_br %1, ^bb1, ^bb2 loc(#loc16)

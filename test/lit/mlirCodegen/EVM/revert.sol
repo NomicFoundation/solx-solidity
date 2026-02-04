@@ -115,7 +115,7 @@ contract C {
 // CHECK-NEXT:       %c84701008042320515315298174644417619374439393932350505483920050946320629760_i256 = arith.constant 84701008042320515315298174644417619374439393932350505483920050946320629760 : i256 loc(#loc)
 // CHECK-NEXT:       %c64_i256 = arith.constant 64 : i256 loc(#loc)
 // CHECK-NEXT:       %c1_i256 = arith.constant 1 : i256 loc(#loc3)
-// CHECK-NEXT:       %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc3)
+// CHECK-NEXT:       %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc3)
 // CHECK-NEXT:       llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc3)
 // CHECK-NEXT:       %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc4)
 // CHECK-NEXT:       %2 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1> loc(#loc5)

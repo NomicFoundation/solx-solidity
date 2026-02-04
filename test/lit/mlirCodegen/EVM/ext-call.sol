@@ -114,7 +114,7 @@ contract C {
 // CHECK-NEXT:       %c7_i256 = arith.constant 7 : i256 loc(#loc)
 // CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:       %c1_i256 = arith.constant 1 : i256 loc(#loc3)
-// CHECK-NEXT:       %1 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc3)
+// CHECK-NEXT:       %1 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc3)
 // CHECK-NEXT:       llvm.store %arg0, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc3)
 // CHECK-NEXT:       %2 = "llvm.intrcall"() <{id = 4028 : i32, name = "evm.address"}> : () -> i256 loc(#loc4)
 // CHECK-NEXT:       %3 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc5)

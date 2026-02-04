@@ -22,9 +22,9 @@ function f(uint i, uint n) {
 // CHECK-NEXT:   func.func @f_42(%arg0: i256 loc({{.*}}:2:11), %arg1: i256 loc({{.*}}:2:19)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256 loc(#loc)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
-// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc2)
+// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc2)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc2)
-// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x !llvm.ptr : (i256) -> !llvm.ptr loc(#loc3)
+// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc3)
 // CHECK-NEXT:     llvm.store %arg1, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc3)
 // CHECK-NEXT:     cf.br ^bb1 loc(#loc4)
 // CHECK-NEXT:   ^bb1:  // 3 preds: ^bb0, ^bb3, ^bb4
