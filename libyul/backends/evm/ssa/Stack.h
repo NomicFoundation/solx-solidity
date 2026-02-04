@@ -250,7 +250,8 @@ public:
 	bool swapReachable(Offset const& _offset) const noexcept { return swapReachable(offsetToDepth(_offset)); }
 	bool swapReachable(Depth const& _depth) const noexcept { return _depth < size() && 1 <= _depth.value && _depth.value <= reachableStackDepth; }
 
-	void declareJunk(Depth const& _depth) { (*m_data)[depthToOffset(_depth).value] = Slot::makeJunk(); }
+	void declareJunk(Offset const& _offset) { (*m_data)[_offset.value] = Slot::makeJunk(); }
+	void declareJunk(Depth const& _depth) { declareJunk(depthToOffset(_depth)); }
 
 	Slot const& slot(Depth const& _depth) const { return (*m_data)[depthToOffset(_depth).value]; }
 	Slot const& slot(Offset const& _offset) const { return slot(offsetToDepth(_offset)); }
