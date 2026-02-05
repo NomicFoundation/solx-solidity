@@ -39,8 +39,10 @@
 #include <vector>
 
 using namespace solidity;
+using namespace solidity::yul;
 using namespace solidity::yul::ssa;
-using namespace solidity::yul::ssa::test;
+using namespace solidity::yul::test;
+using namespace solidity::yul::test::ssa;
 
 namespace
 {
