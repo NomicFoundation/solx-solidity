@@ -20,12 +20,13 @@
 //
 
 #include "libsolidity/codegen/mlir/Passes.h"
-#include "libsolidity/codegen/mlir/Sol/Sol.h"
-#include "libsolidity/codegen/mlir/Yul/Yul.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/Dialect/Solidity/Sol.h"
+#include "mlir/Dialect/Yul/Transforms/Passes.h"
+#include "mlir/Dialect/Yul/Yul.h"
 #include "mlir/IR/BuiltinDialect.h"
 #include "mlir/IR/DialectRegistry.h"
 #include "mlir/Pass/PassRegistry.h"
@@ -44,7 +45,7 @@ int main(int argc, char **argv) {
     return sol::createLoopInvariantCodeMotionPass();
   });
   registerPass([](void) -> std::unique_ptr<Pass> {
-    return sol::createFuseFreePtrPass();
+    return yul::createFuseFreePtrPass();
   });
 
   registerTransformsPasses();

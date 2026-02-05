@@ -219,54 +219,13 @@ set(sources
 )
 
 set(mlir_sources
-	codegen/mlir/Util.cpp
 	codegen/mlir/Passes.cpp
 	codegen/mlir/SolidityToMLIR.cpp
-	codegen/mlir/ModifierOpLowering.cpp
-	codegen/mlir/LoopInvariantCodeMotion.cpp
-	codegen/mlir/FuseFreePtr.cpp
-	codegen/mlir/StandardToLLVM.cpp
 	codegen/mlir/YulToMLIR.cpp
-	codegen/mlir/SolToStandardPass.cpp
-	codegen/mlir/Target/EVM/Util.cpp
 	codegen/mlir/Target/EVM/BytecodeGen.cpp
-	codegen/mlir/Target/EVM/TypeConverter.cpp
-	codegen/mlir/Target/EVM/SolToYul.cpp
-	codegen/mlir/Target/EVM/YulToStandard.cpp
-)
-
-set(mlir_sol_dialect_sources
-	codegen/mlir/Sol/SolBase.cpp
-	codegen/mlir/Sol/SolOps.cpp
-)
-
-set(mlir_yul_dialect_sources
-	codegen/mlir/Yul/YulBase.cpp
-	codegen/mlir/Yul/YulOps.cpp
 )
 
 include_directories(${PROJECT_BINARY_DIR}/libsolidity/codegen/mlir)
-add_subdirectory(codegen/mlir/Sol)
-add_subdirectory(codegen/mlir/Yul)
-
-add_mlir_dialect_library(MLIRSolDialect
-	${mlir_sol_dialect_sources}
-
-	DEPENDS
-	MLIRSolOpsIncGen
-	MLIRSolExtraIncGen
-
-	LINK_LIBS PUBLIC
-)
-
-add_mlir_dialect_library(MLIRYulDialect
-	${mlir_yul_dialect_sources}
-
-	DEPENDS
-	MLIRYulOpsIncGen
-
-	LINK_LIBS PUBLIC
-)
 
 # FIXME: Remove this once we're good with the fine-grained library dependencies.
 # get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
@@ -286,12 +245,17 @@ add_mlir_dialect_library(MLIRYulDialect
 # )
 
 set(mlir_libs
-	MLIRSolDialect
+	MLIRSolidityDialect
+	MLIRSolidityTransforms
+	MLIRSolToStandard
+	MLIRStandardToLLVM
+	MLIRYulTransforms
 	MLIRYulDialect
 	MLIRFuncDialect
 	MLIRSCFDialect
 	MLIRArithDialect
 	MLIRLLVMDialect
+	MLIRControlFlowDialect
 
 	MLIRFuncToLLVM
 	MLIRSCFToControlFlow
