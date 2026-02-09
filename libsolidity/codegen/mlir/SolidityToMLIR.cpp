@@ -1222,11 +1222,21 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       return resVals;
     }
 
+    const auto *arrTy = static_cast<ArrayType const *>(
+        memberAcc->expression().annotation().type);
+    if (arrTy->isByteArrayOrString()) {
+      assert(!astArgs.empty() && "NYI");
+      b.create<mlir::sol::PushBytesOp>(
+          loc, genRValExpr(memberAcc->expression()), genRValExpr(*astArgs[0]));
+      return resVals;
+    }
+
     // Lower `push`
     auto newAddr =
         b.create<mlir::sol::PushOp>(loc, genRValExpr(memberAcc->expression()));
     if (!astArgs.empty())
       b.create<mlir::sol::StoreOp>(loc, genRValExpr(*astArgs[0]), newAddr);
+
     resVals.push_back(newAddr);
     return resVals;
   }

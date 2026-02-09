@@ -1214,6 +1214,21 @@ struct PushOpLowering : public OpConversionPattern<sol::PushOp> {
   }
 };
 
+struct PushBytesOpLowering : public OpConversionPattern<sol::PushBytesOp> {
+  using OpConversionPattern<sol::PushBytesOp>::OpConversionPattern;
+
+  LogicalResult matchAndRewrite(sol::PushBytesOp op, OpAdaptor adaptor,
+                                ConversionPatternRewriter &r) const override {
+    Location loc = op.getLoc();
+    evm::Builder evmB(r, loc);
+    solidity::mlirgen::BuilderExt bExt(r, loc);
+    evmB.genPushToString(adaptor.getAddr(), adaptor.getValue(), loc);
+
+    r.eraseOp(op);
+    return success();
+  }
+};
+
 struct PopOpLowering : public OpConversionPattern<sol::PopOp> {
   using OpConversionPattern<sol::PopOp>::OpConversionPattern;
 
@@ -1223,21 +1238,31 @@ struct PopOpLowering : public OpConversionPattern<sol::PopOp> {
     evm::Builder evmB(r, loc);
     solidity::mlirgen::BuilderExt bExt(r, loc);
 
+    Type ty = op.getInp().getType();
     Value slot = adaptor.getInp();
-    Value oldSize = r.create<yul::SLoadOp>(loc, slot);
+    Value data = evmB.genLoad(slot, sol::DataLocation::Storage, loc);
+    Value oldSize =
+        isa<sol::StringType>(ty)
+            ? evmB.genStringSize(data, sol::DataLocation::Storage, loc)
+            : data;
 
     // Generate the empty array panic check.
     Value panicCond = r.create<arith::CmpIOp>(loc, arith::CmpIPredicate::eq,
                                               oldSize, bExt.genI256Const(0));
     evmB.genPanic(solidity::util::PanicCode::EmptyArrayPop, panicCond);
 
-    Value newSize = r.create<arith::SubIOp>(loc, oldSize, bExt.genI256Const(1));
-    r.create<yul::SStoreOp>(loc, slot, newSize);
-    Value dataSlot = evmB.genDataAddrPtr(slot, sol::DataLocation::Storage);
+    if (isa<sol::StringType>(ty)) {
+      evmB.genPopString(slot, data, oldSize, loc);
+    } else {
+      Value newSize =
+          r.create<arith::SubIOp>(loc, oldSize, bExt.genI256Const(1));
+      r.create<yul::SStoreOp>(loc, slot, newSize);
+      Value dataSlot = evmB.genDataAddrPtr(slot, sol::DataLocation::Storage);
 
-    // Zero the deleted slot.
-    Value tailAddr = r.create<arith::AddIOp>(loc, dataSlot, newSize);
-    r.create<yul::SStoreOp>(loc, tailAddr, bExt.genI256Const(0));
+      // Zero the deleted slot.
+      Value tailAddr = r.create<arith::AddIOp>(loc, dataSlot, newSize);
+      r.create<yul::SStoreOp>(loc, tailAddr, bExt.genI256Const(0));
+    }
 
     r.eraseOp(op);
     return success();
@@ -1375,6 +1400,9 @@ struct GepOpLowering : public OpConversionPattern<sol::GepOp> {
 
         // Bytes (!sol.string)
       } else if (auto strTy = dyn_cast<sol::StringType>(baseAddrTy)) {
+        assert(
+            (sol::getDataLocation(baseAddrTy) != sol::DataLocation::Storage) &&
+            "MYI");
         Value size = evmB.genDynSize(remappedBaseAddr, baseAddrTy);
         Value castedIdx =
             bExt.genIntCast(/*width=*/256, /*isSigned=*/false, idx);
@@ -1623,21 +1651,19 @@ struct DataLocCastOpLowering : public OpConversionPattern<sol::DataLocCastOp> {
         dstDataLoc == sol::DataLocation::Memory) {
       // String type
       if (isa<sol::StringType>(srcTy)) {
-        auto dataSlot = evmB.genDataAddrPtr(adaptor.getInp(), srcDataLoc);
-
         // Generate the memory allocation.
-        auto sizeInBytes = evmB.genLoad(adaptor.getInp(), srcDataLoc);
+        Value sizeSlot = evmB.genLoad(adaptor.getInp(), srcDataLoc);
+        Value sizeInBytes = evmB.genStringSize(sizeSlot, srcDataLoc, loc);
         Value memAddr = evmB.genMemAllocForDynArray(
             sizeInBytes, bExt.genRoundUpToMultiple<32>(sizeInBytes));
         resAddr = memAddr;
 
-        // Generate the loop to copy the data.
         auto dataMemAddr =
             r.create<arith::AddIOp>(loc, memAddr, bExt.genI256Const(32));
-        auto sizeInWords = bExt.genRoundUpToMultiple<32>(sizeInBytes);
-        evmB.genCopyLoop(dataSlot, dataMemAddr, sizeInWords, srcTy, dstTy,
-                         srcDataLoc, dstDataLoc);
 
+        // Generate the loop to copy the data.
+        evmB.genCopyStringDataToMemory(adaptor.getInp(), sizeSlot, sizeInBytes,
+                                       dataMemAddr, srcDataLoc, loc);
         r.replaceOp(op, memAddr);
         return success();
       }
@@ -1746,16 +1772,13 @@ struct CopyOpLowering : public OpConversionPattern<sol::CopyOp> {
     if (isa<sol::StringType>(srcTy)) {
       assert(isa<sol::StringType>(dstTy));
 
-      // Generate the size update.
-      Value srcSize = evmB.genLoad(adaptor.getSrc(), srcDataLoc);
-      evmB.genStore(srcSize, adaptor.getDst(), dstDataLoc);
-
-      // Generate the copy loop.
+      Value srcSize = evmB.genDynSize(adaptor.getSrc(), srcTy, loc);
+      // enStringSize(
+      // evmB.genLoad(adaptor.getSrc(), srcDataLoc, loc), srcDataLoc);
       Value srcDataAddr = evmB.genDataAddrPtr(adaptor.getSrc(), srcDataLoc);
-      Value dstDataAddr = evmB.genDataAddrPtr(adaptor.getDst(), dstDataLoc);
-      Value sizeInWords = bExt.genRoundUpToMultiple<32>(srcSize);
-      evmB.genCopyLoop(srcDataAddr, dstDataAddr, sizeInWords, srcTy, dstTy,
-                       srcDataLoc, dstDataLoc);
+
+      evmB.genCopyStringToStorage(srcDataAddr, srcSize, adaptor.getDst(),
+                                  srcDataLoc, loc);
     } else {
       llvm_unreachable("NYI");
     }
@@ -3028,10 +3051,11 @@ void evm::populateCryptoPats(mlir::RewritePatternSet &pats,
 
 void evm::populateMemPats(RewritePatternSet &pats, TypeConverter &tyConv) {
   pats.add<AllocaOpLowering, MallocOpLowering, ArrayLitOpLowering,
-           GetCallDataOpLowering, PushOpLowering, PopOpLowering, GepOpLowering,
-           MapOpLowering, LoadOpLowering, LoadImmutableOpLowering,
-           StoreOpLowering, DataLocCastOpLowering, LengthOpLowering,
-           SliceOpLowering, CopyOpLowering>(tyConv, pats.getContext());
+           GetCallDataOpLowering, PushOpLowering, PushBytesOpLowering,
+           PopOpLowering, GepOpLowering, MapOpLowering, LoadOpLowering,
+           LoadImmutableOpLowering, StoreOpLowering, DataLocCastOpLowering,
+           LengthOpLowering, SliceOpLowering, CopyOpLowering>(
+      tyConv, pats.getContext());
   pats.add<AddrOfOpLowering>(pats.getContext());
 }
 

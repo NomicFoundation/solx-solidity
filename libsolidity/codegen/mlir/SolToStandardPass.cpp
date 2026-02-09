@@ -148,6 +148,7 @@ struct ConvertSolToStandard
         sol::ArrayLitOp,
         sol::GetCallDataOp,
         sol::PushOp,
+        sol::PushBytesOp,
         sol::PopOp,
         sol::AddrOfOp,
         sol::GepOp,
