@@ -90,6 +90,8 @@ add_library(yul
 	backends/evm/ssa/Stack.h
 	backends/evm/ssa/StackShuffler.cpp
 	backends/evm/ssa/StackShuffler.h
+	backends/evm/ssa/io/DotExporterBase.cpp
+	backends/evm/ssa/io/DotExporterBase.h
 	backends/evm/ssa/io/JSONExporter.cpp
 	backends/evm/ssa/io/JSONExporter.h
 	backends/evm/ssa/traversal/ForwardTopologicalSort.cpp
