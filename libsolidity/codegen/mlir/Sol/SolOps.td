@@ -220,6 +220,12 @@ def Sol_PushOp : Sol_Op<"push"> {
   let assemblyFormat = "$inp attr-dict `:` type($inp) `->` type($addr)";
 }
 
+def Sol_PushBytesOp : Sol_Op<"push_bytes"> {
+  let arguments = (ins Sol_StringType:$addr, Sol_Int:$value);
+  let assemblyFormat =
+      "$addr `,` $value attr-dict `:` type($addr) `,` type($value)";
+}
+
 def Sol_PopOp : Sol_Op<"pop"> {
   let arguments = (ins AnyType:$inp);
   let assemblyFormat = "$inp attr-dict `:` type($inp)";

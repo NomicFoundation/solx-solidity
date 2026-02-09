@@ -241,6 +241,23 @@ public:
                            mlir::sol::DataLocation dataLoc,
                            std::optional<mlir::Location> locArg = std::nullopt);
 
+  /// Generates a size of bytes/string.
+  mlir::Value
+  genStringSize(mlir::Value lengthSlot, mlir::sol::DataLocation dataLoc,
+                std::optional<mlir::Location> locArg = std::nullopt);
+
+  /// Copies a string into memory. It does not store the string length.
+  void genCopyStringDataToMemory(
+      mlir::Value srcAddr, mlir::Value lengthSlot, mlir::Value length,
+      mlir::Value dstAddr, mlir::sol::DataLocation srcDataLoc,
+      std::optional<mlir::Location> locArg = std::nullopt);
+
+  /// Copies a string into the storage.
+  void genCopyStringToStorage(mlir::Value srcAddr, mlir::Value length,
+                              mlir::Value dstAddr,
+                              mlir::sol::DataLocation srcDataLoc,
+                              std::optional<mlir::Location> locArg);
+
   /// Generates a load from the low level integral type address.
   mlir::Value genLoad(mlir::Value addr, mlir::sol::DataLocation dataLoc,
                       std::optional<mlir::Location> locArg = std::nullopt);
@@ -257,6 +274,18 @@ public:
   /// Generates the store of string at address.
   void genStringStore(std::string const &str, mlir::Value addr,
                       std::optional<mlir::Location> locArg = std::nullopt);
+
+  std::pair<mlir::Value, mlir::Value>
+  genStringElmAddrInStorage(mlir::Value srcAddr, mlir::Value idx,
+                            mlir::Location loc);
+
+  /// Generate the 'push' value to 'bytes'.
+  void genPushToString(mlir::Value srcAddr, mlir::Value value,
+                       mlir::Location loc);
+
+  /// Generate the 'pop' from 'bytes'.
+  void genPopString(mlir::Value srcAddr, mlir::Value oldData,
+                    mlir::Value length, mlir::Location loc);
 
   /// Generates a loop to copy the data. This works for low level integral type
   /// addresses.
