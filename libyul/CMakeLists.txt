@@ -82,18 +82,20 @@ add_library(yul
 	backends/evm/ssa/LivenessAnalysis.h
 	backends/evm/ssa/SSACFGLoopNestingForest.cpp
 	backends/evm/ssa/SSACFGLoopNestingForest.h
-	backends/evm/ssa/SSACFGTopologicalSort.cpp
-	backends/evm/ssa/SSACFGTopologicalSort.h
 	backends/evm/ssa/SSACFG.cpp
 	backends/evm/ssa/SSACFG.h
 	backends/evm/ssa/SSACFGBuilder.cpp
 	backends/evm/ssa/SSACFGBuilder.h
-	backends/evm/ssa/SSACFGJsonExporter.cpp
-	backends/evm/ssa/SSACFGJsonExporter.h
 	backends/evm/ssa/Stack.cpp
 	backends/evm/ssa/Stack.h
 	backends/evm/ssa/StackShuffler.cpp
 	backends/evm/ssa/StackShuffler.h
+	backends/evm/ssa/io/DotExporterBase.cpp
+	backends/evm/ssa/io/DotExporterBase.h
+	backends/evm/ssa/io/JSONExporter.cpp
+	backends/evm/ssa/io/JSONExporter.h
+	backends/evm/ssa/traversal/ForwardTopologicalSort.cpp
+	backends/evm/ssa/traversal/ForwardTopologicalSort.h
 	optimiser/ASTCopier.cpp
 	optimiser/ASTCopier.h
 	optimiser/ASTWalker.cpp

@@ -21,7 +21,7 @@
 #include <libyul/backends/evm/ssa/ControlFlow.h>
 #include <libsolutil/JSON.h>
 
-namespace solidity::yul::ssa::json
+namespace solidity::yul::ssa::io::json
 {
 
 Json exportControlFlow(ControlFlow const& _controlFlow, ControlFlowLiveness const* _liveness);
