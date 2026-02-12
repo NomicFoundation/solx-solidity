@@ -42,10 +42,10 @@ int main(int argc, char **argv) {
                   arith::ArithDialect, scf::SCFDialect>();
 
   registerPass([](void) -> std::unique_ptr<Pass> {
-    return sol::createLoopInvariantCodeMotionPass();
+    return sol::createSolLoopInvariantCodeMotionPass();
   });
   registerPass([](void) -> std::unique_ptr<Pass> {
-    return yul::createFuseFreePtrPass();
+    return yul::createYulFuseFreePtrPass();
   });
 
   registerTransformsPasses();
