@@ -31,7 +31,7 @@ function recover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) {
 // CHECK-NEXT: #loc24 = loc({{.*}}:18:31)
 // CHECK-NEXT: #loc25 = loc({{.*}}:18:40)
 // CHECK-NEXT: #loc26 = loc({{.*}}:18:51)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   func.func @".unreachable"() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)

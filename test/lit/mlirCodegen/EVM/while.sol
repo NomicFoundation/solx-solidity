@@ -18,7 +18,7 @@ function f(uint i, uint n) {
 // CHECK: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: #loc2 = loc({{.*}}:2:11)
 // CHECK-NEXT: #loc3 = loc({{.*}}:2:19)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   func.func @f_42(%arg0: i256 loc({{.*}}:2:11), %arg1: i256 loc({{.*}}:2:19)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256 loc(#loc)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)

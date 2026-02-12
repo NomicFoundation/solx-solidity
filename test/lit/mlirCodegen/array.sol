@@ -67,7 +67,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT: #loc16 = loc({{.*}}:8:37)
 // CHECK-NEXT: #loc85 = loc({{.*}}:50:16)
 // CHECK-NEXT: #loc92 = loc({{.*}}:54:17)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.func @ui_1d_16(%arg0: !sol.array<3 x ui256, Memory> loc({{.*}}:2:15), %arg1: ui256 loc({{.*}}:2:36)) -> ui256 attributes {id = 16 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.array<3 x ui256, Memory>, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.array<3 x ui256, Memory>, !sol.ptr<!sol.array<3 x ui256, Memory>, Stack> loc(#loc2)

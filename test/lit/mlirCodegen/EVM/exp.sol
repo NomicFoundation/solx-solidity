@@ -9,7 +9,7 @@ function power(uint256 base, uint256 exponent) pure returns (uint256) {
 // CHECK: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: #loc2 = loc({{.*}}:2:15)
 // CHECK-NEXT: #loc3 = loc({{.*}}:2:29)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   func.func @power_15(%arg0: i256 loc({{.*}}:2:15), %arg1: i256 loc({{.*}}:2:29)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc2)

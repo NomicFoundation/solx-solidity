@@ -22,7 +22,7 @@ function decode(bytes memory a) returns (uint, uint8, int32) {
 // CHECK-NEXT: #loc10 = loc({{.*}}:10:25)
 // CHECK-NEXT: #loc11 = loc({{.*}}:10:36)
 // CHECK-NEXT: #loc18 = loc({{.*}}:14:16)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   func.func @".unreachable"() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)

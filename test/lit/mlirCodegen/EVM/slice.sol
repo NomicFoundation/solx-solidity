@@ -39,7 +39,7 @@ function slice_len(uint[] calldata a, uint start, uint end)
 // CHECK-NEXT: #loc26 = loc({{.*}}:22:19)
 // CHECK-NEXT: #loc27 = loc({{.*}}:22:38)
 // CHECK-NEXT: #loc28 = loc({{.*}}:22:50)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   func.func @".unreachable"() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)

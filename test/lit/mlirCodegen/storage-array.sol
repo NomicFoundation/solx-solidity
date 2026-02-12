@@ -22,7 +22,7 @@ function m(uint[] storage a) returns (uint[] memory) {
 // CHECK-NEXT: #loc2 = loc({{.*}}:2:12)
 // CHECK-NEXT: #loc12 = loc({{.*}}:8:12)
 // CHECK-NEXT: #loc22 = loc({{.*}}:14:11)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.func @d1_30(%arg0: !sol.array<? x ui256, Storage> loc({{.*}}:2:12)) -> (ui256, ui256) attributes {id = 30 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.array<? x ui256, Storage>, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.array<? x ui256, Storage>, !sol.ptr<!sol.array<? x ui256, Storage>, Stack> loc(#loc2)

@@ -14,7 +14,7 @@ function g(bytes memory a) returns (uint) {
 // CHECK-NEXT: #loc3 = loc({{.*}}:2:11)
 // CHECK-NEXT: #loc4 = loc({{.*}}:2:27)
 // CHECK-NEXT: #loc9 = loc({{.*}}:7:11)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   func.func @".unreachable"() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)

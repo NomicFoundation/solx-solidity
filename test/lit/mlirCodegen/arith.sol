@@ -276,7 +276,7 @@ function exp8(int8 a, uint8 b) {
 // CHECK-NEXT: #loc485 = loc({{.*}}:229:24)
 // CHECK-NEXT: #loc490 = loc({{.*}}:233:14)
 // CHECK-NEXT: #loc491 = loc({{.*}}:233:22)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.func @f_ui_6(%arg0: ui256 loc({{.*}}:2:14)) attributes {id = 6 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc2)

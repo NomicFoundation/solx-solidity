@@ -828,6 +828,9 @@ solidity::mlirgen::Bytecode solidity::mlirgen::runYulToMLIRPass(
                mlir::sol::EvmVersionAttr::get(
                    b.getContext(), *mlir::sol::symbolizeEvmVersion(
                                        evmVersion.getVersionAsInt())));
+  mod->setAttr("llvm.target_triple", b.getStringAttr("evm-unknown-unknown"));
+  mod->setAttr("llvm.data_layout",
+               b.getStringAttr("E-p:256:256-i256:256:256-S256-a:256:256"));
   b.setInsertionPointToEnd(mod.getBody());
   solidity::mlirgen::YulToMLIRPass yulToMLIR(b, stream, yulDialect);
   yulToMLIR.lowerTopLevelObj(obj);

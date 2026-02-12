@@ -248,7 +248,6 @@ set(mlir_libs
 	MLIRSolDialect
 	MLIRSolTransforms
 	MLIRSolToStandard
-	MLIRStandardToLLVM
 	MLIRYulTransforms
 	MLIRYulDialect
 	MLIRFuncDialect
@@ -262,6 +261,7 @@ set(mlir_libs
 	MLIRControlFlowToLLVM
 	MLIRArithAttrToLLVMConversion
 	MLIRArithToLLVM
+	MLIRReconcileUnrealizedCasts
 
 	MLIRBuiltinToLLVMIRTranslation
 	MLIRLLVMToLLVMIRTranslation

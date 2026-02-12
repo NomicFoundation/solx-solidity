@@ -17,7 +17,7 @@ function malloc() {
 // CHECK: #NonPayable = #sol<StateMutability NonPayable>
 // CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: #loc2 = loc({{.*}}:7:12)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.func @ui_24(%arg0: !sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory> loc({{.*}}:7:12)) -> ui256 attributes {id = 24 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory>, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory>, !sol.ptr<!sol.struct<(ui256, !sol.array<3 x ui256, Memory>), Memory>, Stack> loc(#loc2)

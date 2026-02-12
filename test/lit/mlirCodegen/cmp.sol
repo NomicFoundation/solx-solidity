@@ -28,7 +28,7 @@ function si(int256 a, int256 b) {
 // CHECK-NEXT: #loc5 = loc({{.*}}:4:23)
 // CHECK-NEXT: #loc25 = loc({{.*}}:13:12)
 // CHECK-NEXT: #loc26 = loc({{.*}}:13:22)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.func @f_6(%arg0: i1 loc({{.*}}:2:11)) attributes {id = 6 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : i1, !sol.ptr<i1, Stack> loc(#loc2)

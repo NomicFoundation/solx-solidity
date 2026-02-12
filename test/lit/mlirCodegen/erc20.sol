@@ -184,7 +184,7 @@ contract ERC20 {
 // CHECK-NEXT: #loc173 = loc({{.*}}:142:20)
 // CHECK-NEXT: #loc174 = loc({{.*}}:142:35)
 // CHECK-NEXT: #loc175 = loc({{.*}}:142:52)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.contract @ERC20_470 {
 // CHECK-NEXT:     sol.state_var @_balances_5 : !sol.mapping<ui256, ui256> loc(#loc2)
 // CHECK-NEXT:     sol.state_var @_allowances_11 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc3)

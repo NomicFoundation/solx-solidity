@@ -180,7 +180,7 @@ contract ERC20 {
 // CHECK-NEXT: #loc147 = loc({{.*}}:45:20)
 // CHECK-NEXT: #loc148 = loc({{.*}}:45:39)
 // CHECK-NEXT: #loc155 = loc({{.*}}:41:21)
-// CHECK-NEXT: module @ERC20_470 attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module @ERC20_470 attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   func.func @".unreachable"() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)
@@ -438,7 +438,7 @@ contract ERC20 {
 // CHECK-NEXT:     } loc(#loc8)
 // CHECK-NEXT:     return loc(#loc2)
 // CHECK-NEXT:   } loc(#loc2)
-// CHECK-NEXT:   module @ERC20_470_deployed {
+// CHECK-NEXT:   module @ERC20_470_deployed attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:     func.func @".unreachable"() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       llvm.unreachable loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)

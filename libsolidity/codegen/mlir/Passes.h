@@ -26,7 +26,6 @@
 #include "libsolidity/codegen/mlir/Target/EVM/Util.h"
 #include "libsolutil/FixedHash.h"
 #include "mlir/Conversion/SolToStandard/SolToStandard.h"
-#include "mlir/Conversion/StandardToLLVM/StandardToLLVM.h"
 #include "mlir/Dialect/Sol/Transforms/Passes.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/Pass.h"
