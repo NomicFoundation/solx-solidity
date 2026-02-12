@@ -1,4 +1,4 @@
-// RUN: sol-opt -sol-fuse-free-ptr %s | FileCheck %s
+// RUN: sol-opt -yul-fuse-free-ptr %s | FileCheck %s
 
 module {
 
