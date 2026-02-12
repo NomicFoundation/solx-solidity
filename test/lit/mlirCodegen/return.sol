@@ -23,7 +23,7 @@ function h(bool a) {
 // CHECK-NEXT: #loc2 = loc({{.*}}:2:11)
 // CHECK-NEXT: #loc10 = loc({{.*}}:8:11)
 // CHECK-NEXT: #loc16 = loc({{.*}}:14:11)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.func @f_14(%arg0: i1 loc({{.*}}:2:11)) -> ui256 attributes {id = 14 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : i1, !sol.ptr<i1, Stack> loc(#loc2)

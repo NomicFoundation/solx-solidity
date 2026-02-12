@@ -40,7 +40,7 @@ function slice_len(uint[] calldata a, uint start, uint end)
 // CHECK-NEXT: #loc26 = loc({{.*}}:22:19)
 // CHECK-NEXT: #loc27 = loc({{.*}}:22:38)
 // CHECK-NEXT: #loc28 = loc({{.*}}:22:50)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.func @slice_19(%arg0: !sol.array<? x ui256, CallData> loc({{.*}}:2:15), %arg1: ui256 loc({{.*}}:2:34), %arg2: ui256 loc({{.*}}:2:46)) -> !sol.array<? x ui256, CallData> attributes {id = 19 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.array<? x ui256, CallData>, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.array<? x ui256, CallData>, !sol.ptr<!sol.array<? x ui256, CallData>, Stack> loc(#loc2)

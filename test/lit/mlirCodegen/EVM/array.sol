@@ -66,7 +66,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT: #loc16 = loc({{.*}}:8:37)
 // CHECK-NEXT: #loc64 = loc({{.*}}:50:16)
 // CHECK-NEXT: #loc70 = loc({{.*}}:54:17)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   func.func @".unreachable"() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)

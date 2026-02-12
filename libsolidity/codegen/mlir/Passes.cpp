@@ -18,6 +18,11 @@
 #include "libsolidity/codegen/mlir/Passes.h"
 #include "libsolidity/codegen/mlir/Interface.h"
 #include "lld-c/LLDAsLibraryC.h"
+#include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
+#include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
+#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
+#include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
+#include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Dialect/LLVMIR/Transforms/Passes.h"
 #include "mlir/Dialect/Sol/Target.h"
 #include "mlir/Dialect/Sol/Transforms/Immutables.h"
@@ -64,21 +69,15 @@ void solidity::mlirgen::addConversionPasses(mlir::PassManager &passMgr,
   // the translation to llvm-ir working correctly.
   passMgr.addPass(mlir::createCanonicalizerPass());
 
-  // FIXME: Adding individual conversion passes for each dialects causes
-  // unrealized_conversion_cast's with index types.
-  //
-  // FIXME: `Target` should track triple, index bitwidth and data-layout.
-
-  switch (tgt) {
-  case Target::EVM:
-    passMgr.addPass(mlir::sol::createConvertStandardToLLVMPass(
-        /*triple=*/"evm-unknown-unknown",
-        /*indexBitwidth=*/256,
-        /*dataLayout=*/"E-p:256:256-i256:256:256-S256-a:256:256"));
-    break;
-  default:
-    llvm_unreachable("");
-  }
+  passMgr.addPass(mlir::createSCFToControlFlowPass());
+  passMgr.addPass(
+      mlir::createConvertFuncToLLVMPass(mlir::ConvertFuncToLLVMPassOptions(
+          /*useBarePtrCallConv*/ false, /*indexBitwidth*/ 256)));
+  passMgr.addPass(mlir::createArithToLLVMConversionPass(
+      mlir::ArithToLLVMConversionPassOptions(/*indexBitwidth*/ 256)));
+  passMgr.addPass(mlir::createConvertControlFlowToLLVMPass(
+      mlir::ConvertControlFlowToLLVMPassOptions(/*indexBitwidth*/ 256)));
+  passMgr.addPass(mlir::createReconcileUnrealizedCastsPass());
 
   if (enableDI)
     passMgr.addPass(mlir::LLVM::createDIScopeForLLVMFuncOpPass());

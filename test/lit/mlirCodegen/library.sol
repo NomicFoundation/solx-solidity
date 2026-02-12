@@ -17,7 +17,7 @@ contract C {
 // CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: #loc2 = loc({{.*}}:5:13)
 // CHECK-NEXT: #loc12 = loc({{.*}}:6:13)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.func @f_23(%arg0: ui256 loc({{.*}}:5:13)) -> ui256 attributes {id = 23 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc2)
@@ -80,7 +80,7 @@ contract C {
 // CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
 // CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: #loc2 = loc({{.*}}:5:13)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.func @f_23(%arg0: ui256 loc({{.*}}:5:13)) -> ui256 attributes {id = 23 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc2)
 // CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc2)

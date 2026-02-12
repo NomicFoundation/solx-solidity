@@ -20,7 +20,7 @@ function toUint(E x) returns (uint) {
 // CHECK-NEXT: #loc4 = loc({{.*}}:4:18)
 // CHECK-NEXT: #loc11 = loc({{.*}}:8:18)
 // CHECK-NEXT: #loc14 = loc({{.*}}:12:16)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   func.func @".unreachable"() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)

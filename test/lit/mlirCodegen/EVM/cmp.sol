@@ -27,7 +27,7 @@ function si(int256 a, int256 b) {
 // CHECK-NEXT: #loc5 = loc({{.*}}:4:23)
 // CHECK-NEXT: #loc25 = loc({{.*}}:13:12)
 // CHECK-NEXT: #loc26 = loc({{.*}}:13:22)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   func.func @f_6(%arg0: i1 loc({{.*}}:2:11)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc2)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i1 : (i256) -> !llvm.ptr loc(#loc2)

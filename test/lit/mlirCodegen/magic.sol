@@ -23,7 +23,7 @@ function decode(bytes memory a) returns (uint, uint8, int32) {
 // CHECK-NEXT: #loc9 = loc({{.*}}:10:25)
 // CHECK-NEXT: #loc10 = loc({{.*}}:10:36)
 // CHECK-NEXT: #loc17 = loc({{.*}}:14:16)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.func @msgSender_9() -> ui256 attributes {id = 9 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = yul.caller loc(#loc2)
 // CHECK-NEXT:     %1 = sol.conv_cast %0 : i256 -> ui256 loc(#loc2)

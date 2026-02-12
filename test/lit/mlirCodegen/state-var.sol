@@ -23,7 +23,7 @@ contract C {
 // CHECK-NEXT: #loc15 = loc({{.*}}:10:18)
 // CHECK-NEXT: #loc16 = loc({{.*}}:10:29)
 // CHECK-NEXT: #loc24 = loc({{.*}}:13:17)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.contract @C_69 {
 // CHECK-NEXT:     sol.state_var @ui_2 : ui256 loc(#loc2)
 // CHECK-NEXT:     sol.state_var @m0_6 : !sol.mapping<ui256, ui256> loc(#loc3)

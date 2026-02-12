@@ -56,7 +56,7 @@ contract C {
 // CHECK-NEXT: #loc45 = loc({{.*}}:27:14)
 // CHECK-NEXT: #loc49 = loc({{.*}}:28:14)
 // CHECK-NEXT: #loc53 = loc({{.*}}:30:15)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.contract @C_180 {
 // CHECK-NEXT:     sol.func @C_180() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)

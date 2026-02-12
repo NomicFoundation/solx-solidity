@@ -22,7 +22,7 @@ function h(bool a) {
 // CHECK-NEXT: #loc2 = loc({{.*}}:2:11)
 // CHECK-NEXT: #loc8 = loc({{.*}}:8:11)
 // CHECK-NEXT: #loc14 = loc({{.*}}:14:11)
-// CHECK-NEXT: module attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   func.func @f_14(%arg0: i1 loc({{.*}}:2:11)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256 loc(#loc)

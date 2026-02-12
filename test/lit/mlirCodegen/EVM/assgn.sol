@@ -17,7 +17,7 @@ contract C {
 // CHECK-NEXT: #loc8 = loc({{.*}}:7:27)
 // CHECK-NEXT: #loc9 = loc({{.*}}:7:38)
 // CHECK-NEXT: #loc15 = loc({{.*}}:6:16)
-// CHECK-NEXT: module @C_49 attributes {sol.evm_version = #Osaka} {
+// CHECK-NEXT: module @C_49 attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   func.func @".unreachable"() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)
@@ -61,7 +61,7 @@ contract C {
 // CHECK-NEXT:   func.func @C_49() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     return loc(#loc1)
 // CHECK-NEXT:   } loc(#loc1)
-// CHECK-NEXT:   module @C_49_deployed {
+// CHECK-NEXT:   module @C_49_deployed attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:     func.func @".unreachable"() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       llvm.unreachable loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
