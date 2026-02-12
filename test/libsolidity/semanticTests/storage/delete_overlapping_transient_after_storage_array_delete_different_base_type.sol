@@ -1,14 +1,12 @@
-pragma solidity >=0.0;
-
 contract C {
     bool[3] flags = [true, true, true];
     uint256 transient temp;
 
-    function f() external {
+    function setAndClear() external {
         temp = 0xffffffff;
-        assert(temp == 0xffffffff);
         delete flags;
         delete temp;
+        assert(temp == 0);
     }
 
     function getFlags() external returns(bool[3] memory)
@@ -19,8 +17,7 @@ contract C {
 
 // ====
 // EVMVersion: >=cancun
-// compileViaYul: true
 // ----
 // getFlags() -> true, true, true
-// f() ->
+// setAndClear() ->
 // getFlags() -> false, false, false

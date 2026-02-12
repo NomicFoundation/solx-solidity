@@ -4,12 +4,10 @@ contract C {
         address b;
     }
 
-    S s;
+    S s = S(1, address(0x1234));
     uint256 transient t;
 
     function setAndDelete() external {
-        s.a = 1;
-        s.b = address(0x1234);
         t = 2;
         delete t;
         assert(t == 0);
@@ -22,7 +20,7 @@ contract C {
 }
 // ====
 // EVMVersion: >=cancun
-// compileViaYul: true
 // ----
+// getS() -> 1, 4660
 // setAndDelete() ->
-// getS() -> 1, 0
+// getS() -> 0, 0

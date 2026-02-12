@@ -7,7 +7,7 @@ contract C {
         t = 2;
         delete m[0];
         delete t;
-        assert(t == 2);
+        assert(t == 0);
     }
 
     function getM() external view returns (uint256) {
@@ -17,7 +17,6 @@ contract C {
 
 // ====
 // EVMVersion: >=cancun
-// compileViaYul: true
 // ----
 // setAndClear() ->
 // getM() -> 0

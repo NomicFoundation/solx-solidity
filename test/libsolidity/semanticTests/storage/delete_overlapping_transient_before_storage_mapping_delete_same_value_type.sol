@@ -17,7 +17,6 @@ contract C {
 
 // ====
 // EVMVersion: >=cancun
-// compileViaYul: true
 // ----
 // setAndClear() ->
-// getM() -> 1
+// getM() -> 0

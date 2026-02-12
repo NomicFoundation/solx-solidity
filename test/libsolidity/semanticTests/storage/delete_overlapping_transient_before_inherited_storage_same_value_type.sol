@@ -20,7 +20,6 @@ contract C is Base {
 
 // ====
 // EVMVersion: >=cancun
-// compileViaYul: true
 // ----
 // setAndClear() ->
-// x() -> 1
+// x() -> 0

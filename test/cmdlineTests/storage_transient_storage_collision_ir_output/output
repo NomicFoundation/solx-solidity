@@ -179,10 +179,20 @@ object "C_25" {
                 let convertedValue := convert_uint256_to_uint256(value)
                 tstore(slot, update_byte_slice_dynamic32(tload(slot), offset, prepare_store_uint256(convertedValue)))
             }
-            function storage_set_to_zero_uint256(slot, offset)
+            function transient_storage_set_to_zero_uint256(slot, offset)
             {
                 let zero := zero_value_for_split_uint256()
                 update_transient_storage_value_uint256_to_uint256(slot, offset, zero)
+            }
+            function update_storage_value_uint256_to_uint256(slot, offset, value)
+            {
+                let convertedValue := convert_uint256_to_uint256(value)
+                sstore(slot, update_byte_slice_dynamic32(sload(slot), offset, prepare_store_uint256(convertedValue)))
+            }
+            function storage_set_to_zero_uint256(slot, offset)
+            {
+                let zero := zero_value_for_split_uint256()
+                update_storage_value_uint256_to_uint256(slot, offset, zero)
             }
             function shift_right_0_unsigned(value) -> newValue
             { newValue := shr(0, value) }
@@ -201,7 +211,7 @@ object "C_25" {
                 let expr := 0xffffffff
                 let _1 := convert_rational_by_to_uint256(expr)
                 update_transient_storage_value_offset_uint256_to_uint256(0x00, _1)
-                storage_set_to_zero_uint256(0x00, 0)
+                transient_storage_set_to_zero_uint256(0x00, 0)
                 storage_set_to_zero_uint256(0x00, 0)
                 let _2 := read_from_storage_split_offset_uint256(0x00)
                 let expr_1 := _2
