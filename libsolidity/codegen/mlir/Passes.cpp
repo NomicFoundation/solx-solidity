@@ -24,7 +24,7 @@
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Dialect/LLVMIR/Transforms/Passes.h"
-#include "mlir/Dialect/Sol/Transforms/Immutables.h"
+#include "mlir/Dialect/Sol/Transforms/SolImmutables.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
@@ -50,7 +50,7 @@ void solidity::mlirgen::addConversionPasses(mlir::PassManager &passMgr,
                                             Target tgt, bool enableDI) {
   passMgr.addPass(mlir::createCanonicalizerPass());
   passMgr.addPass(mlir::sol::createModifierOpLoweringPass());
-  passMgr.addPass(mlir::sol::createConvertSolToStandardPass());
+  passMgr.addPass(mlir::createConvertSolToStandardPass());
   // Canonicalizer removes unreachable blocks, which is important for getting
   // the translation to llvm-ir working correctly.
   passMgr.addPass(mlir::createCanonicalizerPass());
@@ -275,7 +275,7 @@ std::string solidity::mlirgen::printJob(JobSpec const &job,
     assert(job.tgt != Target::Undefined);
     passMgr.addPass(mlir::createCanonicalizerPass());
     passMgr.addPass(mlir::sol::createModifierOpLoweringPass());
-    passMgr.addPass(mlir::sol::createConvertSolToStandardPass());
+    passMgr.addPass(mlir::createConvertSolToStandardPass());
     passMgr.addPass(mlir::createCanonicalizerPass());
     if (mlir::failed(passMgr.run(mod))) {
       mod.print(ss);
