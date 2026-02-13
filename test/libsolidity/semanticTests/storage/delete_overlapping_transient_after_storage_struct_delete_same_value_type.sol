@@ -21,6 +21,6 @@ contract C {
 // ====
 // EVMVersion: >=cancun
 // ----
-// getS() -> 1, 4660
+// getS() -> 1, 0x1234
 // setAndDelete() ->
 // getS() -> 0, 0
