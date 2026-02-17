@@ -18,19 +18,29 @@
 
 #pragma once
 
-#include <test/TestCase.h>
+#include <libyul/backends/evm/ssa/SSACFG.h>
 
-#include <memory>
+#include <map>
 
-namespace solidity::yul::test::ssa
+namespace solidity::yul::ssa
 {
 
-class ShufflingTest: public frontend::test::TestCase
+/// If Block `_from` -> Block `_to` and `_to` has phi functions `v_k := phi(..., _from => v_i, ...)`, this transform
+/// pulls values `v_k` back to `v_i`.
+class PhiInverse
 {
 public:
-	static std::unique_ptr<TestCase> create(Config const& _config);
-	explicit ShufflingTest(std::string const& _filename);
-	TestResult run(std::ostream& _stream, std::string const& _linePrefix, bool _formatted) override;
+	PhiInverse() = default;
+	PhiInverse(SSACFG const& _cfg, SSACFG::BlockId const& _from, SSACFG::BlockId const& _to);
+
+	/// whether the transform is guaranteed to be a no-op, ie, there is no phi function in `_to`
+	bool noOp() const;
+	SSACFG::ValueId operator()(SSACFG::ValueId _valueId) const;
+
+	std::map<SSACFG::ValueId, SSACFG::ValueId> const& data() const;
+
+private:
+	std::map<SSACFG::ValueId, SSACFG::ValueId> m_phiToPreImage = {};
 };
 
 }

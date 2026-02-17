@@ -53,6 +53,8 @@ add_executable(isoltest
 	../libyul/YulOptimizerTest.cpp
 	../libyul/YulOptimizerTestCommon.cpp
 	../libyul/YulInterpreterTest.cpp
+	../libyul/ssa/StackLayoutGeneratorTest.cpp
+	../libyul/ssa/StackLayoutGeneratorTest.h
 	../libyul/ssa/StackShufflerTest.cpp
 	../libyul/ssa/StackShufflerTest.h
 )

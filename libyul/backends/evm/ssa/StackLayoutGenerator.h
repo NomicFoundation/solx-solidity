@@ -18,19 +18,34 @@
 
 #pragma once
 
-#include <test/TestCase.h>
+#include <libyul/backends/evm/ssa/Stack.h>
+#include <libyul/backends/evm/ssa/StackLayout.h>
 
 #include <memory>
 
-namespace solidity::yul::test::ssa
+namespace solidity::yul::ssa
 {
 
-class ShufflingTest: public frontend::test::TestCase
+class JunkAdmittingBlocksFinder;
+
+class StackLayoutGenerator
 {
 public:
-	static std::unique_ptr<TestCase> create(Config const& _config);
-	explicit ShufflingTest(std::string const& _filename);
-	TestResult run(std::ostream& _stream, std::string const& _linePrefix, bool _formatted) override;
+	using Slot = StackSlot;
+	static SSACFGStackLayout generate(LivenessAnalysis const& _liveness, CallSites const& _callSites);
+
+private:
+	explicit StackLayoutGenerator(LivenessAnalysis const& _liveness, CallSites const& _callSites);
+
+	void defineStackIn(SSACFG::BlockId const& _blockId);
+	void visitBlock(SSACFG::BlockId const& _blockId);
+
+	SSACFG const& m_cfg;
+	LivenessAnalysis const& m_liveness;
+	CallSites const& m_callSites;
+
+	std::unique_ptr<JunkAdmittingBlocksFinder> m_junkAdmittingBlocksFinder;
+	SSACFGStackLayout m_resultLayout;
 };
 
 }

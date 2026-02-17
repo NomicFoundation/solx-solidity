@@ -18,6 +18,7 @@
 
 #pragma once
 
+
 #include <test/TestCase.h>
 
 #include <memory>
@@ -25,11 +26,11 @@
 namespace solidity::yul::test::ssa
 {
 
-class ShufflingTest: public frontend::test::TestCase
+class StackLayoutGeneratorTest: public frontend::test::TestCase
 {
 public:
 	static std::unique_ptr<TestCase> create(Config const& _config);
-	explicit ShufflingTest(std::string const& _filename);
+	explicit StackLayoutGeneratorTest(std::string const& _filename);
 	TestResult run(std::ostream& _stream, std::string const& _linePrefix, bool _formatted) override;
 };
 
