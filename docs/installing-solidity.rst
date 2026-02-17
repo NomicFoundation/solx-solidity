@@ -142,7 +142,7 @@ available for some distributions:
     Exercise caution when using them.
 
 There is also a `snap package <https://snapcraft.io/solc>`_, however, it is **currently unmaintained**.
-It is installable in all the `supported Linux distros <https://snapcraft.io/docs/core/install>`_. To
+It is installable in all the `supported Linux distros <https://snapcraft.io/docs/reference/administration/distribution-support/>`_. To
 install the latest stable version of solc:
 
 .. code-block:: bash
