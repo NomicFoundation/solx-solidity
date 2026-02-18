@@ -1138,12 +1138,33 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     return {};
   }
 
+  // Assert statement
+  case FunctionType::Kind::Assert: {
+    b.create<mlir::sol::AssertOp>(loc, genRValExpr(*astArgs[0]));
+    return {};
+  }
+
+  // Revert function call
+  case FunctionType::Kind::Revert: {
+    if (!astArgs.empty()) {
+      // revert("reason")
+      const auto *msg = dynamic_cast<Literal const *>(astArgs[0].get());
+      assert(msg);
+      b.create<mlir::sol::RevertOp>(loc, mlir::ValueRange{}, msg->value());
+    } else {
+      // revert()
+      b.create<mlir::sol::RevertOp>(loc, mlir::ValueRange{}, std::string(""));
+    }
+    return {};
+  }
+
   // Revert invocation
   case FunctionType::Kind::Error: {
     mlir::SmallVector<mlir::Value> args;
     for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes()))
       args.push_back(genRValExpr(*arg, getType(dstTy)));
-    b.create<mlir::sol::RevertOp>(loc, args, calleeTy->externalSignature());
+    b.create<mlir::sol::RevertOp>(loc, args, calleeTy->externalSignature(),
+                                  /*call=*/true);
     return {};
   }
 
