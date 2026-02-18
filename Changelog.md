@@ -1,5 +1,8 @@
 ### 0.8.34 (unreleased)
 
+Important Bugfixes:
+* Yul IR Code Generation: Fix a bug that could result in clearing a storage variable instead of a transient storage variable at the same position in the layout (and vice-versa).
+
 Language Features:
 
 Compiler Features:
