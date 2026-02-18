@@ -1,14 +1,11 @@
-### 0.8.34 (unreleased)
+### 0.8.34 (2026-02-18)
 
 Important Bugfixes:
 * Yul IR Code Generation: Fix a bug that could result in clearing a storage variable instead of a transient storage variable at the same position in the layout (and vice-versa).
 
-Language Features:
 
 Compiler Features:
 * Yul Optimizer: Remove redundant prerequisite steps from the default optimizer sequence.
-
-Bugfixes:
 
 
 ### 0.8.33 (2025-12-18)
