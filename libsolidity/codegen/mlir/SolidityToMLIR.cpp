@@ -2010,7 +2010,14 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
       loc, getMangledName(cont), getContractKind(cont));
   b.setInsertionPointToStart(&contOp.getBodyRegion().emplaceBlock());
 
-  // Lower immutables and state variables; Generate getters
+  // Build a map from state variable to {slot, byteOffset}.
+  llvm::DenseMap<VariableDeclaration const *, std::pair<u256, unsigned>>
+      stateVarSlots;
+  for (auto &[var, slot, byteOffset] :
+       ContractType(cont).linearizedStateVariables(DataLocation::Storage))
+    stateVarSlots[var] = {slot, byteOffset};
+
+  // Lower immutables and state variables; Generate getters.
   for (ContractDefinition const *baseCont :
        cont.annotation().linearizedBaseContracts) {
     for (VariableDeclaration const *stateVar : baseCont->stateVariables()) {
@@ -2018,10 +2025,13 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
         b.create<mlir::sol::ImmutableOp>(getLoc(*stateVar),
                                          getMangledName(*stateVar),
                                          getType(stateVar->type()));
-      else if (!stateVar->isConstant())
-        b.create<mlir::sol::StateVarOp>(getLoc(*stateVar),
-                                        getMangledName(*stateVar),
-                                        getType(stateVar->type()));
+      else if (!stateVar->isConstant()) {
+        auto [slot, byteOffset] = stateVarSlots[stateVar];
+        b.create<mlir::sol::StateVarOp>(
+            getLoc(*stateVar), getMangledName(*stateVar),
+            getType(stateVar->type()), mlirgen::getAPInt(slot, 256),
+            byteOffset);
+      }
 
       if (stateVar->isPartOfExternalInterface())
         genGetter(*stateVar);

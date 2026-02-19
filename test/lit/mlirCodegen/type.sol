@@ -15,11 +15,11 @@ contract C {
 // CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.contract @C_17 {
-// CHECK-NEXT:     sol.state_var @ui256_2 : ui256 loc(#loc2)
-// CHECK-NEXT:     sol.state_var @addr_4 : ui256 loc(#loc3)
-// CHECK-NEXT:     sol.state_var @simpleMapping_8 : !sol.mapping<ui256, ui256> loc(#loc4)
-// CHECK-NEXT:     sol.state_var @nestedMapping_14 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc5)
-// CHECK-NEXT:     sol.state_var @str_16 : !sol.string<Storage> loc(#loc6)
+// CHECK-NEXT:     sol.state_var @ui256_2 slot 0 offset 0 : ui256 loc(#loc2)
+// CHECK-NEXT:     sol.state_var @addr_4 slot 1 offset 0 : ui256 loc(#loc3)
+// CHECK-NEXT:     sol.state_var @simpleMapping_8 slot 2 offset 0 : !sol.mapping<ui256, ui256> loc(#loc4)
+// CHECK-NEXT:     sol.state_var @nestedMapping_14 slot 3 offset 0 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc5)
+// CHECK-NEXT:     sol.state_var @str_16 slot 4 offset 0 : !sol.string<Storage> loc(#loc6)
 // CHECK-NEXT:     sol.func @C_17() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)

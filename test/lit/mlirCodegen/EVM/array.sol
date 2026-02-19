@@ -583,7 +583,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %c4_i256 = arith.constant 4 : i256 loc(#loc)
 // CHECK-NEXT:     %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256 = arith.constant 35408467139433450592217433187231851964531694900788300625387963629091585785856 : i256 loc(#loc)
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
-// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
+// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc70)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc70)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc70)
 // CHECK-NEXT:     %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc71)
