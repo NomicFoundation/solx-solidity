@@ -22,8 +22,8 @@ contract C {
 // CHECK-NEXT: #loc11 = loc({{.*}}:7:38)
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.contract @C_49 {
-// CHECK-NEXT:     sol.state_var @ui_2 : ui256 loc(#loc2)
-// CHECK-NEXT:     sol.state_var @m1_8 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc3)
+// CHECK-NEXT:     sol.state_var @ui_2 slot 0 offset 0 : ui256 loc(#loc2)
+// CHECK-NEXT:     sol.state_var @m1_8 slot 1 offset 0 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc3)
 // CHECK-NEXT:     sol.func @C_49() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)

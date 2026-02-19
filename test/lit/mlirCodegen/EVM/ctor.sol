@@ -157,7 +157,7 @@ contract C is D {
 // CHECK-NEXT:       llvm.unreachable loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     func.func @get_m_2() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
-// CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc6)
+// CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:       %0 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<5> loc(#loc6)
 // CHECK-NEXT:       %1 = llvm.load %0 {alignment = 1 : i64} : !llvm.ptr<5> -> i256 loc(#loc6)
 // CHECK-NEXT:       return %1 : i256 loc(#loc6)
@@ -334,7 +334,7 @@ contract C is D {
 // CHECK-NEXT:       llvm.unreachable loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
 // CHECK-NEXT:     func.func @get_m_2() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
-// CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc9)
+// CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:       %0 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<5> loc(#loc9)
 // CHECK-NEXT:       %1 = llvm.load %0 {alignment = 1 : i64} : !llvm.ptr<5> -> i256 loc(#loc9)
 // CHECK-NEXT:       return %1 : i256 loc(#loc9)
@@ -592,7 +592,7 @@ contract C is D {
 // CHECK-NEXT:       llvm.unreachable loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
 // CHECK-NEXT:     func.func @get_m_2() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
-// CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc9)
+// CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:       %0 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<5> loc(#loc9)
 // CHECK-NEXT:       %1 = llvm.load %0 {alignment = 1 : i64} : !llvm.ptr<5> -> i256 loc(#loc9)
 // CHECK-NEXT:       return %1 : i256 loc(#loc9)

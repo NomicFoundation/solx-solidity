@@ -21,7 +21,7 @@ contract C is D {
 // CHECK-NEXT: #loc4 = loc({{.*}}:4:14)
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.contract @E_15 {
-// CHECK-NEXT:     sol.state_var @m_2 : ui256 loc(#loc2)
+// CHECK-NEXT:     sol.state_var @m_2 slot 0 offset 0 : ui256 loc(#loc2)
 // CHECK-NEXT:     sol.func @get_m_2() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 1513021465 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.addr_of @m_2 : !sol.ptr<ui256, Storage> loc(#loc2)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Storage>, ui256 loc(#loc2)
@@ -58,7 +58,7 @@ contract C is D {
 // CHECK-NEXT: #loc12 = loc({{.*}}:4:14)
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.contract @D_37 {
-// CHECK-NEXT:     sol.state_var @m_2 : ui256 loc(#loc2)
+// CHECK-NEXT:     sol.state_var @m_2 slot 0 offset 0 : ui256 loc(#loc2)
 // CHECK-NEXT:     sol.func @get_m_2() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 1513021465 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.addr_of @m_2 : !sol.ptr<ui256, Storage> loc(#loc2)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Storage>, ui256 loc(#loc2)
@@ -122,7 +122,7 @@ contract C is D {
 // CHECK-NEXT: #loc20 = loc({{.*}}:4:14)
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.contract @C_58 {
-// CHECK-NEXT:     sol.state_var @m_2 : ui256 loc(#loc2)
+// CHECK-NEXT:     sol.state_var @m_2 slot 0 offset 0 : ui256 loc(#loc2)
 // CHECK-NEXT:     sol.func @get_m_2() -> ui256 attributes {orig_fn_type = () -> ui256, selector = 1513021465 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.addr_of @m_2 : !sol.ptr<ui256, Storage> loc(#loc2)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Storage>, ui256 loc(#loc2)

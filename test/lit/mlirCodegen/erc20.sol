@@ -186,11 +186,11 @@ contract ERC20 {
 // CHECK-NEXT: #loc175 = loc({{.*}}:142:52)
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.contract @ERC20_470 {
-// CHECK-NEXT:     sol.state_var @_balances_5 : !sol.mapping<ui256, ui256> loc(#loc2)
-// CHECK-NEXT:     sol.state_var @_allowances_11 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc3)
-// CHECK-NEXT:     sol.state_var @_totalSupply_13 : ui256 loc(#loc4)
-// CHECK-NEXT:     sol.state_var @_name_15 : !sol.string<Storage> loc(#loc5)
-// CHECK-NEXT:     sol.state_var @_symbol_17 : !sol.string<Storage> loc(#loc6)
+// CHECK-NEXT:     sol.state_var @_balances_5 slot 0 offset 0 : !sol.mapping<ui256, ui256> loc(#loc2)
+// CHECK-NEXT:     sol.state_var @_allowances_11 slot 1 offset 0 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc3)
+// CHECK-NEXT:     sol.state_var @_totalSupply_13 slot 2 offset 0 : ui256 loc(#loc4)
+// CHECK-NEXT:     sol.state_var @_name_15 slot 3 offset 0 : !sol.string<Storage> loc(#loc5)
+// CHECK-NEXT:     sol.state_var @_symbol_17 slot 4 offset 0 : !sol.string<Storage> loc(#loc6)
 // CHECK-NEXT:     sol.func @_49(%arg0: !sol.string<Memory> loc({{.*}}:16:14), %arg1: !sol.string<Memory> loc({{.*}}:16:35)) attributes {id = 49 : i64, kind = #Constructor, orig_fn_type = (!sol.string<Memory>, !sol.string<Memory>) -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc8)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc8)

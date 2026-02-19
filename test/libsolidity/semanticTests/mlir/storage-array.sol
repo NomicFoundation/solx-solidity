@@ -1,61 +1,104 @@
 contract C {
-  uint[5] s1;
-  function f_s1() public returns (uint) {
-    s1[0] = 1;
-    return s1[0];
+  // Static uint array
+  uint[5] static_arr;
+  function static_arr_rw() public returns (uint) {
+    static_arr[0] = 1;
+    return static_arr[0];
   }
 
-  uint[] d1;
-  function f_d1(uint a) public returns (uint) {
+  // Dynamic uint array
+  uint[] dynamic_arr;
+  function dynamic_arr_rw(uint a) public returns (uint) {
     if (a != 0) {
-      d1.push();
-      d1.push() = a;
-      d1.push(1 + d1[0] + d1[1]);
+      dynamic_arr.push();
+      dynamic_arr.push() = a;
+      dynamic_arr.push(1 + dynamic_arr[0] + dynamic_arr[1]);
     }
-    return d1[2];
+    return dynamic_arr[2];
   }
 
-  function g_d1() public returns (uint) {
-    d1.pop();
+  function dynamic_arr_pop() public returns (uint) {
+    dynamic_arr.pop();
     return 0;
   }
 
-  uint[3][2] s2;
-  function f_s2() public returns (uint) {
+  // 2D static array
+  uint[3][2] static_2d;
+  function static_2d_rw() public returns (uint) {
   unchecked {
     for (uint i = 0; i < 2; ++i)
       for (uint j = 0; j < 3; ++j)
-        s2[i][j] = i*10 + j;
-    return s2[1][2];
+        static_2d[i][j] = i*10 + j;
+    return static_2d[1][2];
   }
   }
 
-  uint[2][] d2;
-  function f_d2() public returns (uint[2][] memory) {
-    d2.push()[0] = 0x10;
-    d2[0][1] = 0x20;
-    d2.push();
-    d2[1][0] = 0x30;
-    return d2;
+  // Dynamic array of static arrays
+  uint[2][] dynamic_2d;
+  function dynamic_2d_rw() public returns (uint[2][] memory) {
+    dynamic_2d.push()[0] = 0x10;
+    dynamic_2d[0][1] = 0x20;
+    dynamic_2d.push();
+    dynamic_2d[1][0] = 0x30;
+    return dynamic_2d;
   }
 
-  // uint[] m;
-  // function f() public returns (uint[] memory) {
-  //   m.push() = 1;
-  //   // FIXME:
-  //   // m.push(2);
-  //   return m;
-  // }
+  // Return storage array as memory
+  uint[] m;
+  function return_as_mem() public returns (uint[] memory) {
+    m.push() = 1;
+    m.push(2);
+    return m;
+  }
+
+  // Packed static array
+  uint8[4] packed_static;
+  function set_packed_static(uint256 i, uint8 v) public {
+    packed_static[i] = v;
+  }
+  function get_packed_static(uint256 i) public view returns (uint8) {
+    return packed_static[i];
+  }
+
+  // Packed dynamic array
+  uint8[] packed_dynamic;
+  function push_packed_dynamic(uint8 v) public {
+    packed_dynamic.push(v);
+  }
+  function get_packed_dynamic(uint256 i) public view returns (uint8) {
+    return packed_dynamic[i];
+  }
+  function len_packed_dynamic() public view returns (uint256) {
+    return packed_dynamic.length;
+  }
 }
 
-// f() -> 0x20, 2, 1, 2
 // ====
 // compileViaMlir: true
 // ----
-// f_s1() -> 1
-// g_d1() -> FAILURE, hex"4e487b71", 0x31
-// f_d1(uint256): 0 -> FAILURE, hex"4e487b71", 0x32
-// f_d1(uint256): 1 -> 2
-// g_d1() -> 0
-// f_s2() -> 12
-// f_d2() -> 0x20, 2, 0x10, 0x20, 0x30, 0
+// static_arr_rw() -> 1
+// dynamic_arr_pop() -> FAILURE, hex"4e487b71", 0x31
+// dynamic_arr_rw(uint256): 0 -> FAILURE, hex"4e487b71", 0x32
+// dynamic_arr_rw(uint256): 1 -> 2
+// dynamic_arr_pop() -> 0
+// static_2d_rw() -> 12
+// dynamic_2d_rw() -> 0x20, 2, 0x10, 0x20, 0x30, 0
+// return_as_mem() -> 0x20, 2, 1, 2
+// set_packed_static(uint256,uint8): 0, 0x11 ->
+// set_packed_static(uint256,uint8): 1, 0x22 ->
+// set_packed_static(uint256,uint8): 2, 0x33 ->
+// set_packed_static(uint256,uint8): 3, 0x44 ->
+// get_packed_static(uint256): 0 -> 0x11
+// get_packed_static(uint256): 1 -> 0x22
+// get_packed_static(uint256): 2 -> 0x33
+// get_packed_static(uint256): 3 -> 0x44
+// len_packed_dynamic() -> 0
+// push_packed_dynamic(uint8): 0x11 ->
+// push_packed_dynamic(uint8): 0x22 ->
+// push_packed_dynamic(uint8): 0x33 ->
+// push_packed_dynamic(uint8): 0x44 ->
+// len_packed_dynamic() -> 4
+// get_packed_dynamic(uint256): 0 -> 0x11
+// get_packed_dynamic(uint256): 1 -> 0x22
+// get_packed_dynamic(uint256): 2 -> 0x33
+// get_packed_dynamic(uint256): 3 -> 0x44
