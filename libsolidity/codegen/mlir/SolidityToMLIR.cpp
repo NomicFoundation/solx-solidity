@@ -1279,7 +1279,8 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
   }
 
   // ABI encode
-  case FunctionType::Kind::ABIEncode: {
+  case FunctionType::Kind::ABIEncode:
+  case FunctionType::Kind::ABIEncodePacked: {
     mlir::SmallVector<mlir::Value, 4> args;
     for (const auto &arg : astArgs)
       args.push_back(genRValExpr(*arg));
@@ -1287,7 +1288,8 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
         loc, /*res=*/
         mlir::sol::StringType::get(b.getContext(),
                                    mlir::sol::DataLocation::Memory),
-        args));
+        args,
+        /*packed=*/calleeTy->kind() == FunctionType::Kind::ABIEncodePacked));
     return resVals;
   }
 
