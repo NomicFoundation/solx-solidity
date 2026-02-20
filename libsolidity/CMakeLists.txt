@@ -38,6 +38,8 @@ set(sources
 	analysis/ReferencesResolver.h
 	analysis/Scoper.cpp
 	analysis/Scoper.h
+	analysis/UnsafeAsmChecker.cpp
+	analysis/UnsafeAsmChecker.h
 	analysis/StaticAnalyzer.cpp
 	analysis/StaticAnalyzer.h
 	analysis/SyntaxChecker.cpp
@@ -82,6 +84,10 @@ set(sources
 	codegen/ContractCompiler.h
 	codegen/ExpressionCompiler.cpp
 	codegen/ExpressionCompiler.h
+	codegen/ExtraMetadata.cpp
+	codegen/ExtraMetadata.h
+	codegen/FuncPtrTracker.cpp
+	codegen/FuncPtrTracker.h
 	codegen/LValue.cpp
 	codegen/LValue.h
 	codegen/MultiUseYulFunctionCollector.h

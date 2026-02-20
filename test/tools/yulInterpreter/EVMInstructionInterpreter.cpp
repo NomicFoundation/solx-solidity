@@ -490,6 +490,10 @@ u256 EVMInstructionInterpreter::eval(
 	case Instruction::SWAP16:
 	case Instruction::SWAPN:
 	case Instruction::DUPN:
+	case Instruction::SWAPX:
+	case Instruction::DUPX:
+	case Instruction::MEMORYGUARD:
+	case Instruction::UNSAFEASM:
 		yulAssert(false, "Impossible in strict assembly.");
 	case Instruction::DATALOADN:
 	case Instruction::CALLF:

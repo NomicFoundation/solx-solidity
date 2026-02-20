@@ -15,31 +15,38 @@
 	along with solidity.  If not, see <http://www.gnu.org/licenses/>.
 */
 // SPDX-License-Identifier: GPL-3.0
-/**
- * @author Christian <c@ethdev.com>
- * @date 2015
- * Versioning.
- */
 
 #pragma once
 
-#include <cstdint>
-#include <vector>
-#include <string>
+#include <libsolidity/ast/ASTAnnotations.h>
+#include <libsolidity/ast/ASTForward.h>
+#include <libsolidity/ast/ASTVisitor.h>
+#include <libsolidity/ast/Types.h>
 
-namespace solidity
+namespace solidity::langutil
 {
-using bytes = std::vector<uint8_t>;
-
-namespace frontend
-{
-
-extern char const* VersionNumber;
-extern std::string const VersionString;
-extern std::string const VersionStringStrict;
-extern bytes const VersionCompactBytes;
-extern bool const VersionIsRelease;
-extern char const* SolxVersionString;
-
+class ErrorReporter;
 }
+
+namespace solidity::frontend
+{
+struct OptimiserSettings;
+}
+
+namespace solidity::frontend
+{
+
+class UnsafeAsmChecker: ASTConstVisitor
+{
+public:
+	UnsafeAsmChecker(langutil::ErrorReporter& _errorReporter): m_errorReporter(_errorReporter) {}
+
+	bool check(SourceUnit const& _source);
+
+private:
+	langutil::ErrorReporter& m_errorReporter;
+
+	bool visit(InlineAssembly const& _inlineAsm);
+};
+
 }
