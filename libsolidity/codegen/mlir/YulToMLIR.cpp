@@ -128,7 +128,9 @@ private:
 
   /// Returns the address of the local variable.
   mlir::Value getLocalVarAddr(YulName var);
-  mlir::Value getLocalVarAddr(Identifier const &var) {
+
+  /// Resolves an identifier to a value (address or direct value).
+  mlir::Value resolveIdentifier(Identifier const &var) {
     if (externalRefResolver) {
       mlir::Value externalRef = externalRefResolver(&var);
       if (externalRef)
@@ -445,9 +447,12 @@ mlir::Value YulToMLIRPass::genExpr(Literal const &lit) {
 }
 
 mlir::Value YulToMLIRPass::genExpr(Identifier const &id) {
-  mlir::Value addr = getLocalVarAddr(id);
+  mlir::Value val = resolveIdentifier(id);
+  // Direct value, not an address.
+  if (!mlir::isa<mlir::LLVM::LLVMPointerType>(val.getType()))
+    return val;
   return b.create<mlir::LLVM::LoadOp>(
-      getLoc(id.debugData), /*resTy=*/getDefIntTy(), addr, getDefAlign());
+      getLoc(id.debugData), /*resTy=*/getDefIntTy(), val, getDefAlign());
 }
 
 mlir::SmallVector<mlir::Value>
@@ -544,7 +549,7 @@ void YulToMLIRPass::operator()(Assignment const &asgn) {
   assert(asgn.variableNames.size() == rhsExprs.size());
 
   for (auto [lhs, rhsExpr] : llvm::zip(asgn.variableNames, rhsExprs)) {
-    b.create<mlir::LLVM::StoreOp>(loc, rhsExpr, getLocalVarAddr(lhs),
+    b.create<mlir::LLVM::StoreOp>(loc, rhsExpr, resolveIdentifier(lhs),
                                   getDefAlign());
   }
 }

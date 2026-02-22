@@ -162,6 +162,13 @@ private:
     return decl.name() + "_" + std::to_string(decl.id());
   }
 
+  /// Returns the lvalue reference for a variable declaration.
+  mlir::Value genLValRef(VariableDeclaration const &var) {
+    if (var.isStateVariable())
+      return genStateVarRef(var, inCtor);
+    return getLocalVarAddr(var);
+  }
+
   mlir::Value genStateVarRef(VariableDeclaration const &var,
                              bool inCreationContext) {
     auto currContr =
@@ -524,11 +531,8 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
     llvm_unreachable("NYI");
   }
 
-  if (const auto *var = dynamic_cast<VariableDeclaration const *>(decl)) {
-    if (var->isStateVariable())
-      return genStateVarRef(*var, inCtor);
-    return getLocalVarAddr(*var);
-  }
+  if (const auto *var = dynamic_cast<VariableDeclaration const *>(decl))
+    return genLValRef(*var);
 
   if (const auto *contr = dynamic_cast<ContractDefinition const *>(decl)) {
     assert(contr->isLibrary() && "NYI");
@@ -1708,14 +1712,51 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
 
 void SolidityToMLIRPass::lower(InlineAssembly const &inAsm) {
   mlir::Location loc = getLoc(inAsm.location());
+  mlir::Type i256Ty = b.getIntegerType(256);
+
   std::function<mlir::Value(yul::Identifier const *)> externalRefResolver =
       [&](yul::Identifier const *id) -> mlir::Value {
     auto it = inAsm.annotation().externalReferences.find(id);
     if (it == inAsm.annotation().externalReferences.end())
       return {};
+
+    auto const &info = it->second;
     auto const *decl =
-        dynamic_cast<VariableDeclaration const *>(it->second.declaration);
+        dynamic_cast<VariableDeclaration const *>(info.declaration);
     assert(decl);
+    std::string const &suffix = info.suffix;
+
+    // Handle .slot and .offset suffixes for storage references.
+    if (suffix == "slot" || suffix == "offset") {
+      mlir::Value ptr = genLValRef(*decl);
+
+      // For local storage pointers, we need to load from stack first.
+      if (!decl->isStateVariable())
+        ptr = b.create<mlir::sol::LoadOp>(loc, ptr);
+
+      // Value types use {slot, offset} representation (even 32-byte ones).
+      // Reference types (arrays, structs, mappings) use slot-only.
+      bool packable = decl->type()->isValueType();
+      if (packable) {
+        // Packable: conv_cast to {i256, i256} struct and extract.
+        auto structTy = mlir::LLVM::LLVMStructType::getLiteral(
+            b.getContext(), {i256Ty, i256Ty});
+        mlir::Value raw = b.create<mlir::sol::ConvCastOp>(loc, structTy, ptr);
+        if (suffix == "slot")
+          return b.create<mlir::LLVM::ExtractValueOp>(loc, raw, 0);
+        else
+          return b.create<mlir::LLVM::ExtractValueOp>(loc, raw, 1);
+      } else {
+        // Non-packable: ptr is just slot, offset is always 0.
+        if (suffix == "slot")
+          return b.create<mlir::sol::ConvCastOp>(loc, i256Ty, ptr);
+        else
+          return b.create<mlir::arith::ConstantOp>(loc,
+                                                   b.getIntegerAttr(i256Ty, 0));
+      }
+    }
+
+    // No suffix: return pointer to the local variable.
     mlir::Value localVarAddr = getLocalVarAddr(*decl);
     return b.create<mlir::sol::ConvCastOp>(
         loc, mlir::LLVM::LLVMPointerType::get(b.getContext()), localVarAddr);
