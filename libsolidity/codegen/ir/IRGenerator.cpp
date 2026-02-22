@@ -1033,7 +1033,7 @@ std::string IRGenerator::deployCode(ContractDefinition const& _contract)
 	if (eof)
 	{
 		t("library", _contract.isLibrary());
-		t("auxDataStart", std::to_string(CompilerUtils::generalPurposeMemoryStart));
+		t("auxDataStart", std::to_string(CompilerUtils::generalPurposeMemoryStart + m_context.spillAreaSize()));
 		solAssert(m_context.reservedMemorySize() <= 0xFFFF, "Reserved memory size exceeded maximum allowed EOF data section size.");
 		t("auxDataSize", std::to_string(m_context.reservedMemorySize()));
 	}
@@ -1131,6 +1131,7 @@ std::string IRGenerator::dispatchRoutine(ContractDefinition const& _contract)
 
 std::string IRGenerator::memoryInit(bool _useMemoryGuard)
 {
+	_useMemoryGuard = true;
 	// This function should be called at the beginning of the EVM call frame
 	// and thus can assume all memory to be zero, including the contents of
 	// the "zero memory area" (the position CompilerUtils::zeroPointer points to).
@@ -1143,7 +1144,7 @@ std::string IRGenerator::memoryInit(bool _useMemoryGuard)
 		("memPtr", std::to_string(CompilerUtils::freeMemoryPointer))
 		(
 			"freeMemoryStart",
-			std::to_string(CompilerUtils::generalPurposeMemoryStart + m_context.reservedMemory())
+			std::to_string(CompilerUtils::generalPurposeMemoryStart + m_context.spillAreaSize() + m_context.reservedMemory())
 		).render();
 }
 
@@ -1170,6 +1171,13 @@ void IRGenerator::resetContext(ContractDefinition const& _contract, ExecutionCon
 		m_context.debugInfoSelection(),
 		m_context.soliditySourceProvider()
 	);
+
+	size_t spillAreaSize = 0;
+	auto spillAreaSizeFound = m_optimiserSettings.spillAreaSize.find(_contract.fullyQualifiedName());
+	if (spillAreaSizeFound != m_optimiserSettings.spillAreaSize.end())
+		spillAreaSize = _context == ExecutionContext::Creation ? spillAreaSizeFound->second.creation
+															   : spillAreaSizeFound->second.runtime;
+	newContext.setSpillAreaSize(spillAreaSize);
 
 	m_context = std::move(newContext);
 

@@ -442,7 +442,7 @@ std::optional<Json> checkModelCheckerSettingsKeys(Json const& _input)
 
 std::optional<Json> checkOptimizerKeys(Json const& _input)
 {
-	static std::set<std::string> keys{"details", "enabled", "runs"};
+	static std::set<std::string> keys{"details", "enabled", "runs", "spillAreaSize"};
 	return checkKeys(_input, keys, "settings.optimizer");
 }
 
@@ -522,6 +522,34 @@ std::optional<Json> checkMetadataKeys(Json const& _input)
 	return checkKeys(_input, keys, "settings.metadata");
 }
 
+std::optional<Json> checkAndSetSpillAreaSize(Json const& _spillAreaSizeObj, OptimiserSettings& _settings)
+{
+	if (!_spillAreaSizeObj.empty() && !_spillAreaSizeObj.is_object())
+		return formatFatalError(Error::Type::JSONError, "\"settings.optimizer.spillAreaSize\" must be an object");
+
+	for (auto const& [contractName, contractVal]: _spillAreaSizeObj.items())
+	{
+		if (auto result
+			= checkKeys(contractVal, {"creation", "runtime"}, "settings.optimizer.spillAreaSize" + contractName))
+			return *result;
+
+		if (!contractVal["creation"].is_number_unsigned())
+			return formatFatalError(
+				Error::Type::JSONError,
+				"\"settings.optimizer.spillAreaSize" + contractName + ".creation\" must be an unsigned number");
+		if (!contractVal["runtime"].is_number_unsigned())
+			return formatFatalError(
+				Error::Type::JSONError,
+				"\"settings.optimizer.spillAreaSize" + contractName + ".runtime\" must be an unsigned number");
+
+		auto& spillAreaSize = _settings.spillAreaSize[contractName];
+		spillAreaSize.creation = ((contractVal["creation"].get<size_t>() + 31) / 32) * 32;
+		spillAreaSize.runtime = ((contractVal["runtime"].get<size_t>() + 31) / 32) * 32;
+	}
+
+	return std::nullopt;
+}
+
 std::optional<Json> checkOutputSelection(Json const& _outputSelection)
 {
 	if (!_outputSelection.empty() && !_outputSelection.is_object())
@@ -588,6 +616,13 @@ std::variant<OptimiserSettings, Json> parseOptimizerSettings(std::string_view co
 		settings.expectedExecutionsPerDeployment = _jsonInput["runs"].get<size_t>();
 	}
 
+	if (_jsonInput.contains("spillAreaSize"))
+		if (auto jsonError = checkAndSetSpillAreaSize(_jsonInput["spillAreaSize"], settings))
+			return *jsonError;
+
+	settings.runYulOptimiser = false;
+	settings.optimizeStackAllocation = false;
+
 	if (_jsonInput.contains("details"))
 	{
 		Json const& details = _jsonInput["details"];
@@ -607,8 +642,6 @@ std::variant<OptimiserSettings, Json> parseOptimizerSettings(std::string_view co
 		if (auto error = checkOptimizerDetail(details, "cse", settings.runCSE))
 			return *error;
 		if (auto error = checkOptimizerDetail(details, "constantOptimizer", settings.runConstantOptimiser))
-			return *error;
-		if (auto error = checkOptimizerDetail(details, "yul", settings.runYulOptimiser))
 			return *error;
 		if (auto error = checkOptimizerDetail(details, "simpleCounterForLoopUncheckedIncrement", settings.simpleCounterForLoopUncheckedIncrement))
 			return *error;
@@ -921,6 +954,8 @@ std::variant<StandardCompiler::InputsAndSettings, Json> StandardCompiler::parseI
 		ret.optimiserSettings = OptimiserSettings::none();
 	else
 		ret.optimiserSettings = OptimiserSettings::minimal();
+
+	solAssert(!(ret.optimiserSettings.runYulOptimiser || ret.optimiserSettings.optimizeStackAllocation));
 
 	Json const& jsonLibraries = settings.value("libraries", Json::object());
 	if (!jsonLibraries.is_object())
@@ -1553,6 +1588,10 @@ Json StandardCompiler::compileSolidity(StandardCompiler::InputsAndSettings _inpu
 			evmData["methodIdentifiers"] = compilerStack.interfaceSymbols(contractName)["methods"];
 		if (compilationSuccess && isArtifactRequested(_inputsAndSettings.outputSelection, file, name, "evm.gasEstimates", wildcardMatchesExperimental))
 			evmData["gasEstimates"] = compilerStack.gasEstimates(contractName);
+
+		Json extraMetadata = compilerStack.extraMetadata(contractName);
+		if (compilationSuccess && !extraMetadata.empty())
+			evmData["extraMetadata"] = extraMetadata;
 
 		if (compilationSuccess && isArtifactRequested(
 			_inputsAndSettings.outputSelection,
