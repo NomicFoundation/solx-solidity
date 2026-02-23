@@ -1573,6 +1573,22 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       return resVals;
     }
 
+    // The `bytes` type requires special handling, as pushing elements can
+    // trigger a layout transition from short (packed) to long (unpacked)
+    // encoding. The no-arg case (str.push() = val) falls through to PushOp
+    // below, which handles it at the cost of extra storage accesses.
+    const auto *arrTy = dynamic_cast<ArrayType const *>(
+        memberAcc->expression().annotation().type);
+    assert(arrTy);
+    if (arrTy->isByteArrayOrString() && !astArgs.empty()) {
+      // Handle:
+      //   str.push(0x41);
+      //
+      b.create<mlir::sol::PushStringOp>(
+          loc, genRValExpr(memberAcc->expression()), genRValExpr(*astArgs[0]));
+      return resVals;
+    }
+
     // Lower `push`
     auto newAddr =
         b.create<mlir::sol::PushOp>(loc, genRValExpr(memberAcc->expression()));
