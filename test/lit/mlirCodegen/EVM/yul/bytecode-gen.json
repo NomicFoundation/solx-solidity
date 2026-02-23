@@ -22,7 +22,6 @@
     }
   },
   "settings": {
-    "codegen": "mlir",
     "optimizer": {
       "mode": "3"
     },
