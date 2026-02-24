@@ -35,6 +35,7 @@
 #include "libsolidity/codegen/mlir/Util.h"
 #include "libsolidity/interface/CompilerStack.h"
 #include "libsolutil/CommonIO.h"
+#include "libsolutil/FunctionSelector.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
@@ -1304,6 +1305,53 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     mlir::SmallVector<mlir::Value, 4> args;
     for (const auto &arg : llvm::drop_begin(astArgs))
       args.push_back(genRValExpr(*arg));
+    resVals.push_back(b.create<mlir::sol::EncodeOp>(
+        loc, /*res=*/
+        mlir::sol::StringType::get(b.getContext(),
+                                   mlir::sol::DataLocation::Memory),
+        args, selector,
+        /*packed=*/false));
+    return resVals;
+  }
+
+  // ABI encode with signature
+  case FunctionType::Kind::ABIEncodeWithSignature: {
+    assert(!astArgs.empty());
+
+    mlir::Value selector;
+    Type const *signatureTy = astArgs.front()->annotation().type;
+    if (auto const *stringLitTy =
+            dynamic_cast<StringLiteralType const *>(signatureTy)) {
+      // Materialize the compile-time selector directly.
+      mlir::Type i32Ty = b.getIntegerType(32, /*isSigned=*/false);
+      selector = b.create<mlir::sol::ConstantOp>(
+          loc, b.getIntegerAttr(i32Ty, util::selectorFromSignatureU32(
+                                           stringLitTy->value())));
+    } else {
+      // Runtime signature: keccak256(signature).
+      mlir::Type bytes32Ty =
+          mlir::sol::BytesType::get(b.getContext(), /*size=*/32);
+      mlir::Value signature = genRValExpr(*astArgs.front());
+      mlir::sol::DataLocation signatureDataLoc =
+          mlir::sol::getDataLocation(signature.getType());
+      if (signatureDataLoc == mlir::sol::DataLocation::Storage)
+        llvm_unreachable("NYI: abi.encodeWithSignature for storage signatures");
+      if (signatureDataLoc == mlir::sol::DataLocation::CallData) {
+        mlir::Type memStringTy = mlir::sol::StringType::get(
+            b.getContext(), mlir::sol::DataLocation::Memory);
+        // keccak256 expects a memory string, so copy the calldata to memory.
+        signature = genCast(signature, memStringTy);
+      }
+      selector = b.create<mlir::sol::Keccak256Op>(loc, bytes32Ty, signature);
+    }
+
+    mlir::Type bytes4Ty = mlir::sol::BytesType::get(b.getContext(), /*size=*/4);
+    selector = genCast(selector, bytes4Ty);
+
+    mlir::SmallVector<mlir::Value, 4> args;
+    for (const auto &arg : llvm::drop_begin(astArgs))
+      args.push_back(genRValExpr(*arg));
+
     resVals.push_back(b.create<mlir::sol::EncodeOp>(
         loc, /*res=*/
         mlir::sol::StringType::get(b.getContext(),
