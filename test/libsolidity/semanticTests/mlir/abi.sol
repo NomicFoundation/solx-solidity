@@ -140,6 +140,26 @@ contract C {
   function ews_sel_u256(uint256 x) public returns (bytes memory) {
     return abi.encodeWithSelector(I.foo.selector, x);
   }
+
+  function ewsig_literal_u256(uint256 x) public returns (bytes memory) {
+    return abi.encodeWithSignature("bar(uint256)", x);
+  }
+
+  function ewsig_literal() public returns (bytes memory) {
+    return abi.encodeWithSignature("bar()");
+  }
+
+  function ewsig_runtime_memory_uint256(string memory sig, uint256 x) public returns (bytes memory) {
+    return abi.encodeWithSignature(sig, x);
+  }
+
+  function ewsig_runtime_calldata_uint256(string calldata sig, uint256 x) public returns (bytes memory) {
+    return abi.encodeWithSignature(sig, x);
+  }
+
+  function ewsig_runtime_calldata(string calldata sig) public returns (bytes memory) {
+    return abi.encodeWithSignature(sig);
+  }
 }
 
 // ====
@@ -179,3 +199,8 @@ contract C {
 // ews_bytes_bytes(bytes4,bytes): left(0x01020304), 0x20, 3, "abc" -> 0x20, 0x64, left(0x01020304), left(0x00000020), left(0x00000020), left(0x00000003)
 // ews_constant() -> 0x20, 4, left(0x12345678)
 // ews_sel_u256(uint256): 1 -> 0x20, 0x24, left(0x2fbebd38), left(0x00000001)
+// ewsig_literal_u256(uint256): 1 -> 0x20, 0x24, left(0x0423a132), left(0x00000001)
+// ewsig_literal() -> 0x20, 4, left(0xfebb0f7e)
+// ewsig_runtime_memory_uint256(string,uint256): 0x40, 1, 3, "abc" -> 0x20, 0x24, left(0x4e03657a), left(0x00000001)
+// ewsig_runtime_calldata_uint256(string,uint256): 0x40, 1, 3, "abc" -> 0x20, 0x24, left(0x4e03657a), left(0x00000001)
+// ewsig_runtime_calldata(string): 0x20, 3, "abc" -> 0x20, 4, left(0x4e03657a)
