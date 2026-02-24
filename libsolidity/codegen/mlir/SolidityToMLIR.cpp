@@ -1289,7 +1289,27 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
         mlir::sol::StringType::get(b.getContext(),
                                    mlir::sol::DataLocation::Memory),
         args,
+        /*selector=*/mlir::Value{},
         /*packed=*/calleeTy->kind() == FunctionType::Kind::ABIEncodePacked));
+    return resVals;
+  }
+
+  // ABI encode with selector
+  case FunctionType::Kind::ABIEncodeWithSelector: {
+    assert(!astArgs.empty());
+
+    mlir::Value selector = genRValExpr(
+        *astArgs.front(), getType(calleeTy->parameterTypes().front()));
+
+    mlir::SmallVector<mlir::Value, 4> args;
+    for (const auto &arg : llvm::drop_begin(astArgs))
+      args.push_back(genRValExpr(*arg));
+    resVals.push_back(b.create<mlir::sol::EncodeOp>(
+        loc, /*res=*/
+        mlir::sol::StringType::get(b.getContext(),
+                                   mlir::sol::DataLocation::Memory),
+        args, selector,
+        /*packed=*/false));
     return resVals;
   }
 

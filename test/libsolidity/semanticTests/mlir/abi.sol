@@ -1,3 +1,7 @@
+interface I {
+  function foo(uint256 x) external;
+}
+
 contract C {
   enum E { A, B, C }
 
@@ -112,6 +116,30 @@ contract C {
   function ep_u8_cast_from_u16(uint16 x) public returns (bytes memory) {
     return abi.encodePacked(uint8(x));
   }
+
+  function ews_len(bytes4 sel, uint256 x) public returns (uint256) {
+    return abi.encodeWithSelector(sel, x).length;
+  }
+
+  function ews_bytes_u256(bytes4 sel, uint256 x) public returns (bytes memory) {
+    return abi.encodeWithSelector(sel, x);
+  }
+
+  function ews_bytes_only(bytes4 sel) public returns (bytes memory) {
+    return abi.encodeWithSelector(sel);
+  }
+
+  function ews_bytes_bytes(bytes4 sel, bytes memory data) public returns (bytes memory) {
+    return abi.encodeWithSelector(sel, data);
+  }
+
+  function ews_constant() public returns (bytes memory) {
+    return abi.encodeWithSelector(0x12345678);
+  }
+
+  function ews_sel_u256(uint256 x) public returns (bytes memory) {
+    return abi.encodeWithSelector(I.foo.selector, x);
+  }
 }
 
 // ====
@@ -145,3 +173,9 @@ contract C {
 // ep_string_calldata(string): 0x20, 3, "abc" -> 32, 3, left(0x616263)
 // ep_bytes32(bytes32): left(0x61) -> 32, 32, left(0x61)
 // ep_u8_cast_from_u16(uint16): 0xff01 -> 32, 1, left(0x01)
+// ews_len(bytes4,uint256): left(0x01020304), 1 -> 36
+// ews_bytes_u256(bytes4,uint256): left(0x01020304), 1 -> 0x20, 0x24, left(0x01020304), left(0x00000001)
+// ews_bytes_only(bytes4): left(0x01020304) -> 32, 4, left(0x01020304)
+// ews_bytes_bytes(bytes4,bytes): left(0x01020304), 0x20, 3, "abc" -> 0x20, 0x64, left(0x01020304), left(0x00000020), left(0x00000020), left(0x00000003)
+// ews_constant() -> 0x20, 4, left(0x12345678)
+// ews_sel_u256(uint256): 1 -> 0x20, 0x24, left(0x2fbebd38), left(0x00000001)
