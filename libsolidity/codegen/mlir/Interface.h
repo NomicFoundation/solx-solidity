@@ -89,6 +89,8 @@ struct JobSpec {
   Action action = Action::Undefined;
   Target tgt = Target::EVM;
   char optLevel = '3';
+
+  bool operator==(JobSpec const &) const = default;
 };
 
 struct Bytecode {
