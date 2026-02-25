@@ -435,7 +435,6 @@ std::optional<Json> checkAuxiliaryInputKeys(Json const& _input)
 std::optional<Json> checkSettingsKeys(Json const& _input)
 {
 	static std::set<std::string> keys{"debug", "evmVersion", "eofVersion", "libraries", "metadata", "modelChecker", "optimizer", "outputSelection", "remappings", "stopAfter", "viaIR"};
-	keys.insert({"codegen", "target"});
 	return checkKeys(_input, keys, "settings");
 }
 
@@ -836,21 +835,6 @@ std::variant<StandardCompiler::InputsAndSettings, Json> StandardCompiler::parseI
 	}
 
 	ret.mlirJobSpec.action = mlirgen::Action::GenObj;
-	if (settings.contains("codegen"))
-	{
-		if (!settings["codegen"].is_string())
-			return formatFatalError(Error::Type::JSONError, "\"settings.codegen\" must be a string.");
-
-		if (settings["codegen"].get<std::string>() != "mlir")
-			ret.mlirJobSpec.action = mlirgen::Action::Undefined;
-	}
-
-	if (settings.contains("target"))
-	{
-		if (!settings["target"].is_string())
-			return formatFatalError(Error::Type::JSONError, "\"settings.target\" must be a string.");
-		ret.mlirJobSpec.tgt = mlirgen::strToTarget(settings["target"].get<std::string>());
-	}
 
 	if (settings.contains("evmVersion"))
 	{
@@ -946,11 +930,7 @@ std::variant<StandardCompiler::InputsAndSettings, Json> StandardCompiler::parseI
 		if (std::holds_alternative<Json>(optimiserSettings))
 			return std::get<Json>(std::move(optimiserSettings)); // was an error
 		else
-		{
-			if (settings["optimizer"].contains("mode") && !settings.contains("codegen"))
-				return formatFatalError(Error::Type::JSONError, "\"settings.codegen\" is required.");
 			ret.optimiserSettings = std::get<OptimiserSettings>(std::move(optimiserSettings));
-		}
 	}
 	else if (ret.language == "EVMAssembly")
 		ret.optimiserSettings = OptimiserSettings::none();
