@@ -1252,6 +1252,24 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       return resVals;
     }
 
+    // The `bytes` type requires special handling, as pushing elements can
+    // trigger a layout transition from short (packed) to long (unpacked)
+    // encoding.
+    // TODO: str.push() = 0x41 generates more storage accesses compared
+    // to str.push(0x41). It is handled in sol::PushOp.
+    const auto *arrTy = dynamic_cast<ArrayType const *>(
+        memberAcc->expression().annotation().type);
+	assert(arrTy);
+        if (arrTy->isByteArrayOrString() && !astArgs.empty()) {
+          // Handle:
+          //   str.push(0x41);
+          //
+          b.create<mlir::sol::PushStringOp>(
+              loc, genRValExpr(memberAcc->expression()),
+              genRValExpr(*astArgs[0]));
+          return resVals;
+        }
+
     // Lower `push`
     auto newAddr =
         b.create<mlir::sol::PushOp>(loc, genRValExpr(memberAcc->expression()));
