@@ -160,6 +160,28 @@ contract C {
   function ewsig_runtime_calldata(string calldata sig) public returns (bytes memory) {
     return abi.encodeWithSignature(sig);
   }
+
+  function foo(uint256) public {}
+
+  function bar(uint256, uint8) public {}
+
+  function ec_non_tuple(uint256 x) public returns (bytes memory) {
+    return abi.encodeCall(this.foo, x);
+  }
+
+  function ec_tuple(uint256 x, uint8 y) public returns (bytes memory) {
+    return abi.encodeCall(this.bar, (x, y));
+  }
+
+  function ec_decl(uint256 x) public returns (bytes memory) {
+    return abi.encodeCall(I.foo, x);
+  }
+
+  function ec_ews(uint256 x) public returns (bool) {
+    bytes memory a = abi.encodeCall(I.foo, x);
+    bytes memory b = abi.encodeWithSelector(I.foo.selector, x);
+    return keccak256(a) == keccak256(b);
+  }
 }
 
 // ====
@@ -204,3 +226,7 @@ contract C {
 // ewsig_runtime_memory_uint256(string,uint256): 0x40, 1, 3, "abc" -> 0x20, 0x24, left(0x4e03657a), left(0x00000001)
 // ewsig_runtime_calldata_uint256(string,uint256): 0x40, 1, 3, "abc" -> 0x20, 0x24, left(0x4e03657a), left(0x00000001)
 // ewsig_runtime_calldata(string): 0x20, 3, "abc" -> 0x20, 4, left(0x4e03657a)
+// ec_non_tuple(uint256): 1 -> 0x20, 0x24, left(0x2fbebd38), left(0x00000001)
+// ec_tuple(uint256,uint8): 1, 2 -> 0x20, 0x44, left(0x06450a21), left(0x00000001), left(0x00000002)
+// ec_decl(uint256): 1 -> 0x20, 0x24, left(0x2fbebd38), left(0x00000001)
+// ec_ews(uint256): 1 -> 1
