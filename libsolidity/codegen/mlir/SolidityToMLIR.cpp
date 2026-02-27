@@ -475,6 +475,10 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
   case Type::Category::ArraySlice: {
     const auto *sliceTy = static_cast<ArraySliceType const *>(ty);
     ArrayType const &arrTy = sliceTy->arrayType();
+    if (arrTy.isByteArrayOrString())
+      return mlir::sol::StringType::get(b.getContext(),
+                                        getDataLocation(&arrTy));
+
     mlir::Type eltTy = getType(arrTy.baseType());
     return mlir::sol::ArrayType::get(b.getContext(), /*size=*/-1, eltTy,
                                      getDataLocation(&arrTy));
@@ -1285,6 +1289,20 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     if (!astArgs.empty())
       b.create<mlir::sol::StoreOp>(loc, genRValExpr(*astArgs[0]), newAddr);
     resVals.push_back(newAddr);
+    return resVals;
+  }
+
+  case FunctionType::Kind::BytesConcat:
+  case FunctionType::Kind::StringConcat: {
+    std::vector<mlir::Type> resTys;
+    for (Type const *ty : calleeTy->returnParameterTypes())
+      resTys.push_back(getType(ty));
+
+    std::vector<mlir::Value> args;
+    for (const auto &arg : astArgs)
+      args.push_back(genRValExpr(*arg));
+
+    resVals.push_back(b.create<mlir::sol::ConcatOp>(loc, resTys, args));
     return resVals;
   }
 
