@@ -899,6 +899,57 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
     return b.create<mlir::sol::GepOp>(loc, genRValExpr(memberAcc.expression()),
                                       memberIdx);
   }
+  case Type::Category::Function: {
+    if (memberName == "selector") {
+      auto const &fnTy = dynamic_cast<FunctionType const &>(*memberAccTy);
+      auto genExprSideEffects = [&](Expression const &expr) {
+        // Contract type names in expressions like 'C.f.selector' are not
+        // runtime values and should not be lowered.
+        if (auto const *id = dynamic_cast<Identifier const *>(&expr)) {
+          if (dynamic_cast<ContractDefinition const *>(
+                  id->annotation().referencedDeclaration))
+            return;
+          // 'this' has no side effects on its own.
+          if (id->name() == "this")
+            return;
+        }
+
+        // The selector itself is lowered from declaration metadata, but the
+        // base expression can still have side effects. Example:
+        // 'get().f.selector' must evaluate 'get()'.
+        (void)genLValExpr(expr);
+      };
+
+      // Preserve side effects of the base expression in 'expr.f.selector'.
+      if (auto const *fnMember =
+              dynamic_cast<MemberAccess const *>(&memberAcc.expression()))
+        genExprSideEffects(fnMember->expression());
+      else
+        genExprSideEffects(memberAcc.expression());
+
+      if (fnTy.hasDeclaration()) {
+        auto selector = fnTy.externalIdentifier().convert_to<uint32_t>();
+        return genUnsignedConst(selector, /*numBits=*/32, loc);
+      }
+
+      // Handle unresolved declaration in cases like 'this.f.selector'.
+      if (auto const *fnMember =
+              dynamic_cast<MemberAccess const *>(&memberAcc.expression())) {
+        auto const *decl = fnMember->annotation().referencedDeclaration;
+        if (auto const *fn = dynamic_cast<FunctionDefinition const *>(decl)) {
+          auto selector =
+              FunctionType(*fn).externalIdentifier().convert_to<uint32_t>();
+          return genUnsignedConst(selector, /*numBits=*/32, loc);
+        }
+        if (auto const *var = dynamic_cast<VariableDeclaration const *>(decl)) {
+          auto selector =
+              FunctionType(*var).externalIdentifier().convert_to<uint32_t>();
+          return genUnsignedConst(selector, /*numBits=*/32, loc);
+        }
+      }
+    }
+    break;
+  }
   default:
     break;
   case Type::Category::Address: {
