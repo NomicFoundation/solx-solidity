@@ -35,6 +35,7 @@
 #include "libsolidity/codegen/mlir/Util.h"
 #include "libsolidity/interface/CompilerStack.h"
 #include "libsolutil/CommonIO.h"
+#include "libsolutil/FunctionSelector.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
@@ -299,6 +300,12 @@ private:
         loc,
         b.getIntegerAttr(b.getIntegerType(numBits, /*isSigned=*/false), val));
   }
+
+  /// Returns a compile-time selector for a function expression when available.
+  mlir::Value genCompileTimeFunctionSelector(Expression const &fnExpr,
+                                             FunctionType const &fnTy,
+                                             mlir::Location loc,
+                                             bool stateVarGetterOnly = false);
 
   /// Generates type cast expression.
   mlir::Value genCast(mlir::Value val, mlir::Type dstTy);
@@ -867,6 +874,69 @@ mlir::Value SolidityToMLIRPass::genExpr(IndexRangeAccess const &idxRangeAcc) {
   return b.create<mlir::sol::SliceOp>(loc, resTy, baseExpr, startExpr, endExpr);
 }
 
+mlir::Value SolidityToMLIRPass::genCompileTimeFunctionSelector(
+    Expression const &fnExpr, FunctionType const &fnTy, mlir::Location loc,
+    bool stateVarGetterOnly) {
+  auto genExprSideEffects = [&](Expression const &expr) {
+    // Contract type names in expressions like 'C.f' are not runtime values and
+    // should not be lowered.
+    if (auto const *id = dynamic_cast<Identifier const *>(&expr)) {
+      if (dynamic_cast<ContractDefinition const *>(
+              id->annotation().referencedDeclaration))
+        return;
+      // 'this' has no side effects on its own.
+      if (id->name() == "this")
+        return;
+    }
+
+    // The selector itself is lowered from declaration metadata, but the
+    // base expression can still have side effects. Example:
+    // 'get().f.selector' must evaluate 'get()'.
+    (void)genLValExpr(expr);
+  };
+
+  // Preserve side effects of the base expression in forms like 'expr.f'.
+  if (auto const *fnMember = dynamic_cast<MemberAccess const *>(&fnExpr))
+    genExprSideEffects(fnMember->expression());
+  else
+    genExprSideEffects(fnExpr);
+
+  if (fnTy.hasDeclaration()) {
+    auto selector = fnTy.externalIdentifier().convert_to<uint32_t>();
+    return genUnsignedConst(selector, /*numBits=*/32, loc);
+  }
+
+  auto genSelectorFromDecl = [&](Declaration const *decl) -> mlir::Value {
+    if (auto const *fn = dynamic_cast<FunctionDefinition const *>(decl)) {
+      auto selector =
+          FunctionType(*fn).externalIdentifier().convert_to<uint32_t>();
+      return genUnsignedConst(selector, /*numBits=*/32, loc);
+    }
+
+    if (auto const *var = dynamic_cast<VariableDeclaration const *>(decl)) {
+      // In strict mode (used by abi.encodeCall), only state-variable getter
+      // declarations are treated as compile-time selector sources.
+      // Runtime function-pointer values, e.g.:
+      //  fp = cond ? this.f : this.g;
+      //  abi.encodeCall(fp, (...));
+      // require runtime selector extraction, which is NYI.
+      if (stateVarGetterOnly && (!var->isStateVariable() || !var->isPublic()))
+        return {};
+      auto selector =
+          FunctionType(*var).externalIdentifier().convert_to<uint32_t>();
+      return genUnsignedConst(selector, /*numBits=*/32, loc);
+    }
+
+    return {};
+  };
+
+  // Handle unresolved declaration in cases like 'this.f'.
+  if (auto const *fnMember = dynamic_cast<MemberAccess const *>(&fnExpr))
+    return genSelectorFromDecl(fnMember->annotation().referencedDeclaration);
+
+  return {};
+}
+
 mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
   mlir::Location loc = getLoc(memberAcc);
 
@@ -898,6 +968,15 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
                                       /*numBits=*/64, loc);
     return b.create<mlir::sol::GepOp>(loc, genRValExpr(memberAcc.expression()),
                                       memberIdx);
+  }
+  case Type::Category::Function: {
+    if (memberName == "selector") {
+      auto const &fnTy = dynamic_cast<FunctionType const &>(*memberAccTy);
+      if (mlir::Value selector =
+              genCompileTimeFunctionSelector(memberAcc.expression(), fnTy, loc))
+        return selector;
+    }
+    break;
   }
   default:
     break;
@@ -1228,7 +1307,8 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
   }
 
   // ABI encode
-  case FunctionType::Kind::ABIEncode: {
+  case FunctionType::Kind::ABIEncode:
+  case FunctionType::Kind::ABIEncodePacked: {
     mlir::SmallVector<mlir::Value, 4> args;
     for (const auto &arg : astArgs)
       args.push_back(genRValExpr(*arg));
@@ -1236,7 +1316,126 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
         loc, /*res=*/
         mlir::sol::StringType::get(b.getContext(),
                                    mlir::sol::DataLocation::Memory),
-        args));
+        args,
+        /*selector=*/mlir::Value{},
+        /*packed=*/calleeTy->kind() == FunctionType::Kind::ABIEncodePacked));
+    return resVals;
+  }
+
+  // ABI encode with selector
+  case FunctionType::Kind::ABIEncodeWithSelector: {
+    assert(!astArgs.empty());
+
+    mlir::Value selector = genRValExpr(
+        *astArgs.front(), getType(calleeTy->parameterTypes().front()));
+
+    mlir::SmallVector<mlir::Value, 4> args;
+    for (const auto &arg : llvm::drop_begin(astArgs))
+      args.push_back(genRValExpr(*arg));
+    resVals.push_back(b.create<mlir::sol::EncodeOp>(
+        loc, /*res=*/
+        mlir::sol::StringType::get(b.getContext(),
+                                   mlir::sol::DataLocation::Memory),
+        args, selector,
+        /*packed=*/false));
+    return resVals;
+  }
+
+  // ABI encode call
+  case FunctionType::Kind::ABIEncodeCall: {
+    assert(astArgs.size() == 2);
+
+    auto const *selectorType =
+        dynamic_cast<FunctionType const *>(astArgs.front()->annotation().type);
+    assert(selectorType);
+
+    mlir::Value selector =
+        genCompileTimeFunctionSelector(*astArgs.front(), *selectorType, loc,
+                                       /*stateVarGetterOnly=*/true);
+
+    if (!selector)
+      llvm_unreachable("NYI: abi.encodeCall for runtime function pointers");
+
+    mlir::Type bytes4Ty = mlir::sol::BytesType::get(b.getContext(), /*size=*/4);
+    selector = genCast(selector, bytes4Ty);
+
+    auto const *externalFunctionType =
+        selectorType->asExternallyCallableFunction(false);
+    assert(externalFunctionType);
+
+    mlir::SmallVector<mlir::Value, 4> args;
+    if (dynamic_cast<TupleType const *>(astArgs[1]->annotation().type)) {
+      auto const *tupleExpr =
+          dynamic_cast<TupleExpression const *>(astArgs[1].get());
+      assert(tupleExpr);
+      assert(tupleExpr->components().size() ==
+             externalFunctionType->parameterTypes().size());
+      for (auto [component, dstTy] :
+           llvm::zip(tupleExpr->components(),
+                     externalFunctionType->parameterTypes())) {
+        assert(component);
+        args.push_back(genRValExpr(*component, getType(dstTy)));
+      }
+    } else {
+      assert(externalFunctionType->parameterTypes().size() == 1);
+      args.push_back(
+          genRValExpr(*astArgs[1],
+                      getType(externalFunctionType->parameterTypes().front())));
+    }
+
+    resVals.push_back(b.create<mlir::sol::EncodeOp>(
+        loc, /*res=*/
+        mlir::sol::StringType::get(b.getContext(),
+                                   mlir::sol::DataLocation::Memory),
+        args, selector,
+        /*packed=*/false));
+    return resVals;
+  }
+
+  // ABI encode with signature
+  case FunctionType::Kind::ABIEncodeWithSignature: {
+    assert(!astArgs.empty());
+
+    mlir::Value selector;
+    Type const *signatureTy = astArgs.front()->annotation().type;
+    if (auto const *stringLitTy =
+            dynamic_cast<StringLiteralType const *>(signatureTy)) {
+      // Materialize the compile-time selector directly.
+      mlir::Type i32Ty = b.getIntegerType(32, /*isSigned=*/false);
+      selector = b.create<mlir::sol::ConstantOp>(
+          loc, b.getIntegerAttr(i32Ty, util::selectorFromSignatureU32(
+                                           stringLitTy->value())));
+    } else {
+      // Runtime signature: keccak256(signature).
+      mlir::Type bytes32Ty =
+          mlir::sol::BytesType::get(b.getContext(), /*size=*/32);
+      mlir::Value signature = genRValExpr(*astArgs.front());
+      mlir::sol::DataLocation signatureDataLoc =
+          mlir::sol::getDataLocation(signature.getType());
+      if (signatureDataLoc == mlir::sol::DataLocation::Storage)
+        llvm_unreachable("NYI: abi.encodeWithSignature for storage signatures");
+      if (signatureDataLoc == mlir::sol::DataLocation::CallData) {
+        mlir::Type memStringTy = mlir::sol::StringType::get(
+            b.getContext(), mlir::sol::DataLocation::Memory);
+        // keccak256 expects a memory string, so copy the calldata to memory.
+        signature = genCast(signature, memStringTy);
+      }
+      selector = b.create<mlir::sol::Keccak256Op>(loc, bytes32Ty, signature);
+    }
+
+    mlir::Type bytes4Ty = mlir::sol::BytesType::get(b.getContext(), /*size=*/4);
+    selector = genCast(selector, bytes4Ty);
+
+    mlir::SmallVector<mlir::Value, 4> args;
+    for (const auto &arg : llvm::drop_begin(astArgs))
+      args.push_back(genRValExpr(*arg));
+
+    resVals.push_back(b.create<mlir::sol::EncodeOp>(
+        loc, /*res=*/
+        mlir::sol::StringType::get(b.getContext(),
+                                   mlir::sol::DataLocation::Memory),
+        args, selector,
+        /*packed=*/false));
     return resVals;
   }
 
