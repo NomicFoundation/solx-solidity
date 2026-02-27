@@ -301,6 +301,12 @@ private:
         b.getIntegerAttr(b.getIntegerType(numBits, /*isSigned=*/false), val));
   }
 
+  /// Returns a compile-time selector for a function expression when available.
+  mlir::Value genCompileTimeFunctionSelector(Expression const &fnExpr,
+                                             FunctionType const &fnTy,
+                                             mlir::Location loc,
+                                             bool stateVarGetterOnly = false);
+
   /// Generates type cast expression.
   mlir::Value genCast(mlir::Value val, mlir::Type dstTy);
 
@@ -868,6 +874,69 @@ mlir::Value SolidityToMLIRPass::genExpr(IndexRangeAccess const &idxRangeAcc) {
   return b.create<mlir::sol::SliceOp>(loc, resTy, baseExpr, startExpr, endExpr);
 }
 
+mlir::Value SolidityToMLIRPass::genCompileTimeFunctionSelector(
+    Expression const &fnExpr, FunctionType const &fnTy, mlir::Location loc,
+    bool stateVarGetterOnly) {
+  auto genExprSideEffects = [&](Expression const &expr) {
+    // Contract type names in expressions like 'C.f' are not runtime values and
+    // should not be lowered.
+    if (auto const *id = dynamic_cast<Identifier const *>(&expr)) {
+      if (dynamic_cast<ContractDefinition const *>(
+              id->annotation().referencedDeclaration))
+        return;
+      // 'this' has no side effects on its own.
+      if (id->name() == "this")
+        return;
+    }
+
+    // The selector itself is lowered from declaration metadata, but the
+    // base expression can still have side effects. Example:
+    // 'get().f.selector' must evaluate 'get()'.
+    (void)genLValExpr(expr);
+  };
+
+  // Preserve side effects of the base expression in forms like 'expr.f'.
+  if (auto const *fnMember = dynamic_cast<MemberAccess const *>(&fnExpr))
+    genExprSideEffects(fnMember->expression());
+  else
+    genExprSideEffects(fnExpr);
+
+  if (fnTy.hasDeclaration()) {
+    auto selector = fnTy.externalIdentifier().convert_to<uint32_t>();
+    return genUnsignedConst(selector, /*numBits=*/32, loc);
+  }
+
+  auto genSelectorFromDecl = [&](Declaration const *decl) -> mlir::Value {
+    if (auto const *fn = dynamic_cast<FunctionDefinition const *>(decl)) {
+      auto selector =
+          FunctionType(*fn).externalIdentifier().convert_to<uint32_t>();
+      return genUnsignedConst(selector, /*numBits=*/32, loc);
+    }
+
+    if (auto const *var = dynamic_cast<VariableDeclaration const *>(decl)) {
+      // In strict mode (used by abi.encodeCall), only state-variable getter
+      // declarations are treated as compile-time selector sources.
+      // Runtime function-pointer values, e.g.:
+      //  fp = cond ? this.f : this.g;
+      //  abi.encodeCall(fp, (...));
+      // require runtime selector extraction, which is NYI.
+      if (stateVarGetterOnly && (!var->isStateVariable() || !var->isPublic()))
+        return {};
+      auto selector =
+          FunctionType(*var).externalIdentifier().convert_to<uint32_t>();
+      return genUnsignedConst(selector, /*numBits=*/32, loc);
+    }
+
+    return {};
+  };
+
+  // Handle unresolved declaration in cases like 'this.f'.
+  if (auto const *fnMember = dynamic_cast<MemberAccess const *>(&fnExpr))
+    return genSelectorFromDecl(fnMember->annotation().referencedDeclaration);
+
+  return {};
+}
+
 mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
   mlir::Location loc = getLoc(memberAcc);
 
@@ -903,51 +972,9 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
   case Type::Category::Function: {
     if (memberName == "selector") {
       auto const &fnTy = dynamic_cast<FunctionType const &>(*memberAccTy);
-      auto genExprSideEffects = [&](Expression const &expr) {
-        // Contract type names in expressions like 'C.f.selector' are not
-        // runtime values and should not be lowered.
-        if (auto const *id = dynamic_cast<Identifier const *>(&expr)) {
-          if (dynamic_cast<ContractDefinition const *>(
-                  id->annotation().referencedDeclaration))
-            return;
-          // 'this' has no side effects on its own.
-          if (id->name() == "this")
-            return;
-        }
-
-        // The selector itself is lowered from declaration metadata, but the
-        // base expression can still have side effects. Example:
-        // 'get().f.selector' must evaluate 'get()'.
-        (void)genLValExpr(expr);
-      };
-
-      // Preserve side effects of the base expression in 'expr.f.selector'.
-      if (auto const *fnMember =
-              dynamic_cast<MemberAccess const *>(&memberAcc.expression()))
-        genExprSideEffects(fnMember->expression());
-      else
-        genExprSideEffects(memberAcc.expression());
-
-      if (fnTy.hasDeclaration()) {
-        auto selector = fnTy.externalIdentifier().convert_to<uint32_t>();
-        return genUnsignedConst(selector, /*numBits=*/32, loc);
-      }
-
-      // Handle unresolved declaration in cases like 'this.f.selector'.
-      if (auto const *fnMember =
-              dynamic_cast<MemberAccess const *>(&memberAcc.expression())) {
-        auto const *decl = fnMember->annotation().referencedDeclaration;
-        if (auto const *fn = dynamic_cast<FunctionDefinition const *>(decl)) {
-          auto selector =
-              FunctionType(*fn).externalIdentifier().convert_to<uint32_t>();
-          return genUnsignedConst(selector, /*numBits=*/32, loc);
-        }
-        if (auto const *var = dynamic_cast<VariableDeclaration const *>(decl)) {
-          auto selector =
-              FunctionType(*var).externalIdentifier().convert_to<uint32_t>();
-          return genUnsignedConst(selector, /*numBits=*/32, loc);
-        }
-      }
+      if (mlir::Value selector =
+              genCompileTimeFunctionSelector(memberAcc.expression(), fnTy, loc))
+        return selector;
     }
     break;
   }
@@ -1305,6 +1332,57 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     mlir::SmallVector<mlir::Value, 4> args;
     for (const auto &arg : llvm::drop_begin(astArgs))
       args.push_back(genRValExpr(*arg));
+    resVals.push_back(b.create<mlir::sol::EncodeOp>(
+        loc, /*res=*/
+        mlir::sol::StringType::get(b.getContext(),
+                                   mlir::sol::DataLocation::Memory),
+        args, selector,
+        /*packed=*/false));
+    return resVals;
+  }
+
+  // ABI encode call
+  case FunctionType::Kind::ABIEncodeCall: {
+    assert(astArgs.size() == 2);
+
+    auto const *selectorType =
+        dynamic_cast<FunctionType const *>(astArgs.front()->annotation().type);
+    assert(selectorType);
+
+    mlir::Value selector =
+        genCompileTimeFunctionSelector(*astArgs.front(), *selectorType, loc,
+                                       /*stateVarGetterOnly=*/true);
+
+    if (!selector)
+      llvm_unreachable("NYI: abi.encodeCall for runtime function pointers");
+
+    mlir::Type bytes4Ty = mlir::sol::BytesType::get(b.getContext(), /*size=*/4);
+    selector = genCast(selector, bytes4Ty);
+
+    auto const *externalFunctionType =
+        selectorType->asExternallyCallableFunction(false);
+    assert(externalFunctionType);
+
+    mlir::SmallVector<mlir::Value, 4> args;
+    if (dynamic_cast<TupleType const *>(astArgs[1]->annotation().type)) {
+      auto const *tupleExpr =
+          dynamic_cast<TupleExpression const *>(astArgs[1].get());
+      assert(tupleExpr);
+      assert(tupleExpr->components().size() ==
+             externalFunctionType->parameterTypes().size());
+      for (auto [component, dstTy] :
+           llvm::zip(tupleExpr->components(),
+                     externalFunctionType->parameterTypes())) {
+        assert(component);
+        args.push_back(genRValExpr(*component, getType(dstTy)));
+      }
+    } else {
+      assert(externalFunctionType->parameterTypes().size() == 1);
+      args.push_back(
+          genRValExpr(*astArgs[1],
+                      getType(externalFunctionType->parameterTypes().front())));
+    }
+
     resVals.push_back(b.create<mlir::sol::EncodeOp>(
         loc, /*res=*/
         mlir::sol::StringType::get(b.getContext(),
