@@ -292,9 +292,9 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   defSimpleBuiltinGen<SDivOp>("sdiv");
   defSimpleBuiltinGen<ModOp>("mod");
   defSimpleBuiltinGen<SModOp>("smod");
-  defSimpleBuiltinGen<ShrOp, /*reverseArgs=*/true>("shr");
-  defSimpleBuiltinGen<ShlOp, /*reverseArgs=*/true>("shl");
-  defSimpleBuiltinGen<SarOp, /*reverseArgs=*/true>("sar");
+  defSimpleBuiltinGen<ShrOp>("shr");
+  defSimpleBuiltinGen<ShlOp>("shl");
+  defSimpleBuiltinGen<SarOp>("sar");
   defCmpBuiltinGen<arith::CmpIPredicate::ult>("lt");
   defCmpBuiltinGen<arith::CmpIPredicate::slt>("slt");
   defCmpBuiltinGen<arith::CmpIPredicate::ugt>("gt");
