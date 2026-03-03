@@ -164,7 +164,7 @@ contract C {
 // CHECK-NEXT:           } loc(#loc1)
 // CHECK-NEXT:           %12 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<2> loc(#loc1)
 // CHECK-NEXT:           %13 = llvm.load %12 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc1)
-// CHECK-NEXT:           %14 = arith.trunci %13 : i256 to i1 loc(#loc1)
+// CHECK-NEXT:           %14 = arith.cmpi ne, %13, %c0_i256 : i256 loc(#loc1)
 // CHECK-NEXT:           %15 = arith.extui %14 : i1 to i256 loc(#loc1)
 // CHECK-NEXT:           %16 = arith.cmpi ne, %13, %15 : i256 loc(#loc1)
 // CHECK-NEXT:           scf.if %16 {

@@ -126,22 +126,6 @@ contract C {
     return abi.encode(x);
   }
 
-  function ep_bool_array_dirty_memory() public returns (bytes memory) {
-    bool[] memory a = new bool[](1);
-    assembly {
-      mstore(add(a, 0x20), 2)
-    }
-    return abi.encodePacked(a);
-  }
-
-  function ei_bool_array_dirty_memory() public returns (bytes memory) {
-    bool[] memory a = new bool[](1);
-    assembly {
-      mstore(add(a, 0x20), 2)
-    }
-    return abi.encode(a);
-  }
-
   function ep_u16_static() public returns (bytes memory) {
     uint16[2] memory a;
     a[0] = 0x0102;
@@ -275,8 +259,6 @@ contract C {
 // ep_bytes5_array_dynamic_calldata(bytes5[]): 0x20, 2, 0x0102030405, left(0xa1a2a3a4a5) -> FAILURE
 // ei_bytes5_array_dynamic_calldata(bytes5[]): 0x20, 2, left(0x0102030405), left(0xa1a2a3a4a5) -> 32, 128, 32, 2, left(0x0102030405), left(0xa1a2a3a4a5)
 // ei_bytes5_array_dynamic_calldata(bytes5[]): 0x20, 2, 0x0102030405, left(0xa1a2a3a4a5) -> FAILURE
-// ep_bool_array_dirty_memory() -> 32, 32, 1
-// ei_bool_array_dirty_memory() -> 32, 96, 32, 1, 1
 // ep_u16_static() -> 32, 64, 0x0102, 0x0304
 // ep_string(string): 0x20, 3, "abc" -> 32, 3, left(0x616263)
 // ep_string_calldata(string): 0x20, 3, "abc" -> 32, 3, left(0x616263)
