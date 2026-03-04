@@ -952,6 +952,27 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
     }
     if (memberName == "data")
       return b.create<mlir::sol::GetCallDataOp>(loc);
+    if (memberName == "creationCode" || memberName == "runtimeCode") {
+      auto const *magicTy = dynamic_cast<MagicType const *>(memberAccTy);
+      assert(magicTy &&
+             "Expected magic type for creationCode/runtimeCode member access");
+      Type const *argTy = magicTy->typeArgument();
+      assert(argTy &&
+             "Expected metatype argument for creationCode/runtimeCode member "
+             "access");
+
+      auto const &contractTy = dynamic_cast<ContractType const &>(*argTy);
+      assert(!contractTy.isSuper() &&
+             "Expected non-super contract type for creationCode/runtimeCode "
+             "member access");
+      ContractDefinition const &contract = contractTy.contractDefinition();
+      std::string objName = getMangledName(contract);
+      if (memberName == "runtimeCode")
+        objName += "_deployed";
+
+      return b.create<mlir::sol::ObjectCodeOp>(
+          loc, getType(memberAcc.annotation().type), b.getStringAttr(objName));
+    }
     if (memberName == "interfaceId") {
       auto const *magicTy = dynamic_cast<MagicType const *>(memberAccTy);
       assert(magicTy && "Expected magic type for interfaceId member access");
