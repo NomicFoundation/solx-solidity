@@ -952,6 +952,24 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
     }
     if (memberName == "data")
       return b.create<mlir::sol::GetCallDataOp>(loc);
+    if (memberName == "interfaceId") {
+      auto const *magicTy = dynamic_cast<MagicType const *>(memberAccTy);
+      assert(magicTy && "Expected magic type for interfaceId member access");
+      Type const *argTy = magicTy->typeArgument();
+      assert(argTy &&
+             "Expected metatype argument for interfaceId member access");
+
+      auto const &contractTy = dynamic_cast<ContractType const &>(*argTy);
+      assert(!contractTy.isSuper() &&
+             "Expected non-super contract type for interfaceId member access");
+      ContractDefinition const &contract = contractTy.contractDefinition();
+
+      auto ui32Ty = b.getIntegerType(32, /*isSigned=*/false);
+      auto id = b.create<mlir::sol::ConstantOp>(
+          loc,
+          b.getIntegerAttr(ui32Ty, llvm::APInt(32, contract.interfaceId())));
+      return genCast(id, getType(memberAcc.annotation().type));
+    }
     if (memberName == "min" || memberName == "max") {
       auto const *magicTy = dynamic_cast<MagicType const *>(memberAccTy);
       assert(magicTy && "Expected magic type for min/max member access");
