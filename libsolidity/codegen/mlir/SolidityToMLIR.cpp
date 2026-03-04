@@ -952,6 +952,39 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
     }
     if (memberName == "data")
       return b.create<mlir::sol::GetCallDataOp>(loc);
+    if (memberName == "min" || memberName == "max") {
+      auto const *magicTy = dynamic_cast<MagicType const *>(memberAccTy);
+      assert(magicTy && "Expected magic type for min/max member access");
+      Type const *argTy = magicTy->typeArgument();
+      assert(argTy && "Expected metatype argument for min/max member access");
+
+      if (auto const *intTy = dynamic_cast<IntegerType const *>(argTy)) {
+        bool isMin = memberName == "min";
+        unsigned width = intTy->numBits();
+        llvm::APInt bound;
+        if (intTy->isSigned())
+          bound = isMin ? llvm::APInt::getSignedMinValue(width)
+                        : llvm::APInt::getSignedMaxValue(width);
+        else
+          bound = isMin ? llvm::APInt::getZero(width)
+                        : llvm::APInt::getMaxValue(width);
+
+        mlir::Type mlirIntTy =
+            b.getIntegerType(width, /*isSigned=*/intTy->isSigned());
+        return b.create<mlir::sol::ConstantOp>(
+            loc, b.getIntegerAttr(mlirIntTy, bound));
+      }
+
+      if (auto const *enumTy = dynamic_cast<EnumType const *>(argTy)) {
+        unsigned enumBound =
+            memberName == "min" ? enumTy->minValue() : enumTy->maxValue();
+        auto ui256Ty = b.getIntegerType(256, /*isSigned=*/false);
+        return b.create<mlir::sol::ConstantOp>(
+            loc, b.getIntegerAttr(ui256Ty, llvm::APInt(256, enumBound)));
+      }
+
+      llvm_unreachable("min/max requested on unexpected metatype argument");
+    }
     break;
 
   case Type::Category::Contract:
