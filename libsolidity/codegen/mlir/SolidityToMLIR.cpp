@@ -1024,8 +1024,37 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
 
       llvm_unreachable("min/max requested on unexpected metatype argument");
     }
-    break;
+    if (memberName == "origin")
+      return b.create<mlir::sol::OriginOp>(loc);
+    if (memberName == "gasprice")
+      return b.create<mlir::sol::GasPriceOp>(loc);
+    if (memberName == "value")
+      return b.create<mlir::sol::CallValueOp>(loc);
+    if (memberName == "sig") {
+      mlir::Type bytes4Ty =
+          mlir::sol::BytesType::get(b.getContext(), /*size=*/4);
+      return b.create<mlir::sol::SigOp>(loc, bytes4Ty);
+    }
+    if (memberName == "basefee")
+      return b.create<mlir::sol::BaseFeeOp>(loc);
+    if (memberName == "blobbasefee")
+      return b.create<mlir::sol::BlobBaseFeeOp>(loc);
+    if (memberName == "chainid")
+      return b.create<mlir::sol::ChainIdOp>(loc);
+    if (memberName == "coinbase")
+      return b.create<mlir::sol::CoinbaseOp>(loc);
+    if (memberName == "difficulty")
+      return b.create<mlir::sol::DifficultyOp>(loc);
+    if (memberName == "gaslimit")
+      return b.create<mlir::sol::GasLimitOp>(loc);
+    if (memberName == "number")
+      return b.create<mlir::sol::BlockNumberOp>(loc);
+    if (memberName == "prevrandao")
+      return b.create<mlir::sol::PrevRandaoOp>(loc);
+    if (memberName == "timestamp")
+      return b.create<mlir::sol::TimestampOp>(loc);
 
+    break;
   case Type::Category::Contract:
     return {};
 
@@ -1591,6 +1620,10 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
 
     return resVals;
   }
+
+  case FunctionType::Kind::GasLeft:
+    resVals.push_back(b.create<mlir::sol::GasLeftOp>(loc));
+    return resVals;
 
   default:
     break;
