@@ -1320,6 +1320,28 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     return resVals;
   }
 
+  case FunctionType::Kind::Send:
+  case FunctionType::Kind::Transfer: {
+    assert(astArgs.size() == 1);
+
+    const auto *memberAcc =
+        dynamic_cast<MemberAccess const *>(&call.expression());
+    assert(memberAcc);
+
+    mlir::Value addr = genRValExpr(
+        memberAcc->expression(),
+        mlir::sol::AddressType::get(b.getContext(), /*payable=*/false));
+    mlir::Value value = genRValExpr(*astArgs.front(),
+                                    b.getIntegerType(256, /*isSigned=*/false));
+
+    if (calleeTy->kind() == FunctionType::Kind::Send) {
+      resVals.push_back(b.create<mlir::sol::SendOp>(loc, addr, value));
+    } else {
+      b.create<mlir::sol::TransferOp>(loc, addr, value);
+    }
+    return resVals;
+  }
+
   case FunctionType::Kind::Creation: {
     ContractDefinition const &cont =
         dynamic_cast<ContractType const &>(
