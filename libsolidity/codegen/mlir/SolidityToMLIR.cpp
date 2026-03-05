@@ -1127,13 +1127,18 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
   default:
     break;
   case Type::Category::Address: {
+    auto nonPayableAddrTy =
+        mlir::sol::AddressType::get(b.getContext(), /*payable=*/false);
+    if (memberName == "balance")
+      return b.create<mlir::sol::BalanceOp>(
+          loc, genRValExpr(memberAcc.expression(), nonPayableAddrTy));
     if (memberName == "code") {
-      return b.create<mlir::sol::CodeOp>(loc,
-                                         genRValExpr(memberAcc.expression()));
+      return b.create<mlir::sol::CodeOp>(
+          loc, genRValExpr(memberAcc.expression(), nonPayableAddrTy));
     }
     if (memberName == "codehash") {
       return b.create<mlir::sol::CodeHashOp>(
-          loc, genRValExpr(memberAcc.expression()));
+          loc, genRValExpr(memberAcc.expression(), nonPayableAddrTy));
     }
   }
   }
