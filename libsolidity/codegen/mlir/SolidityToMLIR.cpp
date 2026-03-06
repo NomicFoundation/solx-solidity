@@ -2295,6 +2295,19 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
     b.create<mlir::sol::StoreOp>(inpLoc, arg, addr);
   }
 
+  // Allocate and zero-initialize named return parameters.
+  for (const auto &param : fn.returnParameters()) {
+    if (param->name().empty())
+      continue;
+    mlir::Location paramLoc = getLoc(*param);
+    mlir::Type paramTy = getType(param->annotation().type);
+    auto addr = b.create<mlir::sol::AllocaOp>(
+        paramLoc, mlir::sol::PointerType::get(b.getContext(), paramTy,
+                                              mlir::sol::DataLocation::Stack));
+    trackLocalVarAddr(*param, addr);
+    genZeroedVal(addr);
+  }
+
   // Generate the call to the next ctor (if any) if `fn` is a ctor.
   if (fn.isConstructor()) {
     // Get base contract of `currContract`
@@ -2330,17 +2343,32 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   // Lower the body.
   lower(fn.body());
 
-  // Return stmt lowering generates an empty block that might be empty at this
-  // stage.
   if (outTys.empty())
     b.create<mlir::sol::ReturnOp>(getLoc(fn));
+
+  // Return stmt lowering generates an empty block that might be empty at this
+  // stage.
   mlir::Block *currBlk = b.getBlock();
   if (currBlk->empty()) {
     op.getBody().back().erase();
   } else if (!currBlk->back().hasTrait<mlir::OpTrait::IsTerminator>()) {
-    // FIXME: Generate "default" return statement for non-empty return types
-    // (zero/zero-pointer).
-    llvm_unreachable("NYI");
+    mlir::Location fnLoc = getLoc(fn);
+    // In case we have non empty list of non-named return params,
+    // insert "unreachable", as all the return statements should have been
+    // handled early.
+    if (llvm::all_of(fn.returnParameters(),
+                     [](auto &&param) { return param->name().empty(); })) {
+      b.create<mlir::LLVM::UnreachableOp>(fnLoc);
+    } else {
+      // Handle named return params: load and return their values.
+      mlir::SmallVector<mlir::Value> retVals;
+      for (const auto &param : fn.returnParameters()) {
+        assert(!param->name().empty() && "unnamed return param");
+        retVals.push_back(
+            b.create<mlir::sol::LoadOp>(fnLoc, getLocalVarAddr(*param)));
+      }
+      b.create<mlir::sol::ReturnOp>(fnLoc, retVals);
+    }
   }
 
   b.setInsertionPointAfter(op);
