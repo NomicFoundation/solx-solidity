@@ -23,7 +23,7 @@ contract C {
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.contract @C_49 {
 // CHECK-NEXT:     sol.state_var @ui_2 slot 0 offset 0 : ui256 loc(#loc2)
-// CHECK-NEXT:     sol.state_var @m1_8 slot 1 offset 0 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc3)
+// CHECK-NEXT:     sol.state_var @m1_8 slot 1 offset 0 : !sol.mapping<!sol.address, !sol.mapping<!sol.address, ui256>> loc(#loc3)
 // CHECK-NEXT:     sol.func @C_49() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
@@ -35,18 +35,18 @@ contract C {
 // CHECK-NEXT:       sol.store %2, %1 : ui256, !sol.ptr<ui256, Storage> loc(#loc7)
 // CHECK-NEXT:       sol.return loc(#loc4)
 // CHECK-NEXT:     } loc(#loc4)
-// CHECK-NEXT:     sol.func @f_m1_36(%arg0: ui256 loc({{.*}}:7:16), %arg1: ui256 loc({{.*}}:7:27), %arg2: ui256 loc({{.*}}:7:38)) attributes {id = 36 : i64, state_mutability = #NonPayable} {
-// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc9)
-// CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc9)
-// CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc10)
-// CHECK-NEXT:       sol.store %arg1, %1 : ui256, !sol.ptr<ui256, Stack> loc(#loc10)
+// CHECK-NEXT:     sol.func @f_m1_36(%arg0: !sol.address loc({{.*}}:7:16), %arg1: !sol.address loc({{.*}}:7:27), %arg2: ui256 loc({{.*}}:7:38)) attributes {id = 36 : i64, state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.address, Stack> loc(#loc9)
+// CHECK-NEXT:       sol.store %arg0, %0 : !sol.address, !sol.ptr<!sol.address, Stack> loc(#loc9)
+// CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<!sol.address, Stack> loc(#loc10)
+// CHECK-NEXT:       sol.store %arg1, %1 : !sol.address, !sol.ptr<!sol.address, Stack> loc(#loc10)
 // CHECK-NEXT:       %2 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc11)
 // CHECK-NEXT:       sol.store %arg2, %2 : ui256, !sol.ptr<ui256, Stack> loc(#loc11)
-// CHECK-NEXT:       %3 = sol.addr_of @m1_8 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc3)
-// CHECK-NEXT:       %4 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc12)
-// CHECK-NEXT:       %5 = sol.map %3, %4 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>>, ui256, !sol.mapping<ui256, ui256> loc(#loc13)
-// CHECK-NEXT:       %6 = sol.load %1 : !sol.ptr<ui256, Stack>, ui256 loc(#loc14)
-// CHECK-NEXT:       %7 = sol.map %5, %6 : !sol.mapping<ui256, ui256>, ui256, !sol.ptr<ui256, Storage> loc(#loc13)
+// CHECK-NEXT:       %3 = sol.addr_of @m1_8 : !sol.mapping<!sol.address, !sol.mapping<!sol.address, ui256>> loc(#loc3)
+// CHECK-NEXT:       %4 = sol.load %0 : !sol.ptr<!sol.address, Stack>, !sol.address loc(#loc12)
+// CHECK-NEXT:       %5 = sol.map %3, %4 : !sol.mapping<!sol.address, !sol.mapping<!sol.address, ui256>>, !sol.address, !sol.mapping<!sol.address, ui256> loc(#loc13)
+// CHECK-NEXT:       %6 = sol.load %1 : !sol.ptr<!sol.address, Stack>, !sol.address loc(#loc14)
+// CHECK-NEXT:       %7 = sol.map %5, %6 : !sol.mapping<!sol.address, ui256>, !sol.address, !sol.ptr<ui256, Storage> loc(#loc13)
 // CHECK-NEXT:       %8 = sol.load %2 : !sol.ptr<ui256, Stack>, ui256 loc(#loc15)
 // CHECK-NEXT:       sol.store %8, %7 : ui256, !sol.ptr<ui256, Storage> loc(#loc13)
 // CHECK-NEXT:       sol.return loc(#loc8)

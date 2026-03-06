@@ -43,9 +43,9 @@ function recover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) {
 // CHECK-NEXT:     sol.store %arg0, %0 : !sol.bytes<20>, !sol.ptr<!sol.bytes<20>, Stack> loc(#loc4)
 // CHECK-NEXT:     sol.return loc(#loc3)
 // CHECK-NEXT:   } loc(#loc3)
-// CHECK-NEXT:   sol.func @f_address_18(%arg0: ui256 loc({{.*}}:4:19)) attributes {id = 18 : i64, state_mutability = #NonPayable} {
-// CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc6)
-// CHECK-NEXT:     sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc6)
+// CHECK-NEXT:   sol.func @f_address_18(%arg0: !sol.address loc({{.*}}:4:19)) attributes {id = 18 : i64, state_mutability = #NonPayable} {
+// CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.address, Stack> loc(#loc6)
+// CHECK-NEXT:     sol.store %arg0, %0 : !sol.address, !sol.ptr<!sol.address, Stack> loc(#loc6)
 // CHECK-NEXT:     sol.return loc(#loc5)
 // CHECK-NEXT:   } loc(#loc5)
 // CHECK-NEXT:   sol.func @keccak_30(%arg0: !sol.string<Memory> loc({{.*}}:6:16)) attributes {id = 30 : i64, state_mutability = #NonPayable} {
@@ -85,8 +85,8 @@ function recover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) {
 // CHECK-NEXT:     %5 = sol.load %1 : !sol.ptr<ui8, Stack>, ui8 loc(#loc28)
 // CHECK-NEXT:     %6 = sol.load %2 : !sol.ptr<!sol.bytes<32>, Stack>, !sol.bytes<32> loc(#loc29)
 // CHECK-NEXT:     %7 = sol.load %3 : !sol.ptr<!sol.bytes<32>, Stack>, !sol.bytes<32> loc(#loc30)
-// CHECK-NEXT:     %8 = "sol.ecrecover"(%4, %5, %6, %7) : (!sol.bytes<32>, ui8, !sol.bytes<32>, !sol.bytes<32>) -> ui256 loc(#loc31)
-// CHECK-NEXT:     sol.call @f_address_18(%8) : (ui256) -> () loc(#loc32)
+// CHECK-NEXT:     %8 = "sol.ecrecover"(%4, %5, %6, %7) : (!sol.bytes<32>, ui8, !sol.bytes<32>, !sol.bytes<32>) -> !sol.address loc(#loc31)
+// CHECK-NEXT:     sol.call @f_address_18(%8) : (!sol.address) -> () loc(#loc32)
 // CHECK-NEXT:     sol.return loc(#loc22)
 // CHECK-NEXT:   } loc(#loc22)
 // CHECK-NEXT: } loc(#loc)

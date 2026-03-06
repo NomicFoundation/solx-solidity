@@ -57,17 +57,17 @@ contract C {
 // CHECK-NEXT:       %4 = sol.load %3 : !sol.ptr<ui8, Storage>, ui8 loc(#loc5)
 // CHECK-NEXT:       sol.return %2, %4 : ui256, ui8 loc(#loc5)
 // CHECK-NEXT:     } loc(#loc5)
-// CHECK-NEXT:     sol.state_var @m_22 slot 8 offset 0 : !sol.mapping<ui256, ui256> loc(#loc6)
-// CHECK-NEXT:     sol.func @get_m_22(%arg0: ui256 loc({{.*}}:11:2)) -> ui256 attributes {orig_fn_type = (ui256) -> ui256, selector = -1754781564 : i32, state_mutability = #NonPayable} {
-// CHECK-NEXT:       %0 = sol.addr_of @m_22 : !sol.mapping<ui256, ui256> loc(#loc6)
-// CHECK-NEXT:       %1 = sol.map %0, %arg0 : !sol.mapping<ui256, ui256>, ui256, !sol.ptr<ui256, Storage> loc(#loc6)
+// CHECK-NEXT:     sol.state_var @m_22 slot 8 offset 0 : !sol.mapping<!sol.address, ui256> loc(#loc6)
+// CHECK-NEXT:     sol.func @get_m_22(%arg0: !sol.address loc({{.*}}:11:2)) -> ui256 attributes {orig_fn_type = (!sol.address) -> ui256, selector = -1754781564 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0 = sol.addr_of @m_22 : !sol.mapping<!sol.address, ui256> loc(#loc6)
+// CHECK-NEXT:       %1 = sol.map %0, %arg0 : !sol.mapping<!sol.address, ui256>, !sol.address, !sol.ptr<ui256, Storage> loc(#loc6)
 // CHECK-NEXT:       %2 = sol.load %1 : !sol.ptr<ui256, Storage>, ui256 loc(#loc6)
 // CHECK-NEXT:       sol.return %2 : ui256 loc(#loc6)
 // CHECK-NEXT:     } loc(#loc6)
-// CHECK-NEXT:     sol.state_var @m2_28 slot 9 offset 0 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc7)
-// CHECK-NEXT:     sol.func @get_m2_28(%arg0: ui256 loc({{.*}}:12:2), %arg1: ui256 loc({{.*}}:12:2)) -> ui256 attributes {orig_fn_type = (ui256, ui256) -> ui256, selector = 1522807463 : i32, state_mutability = #NonPayable} {
-// CHECK-NEXT:       %0 = sol.addr_of @m2_28 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>> loc(#loc7)
-// CHECK-NEXT:       %1 = sol.map %0, %arg0 : !sol.mapping<ui256, !sol.mapping<ui256, ui256>>, ui256, !sol.mapping<ui256, ui256> loc(#loc7)
+// CHECK-NEXT:     sol.state_var @m2_28 slot 9 offset 0 : !sol.mapping<!sol.address, !sol.mapping<ui256, ui256>> loc(#loc7)
+// CHECK-NEXT:     sol.func @get_m2_28(%arg0: !sol.address loc({{.*}}:12:2), %arg1: ui256 loc({{.*}}:12:2)) -> ui256 attributes {orig_fn_type = (!sol.address, ui256) -> ui256, selector = 1522807463 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0 = sol.addr_of @m2_28 : !sol.mapping<!sol.address, !sol.mapping<ui256, ui256>> loc(#loc7)
+// CHECK-NEXT:       %1 = sol.map %0, %arg0 : !sol.mapping<!sol.address, !sol.mapping<ui256, ui256>>, !sol.address, !sol.mapping<ui256, ui256> loc(#loc7)
 // CHECK-NEXT:       %2 = sol.map %1, %arg1 : !sol.mapping<ui256, ui256>, ui256, !sol.ptr<ui256, Storage> loc(#loc7)
 // CHECK-NEXT:       %3 = sol.load %2 : !sol.ptr<ui256, Storage>, ui256 loc(#loc7)
 // CHECK-NEXT:       sol.return %3 : ui256 loc(#loc7)
