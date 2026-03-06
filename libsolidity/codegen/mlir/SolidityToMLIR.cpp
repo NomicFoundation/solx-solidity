@@ -944,12 +944,8 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
   const ASTString &memberName = memberAcc.memberName();
   switch (memberAccTy->category()) {
   case Type::Category::Magic:
-    if (memberName == "sender") {
-      // FIXME: sol.caller yields an i256 instead of an address.
-      auto callerOp = b.create<mlir::yul::CallerOp>(loc);
-      return b.create<mlir::sol::ConvCastOp>(
-          loc, b.getIntegerType(256, /*isSigned=*/false), callerOp);
-    }
+    if (memberName == "sender")
+      return b.create<mlir::sol::CallerOp>(loc);
     if (memberName == "data")
       return b.create<mlir::sol::GetCallDataOp>(loc);
     if (memberName == "creationCode" || memberName == "runtimeCode") {

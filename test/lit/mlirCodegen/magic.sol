@@ -69,9 +69,8 @@ function encode_call_tuple(uint256 x, uint8 y) returns (bytes memory) {
 // CHECK-NEXT: #loc57 = loc({{.*}}:48:38)
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   sol.func @msgSender_9() -> ui256 attributes {id = 9 : i64, state_mutability = #NonPayable} {
-// CHECK-NEXT:     %0 = yul.caller loc(#loc2)
-// CHECK-NEXT:     %1 = sol.conv_cast %0 : i256 -> ui256 loc(#loc2)
-// CHECK-NEXT:     sol.return %1 : ui256 loc(#loc3)
+// CHECK-NEXT:     %0 = sol.caller : ui256 loc(#loc2)
+// CHECK-NEXT:     sol.return %0 : ui256 loc(#loc3)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT:   sol.func @addr_20() -> ui256 attributes {id = 20 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c0_ui8 = sol.constant 0 : ui8 loc(#loc5)

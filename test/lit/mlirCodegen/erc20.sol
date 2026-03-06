@@ -205,9 +205,8 @@ contract ERC20 {
 // CHECK-NEXT:       sol.return loc(#loc7)
 // CHECK-NEXT:     } loc(#loc7)
 // CHECK-NEXT:     sol.func @_msgSender_58() -> ui256 attributes {id = 58 : i64, state_mutability = #View} {
-// CHECK-NEXT:       %0 = yul.caller loc(#loc15)
-// CHECK-NEXT:       %1 = sol.conv_cast %0 : i256 -> ui256 loc(#loc15)
-// CHECK-NEXT:       sol.return %1 : ui256 loc(#loc16)
+// CHECK-NEXT:       %0 = sol.caller : ui256 loc(#loc15)
+// CHECK-NEXT:       sol.return %0 : ui256 loc(#loc16)
 // CHECK-NEXT:     } loc(#loc14)
 // CHECK-NEXT:     sol.func @name_66() -> !sol.string<Memory> attributes {id = 66 : i64, orig_fn_type = () -> !sol.string<Memory>, selector = 117300739 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %0 = sol.addr_of @_name_15 : !sol.string<Storage> loc(#loc5)
