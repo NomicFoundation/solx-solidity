@@ -30,6 +30,41 @@ contract C {
     return abi.encodePacked(x, y);
   }
 
+  function ei_addr(address a) public returns (bytes memory) {
+    return abi.encode(a);
+  }
+
+  function di_addr(bytes memory a) public returns (address) {
+    return abi.decode(a, (address));
+  }
+
+  function ep_addr(address a) public returns (bytes memory) {
+    return abi.encodePacked(a);
+  }
+
+  function ei_addr_u256(address a, uint256 x) public returns (bytes memory) {
+    return abi.encode(a, x);
+  }
+
+  function di_addr_u256(bytes memory a) public returns (address, uint256) {
+    return abi.decode(a, (address, uint256));
+  }
+
+  function rt_addr(address a) public returns (address) {
+    return abi.decode(abi.encode(a), (address));
+  }
+
+  function rt_addr_u256(address a, uint256 x)
+      public
+      returns (address, uint256)
+  {
+    return abi.decode(abi.encode(a, x), (address, uint256));
+  }
+
+  function rt_addr_payable(address a) public returns (address) {
+    return abi.decode(abi.encode(payable(a)), (address));
+  }
+
   function ep_u8_len(uint8 x) public returns (uint) {
     return abi.encodePacked(x).length;
   }
@@ -99,6 +134,14 @@ contract C {
   }
 
   function ei_u8_array_nested_dynamic_calldata(uint8[][] calldata x) public returns (bytes memory) {
+    return abi.encode(x);
+  }
+
+  function ep_addr_array_dynamic_calldata(address[] calldata x) public returns (bytes memory) {
+    return abi.encodePacked(x);
+  }
+
+  function ei_addr_array_dynamic_calldata(address[] calldata x) public returns (bytes memory) {
     return abi.encode(x);
   }
 
@@ -225,6 +268,14 @@ contract C {
 // ep_empty() -> 32, 0
 // ep_u256(uint256): 1 -> 32, 32, 1
 // ep_u256x2(uint256,uint256): 1, 2 -> 32, 64, 1, 2
+// ei_addr(address): 1 -> 32, 32, 1
+// di_addr(bytes): 32, 32, 1 -> 1
+// ep_addr(address): 1 -> 32, 20, left(0x0000000000000000000000000000000000000001)
+// ei_addr_u256(address,uint256): 1, 7 -> 32, 64, 1, 7
+// di_addr_u256(bytes): 32, 64, 1, 7 -> 1, 7
+// rt_addr(address): 1 -> 1
+// rt_addr_u256(address,uint256): 1, 7 -> 1, 7
+// rt_addr_payable(address): 1 -> 1
 // ep_u8_len(uint8): 1 -> 1
 // ep_u8(uint8): 1 -> 32, 1, left(0x01)
 // ep_u24_u96_u136(uint24,uint96,uint136): 0x010203, 0x0405060708090a0b0c0d0e0f, 0x101112131415161718191a1b1c1d1e1f20 -> 32, 32, 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20
@@ -245,6 +296,10 @@ contract C {
 // ep_u8_array_dynamic_calldata(uint8[]): 0x20, 3, 0xFF23, 0x1242, 0xAB87 -> FAILURE
 // ei_u8_array_dynamic_calldata(uint8[]): 0x20, 3, 97, 98, 99 -> 32, 160, 32, 3, 97, 98, 99
 // ei_u8_array_dynamic_calldata(uint8[]): 0x20, 3, 0xFF23, 0x1242, 0xAB87 -> FAILURE
+// ep_addr_array_dynamic_calldata(address[]): 0x20, 2, 1, 2 -> 32, 64, 1, 2
+// ep_addr_array_dynamic_calldata(address[]): 0x20, 1, 0x10000000000000000000000000000000000000000 -> FAILURE
+// ei_addr_array_dynamic_calldata(address[]): 0x20, 2, 1, 2 -> 32, 128, 32, 2, 1, 2
+// ei_addr_array_dynamic_calldata(address[]): 0x20, 1, 0x10000000000000000000000000000000000000000 -> FAILURE
 // ep_bool_array_dynamic_calldata(bool[]): 0x20, 3, 1, 0, 1 -> 32, 96, 1, 0, 1
 // ep_bool_array_dynamic_calldata(bool[]): 0x20, 2, 2, 0 -> FAILURE
 // ei_bool_array_dynamic_calldata(bool[]): 0x20, 3, 1, 0, 1 -> 32, 160, 32, 3, 1, 0, 1

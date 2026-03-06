@@ -9,6 +9,7 @@ contract C {
     function blobbasefee() public view returns (uint) { return block.blobbasefee; }
     function chainid() public view returns (uint) { return block.chainid; }
     function coinbase() public view returns (address) { return block.coinbase; }
+    function coinbase_payable() public view returns (address payable) { return block.coinbase; }
     function difficulty() public view returns (uint) { return block.difficulty; }
     function gaslimit() public view returns (uint) { return block.gaslimit; }
     function blocknumber() public view returns (uint) { return block.number; }
@@ -26,13 +27,13 @@ contract C {
 // CHECK-NEXT: #Pure = #sol<StateMutability Pure>
 // CHECK-NEXT: #View = #sol<StateMutability View>
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
-// CHECK-NEXT:   sol.contract @C_127 {
-// CHECK-NEXT:     sol.func @C_127() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.contract @C_136 {
+// CHECK-NEXT:     sol.func @C_136() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     sol.func @origin_9() -> ui256 attributes {id = 9 : i64, orig_fn_type = () -> ui256, selector = -1819582670 : i32, state_mutability = #View} {
-// CHECK-NEXT:       %0 = sol.origin : ui256 loc(#loc3)
-// CHECK-NEXT:       sol.return %0 : ui256 loc(#loc4)
+// CHECK-NEXT:     sol.func @origin_9() -> !sol.address attributes {id = 9 : i64, orig_fn_type = () -> !sol.address, selector = -1819582670 : i32, state_mutability = #View} {
+// CHECK-NEXT:       %0 = sol.origin : !sol.address loc(#loc3)
+// CHECK-NEXT:       sol.return %0 : !sol.address loc(#loc4)
 // CHECK-NEXT:     } loc(#loc2)
 // CHECK-NEXT:     sol.func @gasprice_18() -> ui256 attributes {id = 18 : i64, orig_fn_type = () -> ui256, selector = 1858220755 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %0 = sol.gasprice : ui256 loc(#loc6)
@@ -58,34 +59,39 @@ contract C {
 // CHECK-NEXT:       %0 = sol.chainid : ui256 loc(#loc21)
 // CHECK-NEXT:       sol.return %0 : ui256 loc(#loc22)
 // CHECK-NEXT:     } loc(#loc20)
-// CHECK-NEXT:     sol.func @coinbase_72() -> ui256 attributes {id = 72 : i64, orig_fn_type = () -> ui256, selector = -1498543444 : i32, state_mutability = #View} {
-// CHECK-NEXT:       %0 = sol.coinbase : ui256 loc(#loc24)
-// CHECK-NEXT:       sol.return %0 : ui256 loc(#loc25)
+// CHECK-NEXT:     sol.func @coinbase_72() -> !sol.address attributes {id = 72 : i64, orig_fn_type = () -> !sol.address, selector = -1498543444 : i32, state_mutability = #View} {
+// CHECK-NEXT:       %0 = sol.coinbase : !sol.address<payable> loc(#loc24)
+// CHECK-NEXT:       %1 = sol.address_cast %0 : !sol.address<payable> to !sol.address loc(#loc24)
+// CHECK-NEXT:       sol.return %1 : !sol.address loc(#loc25)
 // CHECK-NEXT:     } loc(#loc23)
-// CHECK-NEXT:     sol.func @difficulty_81() -> ui256 attributes {id = 81 : i64, orig_fn_type = () -> ui256, selector = 432727138 : i32, state_mutability = #View} {
-// CHECK-NEXT:       %0 = sol.difficulty : ui256 loc(#loc27)
-// CHECK-NEXT:       sol.return %0 : ui256 loc(#loc28)
+// CHECK-NEXT:     sol.func @coinbase_payable_81() -> !sol.address<payable> attributes {id = 81 : i64, orig_fn_type = () -> !sol.address<payable>, selector = -2116720752 : i32, state_mutability = #View} {
+// CHECK-NEXT:       %0 = sol.coinbase : !sol.address<payable> loc(#loc27)
+// CHECK-NEXT:       sol.return %0 : !sol.address<payable> loc(#loc28)
 // CHECK-NEXT:     } loc(#loc26)
-// CHECK-NEXT:     sol.func @gaslimit_90() -> ui256 attributes {id = 90 : i64, orig_fn_type = () -> ui256, selector = 712124473 : i32, state_mutability = #View} {
-// CHECK-NEXT:       %0 = sol.gaslimit : ui256 loc(#loc30)
+// CHECK-NEXT:     sol.func @difficulty_90() -> ui256 attributes {id = 90 : i64, orig_fn_type = () -> ui256, selector = 432727138 : i32, state_mutability = #View} {
+// CHECK-NEXT:       %0 = sol.difficulty : ui256 loc(#loc30)
 // CHECK-NEXT:       sol.return %0 : ui256 loc(#loc31)
 // CHECK-NEXT:     } loc(#loc29)
-// CHECK-NEXT:     sol.func @blocknumber_99() -> ui256 attributes {id = 99 : i64, orig_fn_type = () -> ui256, selector = 84288071 : i32, state_mutability = #View} {
-// CHECK-NEXT:       %0 = sol.blocknumber : ui256 loc(#loc33)
+// CHECK-NEXT:     sol.func @gaslimit_99() -> ui256 attributes {id = 99 : i64, orig_fn_type = () -> ui256, selector = 712124473 : i32, state_mutability = #View} {
+// CHECK-NEXT:       %0 = sol.gaslimit : ui256 loc(#loc33)
 // CHECK-NEXT:       sol.return %0 : ui256 loc(#loc34)
 // CHECK-NEXT:     } loc(#loc32)
-// CHECK-NEXT:     sol.func @prevrandao_108() -> ui256 attributes {id = 108 : i64, orig_fn_type = () -> ui256, selector = 1145652076 : i32, state_mutability = #View} {
-// CHECK-NEXT:       %0 = sol.prevrandao : ui256 loc(#loc36)
+// CHECK-NEXT:     sol.func @blocknumber_108() -> ui256 attributes {id = 108 : i64, orig_fn_type = () -> ui256, selector = 84288071 : i32, state_mutability = #View} {
+// CHECK-NEXT:       %0 = sol.blocknumber : ui256 loc(#loc36)
 // CHECK-NEXT:       sol.return %0 : ui256 loc(#loc37)
 // CHECK-NEXT:     } loc(#loc35)
-// CHECK-NEXT:     sol.func @timestamp_117() -> ui256 attributes {id = 117 : i64, orig_fn_type = () -> ui256, selector = -1207470102 : i32, state_mutability = #View} {
-// CHECK-NEXT:       %0 = sol.timestamp : ui256 loc(#loc39)
+// CHECK-NEXT:     sol.func @prevrandao_117() -> ui256 attributes {id = 117 : i64, orig_fn_type = () -> ui256, selector = 1145652076 : i32, state_mutability = #View} {
+// CHECK-NEXT:       %0 = sol.prevrandao : ui256 loc(#loc39)
 // CHECK-NEXT:       sol.return %0 : ui256 loc(#loc40)
 // CHECK-NEXT:     } loc(#loc38)
-// CHECK-NEXT:     sol.func @gasleft__126() -> ui256 attributes {id = 126 : i64, orig_fn_type = () -> ui256, selector = 1512270606 : i32, state_mutability = #View} {
-// CHECK-NEXT:       %0 = sol.gasleft : ui256 loc(#loc42)
+// CHECK-NEXT:     sol.func @timestamp_126() -> ui256 attributes {id = 126 : i64, orig_fn_type = () -> ui256, selector = -1207470102 : i32, state_mutability = #View} {
+// CHECK-NEXT:       %0 = sol.timestamp : ui256 loc(#loc42)
 // CHECK-NEXT:       sol.return %0 : ui256 loc(#loc43)
 // CHECK-NEXT:     } loc(#loc41)
+// CHECK-NEXT:     sol.func @gasleft__135() -> ui256 attributes {id = 135 : i64, orig_fn_type = () -> ui256, selector = 1512270606 : i32, state_mutability = #View} {
+// CHECK-NEXT:       %0 = sol.gasleft : ui256 loc(#loc45)
+// CHECK-NEXT:       sol.return %0 : ui256 loc(#loc46)
+// CHECK-NEXT:     } loc(#loc44)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
@@ -115,21 +121,24 @@ contract C {
 // CHECK-NEXT: #loc24 = loc({{.*}}:10:63)
 // CHECK-NEXT: #loc25 = loc({{.*}}:10:56)
 // CHECK-NEXT: #loc26 = loc({{.*}}:11:4)
-// CHECK-NEXT: #loc27 = loc({{.*}}:11:62)
-// CHECK-NEXT: #loc28 = loc({{.*}}:11:55)
+// CHECK-NEXT: #loc27 = loc({{.*}}:11:79)
+// CHECK-NEXT: #loc28 = loc({{.*}}:11:72)
 // CHECK-NEXT: #loc29 = loc({{.*}}:12:4)
-// CHECK-NEXT: #loc30 = loc({{.*}}:12:60)
-// CHECK-NEXT: #loc31 = loc({{.*}}:12:53)
+// CHECK-NEXT: #loc30 = loc({{.*}}:12:62)
+// CHECK-NEXT: #loc31 = loc({{.*}}:12:55)
 // CHECK-NEXT: #loc32 = loc({{.*}}:13:4)
-// CHECK-NEXT: #loc33 = loc({{.*}}:13:63)
-// CHECK-NEXT: #loc34 = loc({{.*}}:13:56)
+// CHECK-NEXT: #loc33 = loc({{.*}}:13:60)
+// CHECK-NEXT: #loc34 = loc({{.*}}:13:53)
 // CHECK-NEXT: #loc35 = loc({{.*}}:14:4)
-// CHECK-NEXT: #loc36 = loc({{.*}}:14:62)
-// CHECK-NEXT: #loc37 = loc({{.*}}:14:55)
+// CHECK-NEXT: #loc36 = loc({{.*}}:14:63)
+// CHECK-NEXT: #loc37 = loc({{.*}}:14:56)
 // CHECK-NEXT: #loc38 = loc({{.*}}:15:4)
-// CHECK-NEXT: #loc39 = loc({{.*}}:15:61)
-// CHECK-NEXT: #loc40 = loc({{.*}}:15:54)
+// CHECK-NEXT: #loc39 = loc({{.*}}:15:62)
+// CHECK-NEXT: #loc40 = loc({{.*}}:15:55)
 // CHECK-NEXT: #loc41 = loc({{.*}}:16:4)
-// CHECK-NEXT: #loc42 = loc({{.*}}:16:60)
-// CHECK-NEXT: #loc43 = loc({{.*}}:16:53)
+// CHECK-NEXT: #loc42 = loc({{.*}}:16:61)
+// CHECK-NEXT: #loc43 = loc({{.*}}:16:54)
+// CHECK-NEXT: #loc44 = loc({{.*}}:17:4)
+// CHECK-NEXT: #loc45 = loc({{.*}}:17:60)
+// CHECK-NEXT: #loc46 = loc({{.*}}:17:53)
 // CHECK-EMPTY:

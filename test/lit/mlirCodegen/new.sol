@@ -41,11 +41,11 @@ contract D {
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     sol.func @g_22() -> ui256 attributes {id = 22 : i64, orig_fn_type = () -> ui256, selector = -501769330 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc3)
-// CHECK-NEXT:       %0 = sol.new "C_9" value = %c0_ui256 ctor() : ui256 loc(#loc3)
+// CHECK-NEXT:       %0 = sol.new "C_9" value = %c0_ui256 ctor() : !sol.address loc(#loc3)
 // CHECK-NEXT:       %1 = yul.gas loc(#loc3)
 // CHECK-NEXT:       %2 = sol.conv_cast %1 : i256 -> ui256 loc(#loc3)
 // CHECK-NEXT:       %c0_ui256_0 = sol.constant 0 : ui256 loc(#loc3)
-// CHECK-NEXT:       %status, %3 = sol.ext_call "f_8"() at %0 gas %2 value %c0_ui256_0 {callee_type = () -> ui256, selector = 638722032 : i32} : () -> (i1, ui256) loc(#loc3)
+// CHECK-NEXT:       %status, %3 = sol.ext_call "f_8"() at %0 gas %2 value %c0_ui256_0 {callee_type = () -> ui256, selector = 638722032 : i32} : !sol.address, () -> (i1, ui256) loc(#loc3)
 // CHECK-NEXT:       sol.return %3 : ui256 loc(#loc4)
 // CHECK-NEXT:     } loc(#loc2)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)

@@ -31,12 +31,12 @@ contract C {
 // CHECK-NEXT:     sol.func @f_77(%arg0: ui256 loc({{.*}}:3:13)) -> ui256 attributes {id = 77 : i64, orig_fn_type = (ui256) -> ui256, selector = -1277270901 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc3)
-// CHECK-NEXT:       %1 = sol.this : ui256 loc(#loc4)
+// CHECK-NEXT:       %1 = sol.this : !sol.address loc(#loc4)
 // CHECK-NEXT:       %2 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc5)
 // CHECK-NEXT:       %3 = yul.gas loc(#loc4)
 // CHECK-NEXT:       %4 = sol.conv_cast %3 : i256 -> ui256 loc(#loc4)
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc4)
-// CHECK-NEXT:       %status, %5 = sol.ext_call "f_77"(%2) at %1 gas %4 value %c0_ui256 {callee_type = (ui256) -> ui256, selector = -1277270901 : i32, try_call} : (ui256) -> (i1, ui256) loc(#loc4)
+// CHECK-NEXT:       %status, %5 = sol.ext_call "f_77"(%2) at %1 gas %4 value %c0_ui256 {callee_type = (ui256) -> ui256, selector = -1277270901 : i32, try_call} : !sol.address, (ui256) -> (i1, ui256) loc(#loc4)
 // CHECK-NEXT:       sol.try %status {
 // CHECK-NEXT:         %12 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc7)
 // CHECK-NEXT:         sol.store %5, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc7)
@@ -55,12 +55,12 @@ contract C {
 // CHECK-NEXT:       } error {
 // CHECK-NEXT:       } fallback {
 // CHECK-NEXT:       } loc(#loc6)
-// CHECK-NEXT:       %6 = sol.this : ui256 loc(#loc15)
+// CHECK-NEXT:       %6 = sol.this : !sol.address loc(#loc15)
 // CHECK-NEXT:       %7 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc16)
 // CHECK-NEXT:       %8 = yul.gas loc(#loc15)
 // CHECK-NEXT:       %9 = sol.conv_cast %8 : i256 -> ui256 loc(#loc15)
 // CHECK-NEXT:       %c0_ui256_0 = sol.constant 0 : ui256 loc(#loc15)
-// CHECK-NEXT:       %status_1, %10 = sol.ext_call "f_77"(%7) at %6 gas %9 value %c0_ui256_0 {callee_type = (ui256) -> ui256, selector = -1277270901 : i32, try_call} : (ui256) -> (i1, ui256) loc(#loc15)
+// CHECK-NEXT:       %status_1, %10 = sol.ext_call "f_77"(%7) at %6 gas %9 value %c0_ui256_0 {callee_type = (ui256) -> ui256, selector = -1277270901 : i32, try_call} : !sol.address, (ui256) -> (i1, ui256) loc(#loc15)
 // CHECK-NEXT:       sol.try %status_1 {
 // CHECK-NEXT:         %12 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc18)
 // CHECK-NEXT:         sol.store %10, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc18)

@@ -450,9 +450,12 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
     const IntegerType *intTy = ratNumTy->integerType();
     return b.getIntegerType(intTy->numBits(), intTy->isSigned());
   }
-  case Type::Category::Address:
-    // FIXME: 256 -> 160
-    return b.getIntegerType(256, /*isSigned=*/false);
+  case Type::Category::Address: {
+    const auto *addrTy = static_cast<AddressType const *>(ty);
+    // Preserve FE payability in the Sol address type.
+    return mlir::sol::AddressType::get(
+        b.getContext(), addrTy->stateMutability() >= StateMutability::Payable);
+  }
 
   case Type::Category::FixedBytes: {
     const auto *fixedBytesTy = static_cast<FixedBytesType const *>(ty);
@@ -513,9 +516,12 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
       return mlir::sol::FuncRefType::get(b.getContext(), mlirFnTy);
     return mlirFnTy;
   }
-  case Type::Category::Contract:
-    // FIXME: 256 -> 160
-    return b.getIntegerType(256, /*isSigned=*/false);
+  case Type::Category::Contract: {
+    const auto *contTy = static_cast<ContractType const *>(ty);
+    // Contract values are addresses, so keep FE payability on that address
+    // type.
+    return mlir::sol::AddressType::get(b.getContext(), contTy->isPayable());
+  }
   default:
     break;
   }
@@ -529,9 +535,14 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
   if (MagicVariableDeclaration const *magicVar =
           dynamic_cast<MagicVariableDeclaration const *>(decl)) {
     switch (magicVar->type()->category()) {
-    case Type::Category::Contract:
+    case Type::Category::Contract: {
       assert(id.name() == "this");
-      return b.create<mlir::sol::ThisOp>(getLoc(id));
+      assert(currContract && "'this' must be emitted in contract context");
+      auto thisTy = mlir::sol::AddressType::get(
+          b.getContext(), ContractType(*currContract).isPayable());
+      // Emit 'this' with the current contract payability directly.
+      return b.create<mlir::sol::ThisOp>(getLoc(id), thisTy);
+    }
     default:
       break;
     }
@@ -543,8 +554,9 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
 
   if (const auto *contr = dynamic_cast<ContractDefinition const *>(decl)) {
     assert(contr->isLibrary() && "NYI");
-    return b.create<mlir::sol::LibAddrOp>(getLoc(id),
-                                          contr->fullyQualifiedName());
+    return b.create<mlir::sol::LibAddrOp>(
+        getLoc(id), mlir::sol::AddressType::get(b.getContext(), false),
+        contr->fullyQualifiedName());
   }
 
   if (const auto *fn = dynamic_cast<FunctionDefinition const *>(decl))
@@ -591,6 +603,29 @@ mlir::Value SolidityToMLIRPass::genCast(mlir::Value val, mlir::Type dstTy) {
   // Don't cast if we're casting to the same type.
   if (srcTy == dstTy)
     return val;
+
+  // Address casts, including non-payable <-> payable address typing and
+  // bytes20 <-> address conversions.
+  if (mlir::isa<mlir::sol::AddressType>(srcTy) ||
+      mlir::isa<mlir::sol::AddressType>(dstTy)) {
+    auto isUint160Ty = [](mlir::Type ty) {
+      auto intTy = mlir::dyn_cast<mlir::IntegerType>(ty);
+      return intTy && intTy.getWidth() == 160 && intTy.isUnsigned();
+    };
+
+    // AddressCastOp only accepts integer<->address through uint160.
+    // Normalize wider/narrower integer sources to uint160 first.
+    if (mlir::isa<mlir::sol::AddressType>(dstTy) &&
+        mlir::isa<mlir::IntegerType>(srcTy) && !isUint160Ty(srcTy))
+      val = genCast(val, b.getIntegerType(/*width=*/160, /*isSigned=*/false));
+
+    if (mlir::isa<mlir::sol::AddressType>(srcTy) &&
+        mlir::isa<mlir::IntegerType>(dstTy))
+      assert(isUint160Ty(dstTy) &&
+             "Address casts to integer must target uint160");
+
+    return b.create<mlir::sol::AddressCastOp>(loc, dstTy, val);
+  }
 
   if (mlir::isa<mlir::sol::BytesType>(srcTy) ||
       mlir::isa<mlir::sol::BytesType>(dstTy))
@@ -660,6 +695,11 @@ mlir::Value SolidityToMLIRPass::genBinExpr(Token op, mlir::Value lhs,
         b.getIntegerType(bytesTy.getSize() * 8, /*isSigned=*/false);
     return genCast(val, intTy);
   };
+  auto convertCmpOperand = [&](mlir::Value val) -> mlir::Value {
+    if (mlir::isa<mlir::sol::AddressType>(val.getType()))
+      return genCast(val, b.getIntegerType(/*width=*/160, /*isSigned=*/false));
+    return convertBytesToInt(val);
+  };
 
   switch (op) {
   case Token::Add:
@@ -705,28 +745,28 @@ mlir::Value SolidityToMLIRPass::genBinExpr(Token op, mlir::Value lhs,
     return b.create<mlir::sol::ShrOp>(loc, lhs, rhs);
   case Token::Equal:
     return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::eq,
-                                      convertBytesToInt(lhs),
-                                      convertBytesToInt(rhs));
+                                      convertCmpOperand(lhs),
+                                      convertCmpOperand(rhs));
   case Token::NotEqual:
     return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::ne,
-                                      convertBytesToInt(lhs),
-                                      convertBytesToInt(rhs));
+                                      convertCmpOperand(lhs),
+                                      convertCmpOperand(rhs));
   case Token::LessThan:
     return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::lt,
-                                      convertBytesToInt(lhs),
-                                      convertBytesToInt(rhs));
+                                      convertCmpOperand(lhs),
+                                      convertCmpOperand(rhs));
   case Token::LessThanOrEqual:
     return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::le,
-                                      convertBytesToInt(lhs),
-                                      convertBytesToInt(rhs));
+                                      convertCmpOperand(lhs),
+                                      convertCmpOperand(rhs));
   case Token::GreaterThan:
     return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::gt,
-                                      convertBytesToInt(lhs),
-                                      convertBytesToInt(rhs));
+                                      convertCmpOperand(lhs),
+                                      convertCmpOperand(rhs));
   case Token::GreaterThanOrEqual:
     return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::ge,
-                                      convertBytesToInt(lhs),
-                                      convertBytesToInt(rhs));
+                                      convertCmpOperand(lhs),
+                                      convertCmpOperand(rhs));
   default:
     break;
   }
@@ -953,7 +993,8 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
   switch (memberAccTy->category()) {
   case Type::Category::Magic:
     if (memberName == "sender")
-      return b.create<mlir::sol::CallerOp>(loc);
+      return b.create<mlir::sol::CallerOp>(
+          loc, getType(memberAcc.annotation().type));
     if (memberName == "data")
       return b.create<mlir::sol::GetCallDataOp>(loc);
     if (memberName == "creationCode" || memberName == "runtimeCode") {
@@ -1029,7 +1070,8 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
       llvm_unreachable("min/max requested on unexpected metatype argument");
     }
     if (memberName == "origin")
-      return b.create<mlir::sol::OriginOp>(loc);
+      return b.create<mlir::sol::OriginOp>(
+          loc, getType(memberAcc.annotation().type));
     if (memberName == "gasprice")
       return b.create<mlir::sol::GasPriceOp>(loc);
     if (memberName == "value")
@@ -1046,7 +1088,8 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
     if (memberName == "chainid")
       return b.create<mlir::sol::ChainIdOp>(loc);
     if (memberName == "coinbase")
-      return b.create<mlir::sol::CoinbaseOp>(loc);
+      return b.create<mlir::sol::CoinbaseOp>(
+          loc, getType(memberAcc.annotation().type));
     if (memberName == "difficulty")
       return b.create<mlir::sol::DifficultyOp>(loc);
     if (memberName == "gaslimit")
@@ -1298,8 +1341,11 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     if (!value)
       value = genUnsignedConst(0, /*numBits=*/256, loc);
 
-    resVals.push_back(
-        b.create<mlir::sol::NewOp>(loc, objName, value, salt, args));
+    // Keep the creation result typed as the FE return contract type so
+    // payability is preserved (address vs address<payable>).
+    resVals.push_back(b.create<mlir::sol::NewOp>(
+        loc, getType(calleeTy->returnParameterTypes().front()), objName, value,
+        salt, args));
     return resVals;
   }
 
