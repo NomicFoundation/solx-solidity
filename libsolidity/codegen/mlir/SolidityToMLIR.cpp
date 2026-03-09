@@ -637,6 +637,14 @@ mlir::Value SolidityToMLIRPass::genExpr(Literal const &lit) {
                                                   /*radix=*/10)));
   }
 
+  // String/bytes literal
+  if (ty->category() == Type::Category::StringLiteral) {
+    auto litTy = mlir::sol::StringType::get(b.getContext(),
+                                            mlir::sol::DataLocation::Memory);
+    return b.create<mlir::sol::StringLitOp>(loc, litTy,
+                                            b.getStringAttr(lit.value()));
+  }
+
   llvm_unreachable("NYI: Literal");
 }
 
