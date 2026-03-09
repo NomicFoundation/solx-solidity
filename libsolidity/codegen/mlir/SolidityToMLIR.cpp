@@ -198,13 +198,15 @@ private:
     auto stateVarOp =
         currContr.lookupSymbol<mlir::sol::StateVarOp>(getMangledName(var));
     assert(stateVarOp);
+    mlir::sol::DataLocation dataLoc = stateVarOp.getTransient()
+                                          ? mlir::sol::DataLocation::Transient
+                                          : mlir::sol::DataLocation::Storage;
     mlir::Type addrTy;
     if (mlir::sol::isNonPtrRefType(stateVarOp.getType()))
       addrTy = stateVarOp.getType();
     else
       addrTy = mlir::sol::PointerType::get(b.getContext(), stateVarOp.getType(),
-                                           mlir::sol::DataLocation::Storage);
-    // TODO: Should we use the state variable's location here?
+                                           dataLoc);
     return b.create<mlir::sol::AddrOfOp>(stateVarOp.getLoc(), addrTy,
                                          stateVarOp.getName());
   }
@@ -2445,9 +2447,10 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
   // Build a map from state variable to {slot, byteOffset}.
   llvm::DenseMap<VariableDeclaration const *, std::pair<u256, unsigned>>
       stateVarSlots;
-  for (auto &[var, slot, byteOffset] :
-       ContractType(cont).linearizedStateVariables(DataLocation::Storage))
-    stateVarSlots[var] = {slot, byteOffset};
+  for (auto dataLoc : {DataLocation::Storage, DataLocation::Transient})
+    for (auto &[var, slot, byteOffset] :
+         ContractType(cont).linearizedStateVariables(dataLoc))
+      stateVarSlots[var] = {slot, byteOffset};
 
   // Lower immutables and state variables; Generate getters.
   for (ContractDefinition const *baseCont :
@@ -2459,10 +2462,12 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
                                          getType(stateVar->type()));
       else if (!stateVar->isConstant()) {
         auto [slot, byteOffset] = stateVarSlots[stateVar];
+        bool isTransient = stateVar->referenceLocation() ==
+                           VariableDeclaration::Location::Transient;
         b.create<mlir::sol::StateVarOp>(
             getLoc(*stateVar), getMangledName(*stateVar),
-            getType(stateVar->type()), mlirgen::getAPInt(slot, 256),
-            byteOffset);
+            getType(stateVar->type()), mlirgen::getAPInt(slot, 256), byteOffset,
+            isTransient);
       }
 
       if (stateVar->isPartOfExternalInterface())
