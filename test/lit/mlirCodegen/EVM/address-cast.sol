@@ -343,6 +343,7 @@ contract C {
 // CHECK-NEXT:       return %2 : i256 loc(#loc9)
 // CHECK-NEXT:     } loc(#loc6)
 // CHECK-NEXT:     func.func @eq_56(%arg0: i256 loc({{.*}}:15:16), %arg1: i256 loc({{.*}}:15:27)) -> i1 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
+// CHECK-NEXT:       %c1461501637330902918203684832716283019655932542975_i256 = arith.constant 1461501637330902918203684832716283019655932542975 : i256 loc(#loc)
 // CHECK-NEXT:       %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:       %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc11)
 // CHECK-NEXT:       llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc11)
@@ -350,9 +351,9 @@ contract C {
 // CHECK-NEXT:       llvm.store %arg1, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc12)
 // CHECK-NEXT:       %2 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc13)
 // CHECK-NEXT:       %3 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc14)
-// CHECK-NEXT:       %4 = arith.trunci %2 : i256 to i160 loc(#loc13)
-// CHECK-NEXT:       %5 = arith.trunci %3 : i256 to i160 loc(#loc14)
-// CHECK-NEXT:       %6 = arith.cmpi eq, %4, %5 : i160 loc(#loc13)
+// CHECK-NEXT:       %4 = arith.andi %2, %c1461501637330902918203684832716283019655932542975_i256 : i256 loc(#loc13)
+// CHECK-NEXT:       %5 = arith.andi %3, %c1461501637330902918203684832716283019655932542975_i256 : i256 loc(#loc13)
+// CHECK-NEXT:       %6 = arith.cmpi eq, %4, %5 : i256 loc(#loc13)
 // CHECK-NEXT:       return %6 : i1 loc(#loc15)
 // CHECK-NEXT:     } loc(#loc10)
 // CHECK-NEXT:     func.func @from_uint_42(%arg0: i256 loc({{.*}}:11:23)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
