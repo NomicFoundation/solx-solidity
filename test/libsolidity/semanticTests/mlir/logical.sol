@@ -23,6 +23,10 @@ contract C {
     x = 0;
     return (a || s(b), x);
   }
+
+  function j(bool a) public pure returns (bool) {
+    return !a;
+  }
 }
 
 // ====
@@ -42,3 +46,5 @@ contract C {
 // i(bool,bool): 1, 0 -> true, 0
 // i(bool,bool): 0, 1 -> true, 1
 // i(bool,bool): 0, 0 -> false, 1
+// j(bool): 0 -> true
+// j(bool): 1 -> false

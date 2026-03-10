@@ -337,6 +337,9 @@ private:
   /// Returns the mlir expression for the binary operation.
   mlir::Value genExpr(BinaryOperation const &binOp);
 
+  /// Returns the mlir expressions for the conditional (ternary) operation.
+  mlir::SmallVector<mlir::Value> genExprs(Conditional const &cond);
+
   /// Returns the mlir expression for the call.
   mlir::SmallVector<mlir::Value> genExprs(FunctionCall const &call);
 
@@ -355,8 +358,10 @@ private:
   /// to the corresponding mlir type of `resTy`.
   mlir::Value genRValExpr(Expression const &expr,
                           std::optional<mlir::Type> resTy = std::nullopt);
-  mlir::Value genRValExpr(mlir::Value val, mlir::Location loc);
-  mlir::SmallVector<mlir::Value> genRValExprs(Expression const &expr);
+  mlir::Value genRValExpr(mlir::Value val, mlir::Location loc,
+                          std::optional<mlir::Type> resTy = std::nullopt);
+  mlir::SmallVector<mlir::Value> genRValExprs(Expression const &expr,
+                                              mlir::TypeRange resTys = {});
 
   /// Generates an ir that assigns `rhs` to `lhs`.
   void genAssign(mlir::Value lhs, mlir::Value rhs, mlir::Location loc);
@@ -812,6 +817,31 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const &unaryOp) {
         b.create<mlir::sol::ConstantOp>(loc, b.getIntegerAttr(mlirTy, 0));
     return genBinExpr(Token::Sub, zero, expr, loc);
   }
+  // Logical not
+  case Token::Not: {
+    mlir::Value expr = genRValExpr(unaryOp.subExpression());
+    mlir::Value zero = b.create<mlir::sol::ConstantOp>(
+        loc, b.getIntegerAttr(expr.getType(), 0));
+    return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::eq, expr,
+                                      zero);
+  }
+  // Bitwise not (~x == x ^ -1)
+  case Token::BitNot: {
+    mlir::Value expr = genRValExpr(unaryOp.subExpression());
+
+    // Convert bytes to int if needed.
+    if (auto bytesTy = mlir::dyn_cast<mlir::sol::BytesType>(expr.getType())) {
+      mlir::Type intTy =
+          b.getIntegerType(bytesTy.getSize() * 8, /*isSigned=*/false);
+      expr = genCast(expr, intTy);
+    }
+
+    auto intTy = mlir::cast<mlir::IntegerType>(expr.getType());
+    mlir::Value allOnes = b.create<mlir::sol::ConstantOp>(
+        loc,
+        b.getIntegerAttr(intTy, llvm::APInt::getAllOnes(intTy.getWidth())));
+    return b.create<mlir::sol::XorOp>(loc, expr, allOnes);
+  }
   default:
     break;
   }
@@ -871,6 +901,38 @@ mlir::Value SolidityToMLIRPass::genExpr(BinaryOperation const &binOp) {
   mlir::Value rhs = genRValExpr(binOp.rightExpression(), argTy);
 
   return genBinExpr(binOp.getOperator(), lhs, rhs, loc);
+}
+
+mlir::SmallVector<mlir::Value>
+SolidityToMLIRPass::genExprs(Conditional const &cond) {
+  mlir::Location loc = getLoc(cond);
+  mlir::Value condVal = genRValExpr(cond.condition());
+
+  // Get result types - could be single type or tuple.
+  mlir::SmallVector<mlir::Type> resTys;
+  if (TupleType const *tupleTy =
+          dynamic_cast<TupleType const *>(cond.annotation().type)) {
+    for (const Type *astTy : tupleTy->components())
+      resTys.push_back(getType(astTy));
+  } else {
+    resTys.push_back(getType(cond.annotation().type));
+  }
+
+  auto ifOp =
+      b.create<mlir::scf::IfOp>(loc, resTys, condVal, /*withElse=*/true);
+  mlir::OpBuilder::InsertionGuard guard(b);
+
+  // True branch
+  b.setInsertionPointToStart(&ifOp.getThenRegion().front());
+  b.create<mlir::scf::YieldOp>(loc,
+                               genRValExprs(cond.trueExpression(), resTys));
+
+  // False branch
+  b.setInsertionPointToStart(&ifOp.getElseRegion().front());
+  b.create<mlir::scf::YieldOp>(loc,
+                               genRValExprs(cond.falseExpression(), resTys));
+
+  return ifOp.getResults();
 }
 
 mlir::Value SolidityToMLIRPass::genExpr(IndexAccess const &idxAcc) {
@@ -1820,6 +1882,13 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
     return {};
   }
 
+  // Conditional (ternary operator)
+  if (const auto *cond = dynamic_cast<Conditional const *>(&expr)) {
+    mlir::SmallVector<mlir::Value> exprs = genExprs(*cond);
+    assert(exprs.size() == 1);
+    return exprs[0];
+  }
+
   llvm_unreachable("NYI");
 }
 
@@ -1833,15 +1902,21 @@ SolidityToMLIRPass::genLValExprs(Expression const &expr) {
   if (const auto *call = dynamic_cast<FunctionCall const *>(&expr))
     return genExprs(*call);
 
+  // Conditional (ternary)
+  if (const auto *cond = dynamic_cast<Conditional const *>(&expr))
+    return genExprs(*cond);
+
   mlir::SmallVector<mlir::Value, 1> vals;
   vals.push_back(genLValExpr(expr));
   return vals;
 }
 
-mlir::Value SolidityToMLIRPass::genRValExpr(mlir::Value val,
-                                            mlir::Location loc) {
+mlir::Value SolidityToMLIRPass::genRValExpr(mlir::Value val, mlir::Location loc,
+                                            std::optional<mlir::Type> resTy) {
   if (mlir::isa<mlir::sol::PointerType>(val.getType()))
-    return b.create<mlir::sol::LoadOp>(loc, val);
+    val = b.create<mlir::sol::LoadOp>(loc, val);
+  if (resTy)
+    return genCast(val, *resTy);
   return val;
 }
 
@@ -1849,22 +1924,24 @@ mlir::Value SolidityToMLIRPass::genRValExpr(Expression const &expr,
                                             std::optional<mlir::Type> resTy) {
   mlir::Value lVal = genLValExpr(expr);
   assert(lVal);
-
-  mlir::Value val = genRValExpr(lVal, getLoc(expr));
-  // Generate cast (optional).
-  if (resTy)
-    return genCast(val, *resTy);
-  return val;
+  return genRValExpr(lVal, getLoc(expr), resTy);
 }
 
 mlir::SmallVector<mlir::Value>
-SolidityToMLIRPass::genRValExprs(Expression const &expr) {
+SolidityToMLIRPass::genRValExprs(Expression const &expr,
+                                 mlir::TypeRange resTys) {
   mlir::SmallVector<mlir::Value> lVals = genLValExprs(expr);
   assert(!lVals.empty());
+  assert(resTys.empty() || lVals.size() == resTys.size());
 
   mlir::SmallVector<mlir::Value, 2> rVals;
-  for (mlir::Value lVal : lVals)
-    rVals.push_back(genRValExpr(lVal, getLoc(expr)));
+  if (resTys.empty()) {
+    for (mlir::Value lVal : lVals)
+      rVals.push_back(genRValExpr(lVal, getLoc(expr)));
+  } else {
+    for (auto [lVal, resTy] : llvm::zip(lVals, resTys))
+      rVals.push_back(genRValExpr(lVal, getLoc(expr), resTy));
+  }
 
   return rVals;
 }
@@ -1877,22 +1954,23 @@ void SolidityToMLIRPass::lower(
     VariableDeclarationStatement const &varDeclStmt) {
   mlir::Location loc = getLoc(varDeclStmt);
 
+  mlir::SmallVector<mlir::Type> varTys;
+  for (auto const &varDeclPtr : varDeclStmt.declarations())
+    varTys.push_back(getType(varDeclPtr->type(), /*indirectFn=*/true));
+
   mlir::SmallVector<mlir::Value> initExprs(varDeclStmt.declarations().size());
   if (Expression const *initExpr = varDeclStmt.initialValue())
-    initExprs = genRValExprs(*initExpr);
+    initExprs = genRValExprs(*initExpr, varTys);
 
-  for (auto [varDeclPtr, initExpr] :
-       llvm::zip(varDeclStmt.declarations(), initExprs)) {
-    VariableDeclaration const &varDecl = *varDeclPtr;
-
-    mlir::Type varTy = getType(varDecl.type(), /*indirectFn=*/true);
+  for (auto [varDeclPtr, varTy, initExpr] :
+       llvm::zip(varDeclStmt.declarations(), varTys, initExprs)) {
     mlir::Type allocTy = mlir::sol::PointerType::get(
         b.getContext(), varTy, mlir::sol::DataLocation::Stack);
 
     auto addr = b.create<mlir::sol::AllocaOp>(loc, allocTy);
-    trackLocalVarAddr(varDecl, addr);
+    trackLocalVarAddr(*varDeclPtr, addr);
     if (initExpr)
-      b.create<mlir::sol::StoreOp>(loc, genCast(initExpr, varTy), addr);
+      b.create<mlir::sol::StoreOp>(loc, initExpr, addr);
     else
       genZeroedVal(addr);
   }
@@ -1923,22 +2001,17 @@ void SolidityToMLIRPass::lower(PlaceholderStatement const &placeholder) {
 }
 
 void SolidityToMLIRPass::lower(Return const &ret) {
-  TypePointers fnResTys;
+  mlir::SmallVector<mlir::Type> fnResTys;
   for (ASTPointer<VariableDeclaration> const &retParam :
        ret.annotation().function->returnParameters())
-    fnResTys.push_back(retParam->type());
+    fnResTys.push_back(getType(retParam->type()));
 
   Expression const *astExpr = ret.expression();
-  if (astExpr) {
-    mlir::SmallVector<mlir::Value> exprs = genRValExprs(*astExpr);
-    mlir::SmallVector<mlir::Value> castedExprs;
-    for (auto [expr, dstTy] : llvm::zip(exprs, fnResTys)) {
-      castedExprs.push_back(genCast(expr, getType(dstTy)));
-    }
-    b.create<mlir::sol::ReturnOp>(getLoc(ret), castedExprs);
-  } else {
+  if (astExpr)
+    b.create<mlir::sol::ReturnOp>(getLoc(ret),
+                                  genRValExprs(*astExpr, fnResTys));
+  else
     b.create<mlir::sol::ReturnOp>(getLoc(ret));
-  }
   b.setInsertionPointToStart(b.createBlock(b.getBlock()->getParent()));
 }
 
