@@ -2247,6 +2247,34 @@ getStateMutability(FunctionDefinition const &fn) {
   }
 }
 
+/// Returns true if 'fn' is inherited into 'currContract' but overridden by a
+/// more-derived implementation in that contract's inheritance tree.
+static bool isOverriddenByFunctionInCurrentContract(
+    FunctionDefinition const &fn, ContractDefinition const &currContract) {
+  auto const *declaringContract =
+      dynamic_cast<ContractDefinition const *>(fn.scope());
+  if (!declaringContract || declaringContract == &currContract)
+    return false;
+  if (!fn.virtualSemantics() || fn.isConstructor() || fn.isFree() ||
+      fn.libraryFunction() || !fn.isOrdinary() || fn.name().empty())
+    return false;
+  return &fn.resolveVirtual(currContract) != &fn;
+}
+
+/// Returns true if a public state variable declared in 'currContract' overrides
+/// 'fn', implying that the getter owns the external selector.
+static bool
+isOverriddenByPublicStateVarGetter(FunctionDefinition const &fn,
+                                   ContractDefinition const &currContract) {
+  for (auto const *stateVar : currContract.stateVariables()) {
+    if (!stateVar->isPartOfExternalInterface())
+      continue;
+    if (stateVar->annotation().baseFunctions.count(&fn))
+      return true;
+  }
+  return false;
+}
+
 void SolidityToMLIRPass::lower(ModifierDefinition const &modifier) {
   std::vector<mlir::Type> inpTys;
   std::vector<mlir::Location> inpLocs;
@@ -2299,10 +2327,18 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   op.setId(fn.id());
 
   if (fn.isPartOfExternalInterface()) {
-    assert(selectorMap.find(&fn) != selectorMap.end());
-    op.setSelectorAttr(b.getIntegerAttr(
-        b.getIntegerType(32), mlir::APInt(32, selectorMap[&fn].hex(), 16)));
-    op.setOrigFnType(fnTy);
+    auto selectorIt = selectorMap.find(&fn);
+    if (selectorIt != selectorMap.end()) {
+      op.setSelectorAttr(b.getIntegerAttr(
+          b.getIntegerType(32), mlir::APInt(32, selectorIt->second.hex(), 16)));
+      op.setOrigFnType(fnTy);
+    } else {
+      assert(currContract && "function lowering outside a contract");
+      solAssert(
+          isOverriddenByFunctionInCurrentContract(fn, *currContract) ||
+              isOverriddenByPublicStateVarGetter(fn, *currContract),
+          "missing selector for a non-overridden external interface function");
+    }
   }
 
   // Set function kind.
