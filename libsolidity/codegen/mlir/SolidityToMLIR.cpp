@@ -538,9 +538,9 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
   }
   case Type::Category::Contract: {
     const auto *contTy = static_cast<ContractType const *>(ty);
-    // Contract values are addresses, so keep FE payability on that address
-    // type.
-    return mlir::sol::AddressType::get(b.getContext(), contTy->isPayable());
+    return mlir::sol::ContractType::get(
+        b.getContext(), getMangledName(contTy->contractDefinition()),
+        contTy->isPayable());
   }
   default:
     break;
@@ -558,9 +558,9 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
     case Type::Category::Contract: {
       assert(id.name() == "this");
       assert(currContract && "'this' must be emitted in contract context");
-      auto thisTy = mlir::sol::AddressType::get(
-          b.getContext(), ContractType(*currContract).isPayable());
-      // Emit 'this' with the current contract payability directly.
+      auto thisTy = mlir::sol::ContractType::get(
+          b.getContext(), getMangledName(*currContract),
+          ContractType(*currContract).isPayable());
       return b.create<mlir::sol::ThisOp>(getLoc(id), thisTy);
     }
     default:
@@ -623,6 +623,10 @@ mlir::Value SolidityToMLIRPass::genCast(mlir::Value val, mlir::Type dstTy) {
   // Don't cast if we're casting to the same type.
   if (srcTy == dstTy)
     return val;
+
+  if (mlir::isa<mlir::sol::ContractType>(srcTy) &&
+      mlir::isa<mlir::sol::ContractType>(dstTy))
+    return b.create<mlir::sol::ContractCastOp>(loc, dstTy, val);
 
   // Address casts, including non-payable <-> payable address typing and
   // bytes20 <-> address conversions.
@@ -1236,10 +1240,17 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       callExpr = &fnCallOpt->expression();
     }
 
-    // Generate the address.
     const auto *memberAcc = dynamic_cast<MemberAccess const *>(callExpr);
     assert(memberAcc);
-    mlir::Value addr = genLValExpr(memberAcc->expression());
+
+    // Generate the target address for 'sol.ext_call'.
+    //
+    // Canonicalize the call base to non-payable address at this boundary so
+    // init MLIR reflects the FE cast and lowering keeps the usual low-160-bit
+    // address normalization semantics before the low-level call.
+    mlir::Value addr = genRValExpr(
+        memberAcc->expression(),
+        mlir::sol::AddressType::get(b.getContext(), /*payable=*/false));
 
     // Get the callee and the selector.
     const auto *callee = dynamic_cast<FunctionDefinition const *>(
@@ -1336,7 +1347,7 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       value = genUnsignedConst(0, /*numBits=*/256, loc);
 
     // Keep the creation result typed as the FE return contract type so
-    // payability is preserved (address vs address<payable>).
+    // payability is preserved (contract vs contract<payable>).
     resVals.push_back(b.create<mlir::sol::NewOp>(
         loc, getType(calleeTy->returnParameterTypes().front()), objName, value,
         salt, args));
@@ -1361,7 +1372,8 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     std::vector<mlir::Value> indexedArgs, nonIndexedArgs;
     for (size_t i = 0; i < event.parameters().size(); ++i) {
       assert(dynamic_cast<IntegerType const *>(calleeTy->parameterTypes()[i]) ||
-             dynamic_cast<AddressType const *>(calleeTy->parameterTypes()[i]));
+             dynamic_cast<AddressType const *>(calleeTy->parameterTypes()[i]) ||
+             dynamic_cast<ContractType const *>(calleeTy->parameterTypes()[i]));
 
       // TODO? YulUtilFunctions::conversionFunction
       mlir::Value arg =

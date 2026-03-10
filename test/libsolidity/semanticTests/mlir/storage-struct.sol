@@ -86,6 +86,19 @@ contract C {
   function get_mixed_ref_arr(uint256 idx) public view returns (uint256) {
     return mixed_ref.arr[idx];
   }
+
+  struct ContractRef {
+    uint96 x;
+    C c;
+  }
+  ContractRef contract_ref;
+  function set_contract_ref(uint96 x, C c) public {
+    contract_ref.x = x;
+    contract_ref.c = c;
+  }
+  function get_contract_ref() public view returns (uint96, C) {
+    return (contract_ref.x, contract_ref.c);
+  }
 }
 
 // ====
@@ -106,3 +119,5 @@ contract C {
 // get_mixed_ref() -> 0xaa, 2, 0xbb
 // get_mixed_ref_arr(uint256): 0 -> 0x111
 // get_mixed_ref_arr(uint256): 1 -> 0x222
+// set_contract_ref(uint96,address): 7, 0x1212121212121212121212121212121212121212 ->
+// get_contract_ref() -> 7, 0x1212121212121212121212121212121212121212

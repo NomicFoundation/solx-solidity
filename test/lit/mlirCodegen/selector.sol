@@ -33,13 +33,13 @@ contract C {
 // CHECK-NEXT:     sol.func @f_6() attributes {id = 6 : i64, orig_fn_type = () -> (), selector = 638722032 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc3)
 // CHECK-NEXT:     } loc(#loc3)
-// CHECK-NEXT:     sol.func @get_19() -> !sol.address attributes {id = 19 : i64, orig_fn_type = () -> !sol.address, selector = 1833756220 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @get_19() -> !sol.contract<"C_43"> attributes {id = 19 : i64, orig_fn_type = () -> !sol.contract<"C_43">, selector = 1833756220 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.addr_of @x_2 : !sol.ptr<ui256, Storage> loc(#loc2)
 // CHECK-NEXT:       %c42_ui8 = sol.constant 42 : ui8 loc(#loc5)
 // CHECK-NEXT:       %1 = sol.cast %c42_ui8 : ui8 to ui256 loc(#loc5)
 // CHECK-NEXT:       sol.store %1, %0 : ui256, !sol.ptr<ui256, Storage> loc(#loc6)
-// CHECK-NEXT:       %2 = sol.this : !sol.address loc(#loc7)
-// CHECK-NEXT:       sol.return %2 : !sol.address loc(#loc8)
+// CHECK-NEXT:       %2 = sol.this : !sol.contract<"C_43"> loc(#loc7)
+// CHECK-NEXT:       sol.return %2 : !sol.contract<"C_43"> loc(#loc8)
 // CHECK-NEXT:     } loc(#loc4)
 // CHECK-NEXT:     sol.func @selector_29() -> !sol.bytes<4> attributes {id = 29 : i64, orig_fn_type = () -> !sol.bytes<4>, selector = -365080438 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %c638722032_ui32 = sol.constant 638722032 : ui32 loc(#loc10)
@@ -47,7 +47,7 @@ contract C {
 // CHECK-NEXT:       sol.return %0 : !sol.bytes<4> loc(#loc11)
 // CHECK-NEXT:     } loc(#loc9)
 // CHECK-NEXT:     sol.func @sideEffect_42() -> ui256 attributes {id = 42 : i64, orig_fn_type = () -> ui256, selector = 973439589 : i32, state_mutability = #NonPayable} {
-// CHECK-NEXT:       %0 = sol.call @get_19() : () -> !sol.address loc(#loc13)
+// CHECK-NEXT:       %0 = sol.call @get_19() : () -> !sol.contract<"C_43"> loc(#loc13)
 // CHECK-NEXT:       %c638722032_ui32 = sol.constant 638722032 : ui32 loc(#loc13)
 // CHECK-NEXT:       %1 = sol.addr_of @x_2 : !sol.ptr<ui256, Storage> loc(#loc2)
 // CHECK-NEXT:       %2 = sol.load %1 : !sol.ptr<ui256, Storage>, ui256 loc(#loc14)

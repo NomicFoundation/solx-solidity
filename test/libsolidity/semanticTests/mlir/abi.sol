@@ -2,6 +2,10 @@ interface I {
   function foo(uint256 x) external;
 }
 
+contract CC {
+  function foo() external pure {}
+}
+
 contract C {
   enum E { A, B, C }
 
@@ -63,6 +67,26 @@ contract C {
 
   function rt_addr_payable(address a) public returns (address) {
     return abi.decode(abi.encode(payable(a)), (address));
+  }
+
+  function ei_contract(CC c) public returns (bytes memory) {
+    return abi.encode(c);
+  }
+
+  function di_contract(bytes memory a) public returns (CC) {
+    return abi.decode(a, (CC));
+  }
+
+  function ep_contract(CC c) public returns (bytes memory) {
+    return abi.encodePacked(c);
+  }
+
+  function di_contract_u256(bytes memory a) public returns (CC, uint256) {
+    return abi.decode(a, (CC, uint256));
+  }
+
+  function rt_contract(CC c) public returns (CC) {
+    return abi.decode(abi.encode(c), (CC));
   }
 
   function ep_u8_len(uint8 x) public returns (uint) {
@@ -142,6 +166,14 @@ contract C {
   }
 
   function ei_addr_array_dynamic_calldata(address[] calldata x) public returns (bytes memory) {
+    return abi.encode(x);
+  }
+
+  function ep_contract_array_dynamic_calldata(C[] calldata x) public returns (bytes memory) {
+    return abi.encodePacked(x);
+  }
+
+  function ei_contract_array_dynamic_calldata(C[] calldata x) public returns (bytes memory) {
     return abi.encode(x);
   }
 
@@ -276,6 +308,11 @@ contract C {
 // rt_addr(address): 1 -> 1
 // rt_addr_u256(address,uint256): 1, 7 -> 1, 7
 // rt_addr_payable(address): 1 -> 1
+// ei_contract(address): 1 -> 32, 32, 1
+// di_contract(bytes): 32, 32, 1 -> 1
+// ep_contract(address): 1 -> 32, 20, left(0x0000000000000000000000000000000000000001)
+// di_contract_u256(bytes): 32, 64, 1, 7 -> 1, 7
+// rt_contract(address): 1 -> 1
 // ep_u8_len(uint8): 1 -> 1
 // ep_u8(uint8): 1 -> 32, 1, left(0x01)
 // ep_u24_u96_u136(uint24,uint96,uint136): 0x010203, 0x0405060708090a0b0c0d0e0f, 0x101112131415161718191a1b1c1d1e1f20 -> 32, 32, 0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20
@@ -300,6 +337,10 @@ contract C {
 // ep_addr_array_dynamic_calldata(address[]): 0x20, 1, 0x10000000000000000000000000000000000000000 -> FAILURE
 // ei_addr_array_dynamic_calldata(address[]): 0x20, 2, 1, 2 -> 32, 128, 32, 2, 1, 2
 // ei_addr_array_dynamic_calldata(address[]): 0x20, 1, 0x10000000000000000000000000000000000000000 -> FAILURE
+// ep_contract_array_dynamic_calldata(address[]): 0x20, 2, 1, 2 -> 32, 64, 1, 2
+// ep_contract_array_dynamic_calldata(address[]): 0x20, 1, 0x10000000000000000000000000000000000000000 -> FAILURE
+// ei_contract_array_dynamic_calldata(address[]): 0x20, 2, 1, 2 -> 32, 128, 32, 2, 1, 2
+// ei_contract_array_dynamic_calldata(address[]): 0x20, 1, 0x10000000000000000000000000000000000000000 -> FAILURE
 // ep_bool_array_dynamic_calldata(bool[]): 0x20, 3, 1, 0, 1 -> 32, 96, 1, 0, 1
 // ep_bool_array_dynamic_calldata(bool[]): 0x20, 2, 2, 0 -> FAILURE
 // ei_bool_array_dynamic_calldata(bool[]): 0x20, 3, 1, 0, 1 -> 32, 160, 32, 3, 1, 0, 1
