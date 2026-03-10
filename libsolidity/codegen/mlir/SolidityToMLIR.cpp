@@ -695,11 +695,6 @@ mlir::Value SolidityToMLIRPass::genBinExpr(Token op, mlir::Value lhs,
         b.getIntegerType(bytesTy.getSize() * 8, /*isSigned=*/false);
     return genCast(val, intTy);
   };
-  auto convertCmpOperand = [&](mlir::Value val) -> mlir::Value {
-    if (mlir::isa<mlir::sol::AddressType>(val.getType()))
-      return genCast(val, b.getIntegerType(/*width=*/160, /*isSigned=*/false));
-    return convertBytesToInt(val);
-  };
 
   switch (op) {
   case Token::Add:
@@ -744,29 +739,23 @@ mlir::Value SolidityToMLIRPass::genBinExpr(Token op, mlir::Value lhs,
   case Token::SAR:
     return b.create<mlir::sol::ShrOp>(loc, lhs, rhs);
   case Token::Equal:
-    return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::eq,
-                                      convertCmpOperand(lhs),
-                                      convertCmpOperand(rhs));
+    return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::eq, lhs,
+                                      rhs);
   case Token::NotEqual:
-    return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::ne,
-                                      convertCmpOperand(lhs),
-                                      convertCmpOperand(rhs));
+    return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::ne, lhs,
+                                      rhs);
   case Token::LessThan:
-    return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::lt,
-                                      convertCmpOperand(lhs),
-                                      convertCmpOperand(rhs));
+    return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::lt, lhs,
+                                      rhs);
   case Token::LessThanOrEqual:
-    return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::le,
-                                      convertCmpOperand(lhs),
-                                      convertCmpOperand(rhs));
+    return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::le, lhs,
+                                      rhs);
   case Token::GreaterThan:
-    return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::gt,
-                                      convertCmpOperand(lhs),
-                                      convertCmpOperand(rhs));
+    return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::gt, lhs,
+                                      rhs);
   case Token::GreaterThanOrEqual:
-    return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::ge,
-                                      convertCmpOperand(lhs),
-                                      convertCmpOperand(rhs));
+    return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::ge, lhs,
+                                      rhs);
   default:
     break;
   }

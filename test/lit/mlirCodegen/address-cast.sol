@@ -73,10 +73,8 @@ contract C {
 // CHECK-NEXT:       sol.store %arg1, %1 : !sol.address, !sol.ptr<!sol.address, Stack> loc(#loc16)
 // CHECK-NEXT:       %2 = sol.load %0 : !sol.ptr<!sol.address, Stack>, !sol.address loc(#loc17)
 // CHECK-NEXT:       %3 = sol.load %1 : !sol.ptr<!sol.address, Stack>, !sol.address loc(#loc18)
-// CHECK-NEXT:       %4 = sol.address_cast %2 : !sol.address to ui160 loc(#loc17)
-// CHECK-NEXT:       %5 = sol.address_cast %3 : !sol.address to ui160 loc(#loc18)
-// CHECK-NEXT:       %6 = sol.cmp eq, %4, %5 : ui160 loc(#loc17)
-// CHECK-NEXT:       sol.return %6 : i1 loc(#loc19)
+// CHECK-NEXT:       %4 = sol.cmp eq, %2, %3 : !sol.address loc(#loc17)
+// CHECK-NEXT:       sol.return %4 : i1 loc(#loc19)
 // CHECK-NEXT:     } loc(#loc14)
 // CHECK-NEXT:     sol.func @to_bytes20_69(%arg0: !sol.address loc({{.*}}:19:24)) -> !sol.bytes<20> attributes {id = 69 : i64, orig_fn_type = (!sol.address) -> !sol.bytes<20>, selector = -1936108890 : i32, state_mutability = #Pure} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.address, Stack> loc(#loc21)
