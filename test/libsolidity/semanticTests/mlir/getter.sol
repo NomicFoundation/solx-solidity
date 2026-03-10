@@ -9,6 +9,8 @@ contract C {
   S public s;
   mapping(address => uint) public m;
   mapping(address => mapping(uint => uint)) public m2;
+  mapping(C => uint) public mc;
+  mapping(uint => C) public cm;
 
   uint public constant ci = 7;
 
@@ -22,6 +24,8 @@ contract C {
 	  // s.i8 = 4;
     m[address(0)] = 5;
     m2[address(0)][0] = 6;
+    mc[C(address(0))] = 8;
+    cm[1] = C(address(2));
   }
 }
 
@@ -33,4 +37,6 @@ contract C {
 // s() -> 3, 0
 // m(address): 0 -> 5
 // m2(address,uint256): 0, 0 -> 6
+// mc(address): 0 -> 8
+// cm(uint256): 1 -> 2
 // ci() -> 7

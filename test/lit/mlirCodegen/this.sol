@@ -33,14 +33,16 @@ contract P {
 // CHECK-NEXT:     sol.func @f_13(%arg0: !sol.address loc({{.*}}:3:13)) attributes {id = 13 : i64, orig_fn_type = (!sol.address) -> (), selector = -60272102 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.address, Stack> loc(#loc3)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.address, !sol.ptr<!sol.address, Stack> loc(#loc3)
-// CHECK-NEXT:       %1 = sol.this : !sol.address loc(#loc4)
-// CHECK-NEXT:       sol.store %1, %0 : !sol.address, !sol.ptr<!sol.address, Stack> loc(#loc5)
+// CHECK-NEXT:       %1 = sol.this : !sol.contract<"C_28"> loc(#loc4)
+// CHECK-NEXT:       %2 = sol.address_cast %1 : !sol.contract<"C_28"> to !sol.address loc(#loc4)
+// CHECK-NEXT:       sol.store %2, %0 : !sol.address, !sol.ptr<!sol.address, Stack> loc(#loc5)
 // CHECK-NEXT:       sol.return loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
 // CHECK-NEXT:     sol.func @g_27() -> !sol.address<payable> attributes {id = 27 : i64, orig_fn_type = () -> !sol.address<payable>, selector = -501769330 : i32, state_mutability = #View} {
-// CHECK-NEXT:       %0 = sol.this : !sol.address loc(#loc7)
-// CHECK-NEXT:       %1 = sol.address_cast %0 : !sol.address to !sol.address<payable> loc(#loc7)
-// CHECK-NEXT:       sol.return %1 : !sol.address<payable> loc(#loc8)
+// CHECK-NEXT:       %0 = sol.this : !sol.contract<"C_28"> loc(#loc7)
+// CHECK-NEXT:       %1 = sol.address_cast %0 : !sol.contract<"C_28"> to !sol.address loc(#loc7)
+// CHECK-NEXT:       %2 = sol.address_cast %1 : !sol.address to !sol.address<payable> loc(#loc7)
+// CHECK-NEXT:       sol.return %2 : !sol.address<payable> loc(#loc8)
 // CHECK-NEXT:     } loc(#loc6)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
@@ -67,9 +69,9 @@ contract P {
 // CHECK-NEXT:     sol.func @_32() attributes {id = 32 : i64, kind = #Receive, state_mutability = #Payable} {
 // CHECK-NEXT:       sol.return loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:     sol.func @self_41() -> !sol.address<payable> attributes {id = 41 : i64, orig_fn_type = () -> !sol.address<payable>, selector = 1896144306 : i32, state_mutability = #View} {
-// CHECK-NEXT:       %0 = sol.this : !sol.address<payable> loc(#loc4)
-// CHECK-NEXT:       sol.return %0 : !sol.address<payable> loc(#loc5)
+// CHECK-NEXT:     sol.func @self_41() -> !sol.contract<"P_42", payable> attributes {id = 41 : i64, orig_fn_type = () -> !sol.contract<"P_42", payable>, selector = 1896144306 : i32, state_mutability = #View} {
+// CHECK-NEXT:       %0 = sol.this : !sol.contract<"P_42", payable> loc(#loc4)
+// CHECK-NEXT:       sol.return %0 : !sol.contract<"P_42", payable> loc(#loc5)
 // CHECK-NEXT:     } loc(#loc3)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
