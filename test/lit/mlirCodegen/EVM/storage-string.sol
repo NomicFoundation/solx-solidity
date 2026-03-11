@@ -807,12 +807,12 @@ contract Test {
 // CHECK-NEXT:       llvm.store %c0_i256, %18 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc17)
 // CHECK-NEXT:       %19 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc17)
 // CHECK-NEXT:       %20 = "llvm.intrcall"(%19, %c32_i256) <{id = 4085 : i32, name = "evm.sha3"}> : (!llvm.ptr<1>, i256) -> i256 loc(#loc17)
-// CHECK-NEXT:       %21 = arith.andi %1, %c1_i256 : i256 loc(#loc17)
-// CHECK-NEXT:       %22 = arith.cmpi eq, %21, %c0_i256 : i256 loc(#loc17)
-// CHECK-NEXT:       %23 = arith.addi %14, %c32_i256 : i256 loc(#loc17)
-// CHECK-NEXT:       scf.if %22 {
+// CHECK-NEXT:       %21 = arith.addi %14, %c32_i256 : i256 loc(#loc17)
+// CHECK-NEXT:       %22 = arith.andi %1, %c1_i256 : i256 loc(#loc17)
+// CHECK-NEXT:       %23 = arith.cmpi eq, %22, %c0_i256 : i256 loc(#loc17)
+// CHECK-NEXT:       scf.if %23 {
 // CHECK-NEXT:         %25 = arith.andi %1, %c-256_i256 : i256 loc(#loc17)
-// CHECK-NEXT:         %26 = llvm.inttoptr %23 : i256 to !llvm.ptr<1> loc(#loc17)
+// CHECK-NEXT:         %26 = llvm.inttoptr %21 : i256 to !llvm.ptr<1> loc(#loc17)
 // CHECK-NEXT:         llvm.store %25, %26 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc17)
 // CHECK-NEXT:       } else {
 // CHECK-NEXT:         %25 = arith.index_castui %6 : i256 to index loc(#loc17)
@@ -822,7 +822,7 @@ contract Test {
 // CHECK-NEXT:           %28 = arith.addi %20, %27 : i256 loc(#loc17)
 // CHECK-NEXT:           %29 = llvm.inttoptr %28 : i256 to !llvm.ptr<5> loc(#loc17)
 // CHECK-NEXT:           %30 = llvm.load %29 {alignment = 1 : i64} : !llvm.ptr<5> -> i256 loc(#loc17)
-// CHECK-NEXT:           %31 = arith.addi %23, %26 : i256 loc(#loc17)
+// CHECK-NEXT:           %31 = arith.addi %21, %26 : i256 loc(#loc17)
 // CHECK-NEXT:           %32 = llvm.inttoptr %31 : i256 to !llvm.ptr<1> loc(#loc17)
 // CHECK-NEXT:           llvm.store %30, %32 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc17)
 // CHECK-NEXT:         } loc(#loc17)
