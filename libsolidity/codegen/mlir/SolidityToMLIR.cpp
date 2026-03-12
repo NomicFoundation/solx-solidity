@@ -1168,6 +1168,50 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       call.sortedArguments();
 
   mlir::Location loc = getLoc(call);
+
+  auto parseLowLevelCallInfo = [&]() {
+    Expression const *callExpr = &call.expression();
+    mlir::Value gas, value;
+    if (const auto *fnCallOpt =
+            dynamic_cast<FunctionCallOptions const *>(callExpr)) {
+      for (const auto &[namePtr, exprPtr] :
+           llvm::zip(fnCallOpt->names(), fnCallOpt->options())) {
+        ASTString const &name = *namePtr;
+        Expression const &optExpr = *exprPtr;
+        mlir::Value loweredExpr =
+            genRValExpr(optExpr, b.getIntegerType(256, /*isSigned=*/false));
+        if (name == "gas")
+          gas = loweredExpr;
+        else if (name == "value")
+          value = loweredExpr;
+      }
+      callExpr = &fnCallOpt->expression();
+    }
+    auto const *memberAcc = dynamic_cast<MemberAccess const *>(callExpr);
+    assert(memberAcc);
+
+    // Canonicalize the call base to non-payable address at this boundary so
+    // init MLIR reflects the FE cast and lowering keeps the usual low-160-bit
+    // address normalization semantics before the low-level call.
+    mlir::Value addr = genRValExpr(
+        memberAcc->expression(),
+        mlir::sol::AddressType::get(b.getContext(), /*payable=*/false));
+    return std::tuple(memberAcc, addr, gas, value);
+  };
+
+  auto materializeCallGas = [&](mlir::Value gas,
+                                u256 gasNeededByCaller) -> mlir::Value {
+    BuilderExt bExt(b, loc);
+    if (!gas) {
+      gas = b.create<mlir::yul::GasOp>(loc);
+      if (!evmVersion.canOverchargeGasForCall())
+        gas = b.create<mlir::arith::SubIOp>(
+            loc, gas, bExt.genI256Const(gasNeededByCaller));
+    }
+    return b.create<mlir::sol::ConvCastOp>(
+        loc, b.getIntegerType(256, /*isSigned=*/false), gas);
+  };
+
   switch (calleeTy->kind()) {
   // Internal call
   case FunctionType::Kind::Internal: {
@@ -1226,36 +1270,7 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
   // External call
   case FunctionType::Kind::External:
   case FunctionType::Kind::DelegateCall: {
-    // Handle the FunctionCallOptions case.
-    Expression const *callExpr = &call.expression();
-    mlir::Value gas, value;
-    mlir::Type ui256Ty = b.getIntegerType(256, /*isSigned=*/false);
-    if (const auto *fnCallOpt =
-            dynamic_cast<FunctionCallOptions const *>(&call.expression())) {
-      for (const auto &[namePtr, exprPtr] :
-           llvm::zip(fnCallOpt->names(), fnCallOpt->options())) {
-        ASTString const &name = *namePtr;
-        Expression const &expr = *exprPtr;
-        mlir::Value loweredExpr = genRValExpr(expr, ui256Ty);
-        if (name == "gas")
-          gas = loweredExpr;
-        else if (name == "value")
-          value = loweredExpr;
-      }
-      callExpr = &fnCallOpt->expression();
-    }
-
-    const auto *memberAcc = dynamic_cast<MemberAccess const *>(callExpr);
-    assert(memberAcc);
-
-    // Generate the target address for 'sol.ext_call'.
-    //
-    // Canonicalize the call base to non-payable address at this boundary so
-    // init MLIR reflects the FE cast and lowering keeps the usual low-160-bit
-    // address normalization semantics before the low-level call.
-    mlir::Value addr = genRValExpr(
-        memberAcc->expression(),
-        mlir::sol::AddressType::get(b.getContext(), /*payable=*/false));
+    auto [memberAcc, addr, gas, value] = parseLowLevelCallInfo();
 
     // Get the callee and the selector.
     const auto *callee = dynamic_cast<FunctionDefinition const *>(
@@ -1278,26 +1293,14 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       resTys.push_back(getType(ty));
     }
 
-    // FIXME: Don't use signless int operands.
-    BuilderExt bExt(b, loc);
-
     // Generate gas.
-    if (!gas) {
-      if (evmVersion.canOverchargeGasForCall()) {
-        gas = b.create<mlir::yul::GasOp>(loc);
-      } else {
-        u256 gasNeededByCaller = evmasm::GasCosts::callGas(evmVersion) + 10;
-        size_t encodedHeadSize = 0;
-        for (Type const *ty : calleeTy->returnParameterTypes())
-          encodedHeadSize += ty->decodingType()->calldataHeadSize();
-        if (encodedHeadSize == 0 || !evmVersion.supportsReturndata())
-          gasNeededByCaller += evmasm::GasCosts::callNewAccountGas;
-        gas =
-            b.create<mlir::arith::SubIOp>(loc, b.create<mlir::yul::GasOp>(loc),
-                                          bExt.genI256Const(gasNeededByCaller));
-      }
-    }
-    gas = b.create<mlir::sol::ConvCastOp>(loc, ui256Ty, gas);
+    u256 gasNeededByCaller = evmasm::GasCosts::callGas(evmVersion) + 10;
+    size_t encodedHeadSize = 0;
+    for (Type const *ty : calleeTy->returnParameterTypes())
+      encodedHeadSize += ty->decodingType()->calldataHeadSize();
+    if (encodedHeadSize == 0 || !evmVersion.supportsReturndata())
+      gasNeededByCaller += evmasm::GasCosts::callNewAccountGas;
+    gas = materializeCallGas(gas, gasNeededByCaller);
 
     // Generate value.
     if (!value) {
@@ -1316,6 +1319,47 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
                                                /*indirectFn=*/false)),
         mlir::ArrayAttr{}, mlir::ArrayAttr{});
     for (mlir::Value val : llvm::drop_begin(callOp.getResults()))
+      resVals.push_back(val);
+    return resVals;
+  }
+
+  case FunctionType::Kind::BareCall:
+  case FunctionType::Kind::BareDelegateCall:
+  case FunctionType::Kind::BareStaticCall: {
+    assert(astArgs.size() == 1);
+
+    auto [_, addr, gas, value] = parseLowLevelCallInfo();
+
+    mlir::Value inp = genRValExpr(*astArgs.front(),
+                                  getType(calleeTy->parameterTypes().front()));
+    std::vector<mlir::Type> resTys;
+    for (Type const *ty : calleeTy->returnParameterTypes())
+      resTys.push_back(getType(ty));
+
+    u256 gasNeededByCaller = evmasm::GasCosts::callGas(evmVersion) + 10;
+    if (value)
+      gasNeededByCaller += evmasm::GasCosts::callValueTransferGas;
+    gasNeededByCaller += evmasm::GasCosts::callNewAccountGas;
+    gas = materializeCallGas(gas, gasNeededByCaller);
+
+    mlir::Operation *callOp = nullptr;
+    if (calleeTy->kind() == FunctionType::Kind::BareCall) {
+      if (!value)
+        value = genUnsignedConst(0, /*numBits=*/256, loc);
+      callOp =
+          b.create<mlir::sol::BareCallOp>(loc, resTys, addr, gas, value, inp);
+    } else if (calleeTy->kind() == FunctionType::Kind::BareDelegateCall) {
+      assert(!value && "Value set for delegatecall.");
+      callOp =
+          b.create<mlir::sol::BareDelegateCallOp>(loc, resTys, addr, gas, inp);
+    } else {
+      assert(calleeTy->kind() == FunctionType::Kind::BareStaticCall);
+      assert(!value && "Value set for staticcall.");
+      callOp =
+          b.create<mlir::sol::BareStaticCallOp>(loc, resTys, addr, gas, inp);
+    }
+    assert(callOp);
+    for (mlir::Value val : callOp->getResults())
       resVals.push_back(val);
     return resVals;
   }
