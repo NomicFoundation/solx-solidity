@@ -111,6 +111,7 @@ contract C {
 // ofa(uint8): 255 -> FAILURE, hex"4e487b71", 0x11
 // ofs(int8): -128 -> FAILURE, hex"4e487b71", 0x11
 // ofm(int8): 127 -> FAILURE, hex"4e487b71", 0x11
+// ofm(int8): 0 -> 0
 // ofd(int8): -128 -> FAILURE, hex"4e487b71", 0x11
 // dbz(int8): 1 -> FAILURE, hex"4e487b71", 0x12
 // neg(int256): 1 -> -1
