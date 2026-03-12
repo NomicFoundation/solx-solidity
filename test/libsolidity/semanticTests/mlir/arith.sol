@@ -77,6 +77,14 @@ contract C {
     return (a & b, a | b, a ^ b);
   }
 
+  function bnot(uint a) public returns (uint) {
+    return ~a;
+  }
+
+  function bnotBytes(bytes4 a) public pure returns (bytes4) {
+    return ~a;
+  }
+
   function addmod8(uint8 a, uint8 b, uint8 m) public returns (uint256) {
     return addmod(a, b, m);
   }
@@ -122,6 +130,8 @@ contract C {
 // shr8(uint8,uint256): 1, 8 -> 0
 // bit(int256,int256): 6, 3 -> 2, 7, 5
 // bit8(int8,int8): 6, 3 -> 2, 7, 5
+// bnot(uint256): 0 -> 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+// bnotBytes(bytes4): left(0x12345678) -> left(0xedcba987)
 // addmod8(uint8,uint8,uint8): 42, 25, 0 -> FAILURE, hex"4e487b71", 0x12
 // addmod8(uint8,uint8,uint8): 42, 25, 24 -> 19
 // addmod8(uint8,uint8,uint8): 200, 100, 7 -> 6
