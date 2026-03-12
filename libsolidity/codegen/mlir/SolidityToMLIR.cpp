@@ -1201,15 +1201,18 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
 
   auto materializeCallGas = [&](mlir::Value gas,
                                 u256 gasNeededByCaller) -> mlir::Value {
-    BuilderExt bExt(b, loc);
-    if (!gas) {
-      gas = b.create<mlir::yul::GasOp>(loc);
-      if (!evmVersion.canOverchargeGasForCall())
-        gas = b.create<mlir::arith::SubIOp>(
-            loc, gas, bExt.genI256Const(gasNeededByCaller));
+    if (gas)
+      return gas;
+
+    gas = b.create<mlir::sol::GasLeftOp>(loc);
+    if (!evmVersion.canOverchargeGasForCall()) {
+      mlir::Type ui256Ty = b.getIntegerType(256, /*isSigned=*/false);
+      mlir::Value gasNeeded = b.create<mlir::sol::ConstantOp>(
+          loc, b.getIntegerAttr(ui256Ty, getAPInt(gasNeededByCaller, 256)));
+      gas = b.create<mlir::sol::SubOp>(loc, gas, gasNeeded);
     }
-    return b.create<mlir::sol::ConvCastOp>(
-        loc, b.getIntegerType(256, /*isSigned=*/false), gas);
+
+    return gas;
   };
 
   switch (calleeTy->kind()) {
