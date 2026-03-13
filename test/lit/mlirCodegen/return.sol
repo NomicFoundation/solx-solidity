@@ -51,8 +51,6 @@ function h(bool a) {
 // CHECK-NEXT:     } else {
 // CHECK-NEXT:     } loc(#loc12)
 // CHECK-NEXT:     sol.return loc(#loc14)
-// CHECK-NEXT:   ^bb1:  // no predecessors
-// CHECK-NEXT:     sol.return loc(#loc9)
 // CHECK-NEXT:   } loc(#loc9)
 // CHECK-NEXT:   sol.func @h_33(%arg0: i1 loc({{.*}}:14:11)) attributes {id = 33 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc16)

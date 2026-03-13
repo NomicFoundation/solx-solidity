@@ -610,7 +610,21 @@ void SolidityToMLIRPass::genZeroedVal(mlir::sol::AllocaOp addr) {
     // TODO: Do we need to zero-init here?
     val = b.create<mlir::sol::MallocOp>(loc, stringTy, /*zeroInit=*/false,
                                         /*size=*/mlir::Value{});
+  } else if (auto addressTy =
+                 mlir::dyn_cast<mlir::sol::AddressType>(pointeeTy)) {
+    auto uint160Ty = b.getIntegerType(160, /*isSigned=*/false);
+    auto zero = b.create<mlir::sol::ConstantOp>(
+        loc, b.getIntegerAttr(uint160Ty, llvm::APInt(160, 0)));
+    val = b.create<mlir::sol::AddressCastOp>(loc, addressTy, zero);
+
+  } else if (auto bytesTy = mlir::dyn_cast<mlir::sol::BytesType>(pointeeTy)) {
+    unsigned width = bytesTy.getSize() * 8;
+    auto uintTy = b.getIntegerType(width, /*isSigned=*/false);
+    auto zero = b.create<mlir::sol::ConstantOp>(
+        loc, b.getIntegerAttr(uintTy, llvm::APInt(width, 0)));
+    val = b.create<mlir::sol::BytesCastOp>(loc, bytesTy, zero);
   }
+
   assert(val);
 
   b.create<mlir::sol::StoreOp>(loc, val, addr);
@@ -2391,6 +2405,27 @@ void SolidityToMLIRPass::lower(ModifierDefinition const &modifier) {
   b.setInsertionPointAfter(op);
 }
 
+// Check if the operation \p other would dominate a new operation if we insert
+// it at the current insertion point, pointed to by builder.getInsertionPoint().
+static bool willDominate(mlir::OpBuilder &builder, mlir::Operation *other,
+                         mlir::DominanceInfo &domInfo) {
+  mlir::Block *insertBlock = builder.getInsertionBlock();
+  mlir::Block *otherBlock = other->getBlock();
+
+  if (insertBlock != otherBlock)
+    return domInfo.dominates(otherBlock, insertBlock);
+
+  // Same block: other must come before the insertion point.
+  mlir::Block::iterator insertPt = builder.getInsertionPoint();
+  // If the insertion point is at the end of the block (including the case of
+  // an empty block), every existing op in this block is before the insertion
+  // point.
+  if (insertPt == insertBlock->end())
+    return true;
+
+  return other->isBeforeInBlock(&*insertPt);
+}
+
 mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   assert(fn.isImplemented());
   // Create the function type.
@@ -2488,6 +2523,19 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
     b.create<mlir::sol::StoreOp>(inpLoc, arg, addr);
   }
 
+  // Allocate and zero-initialize named return parameters.
+  for (const auto &param : fn.returnParameters()) {
+    if (param->name().empty())
+      continue;
+    mlir::Location paramLoc = getLoc(*param);
+    mlir::Type paramTy = getType(param->annotation().type);
+    auto addr = b.create<mlir::sol::AllocaOp>(
+        paramLoc, mlir::sol::PointerType::get(b.getContext(), paramTy,
+                                              mlir::sol::DataLocation::Stack));
+    trackLocalVarAddr(*param, addr);
+    genZeroedVal(addr);
+  }
+
   // Generate the call to the next ctor (if any) if `fn` is a ctor.
   if (fn.isConstructor()) {
     // Get base contract of `currContract`
@@ -2523,18 +2571,57 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   // Lower the body.
   lower(fn.body());
 
-  // Return stmt lowering generates an empty block that might be empty at this
-  // stage.
-  if (outTys.empty())
-    b.create<mlir::sol::ReturnOp>(getLoc(fn));
-  mlir::Block *currBlk = b.getBlock();
-  if (currBlk->empty()) {
-    op.getBody().back().erase();
-  } else if (!currBlk->back().hasTrait<mlir::OpTrait::IsTerminator>()) {
-    // FIXME: Generate "default" return statement for non-empty return types
-    // (zero/zero-pointer).
-    llvm_unreachable("NYI");
+  // Collect all the ReturnOp operations in the current function.
+  llvm::SmallVector<mlir::sol::ReturnOp> returns;
+  op.walk([&](mlir::sol::ReturnOp ret) { returns.push_back(ret); });
+
+  // Check if any of the ReturnOp operations would dominate a new ReturnOp
+  // if we had inserted it at the current position. If such a return
+  // instruction exists, we do not need to add a new one.
+  mlir::DominanceInfo domInfo(op);
+  bool hasDominatingReturn =
+      llvm::any_of(returns, [this, &domInfo](auto &&retOp) {
+        return willDominate(b, retOp, domInfo);
+      });
+
+  // Required instruction exists, just try to remove the current block if it's
+  // empty. Such empty blocks arise as a result of 'return' statement lowering.
+  if (hasDominatingReturn) {
+    mlir::Block *currBlk = b.getBlock();
+    if (currBlk->empty())
+      op.getBody().back().erase();
+
+    b.setInsertionPointAfter(op);
+    return op;
   }
+
+  // Handle void function.
+  if (fn.returnParameters().empty()) {
+    b.create<mlir::sol::ReturnOp>(fnLoc);
+    b.setInsertionPointAfter(op);
+    return op;
+  }
+
+  mlir::SmallVector<mlir::Value> retVals;
+  // Handle named and unnamed return params on a per-parameter basis.
+  // Unnamed params are lowered as zero-initialized temporaries, while
+  // named params are loaded from their corresponding local variables.
+  for (const auto &param : fn.returnParameters()) {
+    mlir::Type paramTy = getType(param->annotation().type);
+    if (param->name().empty()) {
+      // Unnamed return param: allocate zero-initialized object and return it.
+      auto addr = b.create<mlir::sol::AllocaOp>(
+          fnLoc, mlir::sol::PointerType::get(b.getContext(), paramTy,
+                                             mlir::sol::DataLocation::Stack));
+      genZeroedVal(addr);
+      retVals.push_back(b.create<mlir::sol::LoadOp>(fnLoc, addr));
+    } else {
+      // Named return param: load from its local variable address.
+      retVals.push_back(
+          b.create<mlir::sol::LoadOp>(fnLoc, getLocalVarAddr(*param)));
+    }
+  }
+  b.create<mlir::sol::ReturnOp>(fnLoc, retVals);
 
   b.setInsertionPointAfter(op);
   return op;
