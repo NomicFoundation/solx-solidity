@@ -8,11 +8,17 @@ contract C {
   function h(uint[][] memory a) public returns (uint[][] memory) {
     return a;
   }
+  function e() public returns (uint256) {
+    bytes memory data = hex"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
+    abi.decode(data, (string[2]));
+    return 1;
+  }
 }
 
 // ====
 // compileViaMlir: true
 // ----
-// f(uint256[]): 32, 3, 1, 2 -> FAILURE, hex"08c379a0", 0x20, 0x20, "ABI decoding: invalid array size"
+// f(uint256[]): 32, 3, 1, 2 -> FAILURE, hex"08c379a0", 0x20, 0x2b, "ABI decoding: invalid calldata a", "rray stride"
 // g(string): 32, 33, "Hello" -> FAILURE, hex"08c379a0", 0x20, 0x27, "ABI decoding: invalid byte array", " length"
-// h(uint256[][]): 32, 2, 0x200, 0xa0, 2, 1, 2, 2, 9, 8 -> FAILURE, hex"08c379a0", 0x20, 0x22, "ABI decoding: invalid array offs", "et"
+// h(uint256[][]): 32, 2, 0x200, 0xa0, 2, 1, 2, 2, 9, 8 -> FAILURE, hex"08c379a0", 0x20, 0x2b, "ABI decoding: invalid calldata a", "rray offset"
+// e() -> FAILURE, hex"08c379a0", 0x20, 0x2b, "ABI decoding: invalid calldata a", "rray stride"
