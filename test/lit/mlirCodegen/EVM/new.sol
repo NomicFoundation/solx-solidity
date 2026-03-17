@@ -207,10 +207,10 @@ contract D {
 // CHECK-NEXT:       llvm.unreachable loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     func.func @g_22() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
+// CHECK-NEXT:       %c17219911917854084299749778639755835327755045716242581057573779540915269926912_i256 = arith.constant 17219911917854084299749778639755835327755045716242581057573779540915269926912 : i256 loc(#loc)
 // CHECK-NEXT:       %0 = llvm.mlir.undef : i256 loc(#loc)
 // CHECK-NEXT:       %c32_i256 = arith.constant 32 : i256 loc(#loc)
 // CHECK-NEXT:       %c4_i256 = arith.constant 4 : i256 loc(#loc)
-// CHECK-NEXT:       %c17219911917854084299749778639755835327755045716242581057573779540915269926912_i256 = arith.constant 17219911917854084299749778639755835327755045716242581057573779540915269926912 : i256 loc(#loc)
 // CHECK-NEXT:       %c1461501637330902918203684832716283019655932542975_i256 = arith.constant 1461501637330902918203684832716283019655932542975 : i256 loc(#loc)
 // CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:       %c64_i256 = arith.constant 64 : i256 loc(#loc)
