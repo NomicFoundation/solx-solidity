@@ -20,5 +20,6 @@ contract C {
 // ----
 // f(uint256[]): 32, 3, 1, 2 -> FAILURE, hex"08c379a0", 0x20, 0x2b, "ABI decoding: invalid calldata a", "rray stride"
 // g(string): 32, 33, "Hello" -> FAILURE, hex"08c379a0", 0x20, 0x27, "ABI decoding: invalid byte array", " length"
+// g(string): 0x10000000000000000 -> FAILURE, hex"08c379a0", 0x20, 0x22, "ABI decoding: invalid tuple offs", "et"
 // h(uint256[][]): 32, 2, 0x200, 0xa0, 2, 1, 2, 2, 9, 8 -> FAILURE, hex"08c379a0", 0x20, 0x2b, "ABI decoding: invalid calldata a", "rray offset"
 // e() -> FAILURE, hex"08c379a0", 0x20, 0x2b, "ABI decoding: invalid calldata a", "rray stride"
