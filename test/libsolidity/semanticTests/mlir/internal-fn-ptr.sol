@@ -1,6 +1,8 @@
 contract C {
   function f(uint a) internal returns (uint) { return a + 10; }
   function g(uint a) internal returns (uint) { return a + 20; }
+
+  // Select and call an internal function pointer.
   function m(uint a, uint b) public returns (uint) {
     function(uint) internal returns (uint) p;
     if (a == 0)
@@ -10,6 +12,7 @@ contract C {
     return p(b);
   }
 
+  // Internal function pointer as state variable.
   function (uint) internal returns (uint) s0;
   function (uint) internal returns (uint) s1 = f;
   function n(bool a) public returns (uint) {

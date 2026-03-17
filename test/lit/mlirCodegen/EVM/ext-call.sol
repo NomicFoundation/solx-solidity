@@ -106,10 +106,10 @@ contract C {
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     func.func @f_23(%arg0: i256 loc({{.*}}:3:13)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       %c36_i256 = arith.constant 36 : i256 loc(#loc)
+// CHECK-NEXT:       %c-34435155370463444793260793355178157075203752403645521721995013737368954863616_i256 = arith.constant -34435155370463444793260793355178157075203752403645521721995013737368954863616 : i256 loc(#loc)
 // CHECK-NEXT:       %0 = llvm.mlir.undef : i256 loc(#loc)
 // CHECK-NEXT:       %c32_i256 = arith.constant 32 : i256 loc(#loc)
 // CHECK-NEXT:       %c4_i256 = arith.constant 4 : i256 loc(#loc)
-// CHECK-NEXT:       %c-34435155370463444793260793355178157075203752403645521721995013737368954863616_i256 = arith.constant -34435155370463444793260793355178157075203752403645521721995013737368954863616 : i256 loc(#loc)
 // CHECK-NEXT:       %c64_i256 = arith.constant 64 : i256 loc(#loc)
 // CHECK-NEXT:       %c1461501637330902918203684832716283019655932542975_i256 = arith.constant 1461501637330902918203684832716283019655932542975 : i256 loc(#loc)
 // CHECK-NEXT:       %c7_i256 = arith.constant 7 : i256 loc(#loc)
