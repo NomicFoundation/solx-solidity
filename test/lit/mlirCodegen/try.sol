@@ -34,9 +34,10 @@ contract C {
 // CHECK-NEXT:       %1 = sol.this : !sol.contract<"C_78"> loc(#loc4)
 // CHECK-NEXT:       %2 = sol.address_cast %1 : !sol.contract<"C_78"> to !sol.address loc(#loc4)
 // CHECK-NEXT:       %3 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc5)
+// CHECK-NEXT:       %c3017696395_ui256 = sol.constant 3017696395 : ui256 loc(#loc4)
 // CHECK-NEXT:       %4 = sol.gasleft : ui256 loc(#loc4)
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc4)
-// CHECK-NEXT:       %status, %5 = sol.ext_call "f_77"(%3) at %2 gas %4 value %c0_ui256 {callee_type = (ui256) -> ui256, selector = -1277270901 : i32, try_call} : !sol.address, (ui256) -> (i1, ui256) loc(#loc4)
+// CHECK-NEXT:       %status, %5 = sol.ext_call "f_77"(%3) at %2 gas %4 value %c0_ui256 selector %c3017696395_ui256 {callee_type = (ui256) -> ui256, try_call} : !sol.address, (ui256) -> (i1, ui256) loc(#loc4)
 // CHECK-NEXT:       sol.try %status {
 // CHECK-NEXT:         %12 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc7)
 // CHECK-NEXT:         sol.store %5, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc7)
@@ -58,10 +59,11 @@ contract C {
 // CHECK-NEXT:       %6 = sol.this : !sol.contract<"C_78"> loc(#loc15)
 // CHECK-NEXT:       %7 = sol.address_cast %6 : !sol.contract<"C_78"> to !sol.address loc(#loc15)
 // CHECK-NEXT:       %8 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc16)
+// CHECK-NEXT:       %c3017696395_ui256_0 = sol.constant 3017696395 : ui256 loc(#loc15)
 // CHECK-NEXT:       %9 = sol.gasleft : ui256 loc(#loc15)
-// CHECK-NEXT:       %c0_ui256_0 = sol.constant 0 : ui256 loc(#loc15)
-// CHECK-NEXT:       %status_1, %10 = sol.ext_call "f_77"(%8) at %7 gas %9 value %c0_ui256_0 {callee_type = (ui256) -> ui256, selector = -1277270901 : i32, try_call} : !sol.address, (ui256) -> (i1, ui256) loc(#loc15)
-// CHECK-NEXT:       sol.try %status_1 {
+// CHECK-NEXT:       %c0_ui256_1 = sol.constant 0 : ui256 loc(#loc15)
+// CHECK-NEXT:       %status_2, %10 = sol.ext_call "f_77"(%8) at %7 gas %9 value %c0_ui256_1 selector %c3017696395_ui256_0 {callee_type = (ui256) -> ui256, try_call} : !sol.address, (ui256) -> (i1, ui256) loc(#loc15)
+// CHECK-NEXT:       sol.try %status_2 {
 // CHECK-NEXT:         %12 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc18)
 // CHECK-NEXT:         sol.store %10, %12 : ui256, !sol.ptr<ui256, Stack> loc(#loc18)
 // CHECK-NEXT:         %13 = sol.load %12 : !sol.ptr<ui256, Stack>, ui256 loc(#loc19)
@@ -82,8 +84,8 @@ contract C {
 // CHECK-NEXT:         sol.store %arg1, %12 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc17)
 // CHECK-NEXT:         sol.yield loc(#loc17)
 // CHECK-NEXT:       } fallback {
-// CHECK-NEXT:         %c0_ui8_2 = sol.constant 0 : ui8 loc(#loc27)
-// CHECK-NEXT:         %12 = sol.cast %c0_ui8_2 : ui8 to ui256 loc(#loc27)
+// CHECK-NEXT:         %c0_ui8_3 = sol.constant 0 : ui8 loc(#loc27)
+// CHECK-NEXT:         %12 = sol.cast %c0_ui8_3 : ui8 to ui256 loc(#loc27)
 // CHECK-NEXT:         %13 = sol.call @f_77(%12) : (ui256) -> ui256 loc(#loc28)
 // CHECK-NEXT:         sol.store %13, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc29)
 // CHECK-NEXT:         sol.yield loc(#loc17)
