@@ -9,6 +9,9 @@ contract CC {
 contract C {
   enum E { A, B, C }
 
+  bytes str;
+  bytes str2;
+
   function ei(uint ui, uint8 ui8, int32 si32) public returns (bytes memory) {
     bytes memory a = abi.encode(si32); // Tests the free-ptr update.
     return abi.encode(ui, ui8, si32);
@@ -129,12 +132,23 @@ contract C {
     return abi.encodePacked(a);
   }
 
+  function ep_bytes_storage(bytes calldata a) public returns (bytes memory) {
+    str = a;
+    return abi.encodePacked(str);
+  }
+
   function ep_bytes_u8(bytes memory a, uint8 x) public returns (bytes memory) {
     return abi.encodePacked(a, x);
   }
 
   function ep_bytes_concat(bytes memory a, bytes memory b) public returns (bytes memory) {
     return abi.encodePacked(a, b);
+  }
+
+  function ep_bytes_concat_storage(bytes calldata a, bytes calldata b) public returns (bytes memory) {
+    str = a;
+    str2 = b;
+    return abi.encodePacked(str, str2);
   }
 
   function ep_u8_array_dynamic_local() public returns (bytes memory) {
@@ -240,6 +254,11 @@ contract C {
     return abi.encodeWithSelector(sel, data);
   }
 
+  function ews_bytes_bytes_storage(bytes4 sel, bytes memory data) public returns (bytes memory) {
+    str = data;
+    return abi.encodeWithSelector(sel, str);
+  }
+
   function ews_constant() public returns (bytes memory) {
     return abi.encodeWithSelector(0x12345678);
   }
@@ -325,8 +344,12 @@ contract C {
 // ep_bytes_only(bytes): 0x20, 2, "ab" -> 32, 2, left(0x6162)
 // ep_bytes_only(bytes): 0x20, 0 -> 32, 0
 // ep_bytes_calldata(bytes): 0x20, 2, "ab" -> 32, 2, left(0x6162)
+// ep_bytes_storage(bytes): 0x20, 2, "ab" -> 32, 2, left(0x6162)
+// ep_bytes_storage(bytes): 0x20, 32, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" -> 32, 32, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 // ep_bytes_u8(bytes,uint8): 0x40, 1, 2, "ab" -> 32, 3, left(0x616201)
 // ep_bytes_concat(bytes,bytes): 0x40, 0x80, 2, "ab", 2, "cd" -> 32, 4, left(0x61626364)
+// ep_bytes_concat_storage(bytes,bytes): 0x40, 0x80, 2, "ab", 2, "cd" -> 32, 4, left(0x61626364)
+// ep_bytes_concat_storage(bytes,bytes): 0x40, 0x80, 32, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 2, "cd" -> 32, 34, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "cd"
 // ep_u8_array_dynamic_local() -> 32, 96, 1, 2, 3
 // ep_u8_array_dynamic(uint8[]): 0x20, 3, 97, 98, 99 -> 32, 96, 97, 98, 99
 // ep_u8_array_dynamic_calldata(uint8[]): 0x20, 3, 97, 98, 99 -> 32, 96, 97, 98, 99
@@ -364,6 +387,7 @@ contract C {
 // ews_bytes_u256(bytes4,uint256): left(0x01020304), 1 -> 0x20, 0x24, left(0x01020304), left(0x00000001)
 // ews_bytes_only(bytes4): left(0x01020304) -> 32, 4, left(0x01020304)
 // ews_bytes_bytes(bytes4,bytes): left(0x01020304), 0x20, 3, "abc" -> 0x20, 0x64, left(0x01020304), left(0x00000020), left(0x00000020), left(0x00000003)
+// ews_bytes_bytes_storage(bytes4,bytes): left(0x01020304), 0x20, 3, "abc" -> 0x20, 0x64, left(0x01020304), left(0x00000020), left(0x00000020), left(0x00000003)
 // ews_constant() -> 0x20, 4, left(0x12345678)
 // ews_sel_u256(uint256): 1 -> 0x20, 0x24, left(0x2fbebd38), left(0x00000001)
 // ewsig_literal_u256(uint256): 1 -> 0x20, 0x24, left(0x0423a132), left(0x00000001)
