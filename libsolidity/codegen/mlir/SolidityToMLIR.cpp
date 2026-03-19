@@ -537,8 +537,11 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
       outTys.push_back(getType(outTy));
 
     mlir::FunctionType mlirFnTy = b.getFunctionType(inTys, outTys);
-    if (indirectFn)
+    if (indirectFn) {
+      if (fnTy->kind() == FunctionType::Kind::External)
+        return mlir::sol::ExtFuncRefType::get(b.getContext(), mlirFnTy);
       return mlir::sol::FuncRefType::get(b.getContext(), mlirFnTy);
+    }
     return mlirFnTy;
   }
   case Type::Category::Contract: {
@@ -1188,8 +1191,26 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
       return b.create<mlir::sol::TimestampOp>(loc);
 
     break;
-  case Type::Category::Contract:
-    return {};
+  case Type::Category::Contract: {
+    // Handle external function reference: contract.func
+    auto const *fnDecl = dynamic_cast<FunctionDefinition const *>(
+        memberAcc.annotation().referencedDeclaration);
+    if (!fnDecl)
+      return {};
+
+    auto const *fnTy =
+        dynamic_cast<FunctionType const *>(memberAcc.annotation().type);
+    assert(fnTy && fnTy->kind() == FunctionType::Kind::External);
+    mlir::Value contrAddr = genRValExpr(
+        memberAcc.expression(),
+        mlir::sol::AddressType::get(b.getContext(), /*payable=*/false));
+    uint32_t selector = fnTy->externalIdentifier().convert_to<uint32_t>();
+
+    // Create ExtFuncConstantOp
+    mlir::Type resTy = getType(memberAcc.annotation().type);
+    return b.create<mlir::sol::ExtFuncConstantOp>(
+        loc, resTy, contrAddr, b.getI32IntegerAttr(selector));
+  }
 
   case Type::Category::Array:
     if (memberName == "length")
@@ -1276,15 +1297,18 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       callExpr = &fnCallOpt->expression();
     }
     auto const *memberAcc = dynamic_cast<MemberAccess const *>(callExpr);
-    assert(memberAcc);
 
-    // Canonicalize the call base to non-payable address at this boundary so
-    // init MLIR reflects the FE cast and lowering keeps the usual low-160-bit
-    // address normalization semantics before the low-level call.
-    mlir::Value addr = genRValExpr(
-        memberAcc->expression(),
-        mlir::sol::AddressType::get(b.getContext(), /*payable=*/false));
-    return std::tuple(memberAcc, addr, gas, value);
+    // memberAcc is null for indirect calls via function pointers.
+    mlir::Value addr;
+    if (memberAcc) {
+      // Canonicalize the call base to non-payable address at this boundary so
+      // init MLIR reflects the FE cast and lowering keeps the usual low-160-bit
+      // address normalization semantics before the low-level call.
+      addr = genRValExpr(
+          memberAcc->expression(),
+          mlir::sol::AddressType::get(b.getContext(), /*payable=*/false));
+    }
+    return std::tuple(callExpr, memberAcc, addr, gas, value);
   };
 
   auto materializeCallGas = [&](mlir::Value gas,
@@ -1361,14 +1385,7 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
   // External call
   case FunctionType::Kind::External:
   case FunctionType::Kind::DelegateCall: {
-    auto [memberAcc, addr, gas, value] = parseLowLevelCallInfo();
-
-    // Get the callee and the selector.
-    const auto *callee = dynamic_cast<FunctionDefinition const *>(
-        memberAcc->annotation().referencedDeclaration);
-    assert(callee && "NYI: State variable getters");
-    auto selector =
-        FunctionType(*callee).externalIdentifier().convert_to<uint32_t>();
+    auto [callExpr, memberAcc, addr, gas, value] = parseLowLevelCallInfo();
 
     // Lower the args.
     std::vector<mlir::Value> args;
@@ -1377,12 +1394,45 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     }
 
     // Collect the return types.
-    // TODO: The builder should prepend the bool type for the status flag
-    // here.
-    std::vector<mlir::Type> resTys{b.getI1Type()};
+    std::vector<mlir::Type> resTys;
     for (Type const *ty : calleeTy->returnParameterTypes()) {
       resTys.push_back(getType(ty));
     }
+
+    // Check if this is an indirect call through a function pointer.
+    if (!memberAcc) {
+      // Indirect call via external function pointer - use sol.ext_icall
+      mlir::Value fnPtr = genRValExpr(*callExpr);
+      bool isStatic = calleeTy->stateMutability() == StateMutability::Pure ||
+                      calleeTy->stateMutability() == StateMutability::View;
+
+      // Prepend bool for status flag (same as direct external calls).
+      resTys.insert(resTys.begin(), b.getI1Type());
+
+      // Materialize gas/value defaults if not provided by call options.
+      if (!gas)
+        gas = b.create<mlir::sol::GasLeftOp>(loc);
+      if (!value)
+        value = genUnsignedConst(0, /*numBits=*/256, loc);
+
+      auto callOp = b.create<mlir::sol::ExtICallOp>(
+          loc, resTys, fnPtr, args, gas, value, isStatic,
+          call.annotation().tryCall, mlir::ArrayAttr{}, mlir::ArrayAttr{});
+      for (mlir::Value val : llvm::drop_begin(callOp.getResults()))
+        resVals.push_back(val);
+      return resVals;
+    }
+
+    // Get the callee and the selector.
+    const auto *callee = dynamic_cast<FunctionDefinition const *>(
+        memberAcc->annotation().referencedDeclaration);
+    assert(callee && "NYI: State variable getters");
+    auto selectorVal =
+        FunctionType(*callee).externalIdentifier().convert_to<uint32_t>();
+    mlir::Value selector = genUnsignedConst(selectorVal, /*numBits=*/256, loc);
+
+    // Prepend bool for status flag (direct external call).
+    resTys.insert(resTys.begin(), b.getI1Type());
 
     // Generate gas.
     u256 gasNeededByCaller = evmasm::GasCosts::callGas(evmVersion) + 10;
@@ -1400,11 +1450,10 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
 
     // Generate the external call.
     auto callOp = b.create<mlir::sol::ExtCallOp>(
-        loc, resTys, getMangledName(*callee), args, addr, gas, value,
+        loc, resTys, getMangledName(*callee), args, addr, gas, value, selector,
         /*tryCall=*/call.annotation().tryCall,
         /*staticCall=*/calleeTy->stateMutability() <= StateMutability::View,
         /*delegateCall=*/calleeTy->kind() == FunctionType::Kind::DelegateCall,
-        selector,
         /*calleeType=*/
         mlir::cast<mlir::FunctionType>(getType(calleeTy,
                                                /*indirectFn=*/false)),
@@ -1419,7 +1468,9 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
   case FunctionType::Kind::BareStaticCall: {
     assert(astArgs.size() == 1);
 
-    auto [_, addr, gas, value] = parseLowLevelCallInfo();
+    auto [callExpr_, memberAcc_, addr, gas, value] = parseLowLevelCallInfo();
+    (void)callExpr_;
+    (void)memberAcc_;
 
     mlir::Value inp = genRValExpr(*astArgs.front(),
                                   getType(calleeTy->parameterTypes().front()));
@@ -2198,9 +2249,14 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
   mlir::Location loc = getLoc(tryStmt);
 
   // TODO: sol.new
-  auto externalCall = mlir::cast<mlir::sol::ExtCallOp>(
-      genRValExpr(tryStmt.externalCall()).getDefiningOp());
-  auto status = externalCall.getResult(0);
+  // Handle both direct external calls (ExtCallOp) and indirect calls via
+  // external function pointers (ExtICallOp).
+  mlir::Operation *externalCall =
+      genRValExpr(tryStmt.externalCall()).getDefiningOp();
+  assert((mlir::isa<mlir::sol::ExtCallOp>(externalCall) ||
+          mlir::isa<mlir::sol::ExtICallOp>(externalCall)) &&
+         "Expected ExtCallOp or ExtICallOp");
+  auto status = externalCall->getResult(0);
   auto tryOp = b.create<mlir::sol::TryOp>(loc, status);
 
   // Lower success clause.
@@ -2219,7 +2275,7 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
                                         mlir::sol::DataLocation::Stack);
         auto addr = b.create<mlir::sol::AllocaOp>(loc, allocTy);
         trackLocalVarAddr(*param, addr);
-        b.create<mlir::sol::StoreOp>(loc, externalCall.getResult(i), addr);
+        b.create<mlir::sol::StoreOp>(loc, externalCall->getResult(i), addr);
       }
     }
 
