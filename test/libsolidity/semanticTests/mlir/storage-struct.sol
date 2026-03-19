@@ -99,6 +99,29 @@ contract C {
   function get_contract_ref() public view returns (uint96, C) {
     return (contract_ref.x, contract_ref.c);
   }
+
+  // Nested struct where inner has a dynamic member.
+  struct InnerDynamic {
+    uint256 a;
+    uint128 b;
+    string note;
+  }
+  struct OuterDynamic {
+    uint256 left;
+    InnerDynamic inner;
+    uint256 right;
+  }
+  OuterDynamic nested_dynamic;
+  function set_nested_dynamic(uint256 left, uint256 a, uint128 b, uint256 right) public {
+    nested_dynamic.left = left;
+    nested_dynamic.inner.a = a;
+    nested_dynamic.inner.b = b;
+    nested_dynamic.inner.note = "in";
+    nested_dynamic.right = right;
+  }
+  function get_nested_dynamic() public view returns (uint256, uint256, uint128, string memory, uint256) {
+    return (nested_dynamic.left, nested_dynamic.inner.a, nested_dynamic.inner.b, nested_dynamic.inner.note, nested_dynamic.right);
+  }
 }
 
 // ====
@@ -121,3 +144,5 @@ contract C {
 // get_mixed_ref_arr(uint256): 1 -> 0x222
 // set_contract_ref(uint96,address): 7, 0x1212121212121212121212121212121212121212 ->
 // get_contract_ref() -> 7, 0x1212121212121212121212121212121212121212
+// set_nested_dynamic(uint256,uint256,uint128,uint256): 100, 201, 202, 300 ->
+// get_nested_dynamic() -> 100, 201, 202, 160, 300, 2, "in"
