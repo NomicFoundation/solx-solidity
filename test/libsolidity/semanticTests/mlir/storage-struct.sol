@@ -122,6 +122,27 @@ contract C {
   function get_nested_dynamic() public view returns (uint256, uint256, uint128, string memory, uint256) {
     return (nested_dynamic.left, nested_dynamic.inner.a, nested_dynamic.inner.b, nested_dynamic.inner.note, nested_dynamic.right);
   }
+
+  // Packed fixed-array member followed by scalar member.
+  struct FixedArrayTail {
+    uint8[4] a;
+    uint256 tail;
+  }
+  FixedArrayTail fixed_array_tail;
+  uint256 fixed_array_tail_pad0;
+  uint256 fixed_array_tail_pad1;
+  uint256 fixed_array_tail_guard;
+  function set_fixed_array_tail(uint8 a0, uint8 a1, uint8 a2, uint8 a3, uint256 tail, uint256 guard) public {
+    fixed_array_tail.a[0] = a0;
+    fixed_array_tail.a[1] = a1;
+    fixed_array_tail.a[2] = a2;
+    fixed_array_tail.a[3] = a3;
+    fixed_array_tail.tail = tail;
+    fixed_array_tail_guard = guard;
+  }
+  function get_fixed_array_tail() public view returns (uint8, uint8, uint8, uint8, uint256, uint256) {
+    return (fixed_array_tail.a[0], fixed_array_tail.a[1], fixed_array_tail.a[2], fixed_array_tail.a[3], fixed_array_tail.tail, fixed_array_tail_guard);
+  }
 }
 
 // ====
@@ -146,3 +167,5 @@ contract C {
 // get_contract_ref() -> 7, 0x1212121212121212121212121212121212121212
 // set_nested_dynamic(uint256,uint256,uint128,uint256): 100, 201, 202, 300 ->
 // get_nested_dynamic() -> 100, 201, 202, 160, 300, 2, "in"
+// set_fixed_array_tail(uint8,uint8,uint8,uint8,uint256,uint256): 1, 2, 3, 4, 0xaaaa, 0xbbbb ->
+// get_fixed_array_tail() -> 1, 2, 3, 4, 0xaaaa, 0xbbbb
