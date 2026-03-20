@@ -1,17 +1,37 @@
 contract C {
+  struct S {
+    uint256 a;
+    string b;
+  }
+
   function f(uint[] memory a) public returns (uint[] memory) {
     return a;
   }
+
   function g(string memory a) public returns (string memory) {
     return a;
   }
+
   function h(uint[][] memory a) public returns (uint[][] memory) {
     return a;
   }
+
   function e() public returns (uint256) {
     bytes memory data = hex"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
     abi.decode(data, (string[2]));
     return 1;
+  }
+
+  function sc(S calldata s) external returns (uint256) {
+    return s.a;
+  }
+
+  function ec(S calldata s) external returns (bytes memory) {
+    return abi.encode(s);
+  }
+
+  function sm(S memory s) external returns (uint256) {
+    return s.a;
   }
 }
 
@@ -25,3 +45,9 @@ contract C {
 // h(uint256[][]): 32, 1, 0x10000000000000000 -> FAILURE, hex"08c379a0", 0x20, 0x2b, "ABI decoding: invalid calldata a", "rray offset"
 // h(uint256[][]): 32, 1, 32, 3618502788666131106986593281521497120414687020801267626233049500247285301248 -> FAILURE, hex"4e487b71", 0x41
 // e() -> FAILURE, hex"08c379a0", 0x20, 0x2b, "ABI decoding: invalid calldata a", "rray stride"
+// sc((uint256,string)): 0x20, 1 -> FAILURE, hex"08c379a0", 0x20, 0x27, "ABI decoding: struct calldata to", "o short"
+// ec((uint256,string)): 0x20, 1, 0x100, 0x80 -> FAILURE, hex"08c379a0", 0x20, 0x1e, "Invalid calldata access offset"
+// ec((uint256,string)): 0x20, 1, 0x40, 0x10000000000000000 -> FAILURE, hex"08c379a0", 0x20, 0x1e, "Invalid calldata access length"
+// ec((uint256,string)): 0x20, 1, 0x40, 2 -> FAILURE, hex"08c379a0", 0x20, 0x1e, "Invalid calldata access stride"
+// sm((uint256,string)): 0x20, 1 -> FAILURE, hex"08c379a0", 0x20, 0x23, "ABI decoding: struct data too sh", "ort"
+// sm((uint256,string)): 0x20, 1, 0x10000000000000000 -> FAILURE, hex"08c379a0", 0x20, 0x23, "ABI decoding: invalid struct off", "set"
