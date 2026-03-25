@@ -32,6 +32,11 @@ contract C {
     uint256 d;
   }
 
+  struct S {
+    uint256 a;
+    uint256 b;
+  }
+
   Big storageBig;
   Nested storageBigNested;
   StorageFlat storageFlat;
@@ -90,6 +95,10 @@ contract C {
     return abi.encode(s);
   }
 
+  function enc_struct(S[2] calldata x) public pure returns (bytes memory) {
+    return abi.encode(x);
+  }
+
   function storage_big() public view returns (bytes memory) {
     return abi.encode(storageBig);
   }
@@ -119,6 +128,7 @@ contract C {
 // cd_big((uint256,uint256,string,uint256[2],uint256[])): 0x20, 7, 8, 0xc0, 41, 42, 0x100, 3, "abc", 3, 11, 12, 13 -> 0x20, 0x1a0, 0x20, 7, 8, 0xc0, 41, 42, 0x100, 3, "abc", 3, 11, 12, 13
 // mem_nested((uint256,(uint256,uint256,string,uint256[2],uint256[]),uint256)): 0x20, 100, 0x60, 200, 5, 6, 0xc0, 21, 22, 0x100, 2, "xy", 2, 31, 32 -> 0x20, 0x1e0, 0x20, 100, 0x60, 200, 5, 6, 0xc0, 21, 22, 0x100, 2, "xy", 2, 31, 32
 // cd_nested((uint256,(uint256,uint256,string,uint256[2],uint256[]),uint256)): 0x20, 100, 0x60, 200, 5, 6, 0xc0, 21, 22, 0x100, 2, "xy", 2, 31, 32 -> 0x20, 0x1e0, 0x20, 100, 0x60, 200, 5, 6, 0xc0, 21, 22, 0x100, 2, "xy", 2, 31, 32
+// enc_struct((uint256,uint256)[2]): 11, 22, 33, 44 -> 0x20, 0x80, 11, 22, 33, 44
 // storage_big() -> 0x20, 0x1a0, 0x20, 7, 8, 0xc0, 41, 42, 0x100, 3, "abc", 3, 11, 12, 13
 // storage_big_nested() -> 0x20, 0x1e0, 0x20, 100, 0x60, 200, 5, 6, 0xc0, 21, 22, 0x100, 2, "xy", 2, 31, 32
 // storage_flat() -> 0x20, 0xc0, 0x20, 9, 10, 0x60, 4, "stor"

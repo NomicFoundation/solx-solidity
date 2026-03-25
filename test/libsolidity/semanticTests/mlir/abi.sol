@@ -195,6 +195,10 @@ contract C {
     return abi.encode(x);
   }
 
+  function enc_nested(uint256[2][3] calldata x) public returns (bytes memory) {
+    return abi.encode(x);
+  }
+
   function ep_addr_array_dynamic_calldata(address[] calldata x) public returns (bytes memory) {
     return abi.encodePacked(x);
   }
@@ -395,6 +399,7 @@ contract C {
 // ei_bool_array_dynamic_calldata(bool[]): 0x20, 2, 2, 0 -> FAILURE
 // ei_u8_array_nested_dynamic_calldata(uint8[][]): 0x20, 2, 0x40, 0xC0, 3, 13, 17, 23, 4, 27, 31, 37, 41 -> 32, 416, 32, 2, 64, 192, 3, 13, 17, 23, 4, 27, 31, 37, 41
 // ei_u8_array_nested_dynamic_calldata(uint8[][]): 0x20, 2, 0x40, 0xC0, 3, 0xFF13, 17, 23, 4, 27, 31, 37, 41 -> FAILURE
+// enc_nested(uint256[2][3]): 1, 2, 3, 4, 5, 6 -> 0x20, 0xc0, 1, 2, 3, 4, 5, 6
 // ep_enum_array_dynamic_calldata(uint8[]): 0x20, 3, 0, 1, 2 -> 0x20, 0x60, left(0x00), 1, 2
 // ep_enum_array_dynamic_calldata(uint8[]): 0x20, 1, 3 -> FAILURE
 // ei_enum_array_dynamic_calldata(uint8[]): 0x20, 3, 0, 1, 2 -> 32, 160, 32, 3, 0, 1, 2
