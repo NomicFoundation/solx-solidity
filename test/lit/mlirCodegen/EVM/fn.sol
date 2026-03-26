@@ -291,11 +291,7 @@ contract C {
 // CHECK-NEXT:           %14 = arith.cmpi ugt, %13, %c2_i256 : i256 loc(#loc1)
 // CHECK-NEXT:           scf.if %14 {
 // CHECK-NEXT:             %21 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:             llvm.store %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256, %21 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:             %22 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:             llvm.store %c33_i256, %22 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:             %23 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:             "llvm.intrcall"(%23, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:             "llvm.intrcall"(%21, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:             func.call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:           } loc(#loc1)
 // CHECK-NEXT:           %15 = func.call @e_58(%13) : (i256) -> i256 loc(#loc1)

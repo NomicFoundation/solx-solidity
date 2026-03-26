@@ -23,7 +23,7 @@ contract C {
 // ----
 // id(uint8): 0 -> 0
 // id(uint8): 2 -> 2
-// id(uint8): 3 -> FAILURE, hex"4e487b71", 0x21
+// id(uint8): 3 -> FAILURE
 // cmp(uint8,uint8): 0, 1 -> false, true
 // cmp(uint8,uint8): 2, 2 -> true, false
 // toUint(uint8): 2 -> 2
