@@ -21,6 +21,10 @@ contract C {
     return abi.decode(a, (uint, uint8, int32));
   }
 
+  function di_calldata(bytes calldata a) public returns (uint, uint8, int32) {
+    return abi.decode(a, (uint, uint8, int32));
+  }
+
   function ep(uint ui, uint8 ui8, int32 si32) public returns (bytes memory) {
     return abi.encodePacked(ui, ui8, si32);
   }
@@ -45,6 +49,10 @@ contract C {
     return abi.decode(a, (address));
   }
 
+  function di_addr_calldata(bytes calldata a) public returns (address) {
+    return abi.decode(a, (address));
+  }
+
   function ep_addr(address a) public returns (bytes memory) {
     return abi.encodePacked(a);
   }
@@ -54,6 +62,10 @@ contract C {
   }
 
   function di_addr_u256(bytes memory a) public returns (address, uint256) {
+    return abi.decode(a, (address, uint256));
+  }
+
+  function di_addr_u256_calldata(bytes calldata a) public returns (address, uint256) {
     return abi.decode(a, (address, uint256));
   }
 
@@ -80,11 +92,19 @@ contract C {
     return abi.decode(a, (CC));
   }
 
+  function di_contract_calldata(bytes calldata a) public returns (CC) {
+    return abi.decode(a, (CC));
+  }
+
   function ep_contract(CC c) public returns (bytes memory) {
     return abi.encodePacked(c);
   }
 
   function di_contract_u256(bytes memory a) public returns (CC, uint256) {
+    return abi.decode(a, (CC, uint256));
+  }
+
+  function di_contract_u256_calldata(bytes calldata a) public returns (CC, uint256) {
     return abi.decode(a, (CC, uint256));
   }
 
@@ -315,22 +335,27 @@ contract C {
 // ----
 // ei(uint256,uint8,int32): 1, 2, -1 -> 32, 96, 1, 2, -1
 // di(bytes): 32, 96, 1, 2, -1 -> 1, 2, -1
+// di_calldata(bytes): 32, 96, 1, 2, -1 -> 1, 2, -1
 // ep(uint256,uint8,int32): 1, 2, -1 -> 32, 37, 1, left(0x02ffffffff)
 // ep_empty() -> 32, 0
 // ep_u256(uint256): 1 -> 32, 32, 1
 // ep_u256x2(uint256,uint256): 1, 2 -> 32, 64, 1, 2
 // ei_addr(address): 1 -> 32, 32, 1
 // di_addr(bytes): 32, 32, 1 -> 1
+// di_addr_calldata(bytes): 32, 32, 1 -> 1
 // ep_addr(address): 1 -> 32, 20, left(0x0000000000000000000000000000000000000001)
 // ei_addr_u256(address,uint256): 1, 7 -> 32, 64, 1, 7
 // di_addr_u256(bytes): 32, 64, 1, 7 -> 1, 7
+// di_addr_u256_calldata(bytes): 32, 64, 1, 7 -> 1, 7
 // rt_addr(address): 1 -> 1
 // rt_addr_u256(address,uint256): 1, 7 -> 1, 7
 // rt_addr_payable(address): 1 -> 1
 // ei_contract(address): 1 -> 32, 32, 1
 // di_contract(bytes): 32, 32, 1 -> 1
+// di_contract_calldata(bytes): 32, 32, 1 -> 1
 // ep_contract(address): 1 -> 32, 20, left(0x0000000000000000000000000000000000000001)
 // di_contract_u256(bytes): 32, 64, 1, 7 -> 1, 7
+// di_contract_u256_calldata(bytes): 32, 64, 1, 7 -> 1, 7
 // rt_contract(address): 1 -> 1
 // ep_u8_len(uint8): 1 -> 1
 // ep_u8(uint8): 1 -> 32, 1, left(0x01)
