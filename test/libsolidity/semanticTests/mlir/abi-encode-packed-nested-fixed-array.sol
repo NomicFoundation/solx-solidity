@@ -1,0 +1,61 @@
+contract C {
+  uint16[2][3] nestedU16;
+  uint256[4][5][4] nestedU256;
+
+  constructor() {
+    nestedU16[0][0] = 1;
+    nestedU16[0][1] = 2;
+    nestedU16[1][0] = 3;
+    nestedU16[1][1] = 4;
+    nestedU16[2][0] = 5;
+    nestedU16[2][1] = 6;
+
+    uint256 value = 1;
+    for (uint256 i = 0; i < 4; ++i) {
+      for (uint256 j = 0; j < 5; ++j) {
+        for (uint256 k = 0; k < 4; ++k)
+          nestedU256[i][j][k] = value++;
+      }
+    }
+  }
+
+  function ep_nested_u16_memory(uint16[2][3] memory x) public pure returns (bytes memory) {
+    return abi.encodePacked(x);
+  }
+
+  function ep_nested_u16_calldata(uint16[2][3] calldata x) external pure returns (bytes memory) {
+    return abi.encodePacked(x);
+  }
+
+  function ep_nested_u16_storage() external view returns (bytes memory) {
+    return abi.encodePacked(nestedU16);
+  }
+
+  function ep_nested_u256_memory(uint256[4][5][4] memory x) public pure returns (bytes memory) {
+    return abi.encodePacked(x);
+  }
+
+  function ep_nested_u256_calldata(uint256[4][5][4] calldata x) external pure returns (bytes memory) {
+    return abi.encodePacked(x);
+  }
+
+  function ep_nested_u256_storage() external view returns (bytes memory) {
+    return abi.encodePacked(nestedU256);
+  }
+
+  function ep_nested_addr_memory(address[2][2] memory x) public pure returns (bytes memory) {
+    return abi.encodePacked(x);
+  }
+}
+
+// ====
+// compileViaMlir: true
+// ----
+// constructor() ->
+// ep_nested_u16_memory(uint16[2][3]): 1, 2, 3, 4, 5, 6 -> 32, 192, 1, 2, 3, 4, 5, 6
+// ep_nested_u16_calldata(uint16[2][3]): 1, 2, 3, 4, 5, 6 -> 32, 192, 1, 2, 3, 4, 5, 6
+// ep_nested_u16_storage() -> 32, 192, 1, 2, 3, 4, 5, 6
+// ep_nested_u256_memory(uint256[4][5][4]): 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80 -> 32, 2560, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80
+// ep_nested_u256_calldata(uint256[4][5][4]): 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80 -> 32, 2560, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80
+// ep_nested_u256_storage() -> 32, 2560, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80
+// ep_nested_addr_memory(address[2][2]): 1, 2, 3, 4 -> 32, 128, 1, 2, 3, 4
