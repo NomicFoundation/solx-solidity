@@ -1873,14 +1873,14 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     auto newAddr =
         b.create<mlir::sol::PushOp>(loc, genRValExpr(memberAcc->expression()));
     if (!astArgs.empty())
-      b.create<mlir::sol::StoreOp>(loc, genRValExpr(*astArgs[0]), newAddr);
+      genAssign(newAddr, genRValExpr(*astArgs[0]), loc);
     resVals.push_back(newAddr);
     return resVals;
   }
 
   case FunctionType::Kind::BytesConcat:
   case FunctionType::Kind::StringConcat: {
-    std::vector<mlir::Value> args;
+    llvm::SmallVector<mlir::Value, 4> args;
     for (const auto &arg : astArgs)
       args.push_back(genRValExpr(*arg));
 
