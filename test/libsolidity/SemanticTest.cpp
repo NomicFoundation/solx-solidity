@@ -112,6 +112,13 @@ SemanticTest::SemanticTest(
 	if (m_testCaseWantsMlirRun)
 		m_testCaseWantsYulRun = m_testCaseWantsLegacyRun = false;
 
+	if (solidity::test::CommonOptions::get().forceMlir)
+	{
+		m_testCaseWantsMlirRun = true;
+		m_testCaseWantsYulRun = false;
+		m_testCaseWantsLegacyRun = false;
+	}
+
 	auto revertStrings = revertStringsFromString(m_reader.stringSetting("revertStrings", "default"));
 	soltestAssert(revertStrings, "Invalid revertStrings setting.");
 	m_revertStrings = revertStrings.value();
