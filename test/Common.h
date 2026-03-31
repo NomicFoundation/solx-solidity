@@ -66,6 +66,7 @@ struct CommonOptions
 	bool useABIEncoderV1 = false;
 	bool showMessages = false;
 	bool showMetadata = false;
+	bool forceMlir = false;
 	size_t batches = 1;
 	size_t selectedBatch = 0;
 
