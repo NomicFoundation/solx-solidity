@@ -75,8 +75,9 @@ namespace solidity::frontend {
 class SolidityToMLIRPass {
 public:
   explicit SolidityToMLIRPass(mlir::MLIRContext &ctx, EVMVersion evmVersion,
-                              bool genUnkLoc)
-      : b(&ctx), evmVersion(evmVersion), genUnkLoc(genUnkLoc) {}
+                              RevertStrings revertStrings, bool genUnkLoc)
+      : b(&ctx), evmVersion(evmVersion), revertStrings(revertStrings),
+        genUnkLoc(genUnkLoc) {}
 
   /// Lowers the free functions in the source unit.
   void lowerFreeFuncs(SourceUnit const &);
@@ -92,6 +93,10 @@ public:
                  mlir::sol::EvmVersionAttr::get(
                      b.getContext(), *mlir::sol::symbolizeEvmVersion(
                                          evmVersion.getVersionAsInt())));
+    mod->setAttr("sol.revert_strings",
+                 mlir::sol::RevertStringsAttr::get(
+                     b.getContext(),
+                     static_cast<mlir::sol::RevertStrings>(revertStrings)));
     mod->setAttr("llvm.target_triple", b.getStringAttr("evm-unknown-unknown"));
     mod->setAttr("llvm.data_layout",
                  b.getStringAttr("E-p:256:256-i256:256:256-S256-a:256:256"));
@@ -105,6 +110,7 @@ private:
   mlir::OpBuilder b;
   std::shared_ptr<CharStream> stream;
   EVMVersion evmVersion;
+  RevertStrings revertStrings;
   mlir::ModuleOp mod;
 
   /// The contract being lowered.
@@ -2995,7 +3001,7 @@ bool CompilerStack::runMlirPipeline() {
           loadDialects(ctx);
 
           // Run the ast lowering pass.
-          SolidityToMLIRPass gen(ctx, m_evmVersion,
+          SolidityToMLIRPass gen(ctx, m_evmVersion, m_revertStrings,
                                  /*genUnkLoc=*/m_mlirGenJob.action ==
                                      Action::GenObj);
           gen.init(src->charStream);
@@ -3039,7 +3045,7 @@ bool CompilerStack::runMlirPipeline() {
       mlir::MLIRContext ctx(mlir::MLIRContext::Threading::DISABLED);
       loadDialects(ctx);
 
-      SolidityToMLIRPass gen(ctx, m_evmVersion,
+      SolidityToMLIRPass gen(ctx, m_evmVersion, m_revertStrings,
                              /*genUnkLoc=*/m_mlirGenJob.action ==
                                  Action::GenObj);
       // Then lower free functions. This is handy in testing.

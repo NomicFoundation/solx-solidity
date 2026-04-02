@@ -57,6 +57,7 @@ contract C {
 
 // ====
 // compileViaMlir: true
+// revertStrings: debug
 // ----
 // f(uint256[]): 32, 3, 1, 2 -> FAILURE, hex"08c379a0", 0x20, 0x2b, "ABI decoding: invalid calldata a", "rray stride"
 // g(string): 32, 33, "Hello" -> FAILURE, hex"08c379a0", 0x20, 0x27, "ABI decoding: invalid byte array", " length"
