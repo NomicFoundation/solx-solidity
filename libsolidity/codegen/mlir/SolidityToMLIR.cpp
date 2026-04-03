@@ -306,10 +306,17 @@ private:
     return fn;
   }
 
+  /// Returns a zero value of the given type.
+  mlir::Value genZeroedVal(mlir::Type ty, mlir::Location loc);
+
   /// Generates the ir to zero the allocation.
   void genZeroedVal(mlir::sol::AllocaOp addr);
 
-  /// Generates a integeral constant op.
+  /// Generates the side-effect of `delete addr`: zeros the value at any
+  /// pointer (storage, memory, or stack).
+  void genDeleteExpr(mlir::Value addr, mlir::Location loc);
+
+  /// Generates a integral constant op.
   mlir::Value genUnsignedConst(uint64_t val, unsigned numBits,
                                mlir::Location loc) {
     return b.create<mlir::sol::ConstantOp>(
@@ -594,57 +601,56 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
   llvm_unreachable("NYI");
 }
 
-void SolidityToMLIRPass::genZeroedVal(mlir::sol::AllocaOp addr) {
-  mlir::Location loc = addr.getLoc();
-
-  auto pointeeTy =
-      mlir::cast<mlir::sol::PointerType>(addr.getType()).getPointeeType();
-
-  mlir::Value val;
-  if (auto intTy = mlir::dyn_cast<mlir::IntegerType>(pointeeTy)) {
-    val = b.create<mlir::sol::ConstantOp>(
+mlir::Value SolidityToMLIRPass::genZeroedVal(mlir::Type ty,
+                                             mlir::Location loc) {
+  if (auto intTy = mlir::dyn_cast<mlir::IntegerType>(ty)) {
+    return b.create<mlir::sol::ConstantOp>(
         loc, b.getIntegerAttr(intTy, llvm::APInt(intTy.getWidth(), 0)));
-
-  } else if (auto fnRefTy = mlir::dyn_cast<mlir::sol::FuncRefType>(pointeeTy)) {
-    val = b.create<mlir::sol::DefaultFuncConstantOp>(loc);
-
-  } else if (auto arrTy = mlir::dyn_cast<mlir::sol::ArrayType>(pointeeTy)) {
-    val = b.create<mlir::sol::MallocOp>(loc, arrTy, /*zeroInit=*/true,
-                                        /*size=*/mlir::Value{});
-  } else if (auto structTy = mlir::dyn_cast<mlir::sol::StructType>(pointeeTy)) {
-    val = b.create<mlir::sol::MallocOp>(loc, structTy, /*zeroInit=*/true,
-                                        /*size=*/mlir::Value{});
-  } else if (auto stringTy = mlir::dyn_cast<mlir::sol::StringType>(pointeeTy)) {
+  }
+  if (mlir::isa<mlir::sol::FuncRefType>(ty)) {
+    return b.create<mlir::sol::DefaultFuncConstantOp>(loc);
+  }
+  if (auto arrTy = mlir::dyn_cast<mlir::sol::ArrayType>(ty)) {
+    return b.create<mlir::sol::MallocOp>(loc, arrTy, /*zeroInit=*/true,
+                                         /*size=*/mlir::Value{});
+  }
+  if (auto structTy = mlir::dyn_cast<mlir::sol::StructType>(ty)) {
+    return b.create<mlir::sol::MallocOp>(loc, structTy, /*zeroInit=*/true,
+                                         /*size=*/mlir::Value{});
+  }
+  if (auto stringTy = mlir::dyn_cast<mlir::sol::StringType>(ty)) {
     // TODO: Do we need to zero-init here?
-    val = b.create<mlir::sol::MallocOp>(loc, stringTy, /*zeroInit=*/false,
-                                        /*size=*/mlir::Value{});
-  } else if (auto addressTy =
-                 mlir::dyn_cast<mlir::sol::AddressType>(pointeeTy)) {
+    return b.create<mlir::sol::MallocOp>(loc, stringTy, /*zeroInit=*/false,
+                                         /*size=*/mlir::Value{});
+  }
+  if (auto addressTy = mlir::dyn_cast<mlir::sol::AddressType>(ty)) {
     auto uint160Ty = b.getIntegerType(160, /*isSigned=*/false);
     auto zero = b.create<mlir::sol::ConstantOp>(
         loc, b.getIntegerAttr(uint160Ty, llvm::APInt(160, 0)));
-    val = genCast(zero, addressTy);
-  } else if (auto bytesTy = mlir::dyn_cast<mlir::sol::BytesType>(pointeeTy)) {
+    return genCast(zero, addressTy);
+  }
+  if (auto bytesTy = mlir::dyn_cast<mlir::sol::BytesType>(ty)) {
     unsigned width = bytesTy.getSize() * 8;
     auto uintTy = b.getIntegerType(width, /*isSigned=*/false);
     auto zero = b.create<mlir::sol::ConstantOp>(
         loc, b.getIntegerAttr(uintTy, llvm::APInt(width, 0)));
-    val = genCast(zero, bytesTy);
-  } else if (auto contractTy =
-                 mlir::dyn_cast<mlir::sol::ContractType>(pointeeTy)) {
+    return genCast(zero, bytesTy);
+  }
+  if (auto contractTy = mlir::dyn_cast<mlir::sol::ContractType>(ty)) {
     auto uint160Ty = b.getIntegerType(160, /*isSigned=*/false);
     auto zero = b.create<mlir::sol::ConstantOp>(
         loc, b.getIntegerAttr(uint160Ty, llvm::APInt(160, 0)));
     auto addrTy =
         mlir::sol::AddressType::get(b.getContext(), contractTy.getPayable());
-    val = genCast(genCast(zero, addrTy), contractTy);
-  } else if (auto enumTy = mlir::dyn_cast<mlir::sol::EnumType>(pointeeTy)) {
+    return genCast(genCast(zero, addrTy), contractTy);
+  }
+  if (auto enumTy = mlir::dyn_cast<mlir::sol::EnumType>(ty)) {
     auto ui256Ty = b.getIntegerType(256, /*isSigned=*/false);
     auto zero = b.create<mlir::sol::ConstantOp>(
         loc, b.getIntegerAttr(ui256Ty, llvm::APInt(256, 0)));
-    val = genCast(zero, enumTy);
-  } else if (auto extFnTy =
-                 mlir::dyn_cast<mlir::sol::ExtFuncRefType>(pointeeTy)) {
+    return genCast(zero, enumTy);
+  }
+  if (auto extFnTy = mlir::dyn_cast<mlir::sol::ExtFuncRefType>(ty)) {
     auto addrTy =
         mlir::sol::AddressType::get(b.getContext(), /*payable=*/false);
     auto uint160Ty = b.getIntegerType(160, /*isSigned=*/false);
@@ -652,12 +658,62 @@ void SolidityToMLIRPass::genZeroedVal(mlir::sol::AllocaOp addr) {
         genCast(b.create<mlir::sol::ConstantOp>(
                     loc, b.getIntegerAttr(uint160Ty, llvm::APInt(160, 0))),
                 addrTy);
-    val = b.create<mlir::sol::ExtFuncConstantOp>(loc, extFnTy, zeroAddr,
-                                                 b.getI32IntegerAttr(0));
+    return b.create<mlir::sol::ExtFuncConstantOp>(loc, extFnTy, zeroAddr,
+                                                  b.getI32IntegerAttr(0));
+  }
+  llvm_unreachable("Unexpected type");
+}
+
+void SolidityToMLIRPass::genZeroedVal(mlir::sol::AllocaOp addr) {
+  mlir::Location loc = addr.getLoc();
+  auto pointeeTy =
+      mlir::cast<mlir::sol::PointerType>(addr.getType()).getPointeeType();
+  auto val = genZeroedVal(pointeeTy, loc);
+  b.create<mlir::sol::StoreOp>(loc, val, addr);
+}
+
+void SolidityToMLIRPass::genDeleteExpr(mlir::Value addr, mlir::Location loc) {
+  mlir::Type addrTy = addr.getType();
+
+  // Returns the memory-location variant of a type, recursively transforming
+  // any nested reference-type elements and struct members.
+  std::function<mlir::Type(mlir::Type)> toMemoryType =
+      [&](mlir::Type ty) -> mlir::Type {
+    if (auto arrTy = mlir::dyn_cast<mlir::sol::ArrayType>(ty))
+      return mlir::sol::ArrayType::get(b.getContext(), arrTy.getSize(),
+                                       toMemoryType(arrTy.getEltType()),
+                                       mlir::sol::DataLocation::Memory);
+    if (auto structTy = mlir::dyn_cast<mlir::sol::StructType>(ty)) {
+      llvm::SmallVector<mlir::Type> memMemberTys;
+      for (auto mt : structTy.getMemberTypes())
+        memMemberTys.push_back(toMemoryType(mt));
+      return mlir::sol::StructType::get(b.getContext(), memMemberTys,
+                                        mlir::sol::DataLocation::Memory);
+    }
+    if (mlir::isa<mlir::sol::StringType>(ty))
+      return mlir::sol::StringType::get(b.getContext(),
+                                        mlir::sol::DataLocation::Memory);
+    return ty;
+  };
+
+  // Zero-init reference types by allocating a memory version and copying it via
+  // genAssign which emits sol.copy for storage destination.
+  if (mlir::sol::isNonPtrRefType(addrTy)) {
+    genAssign(addr, genZeroedVal(toMemoryType(addrTy), loc), loc);
+    return;
   }
 
-  assert(val);
+  // Value types and pointer-wrapped reference types.
+  mlir::Type pointeeTy =
+      mlir::cast<mlir::sol::PointerType>(addrTy).getPointeeType();
 
+  if (mlir::sol::isRefType(pointeeTy)) {
+    genAssign(addr, genZeroedVal(toMemoryType(pointeeTy), loc), loc);
+    return;
+  }
+
+  // Value types: zero and store directly.
+  auto val = genZeroedVal(pointeeTy, loc);
   b.create<mlir::sol::StoreOp>(loc, val, addr);
 }
 
@@ -835,6 +891,14 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const &unaryOp) {
   mlir::Location loc = getLoc(unaryOp);
 
   assert(!*unaryOp.annotation().userDefinedFunction && "NYI");
+
+  // 'delete x' is a statement-level side-effect with no result value.  Its
+  // annotation type is a TupleType / void that getType() does not handle, so
+  // short-circuit here before the getType() call below.
+  if (unaryOp.getOperator() == Token::Delete) {
+    genDeleteExpr(genLValExpr(unaryOp.subExpression()), loc);
+    return {};
+  }
 
   Type const *ty = unaryOp.annotation().type;
   mlir::Type mlirTy = getType(ty);
@@ -1241,6 +1305,20 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
       if (mlir::Value selector =
               genCompileTimeFunctionSelector(memberAcc.expression(), fnTy, loc))
         return selector;
+    }
+    break;
+  }
+  case Type::Category::TypeType: {
+    // Handle enum member access: e.g. Status.Inactive
+    auto const *typeTy = dynamic_cast<TypeType const *>(memberAccTy);
+    assert(typeTy);
+    if (auto const *enumTy =
+            dynamic_cast<EnumType const *>(typeTy->actualType())) {
+      unsigned ordinal = enumTy->memberValue(memberName);
+      auto ui256Ty = b.getIntegerType(256, /*isSigned=*/false);
+      auto ordinalConst = b.create<mlir::sol::ConstantOp>(
+          loc, b.getIntegerAttr(ui256Ty, llvm::APInt(256, ordinal)));
+      return genCast(ordinalConst, getType(memberAcc.annotation().type));
     }
     break;
   }
