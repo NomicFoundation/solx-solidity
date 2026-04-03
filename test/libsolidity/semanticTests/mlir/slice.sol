@@ -28,6 +28,7 @@ contract C {
 
 // ====
 // compileViaMlir: true
+// revertStrings: debug
 // ----
 // slice(uint256[],uint256,uint256): 0x60, 1, 3, 4, 10, 20, 30, 40 -> 0x20, 2, 20, 30
 // sliceFromStart(uint256[],uint256): 0x40, 2, 4, 10, 20, 30, 40 -> 0x20, 2, 10, 20
