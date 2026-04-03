@@ -557,6 +557,10 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
         b.getContext(), getMangledName(contTy->contractDefinition()),
         contTy->isPayable());
   }
+  case Type::Category::UserDefinedValueType: {
+    const auto *userDefTy = static_cast<UserDefinedValueType const *>(ty);
+    return getType(&userDefTy->underlyingType(), indirectFn);
+  }
   default:
     break;
   }
@@ -890,7 +894,17 @@ mlir::Value SolidityToMLIRPass::genBinExpr(Token op, mlir::Value lhs,
 mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const &unaryOp) {
   mlir::Location loc = getLoc(unaryOp);
 
-  assert(!*unaryOp.annotation().userDefinedFunction && "NYI");
+  if (FunctionDefinition const *fn =
+          *unaryOp.annotation().userDefinedFunction) {
+    mlir::Value arg = genRValExpr(unaryOp.subExpression(),
+                                  getType(fn->parameters()[0]->type()));
+    mlir::Type resTy = getType(fn->returnParameters()[0]->type());
+    return b
+        .create<mlir::sol::CallOp>(loc, getMangledName(*fn),
+                                   mlir::TypeRange{resTy},
+                                   mlir::ValueRange{arg})
+        ->getResult(0);
+  }
 
   // 'delete x' is a statement-level side-effect with no result value.  Its
   // annotation type is a TupleType / void that getType() does not handle, so
@@ -965,6 +979,20 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const &unaryOp) {
 }
 
 mlir::Value SolidityToMLIRPass::genExpr(BinaryOperation const &binOp) {
+  if (FunctionDefinition const *fn = *binOp.annotation().userDefinedFunction) {
+    auto loc = getLoc(binOp);
+    mlir::Value lhs = genRValExpr(binOp.leftExpression(),
+                                  getType(fn->parameters()[0]->type()));
+    mlir::Value rhs = genRValExpr(binOp.rightExpression(),
+                                  getType(fn->parameters()[1]->type()));
+    mlir::Type resTy = getType(fn->returnParameters()[0]->type());
+    return b
+        .create<mlir::sol::CallOp>(loc, getMangledName(*fn),
+                                   mlir::TypeRange{resTy},
+                                   mlir::ValueRange{lhs, rhs})
+        ->getResult(0);
+  }
+
   mlir::Type argTy = getType(binOp.annotation().commonType);
   auto loc = getLoc(binOp);
   BuilderExt bExt(b, loc);
@@ -1320,7 +1348,8 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
           loc, b.getIntegerAttr(ui256Ty, llvm::APInt(256, ordinal)));
       return genCast(ordinalConst, getType(memberAcc.annotation().type));
     }
-    break;
+    // Standalone type reference (e.g., UDVT.wrap, Library.Enum) — no-op.
+    return {};
   }
   default:
     break;
@@ -1417,6 +1446,12 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
   };
 
   switch (calleeTy->kind()) {
+  case FunctionType::Kind::Wrap:
+  case FunctionType::Kind::Unwrap:
+    resVals.push_back(
+        genRValExpr(*astArgs.front(), getType(call.annotation().type)));
+    return resVals;
+
   // Internal call
   case FunctionType::Kind::Internal: {
     // Lower args.
