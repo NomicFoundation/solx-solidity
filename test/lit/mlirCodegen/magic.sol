@@ -113,6 +113,7 @@ function encode_packed_fnptr_array(function(uint) external pure returns (uint)[]
 contract StorageBytes {
   bytes str;
   bytes str2;
+  string sig;
 
   function ep_bytes_storage(bytes calldata a) public returns (bytes memory) {
     str = a;
@@ -128,6 +129,11 @@ contract StorageBytes {
   function ews_bytes_bytes_storage(bytes4 sel, bytes memory data) public returns (bytes memory) {
     str = data;
     return abi.encodeWithSelector(sel, str);
+  }
+
+  function ewsig_runtime_storage(string memory runtimeSig, uint256 x) public returns (bytes memory) {
+    sig = runtimeSig;
+    return abi.encodeWithSignature(sig, x);
   }
 }
 
@@ -533,11 +539,13 @@ contract StorageBytes {
 // CHECK-NEXT: #loc124 = loc({{.*}}:100:22)
 // CHECK-NEXT: #loc129 = loc({{.*}}:104:29)
 // CHECK-NEXT: #loc134 = loc({{.*}}:108:35)
-// CHECK-NEXT: #loc142 = loc({{.*}}:116:28)
-// CHECK-NEXT: #loc148 = loc({{.*}}:121:35)
-// CHECK-NEXT: #loc149 = loc({{.*}}:121:53)
-// CHECK-NEXT: #loc157 = loc({{.*}}:127:35)
-// CHECK-NEXT: #loc158 = loc({{.*}}:127:47)
+// CHECK-NEXT: #loc143 = loc({{.*}}:117:28)
+// CHECK-NEXT: #loc149 = loc({{.*}}:122:35)
+// CHECK-NEXT: #loc150 = loc({{.*}}:122:53)
+// CHECK-NEXT: #loc158 = loc({{.*}}:128:35)
+// CHECK-NEXT: #loc159 = loc({{.*}}:128:47)
+// CHECK-NEXT: #loc166 = loc({{.*}}:133:33)
+// CHECK-NEXT: #loc167 = loc({{.*}}:133:59)
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka, sol.revert_strings = #Default} {
 // CHECK-NEXT:   sol.func @msgSender_9() -> !sol.address attributes {id = 9 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.caller : !sol.address loc(#loc2)
@@ -748,51 +756,68 @@ contract StorageBytes {
 // CHECK-NEXT:     %2 = sol.encode %1 :  !sol.array<? x !sol.ext_func_ref<(ui256) -> ui256>, Memory> : !sol.string<Memory> {packed} loc(#loc136)
 // CHECK-NEXT:     sol.return %2 : !sol.string<Memory> loc(#loc137)
 // CHECK-NEXT:   } loc(#loc133)
-// CHECK-NEXT:   sol.contract @StorageBytes_504 {
+// CHECK-NEXT:   sol.contract @StorageBytes_526 {
 // CHECK-NEXT:     sol.state_var @str_440 slot 0 offset 0 : !sol.string<Storage> loc(#loc139)
 // CHECK-NEXT:     sol.state_var @str2_442 slot 1 offset 0 : !sol.string<Storage> loc(#loc140)
-// CHECK-NEXT:     sol.func @StorageBytes_504() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.state_var @sig_444 slot 2 offset 0 : !sol.string<Storage> loc(#loc141)
+// CHECK-NEXT:     sol.func @StorageBytes_526() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc138)
 // CHECK-NEXT:     } loc(#loc138)
-// CHECK-NEXT:     sol.func @ep_bytes_storage_459(%arg0: !sol.string<CallData> loc({{.*}}:116:28)) -> !sol.string<Memory> attributes {id = 459 : i64, orig_fn_type = (!sol.string<CallData>) -> !sol.string<Memory>, selector = -1796405943 : i32, state_mutability = #NonPayable} {
-// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.string<CallData>, Stack> loc(#loc142)
-// CHECK-NEXT:       sol.store %arg0, %0 : !sol.string<CallData>, !sol.ptr<!sol.string<CallData>, Stack> loc(#loc142)
+// CHECK-NEXT:     sol.func @ep_bytes_storage_461(%arg0: !sol.string<CallData> loc({{.*}}:117:28)) -> !sol.string<Memory> attributes {id = 461 : i64, orig_fn_type = (!sol.string<CallData>) -> !sol.string<Memory>, selector = -1796405943 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.string<CallData>, Stack> loc(#loc143)
+// CHECK-NEXT:       sol.store %arg0, %0 : !sol.string<CallData>, !sol.ptr<!sol.string<CallData>, Stack> loc(#loc143)
 // CHECK-NEXT:       %1 = sol.addr_of @str_440 : !sol.string<Storage> loc(#loc139)
-// CHECK-NEXT:       %2 = sol.load %0 : !sol.ptr<!sol.string<CallData>, Stack>, !sol.string<CallData> loc(#loc143)
-// CHECK-NEXT:       sol.copy %2, %1 : !sol.string<CallData>, !sol.string<Storage> loc(#loc144)
+// CHECK-NEXT:       %2 = sol.load %0 : !sol.ptr<!sol.string<CallData>, Stack>, !sol.string<CallData> loc(#loc144)
+// CHECK-NEXT:       sol.copy %2, %1 : !sol.string<CallData>, !sol.string<Storage> loc(#loc145)
 // CHECK-NEXT:       %3 = sol.addr_of @str_440 : !sol.string<Storage> loc(#loc139)
-// CHECK-NEXT:       %4 = sol.encode %3 :  !sol.string<Storage> : !sol.string<Memory> {packed} loc(#loc145)
-// CHECK-NEXT:       sol.return %4 : !sol.string<Memory> loc(#loc146)
-// CHECK-NEXT:     } loc(#loc141)
-// CHECK-NEXT:     sol.func @ep_bytes_concat_storage_483(%arg0: !sol.string<CallData> loc({{.*}}:121:35), %arg1: !sol.string<CallData> loc({{.*}}:121:53)) -> !sol.string<Memory> attributes {id = 483 : i64, orig_fn_type = (!sol.string<CallData>, !sol.string<CallData>) -> !sol.string<Memory>, selector = 1136153535 : i32, state_mutability = #NonPayable} {
-// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.string<CallData>, Stack> loc(#loc148)
-// CHECK-NEXT:       sol.store %arg0, %0 : !sol.string<CallData>, !sol.ptr<!sol.string<CallData>, Stack> loc(#loc148)
-// CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<!sol.string<CallData>, Stack> loc(#loc149)
-// CHECK-NEXT:       sol.store %arg1, %1 : !sol.string<CallData>, !sol.ptr<!sol.string<CallData>, Stack> loc(#loc149)
+// CHECK-NEXT:       %4 = sol.encode %3 :  !sol.string<Storage> : !sol.string<Memory> {packed} loc(#loc146)
+// CHECK-NEXT:       sol.return %4 : !sol.string<Memory> loc(#loc147)
+// CHECK-NEXT:     } loc(#loc142)
+// CHECK-NEXT:     sol.func @ep_bytes_concat_storage_485(%arg0: !sol.string<CallData> loc({{.*}}:122:35), %arg1: !sol.string<CallData> loc({{.*}}:122:53)) -> !sol.string<Memory> attributes {id = 485 : i64, orig_fn_type = (!sol.string<CallData>, !sol.string<CallData>) -> !sol.string<Memory>, selector = 1136153535 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.string<CallData>, Stack> loc(#loc149)
+// CHECK-NEXT:       sol.store %arg0, %0 : !sol.string<CallData>, !sol.ptr<!sol.string<CallData>, Stack> loc(#loc149)
+// CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<!sol.string<CallData>, Stack> loc(#loc150)
+// CHECK-NEXT:       sol.store %arg1, %1 : !sol.string<CallData>, !sol.ptr<!sol.string<CallData>, Stack> loc(#loc150)
 // CHECK-NEXT:       %2 = sol.addr_of @str_440 : !sol.string<Storage> loc(#loc139)
-// CHECK-NEXT:       %3 = sol.load %0 : !sol.ptr<!sol.string<CallData>, Stack>, !sol.string<CallData> loc(#loc150)
-// CHECK-NEXT:       sol.copy %3, %2 : !sol.string<CallData>, !sol.string<Storage> loc(#loc151)
+// CHECK-NEXT:       %3 = sol.load %0 : !sol.ptr<!sol.string<CallData>, Stack>, !sol.string<CallData> loc(#loc151)
+// CHECK-NEXT:       sol.copy %3, %2 : !sol.string<CallData>, !sol.string<Storage> loc(#loc152)
 // CHECK-NEXT:       %4 = sol.addr_of @str2_442 : !sol.string<Storage> loc(#loc140)
-// CHECK-NEXT:       %5 = sol.load %1 : !sol.ptr<!sol.string<CallData>, Stack>, !sol.string<CallData> loc(#loc152)
-// CHECK-NEXT:       sol.copy %5, %4 : !sol.string<CallData>, !sol.string<Storage> loc(#loc153)
+// CHECK-NEXT:       %5 = sol.load %1 : !sol.ptr<!sol.string<CallData>, Stack>, !sol.string<CallData> loc(#loc153)
+// CHECK-NEXT:       sol.copy %5, %4 : !sol.string<CallData>, !sol.string<Storage> loc(#loc154)
 // CHECK-NEXT:       %6 = sol.addr_of @str_440 : !sol.string<Storage> loc(#loc139)
 // CHECK-NEXT:       %7 = sol.addr_of @str2_442 : !sol.string<Storage> loc(#loc140)
-// CHECK-NEXT:       %8 = sol.encode %6, %7 :  !sol.string<Storage>, !sol.string<Storage> : !sol.string<Memory> {packed} loc(#loc154)
-// CHECK-NEXT:       sol.return %8 : !sol.string<Memory> loc(#loc155)
-// CHECK-NEXT:     } loc(#loc147)
-// CHECK-NEXT:     sol.func @ews_bytes_bytes_storage_503(%arg0: !sol.bytes<4> loc({{.*}}:127:35), %arg1: !sol.string<Memory> loc({{.*}}:127:47)) -> !sol.string<Memory> attributes {id = 503 : i64, orig_fn_type = (!sol.bytes<4>, !sol.string<Memory>) -> !sol.string<Memory>, selector = -1336816964 : i32, state_mutability = #NonPayable} {
-// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.bytes<4>, Stack> loc(#loc157)
-// CHECK-NEXT:       sol.store %arg0, %0 : !sol.bytes<4>, !sol.ptr<!sol.bytes<4>, Stack> loc(#loc157)
-// CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc158)
-// CHECK-NEXT:       sol.store %arg1, %1 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc158)
+// CHECK-NEXT:       %8 = sol.encode %6, %7 :  !sol.string<Storage>, !sol.string<Storage> : !sol.string<Memory> {packed} loc(#loc155)
+// CHECK-NEXT:       sol.return %8 : !sol.string<Memory> loc(#loc156)
+// CHECK-NEXT:     } loc(#loc148)
+// CHECK-NEXT:     sol.func @ews_bytes_bytes_storage_505(%arg0: !sol.bytes<4> loc({{.*}}:128:35), %arg1: !sol.string<Memory> loc({{.*}}:128:47)) -> !sol.string<Memory> attributes {id = 505 : i64, orig_fn_type = (!sol.bytes<4>, !sol.string<Memory>) -> !sol.string<Memory>, selector = -1336816964 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.bytes<4>, Stack> loc(#loc158)
+// CHECK-NEXT:       sol.store %arg0, %0 : !sol.bytes<4>, !sol.ptr<!sol.bytes<4>, Stack> loc(#loc158)
+// CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc159)
+// CHECK-NEXT:       sol.store %arg1, %1 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc159)
 // CHECK-NEXT:       %2 = sol.addr_of @str_440 : !sol.string<Storage> loc(#loc139)
-// CHECK-NEXT:       %3 = sol.load %1 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc159)
-// CHECK-NEXT:       sol.copy %3, %2 : !sol.string<Memory>, !sol.string<Storage> loc(#loc160)
-// CHECK-NEXT:       %4 = sol.load %0 : !sol.ptr<!sol.bytes<4>, Stack>, !sol.bytes<4> loc(#loc161)
+// CHECK-NEXT:       %3 = sol.load %1 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc160)
+// CHECK-NEXT:       sol.copy %3, %2 : !sol.string<Memory>, !sol.string<Storage> loc(#loc161)
+// CHECK-NEXT:       %4 = sol.load %0 : !sol.ptr<!sol.bytes<4>, Stack>, !sol.bytes<4> loc(#loc162)
 // CHECK-NEXT:       %5 = sol.addr_of @str_440 : !sol.string<Storage> loc(#loc139)
-// CHECK-NEXT:       %6 = sol.encode selector(%4) %5 : !sol.bytes<4> !sol.string<Storage> : !sol.string<Memory> loc(#loc162)
-// CHECK-NEXT:       sol.return %6 : !sol.string<Memory> loc(#loc163)
-// CHECK-NEXT:     } loc(#loc156)
+// CHECK-NEXT:       %6 = sol.encode selector(%4) %5 : !sol.bytes<4> !sol.string<Storage> : !sol.string<Memory> loc(#loc163)
+// CHECK-NEXT:       sol.return %6 : !sol.string<Memory> loc(#loc164)
+// CHECK-NEXT:     } loc(#loc157)
+// CHECK-NEXT:     sol.func @ewsig_runtime_storage_525(%arg0: !sol.string<Memory> loc({{.*}}:133:33), %arg1: ui256 loc({{.*}}:133:59)) -> !sol.string<Memory> attributes {id = 525 : i64, orig_fn_type = (!sol.string<Memory>, ui256) -> !sol.string<Memory>, selector = 331104600 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc166)
+// CHECK-NEXT:       sol.store %arg0, %0 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc166)
+// CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc167)
+// CHECK-NEXT:       sol.store %arg1, %1 : ui256, !sol.ptr<ui256, Stack> loc(#loc167)
+// CHECK-NEXT:       %2 = sol.addr_of @sig_444 : !sol.string<Storage> loc(#loc141)
+// CHECK-NEXT:       %3 = sol.load %0 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc168)
+// CHECK-NEXT:       sol.copy %3, %2 : !sol.string<Memory>, !sol.string<Storage> loc(#loc169)
+// CHECK-NEXT:       %4 = sol.addr_of @sig_444 : !sol.string<Storage> loc(#loc141)
+// CHECK-NEXT:       %5 = sol.data_loc_cast %4 : !sol.string<Storage>, !sol.string<Memory> loc(#loc141)
+// CHECK-NEXT:       %6 = "sol.keccak256"(%5) : (!sol.string<Memory>) -> !sol.bytes<32> loc(#loc170)
+// CHECK-NEXT:       %7 = sol.bytes_cast %6 : !sol.bytes<32> to !sol.bytes<4> loc(#loc170)
+// CHECK-NEXT:       %8 = sol.load %1 : !sol.ptr<ui256, Stack>, ui256 loc(#loc171)
+// CHECK-NEXT:       %9 = sol.encode selector(%7) %8 : !sol.bytes<4> ui256 : !sol.string<Memory> loc(#loc170)
+// CHECK-NEXT:       sol.return %9 : !sol.string<Memory> loc(#loc172)
+// CHECK-NEXT:     } loc(#loc165)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc138)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
@@ -907,22 +932,29 @@ contract StorageBytes {
 // CHECK-NEXT: #loc138 = loc({{.*}}:112:0)
 // CHECK-NEXT: #loc139 = loc({{.*}}:113:2)
 // CHECK-NEXT: #loc140 = loc({{.*}}:114:2)
-// CHECK-NEXT: #loc141 = loc({{.*}}:116:2)
-// CHECK-NEXT: #loc143 = loc({{.*}}:117:10)
-// CHECK-NEXT: #loc144 = loc({{.*}}:117:4)
-// CHECK-NEXT: #loc145 = loc({{.*}}:118:11)
-// CHECK-NEXT: #loc146 = loc({{.*}}:118:4)
-// CHECK-NEXT: #loc147 = loc({{.*}}:121:2)
-// CHECK-NEXT: #loc150 = loc({{.*}}:122:10)
-// CHECK-NEXT: #loc151 = loc({{.*}}:122:4)
-// CHECK-NEXT: #loc152 = loc({{.*}}:123:11)
-// CHECK-NEXT: #loc153 = loc({{.*}}:123:4)
-// CHECK-NEXT: #loc154 = loc({{.*}}:124:11)
-// CHECK-NEXT: #loc155 = loc({{.*}}:124:4)
-// CHECK-NEXT: #loc156 = loc({{.*}}:127:2)
-// CHECK-NEXT: #loc159 = loc({{.*}}:128:10)
-// CHECK-NEXT: #loc160 = loc({{.*}}:128:4)
-// CHECK-NEXT: #loc161 = loc({{.*}}:129:34)
-// CHECK-NEXT: #loc162 = loc({{.*}}:129:11)
-// CHECK-NEXT: #loc163 = loc({{.*}}:129:4)
+// CHECK-NEXT: #loc141 = loc({{.*}}:115:2)
+// CHECK-NEXT: #loc142 = loc({{.*}}:117:2)
+// CHECK-NEXT: #loc144 = loc({{.*}}:118:10)
+// CHECK-NEXT: #loc145 = loc({{.*}}:118:4)
+// CHECK-NEXT: #loc146 = loc({{.*}}:119:11)
+// CHECK-NEXT: #loc147 = loc({{.*}}:119:4)
+// CHECK-NEXT: #loc148 = loc({{.*}}:122:2)
+// CHECK-NEXT: #loc151 = loc({{.*}}:123:10)
+// CHECK-NEXT: #loc152 = loc({{.*}}:123:4)
+// CHECK-NEXT: #loc153 = loc({{.*}}:124:11)
+// CHECK-NEXT: #loc154 = loc({{.*}}:124:4)
+// CHECK-NEXT: #loc155 = loc({{.*}}:125:11)
+// CHECK-NEXT: #loc156 = loc({{.*}}:125:4)
+// CHECK-NEXT: #loc157 = loc({{.*}}:128:2)
+// CHECK-NEXT: #loc160 = loc({{.*}}:129:10)
+// CHECK-NEXT: #loc161 = loc({{.*}}:129:4)
+// CHECK-NEXT: #loc162 = loc({{.*}}:130:34)
+// CHECK-NEXT: #loc163 = loc({{.*}}:130:11)
+// CHECK-NEXT: #loc164 = loc({{.*}}:130:4)
+// CHECK-NEXT: #loc165 = loc({{.*}}:133:2)
+// CHECK-NEXT: #loc168 = loc({{.*}}:134:10)
+// CHECK-NEXT: #loc169 = loc({{.*}}:134:4)
+// CHECK-NEXT: #loc170 = loc({{.*}}:135:11)
+// CHECK-NEXT: #loc171 = loc({{.*}}:135:40)
+// CHECK-NEXT: #loc172 = loc({{.*}}:135:4)
 // CHECK-EMPTY:
