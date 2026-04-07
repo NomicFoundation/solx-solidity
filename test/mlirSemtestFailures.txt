@@ -5,7 +5,6 @@ semanticTests/abiEncodeDecode/abi_encode_call_uint_bytes
 semanticTests/abiEncodeDecode/abi_encode_with_signature
 semanticTests/abiEncodeDecode/abi_encode_with_signaturev2
 semanticTests/abiEncoderV1/abi_encode
-semanticTests/abiEncoderV1/abi_encode_call
 semanticTests/abiEncoderV1/memory_params_in_external_function
 semanticTests/abiEncoderV1/return_dynamic_types_cross_call_advanced
 semanticTests/abiEncoderV1/struct/struct_storage_ptr
@@ -292,7 +291,6 @@ semanticTests/fallback/fallback_return_data
 semanticTests/freeFunctions/import
 semanticTests/freeFunctions/new_operator
 semanticTests/freeFunctions/recursion
-semanticTests/functionCall/bare_call_no_returndatacopy
 semanticTests/functionCall/call_attached_library_function_on_function
 semanticTests/functionCall/call_attached_library_function_on_storage_variable
 semanticTests/functionCall/call_attached_library_function_on_string
@@ -429,7 +427,6 @@ semanticTests/libraries/internal_library_function_attached_to_struct
 semanticTests/libraries/internal_library_function_pointer
 semanticTests/libraries/internal_library_function_return_var_size
 semanticTests/libraries/internal_types_in_library
-semanticTests/libraries/library_address_homestead
 semanticTests/libraries/library_address_via_module
 semanticTests/libraries/library_delegatecall_guard_view_needed
 semanticTests/libraries/library_delegatecall_guard_view_staticcall
@@ -709,7 +706,6 @@ semanticTests/various/flipping_sign_tests
 semanticTests/various/iszero_bnot_correct
 semanticTests/various/literal_empty_string
 semanticTests/various/many_subassemblies
-semanticTests/various/multi_variable_declaration
 semanticTests/various/negative_stack_height
 semanticTests/various/nested_calldata_struct
 semanticTests/various/nested_calldata_struct_to_memory
@@ -727,7 +723,6 @@ semanticTests/various/super_alone
 semanticTests/various/super_parentheses
 semanticTests/various/swap_in_storage_overwrite
 semanticTests/various/tuples
-semanticTests/various/typed_multi_variable_declaration
 semanticTests/various/write_storage_external
 semanticTests/viaYul/assign_tuple_from_function_call
 semanticTests/viaYul/cleanup/checked_arithmetic
@@ -739,7 +734,6 @@ semanticTests/viaYul/conversion/implicit_cast_assignment
 semanticTests/viaYul/conversion/implicit_cast_function_call
 semanticTests/viaYul/conversion/implicit_cast_local_assignment
 semanticTests/viaYul/copy_struct_invalid_ir_bug
-semanticTests/viaYul/define_tuple_from_function_call
 semanticTests/viaYul/dirty_calldata_struct
 semanticTests/viaYul/dirty_memory_dynamic_array
 semanticTests/viaYul/dirty_memory_int32
