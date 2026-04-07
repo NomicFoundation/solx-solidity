@@ -2270,23 +2270,23 @@ void SolidityToMLIRPass::lower(
     VariableDeclarationStatement const &varDeclStmt) {
   mlir::Location loc = getLoc(varDeclStmt);
 
-  mlir::SmallVector<mlir::Type> varTys;
-  for (auto const &varDeclPtr : varDeclStmt.declarations())
-    varTys.push_back(getType(varDeclPtr->type(), /*indirectFn=*/true));
-
   mlir::SmallVector<mlir::Value> initExprs(varDeclStmt.declarations().size());
   if (Expression const *initExpr = varDeclStmt.initialValue())
-    initExprs = genRValExprs(*initExpr, varTys);
+    initExprs = genRValExprs(*initExpr);
 
-  for (auto [varDeclPtr, varTy, initExpr] :
-       llvm::zip(varDeclStmt.declarations(), varTys, initExprs)) {
+  for (auto [varDeclPtr, initExpr] :
+       llvm::zip(varDeclStmt.declarations(), initExprs)) {
+    if (!varDeclPtr)
+      continue;
+
+    mlir::Type varTy = getType(varDeclPtr->type(), /*indirectFn=*/true);
     mlir::Type allocTy = mlir::sol::PointerType::get(
         b.getContext(), varTy, mlir::sol::DataLocation::Stack);
 
     auto addr = b.create<mlir::sol::AllocaOp>(loc, allocTy);
     trackLocalVarAddr(*varDeclPtr, addr);
     if (initExpr)
-      b.create<mlir::sol::StoreOp>(loc, initExpr, addr);
+      b.create<mlir::sol::StoreOp>(loc, genCast(initExpr, varTy), addr);
     else
       genZeroedVal(addr);
   }
