@@ -1924,12 +1924,11 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       mlir::Value signature = genRValExpr(*astArgs.front());
       mlir::sol::DataLocation signatureDataLoc =
           mlir::sol::getDataLocation(signature.getType());
-      if (signatureDataLoc == mlir::sol::DataLocation::Storage)
-        llvm_unreachable("NYI: abi.encodeWithSignature for storage signatures");
-      if (signatureDataLoc == mlir::sol::DataLocation::CallData) {
+      if (signatureDataLoc == mlir::sol::DataLocation::Storage ||
+          signatureDataLoc == mlir::sol::DataLocation::CallData) {
         mlir::Type memStringTy = mlir::sol::StringType::get(
             b.getContext(), mlir::sol::DataLocation::Memory);
-        // keccak256 expects a memory string, so copy the calldata to memory.
+        // keccak256 expects a memory string, so copy runtime signatures there.
         signature = genCast(signature, memStringTy);
       }
       selector = b.create<mlir::sol::Keccak256Op>(loc, bytes32Ty, signature);

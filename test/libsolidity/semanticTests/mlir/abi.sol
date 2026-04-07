@@ -11,6 +11,7 @@ contract C {
 
   bytes str;
   bytes str2;
+  string sigStr;
 
   function ei(uint ui, uint8 ui8, int32 si32) public returns (bytes memory) {
     bytes memory a = abi.encode(si32); // Tests the free-ptr update.
@@ -311,6 +312,11 @@ contract C {
     return abi.encodeWithSignature(sig);
   }
 
+  function ewsig_runtime_storage_uint256(string memory runtimeSig, uint256 x) public returns (bytes memory) {
+    sigStr = runtimeSig;
+    return abi.encodeWithSignature(sigStr, x);
+  }
+
   function foo(uint256) public {}
 
   function bar(uint256, uint8) public {}
@@ -425,6 +431,7 @@ contract C {
 // ewsig_runtime_memory_uint256(string,uint256): 0x40, 1, 3, "abc" -> 0x20, 0x24, left(0x4e03657a), left(0x00000001)
 // ewsig_runtime_calldata_uint256(string,uint256): 0x40, 1, 3, "abc" -> 0x20, 0x24, left(0x4e03657a), left(0x00000001)
 // ewsig_runtime_calldata(string): 0x20, 3, "abc" -> 0x20, 4, left(0x4e03657a)
+// ewsig_runtime_storage_uint256(string,uint256): 0x40, 1, 3, "abc" -> 0x20, 0x24, left(0x4e03657a), left(0x00000001)
 // ec_non_tuple(uint256): 1 -> 0x20, 0x24, left(0x2fbebd38), left(0x00000001)
 // ec_tuple(uint256,uint8): 1, 2 -> 0x20, 0x44, left(0x06450a21), left(0x00000001), left(0x00000002)
 // ec_decl(uint256): 1 -> 0x20, 0x24, left(0x2fbebd38), left(0x00000001)
