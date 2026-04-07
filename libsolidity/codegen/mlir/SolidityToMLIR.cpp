@@ -336,6 +336,11 @@ private:
                                              mlir::Location loc,
                                              bool stateVarGetterOnly = false);
 
+  /// Extracts the runtime selector from an external function pointer.
+  mlir::Value genRuntimeFunctionSelector(Expression const &fnExpr,
+                                         FunctionType const &fnTy,
+                                         mlir::Location loc);
+
   /// Generates type cast expression.
   mlir::Value genCast(mlir::Value val, mlir::Type dstTy);
 
@@ -1198,6 +1203,20 @@ mlir::Value SolidityToMLIRPass::genCompileTimeFunctionSelector(
   return {};
 }
 
+mlir::Value SolidityToMLIRPass::genRuntimeFunctionSelector(
+    Expression const &fnExpr, FunctionType const &fnTy, mlir::Location loc) {
+  assert(fnTy.kind() == FunctionType::Kind::External &&
+         "Expected external function pointer");
+  mlir::Type bytes4Ty = mlir::sol::BytesType::get(b.getContext(), /*size=*/4);
+  mlir::Type fnRefTy = getType(&fnTy);
+
+  // TODO: We should be able to get the selector directly here instead of
+  // extracting it from the ExtFuncRefType. If we can do that, this op is
+  // not needed at all.
+  return b.create<mlir::sol::ExtFuncSelectorOp>(loc, bytes4Ty,
+                                                genRValExpr(fnExpr, fnRefTy));
+}
+
 mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
   mlir::Location loc = getLoc(memberAcc);
 
@@ -1339,6 +1358,8 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
       if (mlir::Value selector =
               genCompileTimeFunctionSelector(memberAcc.expression(), fnTy, loc))
         return selector;
+      if (fnTy.kind() == FunctionType::Kind::External)
+        return genRuntimeFunctionSelector(memberAcc.expression(), fnTy, loc);
     }
     break;
   }
@@ -1859,15 +1880,17 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
         dynamic_cast<FunctionType const *>(astArgs.front()->annotation().type);
     assert(selectorType);
 
-    mlir::Value selector =
+    mlir::Value selectorBytes4 =
         genCompileTimeFunctionSelector(*astArgs.front(), *selectorType, loc,
                                        /*stateVarGetterOnly=*/true);
-
-    if (!selector)
-      llvm_unreachable("NYI: abi.encodeCall for runtime function pointers");
-
-    mlir::Type bytes4Ty = mlir::sol::BytesType::get(b.getContext(), /*size=*/4);
-    selector = genCast(selector, bytes4Ty);
+    if (selectorBytes4) {
+      mlir::Type bytes4Ty =
+          mlir::sol::BytesType::get(b.getContext(), /*size=*/4);
+      selectorBytes4 = genCast(selectorBytes4, bytes4Ty);
+    } else {
+      selectorBytes4 =
+          genRuntimeFunctionSelector(*astArgs.front(), *selectorType, loc);
+    }
 
     auto const *externalFunctionType =
         selectorType->asExternallyCallableFunction(false);
@@ -1899,7 +1922,7 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
         loc, /*res=*/
         mlir::sol::StringType::get(b.getContext(),
                                    mlir::sol::DataLocation::Memory),
-        args, selector,
+        args, selectorBytes4,
         /*packed=*/false));
     return resVals;
   }
