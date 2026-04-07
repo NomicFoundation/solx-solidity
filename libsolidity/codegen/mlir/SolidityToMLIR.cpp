@@ -1963,8 +1963,18 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     for (const Type *astTy : astTys)
       resTys.push_back(getType(astTy));
 
-    auto decodeOp =
-        b.create<mlir::sol::DecodeOp>(loc, resTys, genRValExpr(*astArgs[0]));
+    mlir::Value decodeArg = genRValExpr(*astArgs[0]);
+    auto strTy = mlir::dyn_cast<mlir::sol::StringType>(decodeArg.getType());
+
+    // If the argument is a storage string, copy it to memory and then do the
+    // decoding.
+    if (strTy && strTy.getDataLocation() == mlir::sol::DataLocation::Storage) {
+      mlir::Type memStringTy = mlir::sol::StringType::get(
+          b.getContext(), mlir::sol::DataLocation::Memory);
+      decodeArg = genCast(decodeArg, memStringTy);
+    }
+
+    auto decodeOp = b.create<mlir::sol::DecodeOp>(loc, resTys, decodeArg);
     for (mlir::Value res : decodeOp.getResults())
       resVals.push_back(res);
     return resVals;
