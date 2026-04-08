@@ -768,8 +768,38 @@ mlir::Value SolidityToMLIRPass::genCast(mlir::Value val, mlir::Type dstTy) {
   }
 
   if (mlir::isa<mlir::sol::BytesType>(srcTy) ||
-      mlir::isa<mlir::sol::BytesType>(dstTy))
+      mlir::isa<mlir::sol::BytesType>(dstTy)) {
+    // String literal to fixed-bytes conversion is a compile-time conversion.
+    // Materialize an integer constant matching the destination byte
+    // width and then reuse the regular int->bytes cast path.
+    if (auto dstBytesTy = mlir::dyn_cast<mlir::sol::BytesType>(dstTy)) {
+      if (auto litOp = val.getDefiningOp<mlir::sol::StringLitOp>()) {
+        llvm::StringRef lit = litOp.getValue();
+        unsigned dstBytes = dstBytesTy.getSize();
+        assert(static_cast<unsigned>(lit.size()) <= dstBytes &&
+               "string literal does not fit destination bytes type");
+
+        unsigned width = dstBytes * 8;
+        llvm::APInt litInt(width, /*val=*/0, /*isSigned=*/false);
+
+        // Build a big-endian byte sequence in the low bits first.
+        for (unsigned char c : lit.bytes()) {
+          litInt = litInt.shl(8);
+          litInt |= llvm::APInt(width, c);
+        }
+
+        // Then shift to Solidity fixed-bytes layout (left-aligned in 256-bit
+        // slot semantics, i.e. zero-padding on the right).
+        if (dstBytes > lit.size())
+          litInt = litInt.shl(8 * (dstBytes - lit.size()));
+
+        mlir::Type intTy = b.getIntegerType(width, /*isSigned=*/false);
+        val = b.create<mlir::sol::ConstantOp>(loc,
+                                              b.getIntegerAttr(intTy, litInt));
+      }
+    }
     return b.create<mlir::sol::BytesCastOp>(loc, dstTy, val);
+  }
 
   // Casting to enum type.
   if (mlir::isa<mlir::sol::EnumType>(dstTy))
