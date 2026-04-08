@@ -796,6 +796,8 @@ mlir::Value SolidityToMLIRPass::genCast(mlir::Value val, mlir::Type dstTy) {
         mlir::Type intTy = b.getIntegerType(width, /*isSigned=*/false);
         val = b.create<mlir::sol::ConstantOp>(loc,
                                               b.getIntegerAttr(intTy, litInt));
+      } else if (mlir::isa<mlir::sol::StringType>(srcTy)) {
+        return b.create<mlir::sol::DynBytesToFixedBytesOp>(loc, dstTy, val);
       }
     }
     return b.create<mlir::sol::BytesCastOp>(loc, dstTy, val);

@@ -1,5 +1,4 @@
 semanticTests/abiEncodeDecode/abi_encode_call
-semanticTests/abiEncodeDecode/abi_encode_call_memory
 semanticTests/abiEncoderV1/memory_params_in_external_function
 semanticTests/abiEncoderV1/return_dynamic_types_cross_call_advanced
 semanticTests/abiEncoderV1/struct/struct_storage_ptr
@@ -47,9 +46,6 @@ semanticTests/array/array_3d_new
 semanticTests/array/array_function_pointers
 semanticTests/array/array_storage_push_empty
 semanticTests/array/arrays_complex_from_and_to_storage
-semanticTests/array/bytes_to_fixed_bytes_cleanup
-semanticTests/array/bytes_to_fixed_bytes_simple
-semanticTests/array/bytes_to_fixed_bytes_too_long
 semanticTests/array/calldata_array_dynamic_invalid
 semanticTests/array/calldata_array_dynamic_invalid_static_middle
 semanticTests/array/calldata_array_of_struct
