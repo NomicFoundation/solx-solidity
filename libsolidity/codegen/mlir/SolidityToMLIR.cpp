@@ -1583,7 +1583,13 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     // Lower the args.
     std::vector<mlir::Value> args;
     for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes())) {
-      args.push_back(genRValExpr(*arg, getType(dstTy)));
+      // External-call ABI encoding can consume reference arguments directly
+      // from their original data location (e.g. calldata or storage), so
+      // don't cast them to memory.
+      if (dynamic_cast<ReferenceType const *>(arg->annotation().type))
+        args.push_back(genRValExpr(*arg));
+      else
+        args.push_back(genRValExpr(*arg, getType(dstTy)));
     }
 
     // Collect the return types.
