@@ -1444,8 +1444,6 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
 
 mlir::SmallVector<mlir::Value>
 SolidityToMLIRPass::genExprs(FunctionCall const &call) {
-  assert(*call.annotation().kind != FunctionCallKind::StructConstructorCall &&
-         "NYI");
   mlir::SmallVector<mlir::Value, 2> resVals;
 
   // Type conversion
@@ -1455,15 +1453,41 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     return resVals;
   }
 
-  const auto *calleeTy =
-      dynamic_cast<FunctionType const *>(call.expression().annotation().type);
-  assert(calleeTy);
-
-  std::vector<Type const *> argTys = calleeTy->parameterTypes();
   std::vector<ASTPointer<Expression const>> const &astArgs =
       call.sortedArguments();
 
   mlir::Location loc = getLoc(call);
+
+  if (*call.annotation().kind == FunctionCallKind::StructConstructorCall) {
+    auto const &typeTy =
+        dynamic_cast<TypeType const &>(*call.expression().annotation().type);
+    auto const &structTy =
+        dynamic_cast<StructType const &>(*typeTy.actualType());
+    auto calleeTy = structTy.constructorType();
+    auto members = structTy.nativeMembers(nullptr);
+    assert(members.size() == astArgs.size() && "Struct parameter mismatch");
+
+    auto resultTy =
+        mlir::cast<mlir::sol::StructType>(getType(call.annotation().type));
+    mlir::Value structVal = b.create<mlir::sol::MallocOp>(
+        loc, resultTy, /*zeroInit=*/false, /*size=*/mlir::Value{});
+
+    for (size_t i = 0; i < astArgs.size(); ++i) {
+      mlir::Value memberAddr = b.create<mlir::sol::GepOp>(
+          loc, structVal, genUnsignedConst(i, /*numBits=*/64, loc));
+      genAssign(
+          memberAddr,
+          genRValExpr(*astArgs[i], getType(calleeTy->parameterTypes()[i])),
+          loc);
+    }
+
+    resVals.push_back(structVal);
+    return resVals;
+  }
+
+  const auto *calleeTy =
+      dynamic_cast<FunctionType const *>(call.expression().annotation().type);
+  assert(calleeTy);
 
   auto parseLowLevelCallInfo = [&]() {
     Expression const *callExpr = &call.expression();

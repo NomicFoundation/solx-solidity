@@ -1,14 +1,12 @@
 semanticTests/abiEncodeDecode/abi_encode_call
 semanticTests/abiEncoderV1/return_dynamic_types_cross_call_advanced
 semanticTests/abiEncoderV1/struct/struct_storage_ptr
-semanticTests/abiEncoderV2/abi_encode_v2_in_function_inherited_in_v1_contract
 semanticTests/abiEncoderV2/abi_encode_v2_in_modifier_used_in_v1_contract
 semanticTests/abiEncoderV2/calldata_array_dynamic_static_short_decode
 semanticTests/abiEncoderV2/calldata_array_static_index_access
 semanticTests/abiEncoderV2/calldata_dynamic_array_to_memory
 semanticTests/abiEncoderV2/calldata_overlapped_nested_dynamic_arrays
 semanticTests/abiEncoderV2/calldata_struct_array_reencode
-semanticTests/abiEncoderV2/calldata_struct_member_offset
 semanticTests/abiEncoderV2/calldata_three_dimensional_dynamic_array_index_access
 semanticTests/abiEncoderV2/cleanup/bool
 semanticTests/abiEncoderV2/cleanup/cleanup
@@ -64,7 +62,6 @@ semanticTests/array/copying/arrays_from_and_to_storage
 semanticTests/array/copying/bytes_calldata_to_string_calldata
 semanticTests/array/copying/calldata_1d_array_into_2d_memory_array_element
 semanticTests/array/copying/calldata_array_of_struct_to_memory
-semanticTests/array/copying/calldata_nested_array_copy_to_memory
 semanticTests/array/copying/calldata_to_storage_different_base
 semanticTests/array/copying/copy_byte_array_in_struct_to_storage
 semanticTests/array/copying/copy_byte_array_to_storage
@@ -169,8 +166,6 @@ semanticTests/enums/constructing_enums_from_ints
 semanticTests/enums/enum_with_256_members
 semanticTests/enums/invalid_enum_logged
 semanticTests/errors/error_selector
-semanticTests/errors/errors_by_parameter_type
-semanticTests/errors/named_parameters_shadowing_types
 semanticTests/errors/require_error_evaluation_order_3
 semanticTests/errors/using_structs
 semanticTests/events/event
@@ -411,7 +406,6 @@ semanticTests/libraries/using_library_mappings_return
 semanticTests/libraries/using_library_structs
 semanticTests/literals/scientific_notation
 semanticTests/memoryManagement/return_variable
-semanticTests/memoryManagement/struct_allocation
 semanticTests/modifiers/access_through_module_name
 semanticTests/modifiers/evaluation_order
 semanticTests/modifiers/function_modifier
@@ -479,10 +473,8 @@ semanticTests/saltedCreate/salted_create
 semanticTests/saltedCreate/salted_create_with_value
 semanticTests/shanghai/evmone_support
 semanticTests/smoke/alignment
-semanticTests/smoke/arrays
 semanticTests/smoke/failure
 semanticTests/smoke/fallback
-semanticTests/smoke/structs
 semanticTests/specialFunctions/abi_functions_member_access
 semanticTests/state/blobhash
 semanticTests/state/blockhash_basic
@@ -550,15 +542,12 @@ semanticTests/structs/delete_struct
 semanticTests/structs/event
 semanticTests/structs/function_type_copy
 semanticTests/structs/lone_struct_array_type
-semanticTests/structs/memory_struct_named_constructor
 semanticTests/structs/memory_structs_nested_load
 semanticTests/structs/memory_structs_read_write
 semanticTests/structs/multislot_struct_allocation
-semanticTests/structs/nested_struct_allocation
 semanticTests/structs/packed_storage_structs_delete
 semanticTests/structs/recursive_struct_2
 semanticTests/structs/recursive_structs
-semanticTests/structs/simple_struct_allocation
 semanticTests/structs/struct_assign_reference_to_struct
 semanticTests/structs/struct_constructor_nested
 semanticTests/structs/struct_containing_bytes_copy_and_delete
@@ -654,7 +643,6 @@ semanticTests/various/code_length_contract_member
 semanticTests/various/codehash
 semanticTests/various/codehash_assembly
 semanticTests/various/crazy_elementary_typenames_on_stack
-semanticTests/various/cross_contract_types
 semanticTests/various/destructuring_assignment
 semanticTests/various/different_call_type_transient
 semanticTests/various/external_types_in_calls
