@@ -183,6 +183,27 @@ private:
     return contractTy->contractDefinition();
   }
 
+  /// Returns the symbol and selector for an externally callable contract
+  /// member. Public state-variable getters are lowered as synthesized
+  /// functions, so they need their generated getter symbol here.
+  bool getContractMemberExternalCalleeInfo(Declaration const *decl,
+                                           std::string &symbol,
+                                           uint32_t &selector) {
+    if (auto const *fn = dynamic_cast<FunctionDefinition const *>(decl)) {
+      symbol = getMangledName(*fn);
+      selector = FunctionType(*fn).externalIdentifier().convert_to<uint32_t>();
+      return true;
+    }
+
+    auto const *var = dynamic_cast<VariableDeclaration const *>(decl);
+    if (!var || !var->isStateVariable() || !var->isPartOfExternalInterface())
+      return false;
+
+    symbol = "get_" + getMangledName(*var);
+    selector = FunctionType(*var).externalIdentifier().convert_to<uint32_t>();
+    return true;
+  }
+
   /// Returns the lvalue reference for a variable declaration.
   mlir::Value genLValRef(VariableDeclaration const &var) {
     if (var.isStateVariable())
@@ -1352,10 +1373,10 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
 
     break;
   case Type::Category::Contract: {
-    // Handle external function reference: contract.func
-    auto const *fnDecl = dynamic_cast<FunctionDefinition const *>(
-        memberAcc.annotation().referencedDeclaration);
-    if (!fnDecl)
+    // Handle external function reference: contract.func / contract.getter
+    auto const *decl = memberAcc.annotation().referencedDeclaration;
+    if (!dynamic_cast<FunctionDefinition const *>(decl) &&
+        !dynamic_cast<VariableDeclaration const *>(decl))
       return {};
 
     auto const *fnTy =
@@ -1489,6 +1510,12 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       dynamic_cast<FunctionType const *>(call.expression().annotation().type);
   assert(calleeTy);
 
+  auto isDirectLibraryMemberCallBase = [&](Expression const &expr) {
+    auto const *typeTy = dynamic_cast<TypeType const *>(expr.annotation().type);
+    return typeTy && dynamic_cast<ContractType const *>(typeTy->actualType()) &&
+           calleeTy->kind() == FunctionType::Kind::DelegateCall;
+  };
+
   auto parseLowLevelCallInfo = [&]() {
     Expression const *callExpr = &call.expression();
     mlir::Value gas, value;
@@ -1511,7 +1538,11 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
 
     // memberAcc is null for indirect calls via function pointers.
     mlir::Value addr;
-    if (memberAcc) {
+    if (memberAcc && (memberAcc->expression().annotation().type->category() ==
+                          Type::Category::Contract ||
+                      memberAcc->expression().annotation().type->category() ==
+                          Type::Category::Address ||
+                      isDirectLibraryMemberCallBase(memberAcc->expression()))) {
       // Canonicalize the call base to non-payable address at this boundary so
       // init MLIR reflects the FE cast and lowering keeps the usual low-160-bit
       // address normalization semantics before the low-level call.
@@ -1622,8 +1653,14 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       resTys.push_back(getType(ty));
     }
 
+    bool isDirectContractMemberCall =
+        memberAcc && memberAcc->expression().annotation().type->category() ==
+                         Type::Category::Contract;
+    bool isDirectLibraryMemberCall =
+        memberAcc && isDirectLibraryMemberCallBase(memberAcc->expression());
+
     // Check if this is an indirect call through a function pointer.
-    if (!memberAcc) {
+    if (!isDirectContractMemberCall && !isDirectLibraryMemberCall) {
       // Indirect call via external function pointer - use sol.ext_icall
       mlir::Value fnPtr = genRValExpr(*callExpr);
       bool isStatic = calleeTy->stateMutability() == StateMutability::Pure ||
@@ -1647,11 +1684,13 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     }
 
     // Get the callee and the selector.
-    const auto *callee = dynamic_cast<FunctionDefinition const *>(
-        memberAcc->annotation().referencedDeclaration);
-    assert(callee && "NYI: State variable getters");
-    auto selectorVal =
-        FunctionType(*callee).externalIdentifier().convert_to<uint32_t>();
+    std::string calleeSymbol;
+    uint32_t selectorVal = 0;
+    bool isSupportedDirectCallee = getContractMemberExternalCalleeInfo(
+        memberAcc->annotation().referencedDeclaration, calleeSymbol,
+        selectorVal);
+    assert(isSupportedDirectCallee &&
+           "NYI: unsupported external contract member call target");
     mlir::Value selector = genUnsignedConst(selectorVal, /*numBits=*/256, loc);
 
     // Prepend bool for status flag (direct external call).
@@ -1673,7 +1712,7 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
 
     // Generate the external call.
     auto callOp = b.create<mlir::sol::ExtCallOp>(
-        loc, resTys, getMangledName(*callee), args, addr, gas, value, selector,
+        loc, resTys, calleeSymbol, args, addr, gas, value, selector,
         /*tryCall=*/call.annotation().tryCall,
         /*staticCall=*/calleeTy->stateMutability() <= StateMutability::View,
         /*delegateCall=*/calleeTy->kind() == FunctionType::Kind::DelegateCall,
