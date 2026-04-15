@@ -65,8 +65,8 @@ contract C {
 // CHECK-NEXT:       %c1067774533_ui256 = sol.constant 1067774533 : ui256 loc(#loc8)
 // CHECK-NEXT:       %2 = sol.gasleft : ui256 loc(#loc8)
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc8)
-// CHECK-NEXT:       %status, %3 = sol.ext_call "get_value_3"() at %1 gas %2 value %c0_ui256 selector %c1067774533_ui256 {callee_type = () -> ui256, static_call} : !sol.address, () -> (i1, ui256) loc(#loc8)
-// CHECK-NEXT:       sol.return %3 : ui256 loc(#loc9)
+// CHECK-NEXT:       %status, %outs = sol.ext_call "get_value_3"() at %1 gas %2 value %c0_ui256 selector %c1067774533_ui256 {callee_type = () -> ui256, static_call} : !sol.address, () -> (i1, ui256) loc(#loc8)
+// CHECK-NEXT:       sol.return %outs : ui256 loc(#loc9)
 // CHECK-NEXT:     } loc(#loc7)
 // CHECK-NEXT:     sol.func @getterPointer_46() -> ui256 attributes {id = 46 : i64, orig_fn_type = () -> ui256, selector = 669862793 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %0 = sol.this : !sol.contract<"C_89"> loc(#loc11)
