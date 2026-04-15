@@ -440,8 +440,8 @@ private:
   /// Lowers the return statement.
   void lower(Return const &);
 
-  /// Lowers the assignment statement.
-  void lower(Assignment const &);
+  /// Lowers the assignment statement. Returns the LHS addresses.
+  mlir::SmallVector<mlir::Value> lower(Assignment const &);
 
   /// Lowers the variable declaration statement.
   void lower(VariableDeclarationStatement const &);
@@ -2285,7 +2285,8 @@ void SolidityToMLIRPass::genAssign(mlir::Value lhs, mlir::Value rhs,
   }
 }
 
-void SolidityToMLIRPass::lower(Assignment const &asgnStmt) {
+mlir::SmallVector<mlir::Value>
+SolidityToMLIRPass::lower(Assignment const &asgnStmt) {
   mlir::Location loc = getLoc(asgnStmt);
 
   mlir::SmallVector<mlir::Value> lhsVals =
@@ -2311,6 +2312,7 @@ void SolidityToMLIRPass::lower(Assignment const &asgnStmt) {
         genBinExpr(binOp, lhsAsRVal, genCast(rhs, lhsAsRVal.getType()), loc),
         lhs);
   }
+  return lhsVals;
 }
 
 mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
@@ -2341,7 +2343,12 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
 
   // (Compound) Assignment statement
   if (const auto *asgnStmt = dynamic_cast<Assignment const *>(&expr)) {
-    lower(*asgnStmt);
+    mlir::SmallVector<mlir::Value> lhsVals = lower(*asgnStmt);
+    // For chained scalar assignments (a = b = c), return b's address so
+    // the outer assignment can load the just written value. Tuple assignments
+    // cannot be chained through a scalar lvalue, so return {} in that case.
+    if (lhsVals.size() == 1)
+      return lhsVals.front();
     return {};
   }
 
