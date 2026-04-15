@@ -673,6 +673,12 @@ mlir::Value SolidityToMLIRPass::genZeroedVal(mlir::Type ty,
         loc, b.getIntegerAttr(uintTy, llvm::APInt(width, 0)));
     return genCast(zero, bytesTy);
   }
+  if (mlir::isa<mlir::sol::ByteType>(ty)) {
+    auto uintTy = b.getIntegerType(/*width=*/8, /*isSigned=*/false);
+    auto zero = b.create<mlir::sol::ConstantOp>(
+        loc, b.getIntegerAttr(uintTy, llvm::APInt(8, 0)));
+    return genCast(zero, ty);
+  }
   if (auto contractTy = mlir::dyn_cast<mlir::sol::ContractType>(ty)) {
     auto uint160Ty = b.getIntegerType(160, /*isSigned=*/false);
     auto zero = b.create<mlir::sol::ConstantOp>(
@@ -789,38 +795,46 @@ mlir::Value SolidityToMLIRPass::genCast(mlir::Value val, mlir::Type dstTy) {
     return b.create<mlir::sol::AddressCastOp>(loc, dstTy, val);
   }
 
-  if (mlir::isa<mlir::sol::FixedBytesType>(srcTy) ||
-      mlir::isa<mlir::sol::FixedBytesType>(dstTy)) {
+  if (mlir::isa<mlir::sol::ByteType, mlir::sol::FixedBytesType>(srcTy) ||
+      mlir::isa<mlir::sol::ByteType, mlir::sol::FixedBytesType>(dstTy)) {
+
+    auto materializeStringLiteralAsBytesInt =
+        [&](mlir::sol::StringLitOp litOp, unsigned dstBytes) -> mlir::Value {
+      llvm::StringRef lit = litOp.getValue();
+      assert(static_cast<unsigned>(lit.size()) <= dstBytes &&
+             "string literal does not fit destination bytes type");
+
+      unsigned width = dstBytes * 8;
+      llvm::APInt litInt(width, /*val=*/0, /*isSigned=*/false);
+
+      // Build a big-endian byte sequence in the low bits first.
+      for (unsigned char c : lit.bytes()) {
+        litInt = litInt.shl(8);
+        litInt |= llvm::APInt(width, c);
+      }
+
+      // Then shift to Solidity fixed-bytes layout (left-aligned in 256-bit
+      // slot semantics, i.e. zero-padding on the right).
+      if (dstBytes > lit.size())
+        litInt = litInt.shl(8 * (dstBytes - lit.size()));
+
+      mlir::Type intTy = b.getIntegerType(width, /*isSigned=*/false);
+      return b.create<mlir::sol::ConstantOp>(loc,
+                                             b.getIntegerAttr(intTy, litInt));
+    };
+
     // String literal to fixed-bytes conversion is a compile-time conversion.
     // Materialize an integer constant matching the destination byte
     // width and then reuse the regular int->bytes cast path.
+    auto litOp = val.getDefiningOp<mlir::sol::StringLitOp>();
     if (auto dstBytesTy = mlir::dyn_cast<mlir::sol::FixedBytesType>(dstTy)) {
-      if (auto litOp = val.getDefiningOp<mlir::sol::StringLitOp>()) {
-        llvm::StringRef lit = litOp.getValue();
-        unsigned dstBytes = dstBytesTy.getSize();
-        assert(static_cast<unsigned>(lit.size()) <= dstBytes &&
-               "string literal does not fit destination bytes type");
-
-        unsigned width = dstBytes * 8;
-        llvm::APInt litInt(width, /*val=*/0, /*isSigned=*/false);
-
-        // Build a big-endian byte sequence in the low bits first.
-        for (unsigned char c : lit.bytes()) {
-          litInt = litInt.shl(8);
-          litInt |= llvm::APInt(width, c);
-        }
-
-        // Then shift to Solidity fixed-bytes layout (left-aligned in 256-bit
-        // slot semantics, i.e. zero-padding on the right).
-        if (dstBytes > lit.size())
-          litInt = litInt.shl(8 * (dstBytes - lit.size()));
-
-        mlir::Type intTy = b.getIntegerType(width, /*isSigned=*/false);
-        val = b.create<mlir::sol::ConstantOp>(loc,
-                                              b.getIntegerAttr(intTy, litInt));
+      if (litOp) {
+        val = materializeStringLiteralAsBytesInt(litOp, dstBytesTy.getSize());
       } else if (mlir::isa<mlir::sol::StringType>(srcTy)) {
         return b.create<mlir::sol::DynBytesToFixedBytesOp>(loc, dstTy, val);
       }
+    } else if (mlir::isa<mlir::sol::ByteType>(dstTy) && litOp) {
+      val = materializeStringLiteralAsBytesInt(litOp, /*dstBytes=*/1);
     }
     return b.create<mlir::sol::BytesCastOp>(loc, dstTy, val);
   }
