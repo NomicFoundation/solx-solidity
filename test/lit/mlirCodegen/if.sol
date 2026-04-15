@@ -82,22 +82,22 @@ function tern_const(bool c) returns (uint) {
 // CHECK-NEXT:     } loc(#loc16)
 // CHECK-NEXT:     sol.return %4 : ui256 loc(#loc19)
 // CHECK-NEXT:   } loc(#loc12)
-// CHECK-NEXT:   sol.func @tern_bytes4_57(%arg0: i1 loc({{.*}}:14:21), %arg1: !sol.bytes<4> loc({{.*}}:14:29), %arg2: !sol.bytes<4> loc({{.*}}:14:39)) -> !sol.bytes<4> attributes {id = 57 : i64, state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.func @tern_bytes4_57(%arg0: i1 loc({{.*}}:14:21), %arg1: !sol.fixedbytes<4> loc({{.*}}:14:29), %arg2: !sol.fixedbytes<4> loc({{.*}}:14:39)) -> !sol.fixedbytes<4> attributes {id = 57 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc21)
 // CHECK-NEXT:     sol.store %arg0, %0 : i1, !sol.ptr<i1, Stack> loc(#loc21)
-// CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<!sol.bytes<4>, Stack> loc(#loc22)
-// CHECK-NEXT:     sol.store %arg1, %1 : !sol.bytes<4>, !sol.ptr<!sol.bytes<4>, Stack> loc(#loc22)
-// CHECK-NEXT:     %2 = sol.alloca : !sol.ptr<!sol.bytes<4>, Stack> loc(#loc23)
-// CHECK-NEXT:     sol.store %arg2, %2 : !sol.bytes<4>, !sol.ptr<!sol.bytes<4>, Stack> loc(#loc23)
+// CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<!sol.fixedbytes<4>, Stack> loc(#loc22)
+// CHECK-NEXT:     sol.store %arg1, %1 : !sol.fixedbytes<4>, !sol.ptr<!sol.fixedbytes<4>, Stack> loc(#loc22)
+// CHECK-NEXT:     %2 = sol.alloca : !sol.ptr<!sol.fixedbytes<4>, Stack> loc(#loc23)
+// CHECK-NEXT:     sol.store %arg2, %2 : !sol.fixedbytes<4>, !sol.ptr<!sol.fixedbytes<4>, Stack> loc(#loc23)
 // CHECK-NEXT:     %3 = sol.load %0 : !sol.ptr<i1, Stack>, i1 loc(#loc24)
-// CHECK-NEXT:     %4 = scf.if %3 -> (!sol.bytes<4>) {
-// CHECK-NEXT:       %5 = sol.load %1 : !sol.ptr<!sol.bytes<4>, Stack>, !sol.bytes<4> loc(#loc25)
-// CHECK-NEXT:       scf.yield %5 : !sol.bytes<4> loc(#loc24)
+// CHECK-NEXT:     %4 = scf.if %3 -> (!sol.fixedbytes<4>) {
+// CHECK-NEXT:       %5 = sol.load %1 : !sol.ptr<!sol.fixedbytes<4>, Stack>, !sol.fixedbytes<4> loc(#loc25)
+// CHECK-NEXT:       scf.yield %5 : !sol.fixedbytes<4> loc(#loc24)
 // CHECK-NEXT:     } else {
-// CHECK-NEXT:       %5 = sol.load %2 : !sol.ptr<!sol.bytes<4>, Stack>, !sol.bytes<4> loc(#loc26)
-// CHECK-NEXT:       scf.yield %5 : !sol.bytes<4> loc(#loc24)
+// CHECK-NEXT:       %5 = sol.load %2 : !sol.ptr<!sol.fixedbytes<4>, Stack>, !sol.fixedbytes<4> loc(#loc26)
+// CHECK-NEXT:       scf.yield %5 : !sol.fixedbytes<4> loc(#loc24)
 // CHECK-NEXT:     } loc(#loc24)
-// CHECK-NEXT:     sol.return %4 : !sol.bytes<4> loc(#loc27)
+// CHECK-NEXT:     sol.return %4 : !sol.fixedbytes<4> loc(#loc27)
 // CHECK-NEXT:   } loc(#loc20)
 // CHECK-NEXT:   sol.func @tern_tuple_84(%arg0: i1 loc({{.*}}:18:20), %arg1: ui256 loc({{.*}}:18:28), %arg2: ui256 loc({{.*}}:18:36), %arg3: ui256 loc({{.*}}:18:44), %arg4: ui256 loc({{.*}}:18:52)) -> (ui256, ui256) attributes {id = 84 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc29)

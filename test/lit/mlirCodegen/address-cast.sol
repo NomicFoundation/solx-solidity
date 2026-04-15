@@ -91,18 +91,18 @@ contract C {
 // CHECK-NEXT:       %4 = sol.cmp eq, %2, %3 : !sol.address loc(#loc17)
 // CHECK-NEXT:       sol.return %4 : i1 loc(#loc19)
 // CHECK-NEXT:     } loc(#loc14)
-// CHECK-NEXT:     sol.func @to_bytes20_69(%arg0: !sol.address loc({{.*}}:19:24)) -> !sol.bytes<20> attributes {id = 69 : i64, orig_fn_type = (!sol.address) -> !sol.bytes<20>, selector = -1936108890 : i32, state_mutability = #Pure} {
+// CHECK-NEXT:     sol.func @to_bytes20_69(%arg0: !sol.address loc({{.*}}:19:24)) -> !sol.fixedbytes<20> attributes {id = 69 : i64, orig_fn_type = (!sol.address) -> !sol.fixedbytes<20>, selector = -1936108890 : i32, state_mutability = #Pure} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.address, Stack> loc(#loc21)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.address, !sol.ptr<!sol.address, Stack> loc(#loc21)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.address, Stack>, !sol.address loc(#loc22)
-// CHECK-NEXT:       %2 = sol.address_cast %1 : !sol.address to !sol.bytes<20> loc(#loc22)
-// CHECK-NEXT:       sol.return %2 : !sol.bytes<20> loc(#loc23)
+// CHECK-NEXT:       %2 = sol.address_cast %1 : !sol.address to !sol.fixedbytes<20> loc(#loc22)
+// CHECK-NEXT:       sol.return %2 : !sol.fixedbytes<20> loc(#loc23)
 // CHECK-NEXT:     } loc(#loc20)
-// CHECK-NEXT:     sol.func @from_bytes20_82(%arg0: !sol.bytes<20> loc({{.*}}:23:26)) -> !sol.address attributes {id = 82 : i64, orig_fn_type = (!sol.bytes<20>) -> !sol.address, selector = -527419197 : i32, state_mutability = #Pure} {
-// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.bytes<20>, Stack> loc(#loc25)
-// CHECK-NEXT:       sol.store %arg0, %0 : !sol.bytes<20>, !sol.ptr<!sol.bytes<20>, Stack> loc(#loc25)
-// CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.bytes<20>, Stack>, !sol.bytes<20> loc(#loc26)
-// CHECK-NEXT:       %2 = sol.address_cast %1 : !sol.bytes<20> to !sol.address loc(#loc26)
+// CHECK-NEXT:     sol.func @from_bytes20_82(%arg0: !sol.fixedbytes<20> loc({{.*}}:23:26)) -> !sol.address attributes {id = 82 : i64, orig_fn_type = (!sol.fixedbytes<20>) -> !sol.address, selector = -527419197 : i32, state_mutability = #Pure} {
+// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.fixedbytes<20>, Stack> loc(#loc25)
+// CHECK-NEXT:       sol.store %arg0, %0 : !sol.fixedbytes<20>, !sol.ptr<!sol.fixedbytes<20>, Stack> loc(#loc25)
+// CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.fixedbytes<20>, Stack>, !sol.fixedbytes<20> loc(#loc26)
+// CHECK-NEXT:       %2 = sol.address_cast %1 : !sol.fixedbytes<20> to !sol.address loc(#loc26)
 // CHECK-NEXT:       sol.return %2 : !sol.address loc(#loc27)
 // CHECK-NEXT:     } loc(#loc24)
 // CHECK-NEXT:     sol.func @to_contract_95(%arg0: !sol.address loc({{.*}}:27:25)) -> !sol.contract<"C_121"> attributes {id = 95 : i64, orig_fn_type = (!sol.address) -> !sol.contract<"C_121">, selector = 1669377306 : i32, state_mutability = #Pure} {

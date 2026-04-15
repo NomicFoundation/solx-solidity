@@ -86,7 +86,7 @@ contract Delete {
 // CHECK-NEXT:     sol.state_var @uintVar_6 slot 0 offset 0 : ui256 loc(#loc2)
 // CHECK-NEXT:     sol.state_var @boolVar_8 slot 1 offset 0 : i1 loc(#loc3)
 // CHECK-NEXT:     sol.state_var @addrVar_10 slot 1 offset 1 : !sol.address loc(#loc4)
-// CHECK-NEXT:     sol.state_var @bytesVar_12 slot 2 offset 0 : !sol.bytes<32> loc(#loc5)
+// CHECK-NEXT:     sol.state_var @bytesVar_12 slot 2 offset 0 : !sol.fixedbytes<32> loc(#loc5)
 // CHECK-NEXT:     sol.state_var @intVar_14 slot 3 offset 0 : si16 loc(#loc6)
 // CHECK-NEXT:     sol.state_var @enumVar_17 slot 3 offset 2 : !sol.enum<2> loc(#loc7)
 // CHECK-NEXT:     sol.state_var @staticArr_21 slot 4 offset 0 : !sol.array<3 x ui256, Storage> loc(#loc8)
@@ -114,10 +114,10 @@ contract Delete {
 // CHECK-NEXT:       sol.return loc(#loc14)
 // CHECK-NEXT:     } loc(#loc14)
 // CHECK-NEXT:     sol.func @deleteBytes_52() attributes {id = 52 : i64, orig_fn_type = () -> (), selector = 87269612 : i32, state_mutability = #NonPayable} {
-// CHECK-NEXT:       %0 = sol.addr_of @bytesVar_12 : !sol.ptr<!sol.bytes<32>, Storage> loc(#loc5)
+// CHECK-NEXT:       %0 = sol.addr_of @bytesVar_12 : !sol.ptr<!sol.fixedbytes<32>, Storage> loc(#loc5)
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc17)
-// CHECK-NEXT:       %1 = sol.bytes_cast %c0_ui256 : ui256 to !sol.bytes<32> loc(#loc17)
-// CHECK-NEXT:       sol.store %1, %0 : !sol.bytes<32>, !sol.ptr<!sol.bytes<32>, Storage> loc(#loc17)
+// CHECK-NEXT:       %1 = sol.bytes_cast %c0_ui256 : ui256 to !sol.fixedbytes<32> loc(#loc17)
+// CHECK-NEXT:       sol.store %1, %0 : !sol.fixedbytes<32>, !sol.ptr<!sol.fixedbytes<32>, Storage> loc(#loc17)
 // CHECK-NEXT:       sol.return loc(#loc16)
 // CHECK-NEXT:     } loc(#loc16)
 // CHECK-NEXT:     sol.func @deleteInt_59() attributes {id = 59 : i64, orig_fn_type = () -> (), selector = -1429758948 : i32, state_mutability = #NonPayable} {

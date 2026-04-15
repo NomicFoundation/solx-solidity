@@ -42,10 +42,10 @@ contract C {
 // CHECK-NEXT:       %2 = sol.this : !sol.contract<"C_43"> loc(#loc7)
 // CHECK-NEXT:       sol.return %2 : !sol.contract<"C_43"> loc(#loc8)
 // CHECK-NEXT:     } loc(#loc4)
-// CHECK-NEXT:     sol.func @selector_29() -> !sol.bytes<4> attributes {id = 29 : i64, orig_fn_type = () -> !sol.bytes<4>, selector = -365080438 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @selector_29() -> !sol.fixedbytes<4> attributes {id = 29 : i64, orig_fn_type = () -> !sol.fixedbytes<4>, selector = -365080438 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %c638722032_ui32 = sol.constant 638722032 : ui32 loc(#loc10)
-// CHECK-NEXT:       %0 = sol.bytes_cast %c638722032_ui32 : ui32 to !sol.bytes<4> loc(#loc10)
-// CHECK-NEXT:       sol.return %0 : !sol.bytes<4> loc(#loc11)
+// CHECK-NEXT:       %0 = sol.bytes_cast %c638722032_ui32 : ui32 to !sol.fixedbytes<4> loc(#loc10)
+// CHECK-NEXT:       sol.return %0 : !sol.fixedbytes<4> loc(#loc11)
 // CHECK-NEXT:     } loc(#loc9)
 // CHECK-NEXT:     sol.func @sideEffect_42() -> ui256 attributes {id = 42 : i64, orig_fn_type = () -> ui256, selector = 973439589 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.call @get_19() : () -> !sol.contract<"C_43"> loc(#loc13)
