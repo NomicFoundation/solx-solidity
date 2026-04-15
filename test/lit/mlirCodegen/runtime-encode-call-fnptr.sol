@@ -29,7 +29,7 @@ contract C {
 // CHECK-NEXT:     sol.func @b_8() attributes {id = 8 : i64, orig_fn_type = () -> (), selector = 1308091344 : i32, state_mutability = #Pure} {
 // CHECK-NEXT:       sol.return loc(#loc3)
 // CHECK-NEXT:     } loc(#loc3)
-// CHECK-NEXT:     sol.func @encode_38(%arg0: i1 loc({{.*}}:6:18)) -> (!sol.string<Memory>, !sol.bytes<4>) attributes {id = 38 : i64, orig_fn_type = (i1) -> (!sol.string<Memory>, !sol.bytes<4>), selector = -1197187732 : i32, state_mutability = #View} {
+// CHECK-NEXT:     sol.func @encode_38(%arg0: i1 loc({{.*}}:6:18)) -> (!sol.string<Memory>, !sol.fixedbytes<4>) attributes {id = 38 : i64, orig_fn_type = (i1) -> (!sol.string<Memory>, !sol.fixedbytes<4>), selector = -1197187732 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc5)
 // CHECK-NEXT:       sol.store %arg0, %0 : i1, !sol.ptr<i1, Stack> loc(#loc5)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<i1, Stack>, i1 loc(#loc6)
@@ -47,11 +47,11 @@ contract C {
 // CHECK-NEXT:       %3 = sol.alloca : !sol.ptr<!sol.ext_func_ref<() -> ()>, Stack> loc(#loc9)
 // CHECK-NEXT:       sol.store %2, %3 : !sol.ext_func_ref<() -> ()>, !sol.ptr<!sol.ext_func_ref<() -> ()>, Stack> loc(#loc9)
 // CHECK-NEXT:       %4 = sol.load %3 : !sol.ptr<!sol.ext_func_ref<() -> ()>, Stack>, !sol.ext_func_ref<() -> ()> loc(#loc10)
-// CHECK-NEXT:       %5 = sol.ext_func_selector %4 : !sol.ext_func_ref<() -> ()> -> !sol.bytes<4> loc(#loc11)
-// CHECK-NEXT:       %6 = sol.encode selector(%5) : !sol.bytes<4>  : !sol.string<Memory> loc(#loc11)
+// CHECK-NEXT:       %5 = sol.ext_func_selector %4 : !sol.ext_func_ref<() -> ()> -> !sol.fixedbytes<4> loc(#loc11)
+// CHECK-NEXT:       %6 = sol.encode selector(%5) : !sol.fixedbytes<4>  : !sol.string<Memory> loc(#loc11)
 // CHECK-NEXT:       %7 = sol.load %3 : !sol.ptr<!sol.ext_func_ref<() -> ()>, Stack>, !sol.ext_func_ref<() -> ()> loc(#loc12)
-// CHECK-NEXT:       %8 = sol.ext_func_selector %7 : !sol.ext_func_ref<() -> ()> -> !sol.bytes<4> loc(#loc12)
-// CHECK-NEXT:       sol.return %6, %8 : !sol.string<Memory>, !sol.bytes<4> loc(#loc13)
+// CHECK-NEXT:       %8 = sol.ext_func_selector %7 : !sol.ext_func_ref<() -> ()> -> !sol.fixedbytes<4> loc(#loc12)
+// CHECK-NEXT:       sol.return %6, %8 : !sol.string<Memory>, !sol.fixedbytes<4> loc(#loc13)
 // CHECK-NEXT:     } loc(#loc4)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)

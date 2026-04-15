@@ -45,43 +45,43 @@ contract C {
 // CHECK-NEXT:     sol.func @C_77() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     sol.func @fromMemory16_15(%arg0: !sol.string<Memory> loc({{.*}}:5:24)) -> !sol.bytes<16> attributes {id = 15 : i64, orig_fn_type = (!sol.string<Memory>) -> !sol.bytes<16>, selector = 377805831 : i32, state_mutability = #Pure} {
+// CHECK-NEXT:     sol.func @fromMemory16_15(%arg0: !sol.string<Memory> loc({{.*}}:5:24)) -> !sol.fixedbytes<16> attributes {id = 15 : i64, orig_fn_type = (!sol.string<Memory>) -> !sol.fixedbytes<16>, selector = 377805831 : i32, state_mutability = #Pure} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc4)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc4)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc5)
 // CHECK-NEXT:       %2 = sol.dyn_bytes_to_fixedbytes %1 : <Memory> to <16> loc(#loc5)
-// CHECK-NEXT:       sol.return %2 : !sol.bytes<16> loc(#loc6)
+// CHECK-NEXT:       sol.return %2 : !sol.fixedbytes<16> loc(#loc6)
 // CHECK-NEXT:     } loc(#loc3)
-// CHECK-NEXT:     sol.func @fromMemory32_28(%arg0: !sol.string<Memory> loc({{.*}}:9:24)) -> !sol.bytes<32> attributes {id = 28 : i64, orig_fn_type = (!sol.string<Memory>) -> !sol.bytes<32>, selector = -924904363 : i32, state_mutability = #Pure} {
+// CHECK-NEXT:     sol.func @fromMemory32_28(%arg0: !sol.string<Memory> loc({{.*}}:9:24)) -> !sol.fixedbytes<32> attributes {id = 28 : i64, orig_fn_type = (!sol.string<Memory>) -> !sol.fixedbytes<32>, selector = -924904363 : i32, state_mutability = #Pure} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc8)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc8)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc9)
 // CHECK-NEXT:       %2 = sol.dyn_bytes_to_fixedbytes %1 : <Memory> to <32> loc(#loc9)
-// CHECK-NEXT:       sol.return %2 : !sol.bytes<32> loc(#loc10)
+// CHECK-NEXT:       sol.return %2 : !sol.fixedbytes<32> loc(#loc10)
 // CHECK-NEXT:     } loc(#loc7)
-// CHECK-NEXT:     sol.func @fromCalldata16_41(%arg0: !sol.string<CallData> loc({{.*}}:13:26)) -> !sol.bytes<16> attributes {id = 41 : i64, orig_fn_type = (!sol.string<CallData>) -> !sol.bytes<16>, selector = 2002406854 : i32, state_mutability = #Pure} {
+// CHECK-NEXT:     sol.func @fromCalldata16_41(%arg0: !sol.string<CallData> loc({{.*}}:13:26)) -> !sol.fixedbytes<16> attributes {id = 41 : i64, orig_fn_type = (!sol.string<CallData>) -> !sol.fixedbytes<16>, selector = 2002406854 : i32, state_mutability = #Pure} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.string<CallData>, Stack> loc(#loc12)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.string<CallData>, !sol.ptr<!sol.string<CallData>, Stack> loc(#loc12)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.string<CallData>, Stack>, !sol.string<CallData> loc(#loc13)
 // CHECK-NEXT:       %2 = sol.dyn_bytes_to_fixedbytes %1 : <CallData> to <16> loc(#loc13)
-// CHECK-NEXT:       sol.return %2 : !sol.bytes<16> loc(#loc14)
+// CHECK-NEXT:       sol.return %2 : !sol.fixedbytes<16> loc(#loc14)
 // CHECK-NEXT:     } loc(#loc11)
-// CHECK-NEXT:     sol.func @fromCalldata32_54(%arg0: !sol.string<CallData> loc({{.*}}:17:26)) -> !sol.bytes<32> attributes {id = 54 : i64, orig_fn_type = (!sol.string<CallData>) -> !sol.bytes<32>, selector = 976355836 : i32, state_mutability = #Pure} {
+// CHECK-NEXT:     sol.func @fromCalldata32_54(%arg0: !sol.string<CallData> loc({{.*}}:17:26)) -> !sol.fixedbytes<32> attributes {id = 54 : i64, orig_fn_type = (!sol.string<CallData>) -> !sol.fixedbytes<32>, selector = 976355836 : i32, state_mutability = #Pure} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.string<CallData>, Stack> loc(#loc16)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.string<CallData>, !sol.ptr<!sol.string<CallData>, Stack> loc(#loc16)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.string<CallData>, Stack>, !sol.string<CallData> loc(#loc17)
 // CHECK-NEXT:       %2 = sol.dyn_bytes_to_fixedbytes %1 : <CallData> to <32> loc(#loc17)
-// CHECK-NEXT:       sol.return %2 : !sol.bytes<32> loc(#loc18)
+// CHECK-NEXT:       sol.return %2 : !sol.fixedbytes<32> loc(#loc18)
 // CHECK-NEXT:     } loc(#loc15)
-// CHECK-NEXT:     sol.func @fromStorage16_65() -> !sol.bytes<16> attributes {id = 65 : i64, orig_fn_type = () -> !sol.bytes<16>, selector = -1144062795 : i32, state_mutability = #View} {
+// CHECK-NEXT:     sol.func @fromStorage16_65() -> !sol.fixedbytes<16> attributes {id = 65 : i64, orig_fn_type = () -> !sol.fixedbytes<16>, selector = -1144062795 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %0 = sol.addr_of @s_2 : !sol.string<Storage> loc(#loc2)
 // CHECK-NEXT:       %1 = sol.dyn_bytes_to_fixedbytes %0 : <Storage> to <16> loc(#loc2)
-// CHECK-NEXT:       sol.return %1 : !sol.bytes<16> loc(#loc20)
+// CHECK-NEXT:       sol.return %1 : !sol.fixedbytes<16> loc(#loc20)
 // CHECK-NEXT:     } loc(#loc19)
-// CHECK-NEXT:     sol.func @fromStorage32_76() -> !sol.bytes<32> attributes {id = 76 : i64, orig_fn_type = () -> !sol.bytes<32>, selector = 1027079001 : i32, state_mutability = #View} {
+// CHECK-NEXT:     sol.func @fromStorage32_76() -> !sol.fixedbytes<32> attributes {id = 76 : i64, orig_fn_type = () -> !sol.fixedbytes<32>, selector = 1027079001 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %0 = sol.addr_of @s_2 : !sol.string<Storage> loc(#loc2)
 // CHECK-NEXT:       %1 = sol.dyn_bytes_to_fixedbytes %0 : <Storage> to <32> loc(#loc2)
-// CHECK-NEXT:       sol.return %1 : !sol.bytes<32> loc(#loc22)
+// CHECK-NEXT:       sol.return %1 : !sol.fixedbytes<32> loc(#loc22)
 // CHECK-NEXT:     } loc(#loc21)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)

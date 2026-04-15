@@ -306,20 +306,20 @@ function exp8(int8 a, uint8 b) {
 // CHECK-NEXT:     sol.store %arg0, %0 : si8, !sol.ptr<si8, Stack> loc(#loc8)
 // CHECK-NEXT:     sol.return loc(#loc7)
 // CHECK-NEXT:   } loc(#loc7)
-// CHECK-NEXT:   sol.func @f_b4_30(%arg0: !sol.bytes<4> loc({{.*}}:6:14)) attributes {id = 30 : i64, state_mutability = #NonPayable} {
-// CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.bytes<4>, Stack> loc(#loc10)
-// CHECK-NEXT:     sol.store %arg0, %0 : !sol.bytes<4>, !sol.ptr<!sol.bytes<4>, Stack> loc(#loc10)
+// CHECK-NEXT:   sol.func @f_b4_30(%arg0: !sol.fixedbytes<4> loc({{.*}}:6:14)) attributes {id = 30 : i64, state_mutability = #NonPayable} {
+// CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.fixedbytes<4>, Stack> loc(#loc10)
+// CHECK-NEXT:     sol.store %arg0, %0 : !sol.fixedbytes<4>, !sol.ptr<!sol.fixedbytes<4>, Stack> loc(#loc10)
 // CHECK-NEXT:     sol.return loc(#loc9)
 // CHECK-NEXT:   } loc(#loc9)
-// CHECK-NEXT:   sol.func @bnot_bytes_41(%arg0: !sol.bytes<4> loc({{.*}}:8:20)) attributes {id = 41 : i64, state_mutability = #NonPayable} {
-// CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.bytes<4>, Stack> loc(#loc12)
-// CHECK-NEXT:     sol.store %arg0, %0 : !sol.bytes<4>, !sol.ptr<!sol.bytes<4>, Stack> loc(#loc12)
-// CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<!sol.bytes<4>, Stack>, !sol.bytes<4> loc(#loc13)
-// CHECK-NEXT:     %2 = sol.bytes_cast %1 : !sol.bytes<4> to ui32 loc(#loc13)
+// CHECK-NEXT:   sol.func @bnot_bytes_41(%arg0: !sol.fixedbytes<4> loc({{.*}}:8:20)) attributes {id = 41 : i64, state_mutability = #NonPayable} {
+// CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.fixedbytes<4>, Stack> loc(#loc12)
+// CHECK-NEXT:     sol.store %arg0, %0 : !sol.fixedbytes<4>, !sol.ptr<!sol.fixedbytes<4>, Stack> loc(#loc12)
+// CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<!sol.fixedbytes<4>, Stack>, !sol.fixedbytes<4> loc(#loc13)
+// CHECK-NEXT:     %2 = sol.bytes_cast %1 : !sol.fixedbytes<4> to ui32 loc(#loc13)
 // CHECK-NEXT:     %c-1_ui32 = sol.constant 4294967295 : ui32 loc(#loc14)
 // CHECK-NEXT:     %3 = sol.xor %2, %c-1_ui32 : ui32 loc(#loc14)
-// CHECK-NEXT:     %4 = sol.bytes_cast %3 : ui32 to !sol.bytes<4> loc(#loc14)
-// CHECK-NEXT:     sol.call @f_b4_30(%4) : (!sol.bytes<4>) -> () loc(#loc15)
+// CHECK-NEXT:     %4 = sol.bytes_cast %3 : ui32 to !sol.fixedbytes<4> loc(#loc14)
+// CHECK-NEXT:     sol.call @f_b4_30(%4) : (!sol.fixedbytes<4>) -> () loc(#loc15)
 // CHECK-NEXT:     sol.return loc(#loc11)
 // CHECK-NEXT:   } loc(#loc11)
 // CHECK-NEXT:   sol.func @unchk_ui_161(%arg0: ui256 loc({{.*}}:12:18), %arg1: ui256 loc({{.*}}:12:26)) attributes {id = 161 : i64, state_mutability = #NonPayable} {

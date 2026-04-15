@@ -124,17 +124,17 @@ contract C {
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc42)
 // CHECK-NEXT:       sol.return %1 : !sol.string<Memory> loc(#loc43)
 // CHECK-NEXT:     } loc(#loc40)
-// CHECK-NEXT:     sol.func @b1_136(%arg0: !sol.bytes<1> loc({{.*}}:27:14)) -> !sol.bytes<1> attributes {id = 136 : i64, orig_fn_type = (!sol.bytes<1>) -> !sol.bytes<1>, selector = -1094027182 : i32, state_mutability = #NonPayable} {
-// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.bytes<1>, Stack> loc(#loc45)
-// CHECK-NEXT:       sol.store %arg0, %0 : !sol.bytes<1>, !sol.ptr<!sol.bytes<1>, Stack> loc(#loc45)
-// CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.bytes<1>, Stack>, !sol.bytes<1> loc(#loc46)
-// CHECK-NEXT:       sol.return %1 : !sol.bytes<1> loc(#loc47)
+// CHECK-NEXT:     sol.func @b1_136(%arg0: !sol.fixedbytes<1> loc({{.*}}:27:14)) -> !sol.fixedbytes<1> attributes {id = 136 : i64, orig_fn_type = (!sol.fixedbytes<1>) -> !sol.fixedbytes<1>, selector = -1094027182 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.fixedbytes<1>, Stack> loc(#loc45)
+// CHECK-NEXT:       sol.store %arg0, %0 : !sol.fixedbytes<1>, !sol.ptr<!sol.fixedbytes<1>, Stack> loc(#loc45)
+// CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.fixedbytes<1>, Stack>, !sol.fixedbytes<1> loc(#loc46)
+// CHECK-NEXT:       sol.return %1 : !sol.fixedbytes<1> loc(#loc47)
 // CHECK-NEXT:     } loc(#loc44)
-// CHECK-NEXT:     sol.func @b2_146(%arg0: !sol.bytes<2> loc({{.*}}:28:14)) -> !sol.bytes<2> attributes {id = 146 : i64, orig_fn_type = (!sol.bytes<2>) -> !sol.bytes<2>, selector = -1660006140 : i32, state_mutability = #NonPayable} {
-// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.bytes<2>, Stack> loc(#loc49)
-// CHECK-NEXT:       sol.store %arg0, %0 : !sol.bytes<2>, !sol.ptr<!sol.bytes<2>, Stack> loc(#loc49)
-// CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.bytes<2>, Stack>, !sol.bytes<2> loc(#loc50)
-// CHECK-NEXT:       sol.return %1 : !sol.bytes<2> loc(#loc51)
+// CHECK-NEXT:     sol.func @b2_146(%arg0: !sol.fixedbytes<2> loc({{.*}}:28:14)) -> !sol.fixedbytes<2> attributes {id = 146 : i64, orig_fn_type = (!sol.fixedbytes<2>) -> !sol.fixedbytes<2>, selector = -1660006140 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.fixedbytes<2>, Stack> loc(#loc49)
+// CHECK-NEXT:       sol.store %arg0, %0 : !sol.fixedbytes<2>, !sol.ptr<!sol.fixedbytes<2>, Stack> loc(#loc49)
+// CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.fixedbytes<2>, Stack>, !sol.fixedbytes<2> loc(#loc50)
+// CHECK-NEXT:       sol.return %1 : !sol.fixedbytes<2> loc(#loc51)
 // CHECK-NEXT:     } loc(#loc48)
 // CHECK-NEXT:     sol.func @bts_156(%arg0: !sol.string<Memory> loc({{.*}}:30:15)) -> !sol.string<Memory> attributes {id = 156 : i64, orig_fn_type = (!sol.string<Memory>) -> !sol.string<Memory>, selector = -12492371 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc53)

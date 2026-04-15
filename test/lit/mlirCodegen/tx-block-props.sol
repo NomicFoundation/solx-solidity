@@ -44,9 +44,9 @@ contract C {
 // CHECK-NEXT:       %0 = sol.callvalue : ui256 loc(#loc9)
 // CHECK-NEXT:       sol.return %0 : ui256 loc(#loc10)
 // CHECK-NEXT:     } loc(#loc8)
-// CHECK-NEXT:     sol.func @sig_36() -> !sol.bytes<4> attributes {id = 36 : i64, orig_fn_type = () -> !sol.bytes<4>, selector = 10945179 : i32, state_mutability = #Pure} {
-// CHECK-NEXT:       %0 = sol.sig : !sol.bytes<4> loc(#loc12)
-// CHECK-NEXT:       sol.return %0 : !sol.bytes<4> loc(#loc13)
+// CHECK-NEXT:     sol.func @sig_36() -> !sol.fixedbytes<4> attributes {id = 36 : i64, orig_fn_type = () -> !sol.fixedbytes<4>, selector = 10945179 : i32, state_mutability = #Pure} {
+// CHECK-NEXT:       %0 = sol.sig : !sol.fixedbytes<4> loc(#loc12)
+// CHECK-NEXT:       sol.return %0 : !sol.fixedbytes<4> loc(#loc13)
 // CHECK-NEXT:     } loc(#loc11)
 // CHECK-NEXT:     sol.func @basefee_45() -> ui256 attributes {id = 45 : i64, orig_fn_type = () -> ui256, selector = 1559382377 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %0 = sol.basefee : ui256 loc(#loc15)

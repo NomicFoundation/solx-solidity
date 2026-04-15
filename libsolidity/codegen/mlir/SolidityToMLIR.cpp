@@ -519,7 +519,8 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
 
   case Type::Category::FixedBytes: {
     const auto *fixedBytesTy = static_cast<FixedBytesType const *>(ty);
-    return mlir::sol::BytesType::get(b.getContext(), fixedBytesTy->numBytes());
+    return mlir::sol::FixedBytesType::get(b.getContext(),
+                                          fixedBytesTy->numBytes());
   }
   case Type::Category::Mapping: {
     auto *mappingTy = static_cast<MappingType const *>(ty);
@@ -665,7 +666,7 @@ mlir::Value SolidityToMLIRPass::genZeroedVal(mlir::Type ty,
         loc, b.getIntegerAttr(uint160Ty, llvm::APInt(160, 0)));
     return genCast(zero, addressTy);
   }
-  if (auto bytesTy = mlir::dyn_cast<mlir::sol::BytesType>(ty)) {
+  if (auto bytesTy = mlir::dyn_cast<mlir::sol::FixedBytesType>(ty)) {
     unsigned width = bytesTy.getSize() * 8;
     auto uintTy = b.getIntegerType(width, /*isSigned=*/false);
     auto zero = b.create<mlir::sol::ConstantOp>(
@@ -788,12 +789,12 @@ mlir::Value SolidityToMLIRPass::genCast(mlir::Value val, mlir::Type dstTy) {
     return b.create<mlir::sol::AddressCastOp>(loc, dstTy, val);
   }
 
-  if (mlir::isa<mlir::sol::BytesType>(srcTy) ||
-      mlir::isa<mlir::sol::BytesType>(dstTy)) {
+  if (mlir::isa<mlir::sol::FixedBytesType>(srcTy) ||
+      mlir::isa<mlir::sol::FixedBytesType>(dstTy)) {
     // String literal to fixed-bytes conversion is a compile-time conversion.
     // Materialize an integer constant matching the destination byte
     // width and then reuse the regular int->bytes cast path.
-    if (auto dstBytesTy = mlir::dyn_cast<mlir::sol::BytesType>(dstTy)) {
+    if (auto dstBytesTy = mlir::dyn_cast<mlir::sol::FixedBytesType>(dstTy)) {
       if (auto litOp = val.getDefiningOp<mlir::sol::StringLitOp>()) {
         llvm::StringRef lit = litOp.getValue();
         unsigned dstBytes = dstBytesTy.getSize();
@@ -880,7 +881,7 @@ mlir::Value SolidityToMLIRPass::genBinExpr(Token op, mlir::Value lhs,
                                            mlir::Value rhs,
                                            mlir::Location loc) {
   auto convertBytesToInt = [&](mlir::Value val) -> mlir::Value {
-    auto bytesTy = mlir::dyn_cast<mlir::sol::BytesType>(val.getType());
+    auto bytesTy = mlir::dyn_cast<mlir::sol::FixedBytesType>(val.getType());
     if (!bytesTy)
       return val;
 
@@ -1023,7 +1024,8 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const &unaryOp) {
     mlir::Value expr = genRValExpr(unaryOp.subExpression());
 
     // Convert bytes to int if needed.
-    if (auto bytesTy = mlir::dyn_cast<mlir::sol::BytesType>(expr.getType())) {
+    if (auto bytesTy =
+            mlir::dyn_cast<mlir::sol::FixedBytesType>(expr.getType())) {
       mlir::Type intTy =
           b.getIntegerType(bytesTy.getSize() * 8, /*isSigned=*/false);
       expr = genCast(expr, intTy);
@@ -1260,7 +1262,8 @@ mlir::Value SolidityToMLIRPass::genRuntimeFunctionSelector(
     Expression const &fnExpr, FunctionType const &fnTy, mlir::Location loc) {
   assert(fnTy.kind() == FunctionType::Kind::External &&
          "Expected external function pointer");
-  mlir::Type bytes4Ty = mlir::sol::BytesType::get(b.getContext(), /*size=*/4);
+  mlir::Type bytes4Ty =
+      mlir::sol::FixedBytesType::get(b.getContext(), /*size=*/4);
   mlir::Type fnRefTy = getType(&fnTy);
 
   // TODO: We should be able to get the selector directly here instead of
@@ -1348,7 +1351,7 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
       return b.create<mlir::sol::CallValueOp>(loc);
     if (memberName == "sig") {
       mlir::Type bytes4Ty =
-          mlir::sol::BytesType::get(b.getContext(), /*size=*/4);
+          mlir::sol::FixedBytesType::get(b.getContext(), /*size=*/4);
       return b.create<mlir::sol::SigOp>(loc, bytes4Ty);
     }
     if (memberName == "basefee")
@@ -1986,7 +1989,7 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
                                        /*stateVarGetterOnly=*/true);
     if (selectorBytes4) {
       mlir::Type bytes4Ty =
-          mlir::sol::BytesType::get(b.getContext(), /*size=*/4);
+          mlir::sol::FixedBytesType::get(b.getContext(), /*size=*/4);
       selectorBytes4 = genCast(selectorBytes4, bytes4Ty);
     } else {
       selectorBytes4 =
@@ -2044,7 +2047,7 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     } else {
       // Runtime signature: keccak256(signature).
       mlir::Type bytes32Ty =
-          mlir::sol::BytesType::get(b.getContext(), /*size=*/32);
+          mlir::sol::FixedBytesType::get(b.getContext(), /*size=*/32);
       mlir::Value signature = genRValExpr(*astArgs.front());
       mlir::sol::DataLocation signatureDataLoc =
           mlir::sol::getDataLocation(signature.getType());
@@ -2058,7 +2061,8 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       selector = b.create<mlir::sol::Keccak256Op>(loc, bytes32Ty, signature);
     }
 
-    mlir::Type bytes4Ty = mlir::sol::BytesType::get(b.getContext(), /*size=*/4);
+    mlir::Type bytes4Ty =
+        mlir::sol::FixedBytesType::get(b.getContext(), /*size=*/4);
     selector = genCast(selector, bytes4Ty);
 
     mlir::SmallVector<mlir::Value, 4> args;

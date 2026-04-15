@@ -71,7 +71,7 @@ contract D {
 // CHECK-NEXT:       %6 = sol.code %5 : !sol.address -> !sol.string<Memory> loc(#loc8)
 // CHECK-NEXT:       sol.return %6 : !sol.string<Memory> loc(#loc9)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:     sol.func @h_54() -> !sol.bytes<32> attributes {id = 54 : i64, orig_fn_type = () -> !sol.bytes<32>, selector = -1194732699 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @h_54() -> !sol.fixedbytes<32> attributes {id = 54 : i64, orig_fn_type = () -> !sol.fixedbytes<32>, selector = -1194732699 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc11)
 // CHECK-NEXT:       %0 = sol.new "C_9" value = %c0_ui256 ctor() : !sol.contract<"C_9"> loc(#loc11)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<!sol.contract<"C_9">, Stack> loc(#loc12)
@@ -79,8 +79,8 @@ contract D {
 // CHECK-NEXT:       %2 = sol.load %1 : !sol.ptr<!sol.contract<"C_9">, Stack>, !sol.contract<"C_9"> loc(#loc13)
 // CHECK-NEXT:       %3 = sol.address_cast %2 : !sol.contract<"C_9"> to !sol.address loc(#loc13)
 // CHECK-NEXT:       %4 = sol.code_hash %3 : !sol.address -> ui256 loc(#loc14)
-// CHECK-NEXT:       %5 = sol.bytes_cast %4 : ui256 to !sol.bytes<32> loc(#loc14)
-// CHECK-NEXT:       sol.return %5 : !sol.bytes<32> loc(#loc15)
+// CHECK-NEXT:       %5 = sol.bytes_cast %4 : ui256 to !sol.fixedbytes<32> loc(#loc14)
+// CHECK-NEXT:       sol.return %5 : !sol.fixedbytes<32> loc(#loc15)
 // CHECK-NEXT:     } loc(#loc10)
 // CHECK-NEXT:     sol.func @g_payable_65(%arg0: !sol.address<payable> loc({{.*}}:16:21)) -> !sol.string<Memory> attributes {id = 65 : i64, orig_fn_type = (!sol.address<payable>) -> !sol.string<Memory>, selector = 78153617 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.address<payable>, Stack> loc(#loc17)
@@ -90,14 +90,14 @@ contract D {
 // CHECK-NEXT:       %3 = sol.code %2 : !sol.address -> !sol.string<Memory> loc(#loc18)
 // CHECK-NEXT:       sol.return %3 : !sol.string<Memory> loc(#loc19)
 // CHECK-NEXT:     } loc(#loc16)
-// CHECK-NEXT:     sol.func @h_payable_76(%arg0: !sol.address<payable> loc({{.*}}:19:21)) -> !sol.bytes<32> attributes {id = 76 : i64, orig_fn_type = (!sol.address<payable>) -> !sol.bytes<32>, selector = 1172469065 : i32, state_mutability = #View} {
+// CHECK-NEXT:     sol.func @h_payable_76(%arg0: !sol.address<payable> loc({{.*}}:19:21)) -> !sol.fixedbytes<32> attributes {id = 76 : i64, orig_fn_type = (!sol.address<payable>) -> !sol.fixedbytes<32>, selector = 1172469065 : i32, state_mutability = #View} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<!sol.address<payable>, Stack> loc(#loc21)
 // CHECK-NEXT:       sol.store %arg0, %0 : !sol.address<payable>, !sol.ptr<!sol.address<payable>, Stack> loc(#loc21)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<!sol.address<payable>, Stack>, !sol.address<payable> loc(#loc22)
 // CHECK-NEXT:       %2 = sol.address_cast %1 : !sol.address<payable> to !sol.address loc(#loc22)
 // CHECK-NEXT:       %3 = sol.code_hash %2 : !sol.address -> ui256 loc(#loc22)
-// CHECK-NEXT:       %4 = sol.bytes_cast %3 : ui256 to !sol.bytes<32> loc(#loc22)
-// CHECK-NEXT:       sol.return %4 : !sol.bytes<32> loc(#loc23)
+// CHECK-NEXT:       %4 = sol.bytes_cast %3 : ui256 to !sol.fixedbytes<32> loc(#loc22)
+// CHECK-NEXT:       sol.return %4 : !sol.fixedbytes<32> loc(#loc23)
 // CHECK-NEXT:     } loc(#loc20)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
