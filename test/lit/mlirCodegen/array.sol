@@ -52,6 +52,14 @@ function cd_arr(uint[] calldata a) returns (uint, uint) {
   return (a.length, a[0]);
 }
 
+function cd_named_ret_arr(uint[] calldata a) returns (uint[] calldata s) {
+  s = a;
+}
+
+function cd_named_ret_str(bytes calldata a) returns (bytes calldata s) {
+  s = a;
+}
+
 function stg_arr(uint[] storage a) returns (uint, uint) {
   return (a.length, a[0]);
 }
@@ -67,7 +75,9 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT: #loc15 = loc({{.*}}:8:17)
 // CHECK-NEXT: #loc16 = loc({{.*}}:8:37)
 // CHECK-NEXT: #loc85 = loc({{.*}}:50:16)
-// CHECK-NEXT: #loc92 = loc({{.*}}:54:17)
+// CHECK-NEXT: #loc92 = loc({{.*}}:54:26)
+// CHECK-NEXT: #loc97 = loc({{.*}}:58:26)
+// CHECK-NEXT: #loc102 = loc({{.*}}:62:17)
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka, sol.revert_strings = #Default} {
 // CHECK-NEXT:   sol.func @ui_1d_16(%arg0: !sol.array<3 x ui256, Memory> loc({{.*}}:2:15), %arg1: ui256 loc({{.*}}:2:36)) -> ui256 attributes {id = 16 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.array<3 x ui256, Memory>, Stack> loc(#loc2)
@@ -234,17 +244,39 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %5 = sol.load %4 : !sol.ptr<ui256, CallData>, ui256 loc(#loc89)
 // CHECK-NEXT:     sol.return %2, %5 : ui256, ui256 loc(#loc90)
 // CHECK-NEXT:   } loc(#loc84)
-// CHECK-NEXT:   sol.func @stg_arr_294(%arg0: !sol.array<? x ui256, Storage> loc({{.*}}:54:17)) -> (ui256, ui256) attributes {id = 294 : i64, state_mutability = #NonPayable} {
-// CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.array<? x ui256, Storage>, Stack> loc(#loc92)
-// CHECK-NEXT:     sol.store %arg0, %0 : !sol.array<? x ui256, Storage>, !sol.ptr<!sol.array<? x ui256, Storage>, Stack> loc(#loc92)
-// CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<!sol.array<? x ui256, Storage>, Stack>, !sol.array<? x ui256, Storage> loc(#loc93)
-// CHECK-NEXT:     %2 = sol.length %1 : !sol.array<? x ui256, Storage> loc(#loc93)
-// CHECK-NEXT:     %3 = sol.load %0 : !sol.ptr<!sol.array<? x ui256, Storage>, Stack>, !sol.array<? x ui256, Storage> loc(#loc94)
-// CHECK-NEXT:     %c0_ui8 = sol.constant 0 : ui8 loc(#loc95)
-// CHECK-NEXT:     %4 = sol.gep %3, %c0_ui8 : !sol.array<? x ui256, Storage>, ui8, !sol.ptr<ui256, Storage> loc(#loc94)
-// CHECK-NEXT:     %5 = sol.load %4 : !sol.ptr<ui256, Storage>, ui256 loc(#loc96)
-// CHECK-NEXT:     sol.return %2, %5 : ui256, ui256 loc(#loc97)
+// CHECK-NEXT:   sol.func @cd_named_ret_arr_290(%arg0: !sol.array<? x ui256, CallData> loc({{.*}}:54:26)) -> !sol.array<? x ui256, CallData> attributes {id = 290 : i64, state_mutability = #NonPayable} {
+// CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.array<? x ui256, CallData>, Stack> loc(#loc92)
+// CHECK-NEXT:     sol.store %arg0, %0 : !sol.array<? x ui256, CallData>, !sol.ptr<!sol.array<? x ui256, CallData>, Stack> loc(#loc92)
+// CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<!sol.array<? x ui256, CallData>, Stack> loc(#loc93)
+// CHECK-NEXT:     %2 = sol.default_calldata : !sol.array<? x ui256, CallData> loc(#loc93)
+// CHECK-NEXT:     sol.store %2, %1 : !sol.array<? x ui256, CallData>, !sol.ptr<!sol.array<? x ui256, CallData>, Stack> loc(#loc93)
+// CHECK-NEXT:     %3 = sol.load %0 : !sol.ptr<!sol.array<? x ui256, CallData>, Stack>, !sol.array<? x ui256, CallData> loc(#loc94)
+// CHECK-NEXT:     sol.store %3, %1 : !sol.array<? x ui256, CallData>, !sol.ptr<!sol.array<? x ui256, CallData>, Stack> loc(#loc95)
+// CHECK-NEXT:     %4 = sol.load %1 : !sol.ptr<!sol.array<? x ui256, CallData>, Stack>, !sol.array<? x ui256, CallData> loc(#loc91)
+// CHECK-NEXT:     sol.return %4 : !sol.array<? x ui256, CallData> loc(#loc91)
 // CHECK-NEXT:   } loc(#loc91)
+// CHECK-NEXT:   sol.func @cd_named_ret_str_302(%arg0: !sol.string<CallData> loc({{.*}}:58:26)) -> !sol.string<CallData> attributes {id = 302 : i64, state_mutability = #NonPayable} {
+// CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.string<CallData>, Stack> loc(#loc97)
+// CHECK-NEXT:     sol.store %arg0, %0 : !sol.string<CallData>, !sol.ptr<!sol.string<CallData>, Stack> loc(#loc97)
+// CHECK-NEXT:     %1 = sol.alloca : !sol.ptr<!sol.string<CallData>, Stack> loc(#loc98)
+// CHECK-NEXT:     %2 = sol.default_calldata : !sol.string<CallData> loc(#loc98)
+// CHECK-NEXT:     sol.store %2, %1 : !sol.string<CallData>, !sol.ptr<!sol.string<CallData>, Stack> loc(#loc98)
+// CHECK-NEXT:     %3 = sol.load %0 : !sol.ptr<!sol.string<CallData>, Stack>, !sol.string<CallData> loc(#loc99)
+// CHECK-NEXT:     sol.store %3, %1 : !sol.string<CallData>, !sol.ptr<!sol.string<CallData>, Stack> loc(#loc100)
+// CHECK-NEXT:     %4 = sol.load %1 : !sol.ptr<!sol.string<CallData>, Stack>, !sol.string<CallData> loc(#loc96)
+// CHECK-NEXT:     sol.return %4 : !sol.string<CallData> loc(#loc96)
+// CHECK-NEXT:   } loc(#loc96)
+// CHECK-NEXT:   sol.func @stg_arr_320(%arg0: !sol.array<? x ui256, Storage> loc({{.*}}:62:17)) -> (ui256, ui256) attributes {id = 320 : i64, state_mutability = #NonPayable} {
+// CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.array<? x ui256, Storage>, Stack> loc(#loc102)
+// CHECK-NEXT:     sol.store %arg0, %0 : !sol.array<? x ui256, Storage>, !sol.ptr<!sol.array<? x ui256, Storage>, Stack> loc(#loc102)
+// CHECK-NEXT:     %1 = sol.load %0 : !sol.ptr<!sol.array<? x ui256, Storage>, Stack>, !sol.array<? x ui256, Storage> loc(#loc103)
+// CHECK-NEXT:     %2 = sol.length %1 : !sol.array<? x ui256, Storage> loc(#loc103)
+// CHECK-NEXT:     %3 = sol.load %0 : !sol.ptr<!sol.array<? x ui256, Storage>, Stack>, !sol.array<? x ui256, Storage> loc(#loc104)
+// CHECK-NEXT:     %c0_ui8 = sol.constant 0 : ui8 loc(#loc105)
+// CHECK-NEXT:     %4 = sol.gep %3, %c0_ui8 : !sol.array<? x ui256, Storage>, ui8, !sol.ptr<ui256, Storage> loc(#loc104)
+// CHECK-NEXT:     %5 = sol.load %4 : !sol.ptr<ui256, Storage>, ui256 loc(#loc106)
+// CHECK-NEXT:     sol.return %2, %5 : ui256, ui256 loc(#loc107)
+// CHECK-NEXT:   } loc(#loc101)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
@@ -331,9 +363,17 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT: #loc89 = loc({{.*}}:51:9)
 // CHECK-NEXT: #loc90 = loc({{.*}}:51:2)
 // CHECK-NEXT: #loc91 = loc({{.*}}:54:0)
-// CHECK-NEXT: #loc93 = loc({{.*}}:55:10)
-// CHECK-NEXT: #loc94 = loc({{.*}}:55:20)
-// CHECK-NEXT: #loc95 = loc({{.*}}:55:22)
-// CHECK-NEXT: #loc96 = loc({{.*}}:55:9)
-// CHECK-NEXT: #loc97 = loc({{.*}}:55:2)
+// CHECK-NEXT: #loc93 = loc({{.*}}:54:54)
+// CHECK-NEXT: #loc94 = loc({{.*}}:55:6)
+// CHECK-NEXT: #loc95 = loc({{.*}}:55:2)
+// CHECK-NEXT: #loc96 = loc({{.*}}:58:0)
+// CHECK-NEXT: #loc98 = loc({{.*}}:58:53)
+// CHECK-NEXT: #loc99 = loc({{.*}}:59:6)
+// CHECK-NEXT: #loc100 = loc({{.*}}:59:2)
+// CHECK-NEXT: #loc101 = loc({{.*}}:62:0)
+// CHECK-NEXT: #loc103 = loc({{.*}}:63:10)
+// CHECK-NEXT: #loc104 = loc({{.*}}:63:20)
+// CHECK-NEXT: #loc105 = loc({{.*}}:63:22)
+// CHECK-NEXT: #loc106 = loc({{.*}}:63:9)
+// CHECK-NEXT: #loc107 = loc({{.*}}:63:2)
 // CHECK-EMPTY:

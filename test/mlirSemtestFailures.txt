@@ -1,4 +1,3 @@
-semanticTests/abiEncodeDecode/abi_encode_call
 semanticTests/abiEncoderV1/struct/struct_storage_ptr
 semanticTests/abiEncoderV2/abi_encode_v2_in_modifier_used_in_v1_contract
 semanticTests/abiEncoderV2/calldata_array_dynamic_static_short_decode
@@ -6,7 +5,6 @@ semanticTests/abiEncoderV2/calldata_array_static_index_access
 semanticTests/abiEncoderV2/calldata_dynamic_array_to_memory
 semanticTests/abiEncoderV2/calldata_overlapped_nested_dynamic_arrays
 semanticTests/abiEncoderV2/calldata_struct_array_reencode
-semanticTests/abiEncoderV2/calldata_three_dimensional_dynamic_array_index_access
 semanticTests/abiEncoderV2/cleanup/bool
 semanticTests/abiEncoderV2/cleanup/cleanup
 semanticTests/abiEncoderV2/cleanup/dynamic_array
@@ -56,7 +54,6 @@ semanticTests/array/copying/array_of_structs_containing_arrays_calldata_to_stora
 semanticTests/array/copying/array_of_structs_containing_arrays_memory_to_storage
 semanticTests/array/copying/array_to_mapping
 semanticTests/array/copying/arrays_from_and_to_storage
-semanticTests/array/copying/bytes_calldata_to_string_calldata
 semanticTests/array/copying/calldata_1d_array_into_2d_memory_array_element
 semanticTests/array/copying/calldata_array_of_struct_to_memory
 semanticTests/array/copying/calldata_to_storage_different_base
@@ -82,7 +79,6 @@ semanticTests/array/copying/storage_memory_nested_from_pointer
 semanticTests/array/copying/storage_memory_nested_struct
 semanticTests/array/copying/storage_memory_packed
 semanticTests/array/copying/storage_memory_packed_dyn
-semanticTests/array/copying/string_calldata_to_bytes_calldata
 semanticTests/array/create_memory_array_too_large
 semanticTests/array/delete/delete_bytes_array
 semanticTests/array/delete/delete_on_array_of_structs
@@ -501,10 +497,8 @@ semanticTests/strings/return_string
 semanticTests/structs/array_of_recursive_struct
 semanticTests/structs/calldata/calldata_nested_structs
 semanticTests/structs/calldata/calldata_struct_array_member
-semanticTests/structs/calldata/calldata_struct_array_member_dynamic
 semanticTests/structs/calldata/calldata_struct_as_memory_argument
 semanticTests/structs/calldata/calldata_struct_struct_member
-semanticTests/structs/calldata/calldata_struct_struct_member_dynamic
 semanticTests/structs/calldata/calldata_struct_to_memory
 semanticTests/structs/calldata/calldata_struct_to_memory_tuple_assignment
 semanticTests/structs/calldata/calldata_struct_to_storage
@@ -512,8 +506,6 @@ semanticTests/structs/calldata/calldata_struct_with_array_to_memory
 semanticTests/structs/calldata/calldata_struct_with_bytes_to_memory
 semanticTests/structs/calldata/calldata_struct_with_nested_array_to_memory
 semanticTests/structs/calldata/calldata_struct_with_nested_array_to_storage
-semanticTests/structs/calldata/dynamic_nested
-semanticTests/structs/calldata/dynamically_encoded
 semanticTests/structs/conversion/recursive_storage_memory
 semanticTests/structs/conversion/recursive_storage_memory_complex
 semanticTests/structs/copy_from_mapping
@@ -680,7 +672,6 @@ semanticTests/viaYul/storage/dirty_storage_dynamic_array
 semanticTests/viaYul/storage/dirty_storage_static_array
 semanticTests/viaYul/storage/dirty_storage_struct
 semanticTests/viaYul/storage/mappings
-semanticTests/viaYul/struct_member_access
 semanticTests/viaYul/tuple_evaluation_order
 semanticTests/viaYul/unary_fixedbytes
 semanticTests/viaYul/unary_operations
