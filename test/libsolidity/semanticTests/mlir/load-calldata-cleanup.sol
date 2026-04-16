@@ -13,6 +13,11 @@ contract C {
     return values[0];
   }
 
+  function discardCalldataBool(bool[] calldata values) external pure returns (uint8) {
+    values[0];
+    return 1;
+  }
+
   function loadCalldataUint8(uint8[] calldata values) external pure returns (uint8) {
     return values[0];
   }
@@ -55,6 +60,8 @@ contract C {
 // loadCalldataByte(bytes): 32, 1, "X" -> "X"
 // loadCalldataBool(bool[]): 0x20, 1, 1 -> true
 // loadCalldataBool(bool[]): 0x20, 1, 2 -> FAILURE
+// discardCalldataBool(bool[]): 0x20, 1, 1 -> 1
+// discardCalldataBool(bool[]): 0x20, 1, 2 -> FAILURE
 // loadCalldataUint8(uint8[]): 0x20, 1, 0x34 -> 0x34
 // loadCalldataUint8(uint8[]): 0x20, 1, 0x1234 -> FAILURE
 // loadCalldataInt8(int8[]): 0x20, 1, 0x7f -> 127

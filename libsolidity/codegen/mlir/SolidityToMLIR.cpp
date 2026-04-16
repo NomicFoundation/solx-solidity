@@ -2409,8 +2409,19 @@ SolidityToMLIRPass::genRValExprs(Expression const &expr,
   return rVals;
 }
 
+static bool needsDiscardedLoad(Expression const &expr) {
+  return dynamic_cast<Identifier const *>(&expr) ||
+         dynamic_cast<IndexAccess const *>(&expr) ||
+         dynamic_cast<MemberAccess const *>(&expr);
+}
+
 void SolidityToMLIRPass::lower(ExpressionStatement const &exprStmt) {
-  genLValExpr(exprStmt.expression());
+  mlir::Value expr = genLValExpr(exprStmt.expression());
+  if (expr && mlir::isa<mlir::sol::PointerType>(expr.getType()) &&
+      needsDiscardedLoad(exprStmt.expression()))
+    // Discarded lvalue expressions still need a load so calldata validation
+    // and other load-side cleanup semantics are preserved.
+    (void)b.create<mlir::sol::LoadOp>(getLoc(exprStmt.expression()), expr);
 }
 
 void SolidityToMLIRPass::lower(

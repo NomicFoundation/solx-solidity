@@ -97,6 +97,15 @@ contract C {
     return uint8(values[0]);
   }
 
+  function discardMemoryEnumInvalid() public pure returns (uint8) {
+    E[] memory values = new E[](1);
+    assembly {
+      mstore(add(values, 0x20), 3)
+    }
+    values[0];
+    return 1;
+  }
+
   function loadMemoryAddress() public pure returns (address) {
     address[] memory values = new address[](1);
     assembly {
@@ -193,6 +202,7 @@ contract C {
 // storeMemoryEnum() -> 2
 // loadMemoryEnumInvalid() -> FAILURE, hex"4e487b71", 0x21
 // storeMemoryEnumInvalid() -> FAILURE, hex"4e487b71", 0x21
+// discardMemoryEnumInvalid() -> FAILURE, hex"4e487b71", 0x21
 // loadMemoryAddress() -> 0x1234123412341234123412341234123412341234
 // storeMemoryAddress() -> 0x1234123412341234123412341234123412341234
 // loadMemoryBytes4() -> left(0x12345678)

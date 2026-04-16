@@ -7,14 +7,9 @@ semanticTests/abiEncoderV2/calldata_overlapped_nested_dynamic_arrays
 semanticTests/abiEncoderV2/calldata_struct_array_reencode
 semanticTests/abiEncoderV2/cleanup/bool
 semanticTests/abiEncoderV2/cleanup/cleanup
-semanticTests/abiEncoderV2/cleanup/dynamic_array
-semanticTests/abiEncoderV2/cleanup/function
 semanticTests/abiEncoderV2/cleanup/intx
-semanticTests/abiEncoderV2/cleanup/simple_struct
-semanticTests/abiEncoderV2/cleanup/static_array
 semanticTests/abiEncoderV2/cleanup/uintx
 semanticTests/abiEncoderV2/struct/struct_validation
-semanticTests/abiEncoderV2/struct/validation_function_type_inside_struct
 semanticTests/arithmetics/addmod_mulmod
 semanticTests/arithmetics/block_inside_unchecked
 semanticTests/arithmetics/signed_mod
@@ -445,7 +440,6 @@ semanticTests/revertStrings/calldata_array_dynamic_static_short_decode
 semanticTests/revertStrings/calldata_array_invalid_length
 semanticTests/revertStrings/calldata_tail_short
 semanticTests/revertStrings/empty_v2
-semanticTests/revertStrings/enum_v2
 semanticTests/revertStrings/ether_non_payable_function
 semanticTests/revertStrings/library_non_view_call
 semanticTests/revertStrings/unknown_sig_no_fallback
