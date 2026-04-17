@@ -67,6 +67,7 @@ struct CommonOptions
 	bool showMessages = false;
 	bool showMetadata = false;
 	bool forceMlir = false;
+	bool isolateTests = false;
 	size_t batches = 1;
 	size_t selectedBatch = 0;
 
