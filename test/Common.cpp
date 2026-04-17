@@ -125,6 +125,7 @@ void CommonOptions::addOptions()
 		("abiencoderv1", po::bool_switch(&useABIEncoderV1)->default_value(useABIEncoderV1), "enables abi encoder v1")
 		("show-messages", po::bool_switch(&showMessages)->default_value(showMessages), "enables message output")
 		("show-metadata", po::bool_switch(&showMetadata)->default_value(showMetadata), "enables metadata output")
+		("isolate-tests", po::bool_switch(&isolateTests)->default_value(isolateTests), "run extracted test cases in forked child processes")
 		("force-mlir", po::bool_switch(&forceMlir)->default_value(forceMlir), "force compilation via MLIR regardless of test metadata");
 }
 
