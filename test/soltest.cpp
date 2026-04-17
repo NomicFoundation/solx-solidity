@@ -45,6 +45,20 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem.hpp>
+
+#include <array>
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
+#include <fstream>
+#include <iterator>
+#include <optional>
+#include <sstream>
 #include <string>
 
 using namespace boost::unit_test;
@@ -53,6 +67,176 @@ namespace fs = boost::filesystem;
 
 namespace
 {
+enum class IsolatedRunStatus
+{
+	Success,
+	Failure,
+	FatalError,
+	Exception,
+	Skipped,
+};
+
+struct IsolatedRunResult
+{
+	IsolatedRunStatus status = IsolatedRunStatus::Success;
+	std::string message;
+};
+
+std::string readAllFromFd(int _fd)
+{
+	std::string content;
+	char buffer[4096];
+	while (true)
+	{
+		ssize_t bytesRead = ::read(_fd, buffer, sizeof(buffer));
+		if (bytesRead == 0)
+			break;
+		if (bytesRead < 0)
+		{
+			if (errno == EINTR)
+				continue;
+			break;
+		}
+		content.append(buffer, static_cast<size_t>(bytesRead));
+	}
+	return content;
+}
+
+void writeAllToFd(int _fd, std::string const& _content)
+{
+	size_t totalWritten = 0;
+	while (totalWritten < _content.size())
+	{
+		ssize_t written = ::write(
+			_fd,
+			_content.data() + totalWritten,
+			_content.size() - totalWritten
+		);
+		if (written < 0)
+		{
+			if (errno == EINTR)
+				continue;
+			return;
+		}
+		totalWritten += static_cast<size_t>(written);
+	}
+}
+
+std::string readFile(fs::path const& _path)
+{
+	std::ifstream input(_path.string(), std::ios::binary);
+	if (!input)
+		return {};
+	return {std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
+}
+
+std::string serializeResult(IsolatedRunResult const& _result)
+{
+	return std::to_string(static_cast<int>(_result.status)) + "\n" + _result.message;
+}
+
+std::optional<IsolatedRunResult> deserializeResult(std::string const& _payload)
+{
+	if (_payload.empty())
+		return std::nullopt;
+
+	size_t newline = _payload.find('\n');
+	if (newline == std::string::npos)
+		return std::nullopt;
+
+	IsolatedRunResult result;
+	try
+	{
+		result.status = static_cast<IsolatedRunStatus>(std::stoi(_payload.substr(0, newline)));
+	}
+	catch (...)
+	{
+		return std::nullopt;
+	}
+	result.message = _payload.substr(newline + 1);
+	return result;
+}
+
+std::string appendChildOutput(std::string _message, std::string const& _childOutput)
+{
+	if (_childOutput.empty())
+		return _message;
+
+	if (!_message.empty() && _message.back() != '\n')
+		_message += "\n";
+	_message += "Child process output:\n";
+	_message += _childOutput;
+	return _message;
+}
+
+void restoreDefaultSignalHandlers()
+{
+	struct sigaction defaultAction;
+	std::memset(&defaultAction, 0, sizeof(defaultAction));
+	defaultAction.sa_handler = SIG_DFL;
+	sigemptyset(&defaultAction.sa_mask);
+
+	// Boost installs handlers in the parent. Reset them in the child so a hard
+	// backend failure terminates the isolated worker instead of unwinding through
+	// inherited Boost state.
+	std::array<int, 6> const signalsToReset{SIGABRT, SIGBUS, SIGFPE, SIGILL, SIGPIPE, SIGSEGV};
+	for (int signalNumber: signalsToReset)
+		::sigaction(signalNumber, &defaultAction, nullptr);
+}
+
+[[noreturn]] void runTestCaseInChild(
+	TestCase::Config const& _config,
+	TestCase::TestCaseCreator const& _testCaseCreator,
+	int _writeFd,
+	fs::path const& _logPath
+)
+{
+	restoreDefaultSignalHandlers();
+
+	int logFd = ::open(_logPath.string().c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600);
+	if (logFd >= 0)
+	{
+		::dup2(logFd, STDOUT_FILENO);
+		::dup2(logFd, STDERR_FILENO);
+		::close(logFd);
+	}
+
+	IsolatedRunResult result;
+	try
+	{
+		std::stringstream errorStream;
+		auto testCase = _testCaseCreator(_config);
+		if (!testCase->shouldRun())
+			result.status = IsolatedRunStatus::Skipped;
+		else
+			// The child only computes the result payload. The parent process must
+			// translate it into Boost failures for the suite run.
+			switch (testCase->run(errorStream))
+			{
+				case TestCase::TestResult::Success:
+					result.status = IsolatedRunStatus::Success;
+					break;
+				case TestCase::TestResult::Failure:
+					result.status = IsolatedRunStatus::Failure;
+					result.message = errorStream.str();
+					break;
+				case TestCase::TestResult::FatalError:
+					result.status = IsolatedRunStatus::FatalError;
+					result.message = errorStream.str();
+					break;
+			}
+	}
+	catch (...)
+	{
+		result.status = IsolatedRunStatus::Exception;
+		result.message = boost::current_exception_diagnostic_information();
+	}
+
+	writeAllToFd(_writeFd, serializeResult(result));
+	::close(_writeFd);
+	::_exit(0);
+}
+
 void removeTestSuite(std::string const& _name)
 {
 	master_test_suite_t& master = framework::master_test_suite();
@@ -121,6 +305,102 @@ void runTestCase(TestCase::Config const& _config, TestCase::TestCaseCreator cons
 	}
 }
 
+void runTestCaseIsolated(TestCase::Config const& _config, TestCase::TestCaseCreator const& _testCaseCreator)
+{
+	int pipeFds[2];
+	if (::pipe(pipeFds) != 0)
+	{
+		BOOST_ERROR("Failed to create isolation pipe: " + std::string(std::strerror(errno)));
+		return;
+	}
+
+	fs::path logPath = fs::temp_directory_path() / fs::unique_path("soltest-isolated-%%%%-%%%%-%%%%.log");
+	std::fflush(nullptr);
+
+	pid_t pid = ::fork();
+	if (pid < 0)
+	{
+		::close(pipeFds[0]);
+		::close(pipeFds[1]);
+		BOOST_ERROR("Failed to fork isolated test: " + std::string(std::strerror(errno)));
+		return;
+	}
+
+	if (pid == 0)
+	{
+		::close(pipeFds[0]);
+		runTestCaseInChild(_config, _testCaseCreator, pipeFds[1], logPath);
+	}
+
+	::close(pipeFds[1]);
+	std::string payload = readAllFromFd(pipeFds[0]);
+	::close(pipeFds[0]);
+
+	int waitStatus = 0;
+	while (::waitpid(pid, &waitStatus, 0) < 0)
+	{
+		if (errno != EINTR)
+		{
+			waitStatus = -1;
+			break;
+		}
+	}
+
+	std::string childOutput = readFile(logPath);
+	boost::system::error_code removeError;
+	fs::remove(logPath, removeError);
+
+	if (waitStatus == -1)
+	{
+		BOOST_ERROR("Failed waiting for isolated test child: " + std::string(std::strerror(errno)));
+		return;
+	}
+
+	if (WIFSIGNALED(waitStatus))
+	{
+		int signalNumber = WTERMSIG(waitStatus);
+		std::string message = "Isolated test terminated by signal " + std::to_string(signalNumber);
+		if (char const* signalName = ::strsignal(signalNumber))
+			message += " (" + std::string(signalName) + ")";
+		BOOST_ERROR(appendChildOutput(message, childOutput));
+		return;
+	}
+
+	if (!WIFEXITED(waitStatus))
+	{
+		BOOST_ERROR(appendChildOutput("Isolated test terminated unexpectedly.", childOutput));
+		return;
+	}
+
+	// Reporting in the child would be lost when the isolated worker exits, so
+	// the parent owns the final Boost bookkeeping.
+	auto result = deserializeResult(payload);
+	if (!result.has_value())
+	{
+		BOOST_ERROR(appendChildOutput(
+			"Isolated test exited without a valid result payload.",
+			childOutput
+		));
+		return;
+	}
+
+	switch (result->status)
+	{
+	case IsolatedRunStatus::Success:
+	case IsolatedRunStatus::Skipped:
+		break;
+	case IsolatedRunStatus::Failure:
+		BOOST_ERROR("Test expectation mismatch.\n" + appendChildOutput(result->message, childOutput));
+		break;
+	case IsolatedRunStatus::FatalError:
+		BOOST_ERROR("Fatal error during test.\n" + appendChildOutput(result->message, childOutput));
+		break;
+	case IsolatedRunStatus::Exception:
+		BOOST_ERROR("Exception during extracted test: " + appendChildOutput(result->message, childOutput));
+		break;
+	}
+}
+
 int registerTests(
 	boost::unit_test::test_suite& _suite,
 	boost::filesystem::path const& _basepath,
@@ -175,7 +455,10 @@ int registerTests(
 				[config, _testCaseCreator]
 				{
 					BOOST_REQUIRE_NO_THROW({
-						runTestCase(config, _testCaseCreator);
+						if (solidity::test::CommonOptions::get().isolateTests)
+							runTestCaseIsolated(config, _testCaseCreator);
+						else
+							runTestCase(config, _testCaseCreator);
 					});
 				},
 				_path.stem().string(),
