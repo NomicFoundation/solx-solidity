@@ -440,8 +440,8 @@ private:
   /// Lowers the return statement.
   void lower(Return const &);
 
-  /// Lowers the assignment statement.
-  void lower(Assignment const &);
+  /// Lowers the assignment statement. Returns the LHS addresses.
+  mlir::SmallVector<mlir::Value> lower(Assignment const &);
 
   /// Lowers the variable declaration statement.
   void lower(VariableDeclarationStatement const &);
@@ -475,6 +475,25 @@ private:
 };
 
 } // namespace solidity::frontend
+
+/// Rebuilds a Sol reference type with a given data location, recursing into
+/// element/member types.  Value types are returned unchanged.
+static mlir::Type withDataLocation(mlir::Type ty,
+                                   mlir::sol::DataLocation dataLoc) {
+  if (isa<mlir::sol::StringType>(ty))
+    return mlir::sol::StringType::get(ty.getContext(), dataLoc);
+  if (auto arrTy = dyn_cast<mlir::sol::ArrayType>(ty))
+    return mlir::sol::ArrayType::get(
+        ty.getContext(), arrTy.getSize(),
+        withDataLocation(arrTy.getEltType(), dataLoc), dataLoc);
+  if (auto structTy = dyn_cast<mlir::sol::StructType>(ty)) {
+    llvm::SmallVector<mlir::Type> tys;
+    for (mlir::Type m : structTy.getMemberTypes())
+      tys.push_back(withDataLocation(m, dataLoc));
+    return mlir::sol::StructType::get(ty.getContext(), tys, dataLoc);
+  }
+  return ty;
+}
 
 /// Returns the mlir::sol::DataLocation of the type
 static mlir::sol::DataLocation getDataLocation(ReferenceType const *ty) {
@@ -533,15 +552,17 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
     const auto *arrTy = static_cast<ArrayType const *>(ty);
     if (arrTy->isByteArrayOrString())
       return mlir::sol::StringType::get(b.getContext(), getDataLocation(arrTy));
+    auto dataLoc = getDataLocation(arrTy);
     mlir::Type eltTy = getType(arrTy->baseType());
+    if (mlir::sol::isNonPtrRefType(eltTy))
+      eltTy = withDataLocation(eltTy, dataLoc);
 
     // TODO: Does convert_to alreay do this?
     assert(arrTy->length() <= INT64_MAX);
     int64_t size = arrTy->isDynamicallySized()
                        ? -1
                        : arrTy->length().convert_to<int64_t>();
-    return mlir::sol::ArrayType::get(b.getContext(), size, eltTy,
-                                     getDataLocation(arrTy));
+    return mlir::sol::ArrayType::get(b.getContext(), size, eltTy, dataLoc);
   }
   case Type::Category::ArraySlice: {
     const auto *sliceTy = static_cast<ArraySliceType const *>(ty);
@@ -550,9 +571,12 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
       return mlir::sol::StringType::get(b.getContext(),
                                         getDataLocation(&arrTy));
 
+    auto dataLoc = getDataLocation(&arrTy);
     mlir::Type eltTy = getType(arrTy.baseType());
+    if (mlir::sol::isNonPtrRefType(eltTy))
+      eltTy = withDataLocation(eltTy, dataLoc);
     return mlir::sol::ArrayType::get(b.getContext(), /*size=*/-1, eltTy,
-                                     getDataLocation(&arrTy));
+                                     dataLoc);
   }
   case Type::Category::Struct: {
     const auto *structTy = static_cast<StructType const *>(ty);
@@ -2261,7 +2285,8 @@ void SolidityToMLIRPass::genAssign(mlir::Value lhs, mlir::Value rhs,
   }
 }
 
-void SolidityToMLIRPass::lower(Assignment const &asgnStmt) {
+mlir::SmallVector<mlir::Value>
+SolidityToMLIRPass::lower(Assignment const &asgnStmt) {
   mlir::Location loc = getLoc(asgnStmt);
 
   mlir::SmallVector<mlir::Value> lhsVals =
@@ -2287,6 +2312,7 @@ void SolidityToMLIRPass::lower(Assignment const &asgnStmt) {
         genBinExpr(binOp, lhsAsRVal, genCast(rhs, lhsAsRVal.getType()), loc),
         lhs);
   }
+  return lhsVals;
 }
 
 mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
@@ -2317,7 +2343,12 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
 
   // (Compound) Assignment statement
   if (const auto *asgnStmt = dynamic_cast<Assignment const *>(&expr)) {
-    lower(*asgnStmt);
+    mlir::SmallVector<mlir::Value> lhsVals = lower(*asgnStmt);
+    // For chained scalar assignments (a = b = c), return b's address so
+    // the outer assignment can load the just written value. Tuple assignments
+    // cannot be chained through a scalar lvalue, so return {} in that case.
+    if (lhsVals.size() == 1)
+      return lhsVals.front();
     return {};
   }
 
