@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 #
-# Run semantic tests via MLIR in a single soltest process using --isolate-tests.
+# Run semantic tests via MLIR.
 #
-# Usage: ./mlirSemtests.sh --soltest <path> --testpath <path> --vm <path> [--baseline <file>] [filter]
+# Two modes:
+#   --gnu-parallel  Run each test in its own soltest process via GNU parallel (fast on Linux)
+#   (default)       Run in a single soltest process using --isolate-tests (fast on macOS)
+#
+# Usage: ./mlirSemtests.sh --soltest <path> --testpath <path> --vm <path> [--baseline <file>] [--gnu-parallel] [filter]
 # Examples:
-#   ./mlirSemtests.sh --soltest build/dbg/test/soltest --testpath test --vm /path/to/libevmone.so
-#   ./mlirSemtests.sh --soltest build/dbg/test/soltest --testpath test --vm /path/to/libevmone.so enums
-#   ./mlirSemtests.sh --soltest build/dbg/test/soltest --testpath test --vm /path/to/libevmone.so --baseline test/mlirSemtestFailures.txt
+#   ./mlirSemtests.sh --soltest <build>/test/soltest --testpath test --vm /path/to/libevmone.so
+#   ./mlirSemtests.sh --soltest <build>/test/soltest --testpath test --vm /path/to/libevmone.so --gnu-parallel
+#   ./mlirSemtests.sh --soltest <build>/test/soltest --testpath test --vm /path/to/libevmone.so --baseline test/mlirSemtestFailures.txt
 
 set -eu
 export LC_ALL=C
@@ -16,21 +20,24 @@ TESTPATH=""
 VM=""
 BASELINE=""
 FILTER=""
+GNU_PARALLEL=false
 OUTDIR=$(mktemp -d -t mlir-semtest-XXXXXX)
 RAWLOG="$OUTDIR/soltest.raw.log"
 CLEANLOG="$OUTDIR/soltest.clean.log"
 FAILCOUNT="$OUTDIR/fail.count"
 ABORTCOUNT="$OUTDIR/abort.count"
 UNSORTED_FAILURES="$OUTDIR/failures.unsorted.txt"
+JOBLOG=$(mktemp -t mlir-semtest-XXXXXX)
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --soltest)   SOLTEST="$2"; shift 2 ;;
-        --testpath)  TESTPATH="$2"; shift 2 ;;
-        --vm)        VM="$2"; shift 2 ;;
-        --baseline)  BASELINE="$2"; shift 2 ;;
-        -*)          echo "Unknown option: $1"; exit 1 ;;
-        *)           FILTER="$1"; shift ;;
+        --soltest)       SOLTEST="$2"; shift 2 ;;
+        --testpath)      TESTPATH="$2"; shift 2 ;;
+        --vm)            VM="$2"; shift 2 ;;
+        --baseline)      BASELINE="$2"; shift 2 ;;
+        --gnu-parallel)  GNU_PARALLEL=true; shift ;;
+        -*)              echo "Unknown option: $1"; exit 1 ;;
+        *)               FILTER="$1"; shift ;;
     esac
 done
 
@@ -95,103 +102,145 @@ if [[ $total -eq 0 ]]; then
     exit 1
 fi
 
-trap 'rm -rf "$OUTDIR"' EXIT
+trap 'rm -rf "$OUTDIR" "$JOBLOG"' EXIT
 
 echo "Running $total tests..."
 
-run_status=0
-"$SOLTEST" --catch_system_errors=no --log_level=error --report_level=no \
-    -t "$(suite_filter)" \
-    -- --testpath "$TESTPATH" --vm "$VM" --force-mlir --isolate-tests \
-    >"$RAWLOG" 2>&1 || run_status=$?
+if $GNU_PARALLEL; then
+    run_one_test() {
+        "$SOLTEST" --catch_system_errors=no --log_level=error --report_level=no \
+            -t "$1" \
+            -- --testpath "$TESTPATH" --vm "$VM" --force-mlir
+    }
+    export -f run_one_test
+    export SOLTEST TESTPATH VM
 
-perl -pe 's/\e\[[0-9;]*[A-Za-z]//g; s/\r//g' "$RAWLOG" > "$CLEANLOG"
+    printf '%s\n' "${tests[@]}" | \
+        parallel --joblog "$JOBLOG" --results "$OUTDIR" \
+        run_one_test {} || true
 
-: > errors.txt
-: > "$UNSORTED_FAILURES"
+    pass=$(tail -n+2 "$JOBLOG" | awk -F'\t' '$7==0 && $8==0' | wc -l)
+    abort=$(tail -n+2 "$JOBLOG" | awk -F'\t' '$8!=0' | wc -l)
+    fail=$(tail -n+2 "$JOBLOG" | awk -F'\t' '$7!=0 && $8==0' | wc -l)
 
-awk \
-    -v failures_file="$UNSORTED_FAILURES" \
-    -v errors_file="errors.txt" \
-    -v fail_count_file="$FAILCOUNT" \
-    -v abort_count_file="$ABORTCOUNT" '
-function flush_block() {
-    if (test_name == "")
-        return;
+    # Write errors.txt
+    : > errors.txt
+    failures=$((fail + abort))
+    if [[ $failures -gt 0 ]]; then
+        tail -n+2 "$JOBLOG" | awk -F'\t' '$7!=0 || $8!=0 {print $NF}' | while read -r cmd; do
+            test_name="${cmd##*run_one_test }"
+            encoded=$(echo "$test_name" | sed 's|/|+z|g')
+            stderr_file="$OUTDIR/1/$encoded/stderr"
+            stdout_file="$OUTDIR/1/$encoded/stdout"
 
-    print test_name >> failures_file;
-    print "=== " test_name " ===" >> errors_file;
-    if (block != "")
-        printf "%s", block >> errors_file;
-    printf "\n" >> errors_file;
+            echo "=== $test_name ==="
+            if [[ -s "$stderr_file" ]]; then
+                cat "$stderr_file"
+            elif [[ -s "$stdout_file" ]]; then
+                cat "$stdout_file"
+            fi
+            echo ""
+        done > errors.txt
+    fi
 
-    if (kind == "abort")
-        abort_count++;
-    else
-        fail_count++;
+    # Write failures.txt
+    tail -n+2 "$JOBLOG" | awk -F'\t' '$7!=0 || $8!=0 {print $NF}' | \
+        sed 's/run_one_test //' | sort > failures.txt
+else
+    run_status=0
+    "$SOLTEST" --catch_system_errors=no --log_level=error --report_level=no \
+        -t "$(suite_filter)" \
+        -- --testpath "$TESTPATH" --vm "$VM" --force-mlir --isolate-tests \
+        >"$RAWLOG" 2>&1 || run_status=$?
 
-    test_name = "";
-    block = "";
-    kind = "";
-}
+    perl -pe 's/\e\[[0-9;]*[A-Za-z]//g; s/\r//g' "$RAWLOG" > "$CLEANLOG"
 
-{
-    if (index($0, "error: in \"") > 0) {
-        line = $0;
-        start = index(line, "error: in \"") + length("error: in \"");
-        remainder = substr(line, start);
-        quote = index(remainder, "\"");
+    : > errors.txt
+    : > "$UNSORTED_FAILURES"
 
-        if (quote > 0 && substr(remainder, quote + 1, 2) == ": ") {
-            new_test_name = substr(remainder, 1, quote - 1);
-            new_block_line = substr(remainder, quote + 3);
-            new_kind = (new_block_line ~ /^Isolated test terminated by signal /) ? "abort" : "fail";
+    awk \
+        -v failures_file="$UNSORTED_FAILURES" \
+        -v errors_file="errors.txt" \
+        -v fail_count_file="$FAILCOUNT" \
+        -v abort_count_file="$ABORTCOUNT" '
+    function flush_block() {
+        if (test_name == "")
+            return;
 
-            if (test_name == "") {
+        print test_name >> failures_file;
+        print "=== " test_name " ===" >> errors_file;
+        if (block != "")
+            printf "%s", block >> errors_file;
+        printf "\n" >> errors_file;
+
+        if (kind == "abort")
+            abort_count++;
+        else
+            fail_count++;
+
+        test_name = "";
+        block = "";
+        kind = "";
+    }
+
+    {
+        if (index($0, "error: in \"") > 0) {
+            line = $0;
+            start = index(line, "error: in \"") + length("error: in \"");
+            remainder = substr(line, start);
+            quote = index(remainder, "\"");
+
+            if (quote > 0 && substr(remainder, quote + 1, 2) == ": ") {
+                new_test_name = substr(remainder, 1, quote - 1);
+                new_block_line = substr(remainder, quote + 3);
+                new_kind = (new_block_line ~ /^Isolated test terminated by signal /) ? "abort" : "fail";
+
+                if (test_name == "") {
+                    test_name = new_test_name;
+                    block = new_block_line "\n";
+                    kind = new_kind;
+                    next;
+                }
+
+                if (new_test_name == test_name) {
+                    block = block $0 "\n";
+                    if (kind != "abort" && new_kind == "abort")
+                        kind = new_kind;
+                    next;
+                }
+
+                flush_block();
                 test_name = new_test_name;
                 block = new_block_line "\n";
                 kind = new_kind;
                 next;
             }
-
-            if (new_test_name == test_name) {
-                block = block $0 "\n";
-                if (kind != "abort" && new_kind == "abort")
-                    kind = new_kind;
-                next;
-            }
-
-            flush_block();
-            test_name = new_test_name;
-            block = new_block_line "\n";
-            kind = new_kind;
-            next;
         }
     }
-}
 
-test_name != "" {
-    if ($0 ~ /^\*\*\* [0-9]+ failures are detected in the test module "/) {
-        flush_block();
+    test_name != "" {
+        if ($0 ~ /^\*\*\* [0-9]+ failures are detected in the test module "/) {
+            flush_block();
+            next;
+        }
+
+        block = block $0 "\n";
         next;
     }
 
-    block = block $0 "\n";
-    next;
-}
+    END {
+        flush_block();
+        print fail_count + 0 > fail_count_file;
+        print abort_count + 0 > abort_count_file;
+    }
+    ' "$CLEANLOG"
 
-END {
-    flush_block();
-    print fail_count + 0 > fail_count_file;
-    print abort_count + 0 > abort_count_file;
-}
-' "$CLEANLOG"
+    sort -u "$UNSORTED_FAILURES" > failures.txt
 
-sort -u "$UNSORTED_FAILURES" > failures.txt
-
-fail=$(cat "$FAILCOUNT")
-abort=$(cat "$ABORTCOUNT")
-pass=$((total - fail - abort))
+    fail=$(cat "$FAILCOUNT")
+    abort=$(cat "$ABORTCOUNT")
+    pass=$((total - fail - abort))
+fi
 
 echo ""
 echo "=========================================="
@@ -223,6 +272,6 @@ if [[ -n "$BASELINE" && -f "$BASELINE" ]]; then
     fi
 fi
 
-if [[ $run_status -ne 0 && $((fail + abort)) -eq 0 ]]; then
+if ! $GNU_PARALLEL && [[ $run_status -ne 0 && $((fail + abort)) -eq 0 ]]; then
     exit "$run_status"
 fi
