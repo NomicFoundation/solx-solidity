@@ -1739,6 +1739,7 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
         /*tryCall=*/call.annotation().tryCall,
         /*staticCall=*/calleeTy->stateMutability() <= StateMutability::View,
         /*delegateCall=*/calleeTy->kind() == FunctionType::Kind::DelegateCall,
+        /*libraryCall=*/isDirectLibraryMemberCall,
         /*calleeType=*/
         mlir::cast<mlir::FunctionType>(getType(calleeTy,
                                                /*indirectFn=*/false)),
