@@ -1951,11 +1951,13 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
           args.push_back(genRValExpr(*callArg, getType(argDef->type())));
 
         b.create<mlir::sol::RequireOp>(
-            loc, cond, errorDef->functionType(true)->externalSignature(), args,
-            /*errorCall=*/true);
+            loc, cond,
+            b.getStringAttr(errorDef->functionType(true)->externalSignature()),
+            args, /*errorCall=*/true);
       }
     } else {
-      b.create<mlir::sol::RequireOp>(loc, genRValExpr(*astArgs[0]), "",
+      b.create<mlir::sol::RequireOp>(loc, genRValExpr(*astArgs[0]),
+                                     mlir::StringAttr{},
                                      mlir::ValueRange{});
     }
     return {};

@@ -4,6 +4,7 @@ contract C {
   error E(uint);
   function f(uint a) private {
     require(a > 42);
+    require(a > 42, "");
     require(a > 42, "Foobar");
     require(a > 42, E(a));
   }
@@ -17,29 +18,34 @@ contract C {
 // CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: #loc3 = loc({{.*}}:4:13)
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka, sol.revert_strings = #Default} {
-// CHECK-NEXT:   sol.contract @C_33 {
-// CHECK-NEXT:     sol.func @C_33() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.contract @C_40 {
+// CHECK-NEXT:     sol.func @C_40() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     sol.func @f_32(%arg0: ui256 loc({{.*}}:4:13)) attributes {id = 32 : i64, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @f_39(%arg0: ui256 loc({{.*}}:4:13)) attributes {id = 39 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc4)
 // CHECK-NEXT:       %c42_ui8 = sol.constant 42 : ui8 loc(#loc5)
 // CHECK-NEXT:       %2 = sol.cast %c42_ui8 : ui8 to ui256 loc(#loc5)
 // CHECK-NEXT:       %3 = sol.cmp gt, %1, %2 : ui256 loc(#loc4)
-// CHECK-NEXT:       sol.require %3, ""() loc(#loc6)
+// CHECK-NEXT:       sol.require %3() loc(#loc6)
 // CHECK-NEXT:       %4 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc7)
 // CHECK-NEXT:       %c42_ui8_0 = sol.constant 42 : ui8 loc(#loc8)
 // CHECK-NEXT:       %5 = sol.cast %c42_ui8_0 : ui8 to ui256 loc(#loc8)
 // CHECK-NEXT:       %6 = sol.cmp gt, %4, %5 : ui256 loc(#loc7)
-// CHECK-NEXT:       sol.require %6, "Foobar"() loc(#loc9)
+// CHECK-NEXT:       sol.require %6, ""() loc(#loc9)
 // CHECK-NEXT:       %7 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc10)
 // CHECK-NEXT:       %c42_ui8_1 = sol.constant 42 : ui8 loc(#loc11)
 // CHECK-NEXT:       %8 = sol.cast %c42_ui8_1 : ui8 to ui256 loc(#loc11)
 // CHECK-NEXT:       %9 = sol.cmp gt, %7, %8 : ui256 loc(#loc10)
-// CHECK-NEXT:       %10 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc12)
-// CHECK-NEXT:       sol.require %9, "E(uint256)"(%10 : ui256) {call} loc(#loc13)
+// CHECK-NEXT:       sol.require %9, "Foobar"() loc(#loc12)
+// CHECK-NEXT:       %10 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc13)
+// CHECK-NEXT:       %c42_ui8_2 = sol.constant 42 : ui8 loc(#loc14)
+// CHECK-NEXT:       %11 = sol.cast %c42_ui8_2 : ui8 to ui256 loc(#loc14)
+// CHECK-NEXT:       %12 = sol.cmp gt, %10, %11 : ui256 loc(#loc13)
+// CHECK-NEXT:       %13 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc15)
+// CHECK-NEXT:       sol.require %12, "E(uint256)"(%13 : ui256) {call} loc(#loc16)
 // CHECK-NEXT:       sol.return loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
@@ -55,6 +61,9 @@ contract C {
 // CHECK-NEXT: #loc9 = loc({{.*}}:6:4)
 // CHECK-NEXT: #loc10 = loc({{.*}}:7:12)
 // CHECK-NEXT: #loc11 = loc({{.*}}:7:16)
-// CHECK-NEXT: #loc12 = loc({{.*}}:7:22)
-// CHECK-NEXT: #loc13 = loc({{.*}}:7:4)
+// CHECK-NEXT: #loc12 = loc({{.*}}:7:4)
+// CHECK-NEXT: #loc13 = loc({{.*}}:8:12)
+// CHECK-NEXT: #loc14 = loc({{.*}}:8:16)
+// CHECK-NEXT: #loc15 = loc({{.*}}:8:22)
+// CHECK-NEXT: #loc16 = loc({{.*}}:8:4)
 // CHECK-EMPTY:
