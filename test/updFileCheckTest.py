@@ -57,6 +57,13 @@ def main():
                 run_lines.append(run_line)
             line = handle.readline()
 
+    input_path_variants = {
+        args.input,
+        os.path.abspath(args.input),
+        os.path.realpath(args.input),
+        os.path.normpath(args.input),
+    }
+
     # Substitute %s in run lines with input file name
     for i, val in enumerate(run_lines):
         run_lines[i].cmd = val.cmd.replace('%s', args.input)
@@ -91,6 +98,8 @@ def main():
                 for path_re in path_res:
                     if (mat_loc := path_re.search(line)):
                         line = line.replace(mat_loc.group('path'), '{{.*}}')
+                for path_variant in sorted(input_path_variants, key=len, reverse=True):
+                    line = line.replace(path_variant, '{{.*}}')
                 assertion += line
                 handle.writelines([assertion + '\n'])
                 wrote_first_line |= True
