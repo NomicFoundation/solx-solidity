@@ -61,6 +61,11 @@ emscripten_build/
 /.cproject
 /.project
 
+# Boost
+/boost/
+/boost_*/
+boost_*.tar.gz
+
 # OS specific local files
 .DS_Store
 Thumbs.db
