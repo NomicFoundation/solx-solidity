@@ -18,20 +18,20 @@ object "Simple" {
 // CHECK: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   yul.object @Simple {
-// CHECK-NEXT:     %c10_i256 = arith.constant 10 : i256 loc(#loc1)
-// CHECK-NEXT:     %c11_i256 = arith.constant 11 : i256 loc(#loc2)
+// CHECK-NEXT:     %c10_i256 = yul.constant 10 loc(#loc1)
+// CHECK-NEXT:     %c11_i256 = yul.constant 11 loc(#loc2)
 // CHECK-NEXT:     yul.return %c10_i256, %c11_i256 loc(#loc3)
 // CHECK-NEXT:     yul.object @Simple_deployed {
-// CHECK-NEXT:       sol.func @f0() -> i256 {
-// CHECK-NEXT:         %c1_i256 = arith.constant 1 : i256 loc(#loc4)
+// CHECK-NEXT:       yul.func @f0 : () -> i256 {
+// CHECK-NEXT:         %c1_i256 = yul.constant 1 loc(#loc4)
 // CHECK-NEXT:         %1 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc5)
-// CHECK-NEXT:         %c0_i256 = arith.constant 0 : i256 loc(#loc6)
+// CHECK-NEXT:         %c0_i256 = yul.constant 0 loc(#loc6)
 // CHECK-NEXT:         llvm.store %c0_i256, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc7)
 // CHECK-NEXT:         %2 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc5)
-// CHECK-NEXT:         sol.return %2 : i256 loc(#loc4)
+// CHECK-NEXT:         yul.func_return %2 : i256 loc(#loc4)
 // CHECK-NEXT:       } loc(#loc4)
-// CHECK-NEXT:       %c20_i256 = arith.constant 20 : i256 loc(#loc8)
-// CHECK-NEXT:       %0 = sol.call @f0() : () -> i256 loc(#loc9)
+// CHECK-NEXT:       %c20_i256 = yul.constant 20 loc(#loc8)
+// CHECK-NEXT:       %0 = yul.func_call @f0() : () -> i256 loc(#loc9)
 // CHECK-NEXT:       yul.return %c20_i256, %0 loc(#loc10)
 // CHECK-NEXT:     } loc(#loc)
 // CHECK-NEXT:   } loc(#loc)

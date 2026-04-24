@@ -19,38 +19,38 @@ object "Test" {
 // CHECK: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   yul.object @Test {
-// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc1)
-// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc2)
+// CHECK-NEXT:     %c0_i256 = yul.constant 0 loc(#loc1)
+// CHECK-NEXT:     %c1_i256 = yul.constant 1 loc(#loc2)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc3)
 // CHECK-NEXT:     llvm.store %c0_i256, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc2)
-// CHECK-NEXT:     sol.for cond {
+// CHECK-NEXT:     yul.for cond {
 // CHECK-NEXT:       %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc5)
-// CHECK-NEXT:       %c2_i256 = arith.constant 2 : i256 loc(#loc6)
-// CHECK-NEXT:       %2 = arith.cmpi ult, %1, %c2_i256 : i256 loc(#loc7)
-// CHECK-NEXT:       sol.condition %2 loc(#loc7)
+// CHECK-NEXT:       %c2_i256 = yul.constant 2 loc(#loc6)
+// CHECK-NEXT:       %2 = yul.cmp ult, %1, %c2_i256 loc(#loc7)
+// CHECK-NEXT:       yul.condition %2 loc(#loc7)
 // CHECK-NEXT:     } body {
 // CHECK-NEXT:       %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc8)
-// CHECK-NEXT:       sol.switch %1 : i256
+// CHECK-NEXT:       yul.switch %1 : i256
 // CHECK-NEXT:       case 0 {
-// CHECK-NEXT:         sol.break loc(#loc10)
+// CHECK-NEXT:         yul.break loc(#loc10)
 // CHECK-NEXT:       ^bb1:  // no predecessors
-// CHECK-NEXT:         sol.yield loc(#loc9)
+// CHECK-NEXT:         yul.yield loc(#loc9)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case 1 {
-// CHECK-NEXT:         sol.continue loc(#loc11)
+// CHECK-NEXT:         yul.continue loc(#loc11)
 // CHECK-NEXT:       ^bb1:  // no predecessors
-// CHECK-NEXT:         sol.yield loc(#loc9)
+// CHECK-NEXT:         yul.yield loc(#loc9)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       default {
-// CHECK-NEXT:         sol.yield loc(#loc9)
+// CHECK-NEXT:         yul.yield loc(#loc9)
 // CHECK-NEXT:       } loc(#loc9)
-// CHECK-NEXT:       sol.yield loc(#loc4)
+// CHECK-NEXT:       yul.yield loc(#loc4)
 // CHECK-NEXT:     } step {
 // CHECK-NEXT:       %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc12)
-// CHECK-NEXT:       %c1_i256_0 = arith.constant 1 : i256 loc(#loc13)
-// CHECK-NEXT:       %2 = arith.addi %1, %c1_i256_0 : i256 loc(#loc14)
+// CHECK-NEXT:       %c1_i256_0 = yul.constant 1 loc(#loc13)
+// CHECK-NEXT:       %2 = yul.add %1, %c1_i256_0 loc(#loc14)
 // CHECK-NEXT:       llvm.store %2, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc15)
-// CHECK-NEXT:       sol.yield loc(#loc4)
+// CHECK-NEXT:       yul.yield loc(#loc4)
 // CHECK-NEXT:     } loc(#loc4)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)

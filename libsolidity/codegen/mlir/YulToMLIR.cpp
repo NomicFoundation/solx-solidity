@@ -32,10 +32,8 @@
 #include "libyul/Object.h"
 #include "libyul/Utilities.h"
 #include "libyul/optimiser/ASTWalker.h"
-#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
-#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Sol/Sol.h"
 #include "mlir/Dialect/Yul/Yul.h"
 #include "mlir/IR/Builders.h"
@@ -96,6 +94,14 @@ private:
   /// Returns the IntegerAttr for `num`
   mlir::IntegerAttr getIntAttr(LiteralValue const &num);
 
+  mlir::Value genI256Const(mlir::Location loc, mlir::IntegerAttr attr) {
+    return b.create<mlir::yul::ConstantOp>(loc, attr);
+  }
+
+  mlir::Value genI256Const(mlir::Location loc, uint64_t val) {
+    return genI256Const(loc, b.getIntegerAttr(getDefIntTy(), val));
+  }
+
   /// Returns the mlir location for the solidity source location
   mlir::Location getLoc(SourceLocation const &loc) {
     // FIXME: Track loc.end as well
@@ -116,10 +122,6 @@ private:
     assert(width >= 8 && llvm::isPowerOf2_64(width));
     return width / 8;
   }
-
-  /// "Converts" `val` to boolean. Integral values are converted to the result
-  /// of non-zero check
-  mlir::Value convToBool(mlir::Value val);
 
   /// Tracks the address of the local variable.
   void trackLocalVarAddr(YulName var, mlir::Value addr) {
@@ -176,12 +178,11 @@ private:
   }
 
   /// Defines builtin codegen map for cmp builtins.
-  template <mlir::arith::CmpIPredicate predicate>
-  void defCmpBuiltinGen(const char *name) {
-    builtinGenMap[name] = [&](std::vector<Expression> const &args,
-                              mlir::Location loc) {
+  void defCmpBuiltinGen(const char *name, mlir::yul::CmpPredicate predicate) {
+    builtinGenMap[name] = [&, predicate](std::vector<Expression> const &args,
+                                         mlir::Location loc) {
       mlir::SmallVector<mlir::Value, 2> resVals;
-      resVals.push_back(b.create<mlir::arith::CmpIOp>(
+      resVals.push_back(b.create<mlir::yul::CmpOp>(
           loc, predicate, genDefTyExpr(args[0]), genDefTyExpr(args[1])));
       return resVals;
     };
@@ -189,9 +190,6 @@ private:
 
   /// Populates builtinGenMap with codegen of all the builtins.
   void populateBuiltinGenMap();
-
-  /// Returns a cast expression.
-  mlir::Value genCast(mlir::Value val, mlir::IntegerType dstTy);
 
   /// Returns the mlir expression for the literal `lit`
   mlir::Value genExpr(Literal const &lit);
@@ -266,28 +264,15 @@ mlir::Value YulToMLIRPass::getLocalVarAddr(YulString var) {
   return it->second;
 }
 
-mlir::Value YulToMLIRPass::convToBool(mlir::Value val) {
-  mlir::Location loc = val.getLoc();
-  BuilderExt bExt(b, loc);
-
-  auto ty = mlir::cast<mlir::IntegerType>(val.getType());
-  if (ty.getWidth() == 1)
-    return val;
-  if (ty == getDefIntTy())
-    return b.create<mlir::arith::CmpIOp>(loc, mlir::arith::CmpIPredicate::ne,
-                                         val, bExt.genI256Const(0));
-  llvm_unreachable("Invalid type");
-}
-
 void YulToMLIRPass::populateBuiltinGenMap() {
   using namespace mlir;
   using namespace mlir::yul;
-  defSimpleBuiltinGen<arith::AddIOp>("add");
-  defSimpleBuiltinGen<arith::SubIOp>("sub");
-  defSimpleBuiltinGen<arith::MulIOp>("mul");
-  defSimpleBuiltinGen<arith::AndIOp>("and");
-  defSimpleBuiltinGen<arith::OrIOp>("or");
-  defSimpleBuiltinGen<arith::XOrIOp>("xor");
+  defSimpleBuiltinGen<AddOp>("add");
+  defSimpleBuiltinGen<SubOp>("sub");
+  defSimpleBuiltinGen<MulOp>("mul");
+  defSimpleBuiltinGen<AndOp>("and");
+  defSimpleBuiltinGen<OrOp>("or");
+  defSimpleBuiltinGen<XOrOp>("xor");
   defSimpleBuiltinGen<DivOp>("div");
   defSimpleBuiltinGen<SDivOp>("sdiv");
   defSimpleBuiltinGen<ModOp>("mod");
@@ -295,26 +280,22 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   defSimpleBuiltinGen<ShrOp>("shr");
   defSimpleBuiltinGen<ShlOp>("shl");
   defSimpleBuiltinGen<SarOp>("sar");
-  defCmpBuiltinGen<arith::CmpIPredicate::ult>("lt");
-  defCmpBuiltinGen<arith::CmpIPredicate::slt>("slt");
-  defCmpBuiltinGen<arith::CmpIPredicate::ugt>("gt");
-  defCmpBuiltinGen<arith::CmpIPredicate::sgt>("sgt");
-  defCmpBuiltinGen<arith::CmpIPredicate::eq>("eq");
+  defCmpBuiltinGen("lt", CmpPredicate::ult);
+  defCmpBuiltinGen("slt", CmpPredicate::slt);
+  defCmpBuiltinGen("gt", CmpPredicate::ugt);
+  defCmpBuiltinGen("sgt", CmpPredicate::sgt);
+  defCmpBuiltinGen("eq", CmpPredicate::eq);
   builtinGenMap["not"] = [&](std::vector<Expression> const &args,
                              mlir::Location loc) {
     mlir::SmallVector<mlir::Value, 1> resVals;
-    BuilderExt bExt(b, loc);
-    resVals.push_back(b.create<mlir::arith::XOrIOp>(loc, genDefTyExpr(args[0]),
-                                                    bExt.genI256Const(-1)));
+    resVals.push_back(b.create<mlir::yul::NotOp>(loc, genDefTyExpr(args[0])));
     return resVals;
   };
   builtinGenMap["iszero"] = [&](std::vector<Expression> const &args,
                                 mlir::Location loc) {
     mlir::SmallVector<mlir::Value, 2> resVals;
-    BuilderExt bExt(b, loc);
-    resVals.push_back(b.create<mlir::arith::CmpIOp>(
-        loc, mlir::arith::CmpIPredicate::eq, genDefTyExpr(args[0]),
-        bExt.genI256Const(0)));
+    resVals.push_back(b.create<mlir::yul::CmpOp>(
+        loc, CmpPredicate::eq, genDefTyExpr(args[0]), genI256Const(loc, 0)));
     return resVals;
   };
   builtinGenMap["pop"] = [&](std::vector<Expression> const &args,
@@ -441,9 +422,7 @@ void YulToMLIRPass::populateBuiltinGenMap() {
 mlir::Value YulToMLIRPass::genExpr(Literal const &lit) {
   mlir::Location loc = this->getLoc(lit.debugData);
 
-  // TODO: Do we need to represent constants as u256? Can we do that in
-  // arith::ConstantOp?
-  return b.create<mlir::arith::ConstantOp>(loc, getIntAttr(lit.value));
+  return genI256Const(loc, getIntAttr(lit.value));
 }
 
 mlir::Value YulToMLIRPass::genExpr(Identifier const &id) {
@@ -460,7 +439,6 @@ YulToMLIRPass::genExprs(FunctionCall const &call) {
   BuiltinFunction const *builtin =
       yul::resolveBuiltinFunction(call.functionName, yulDialect);
   mlir::Location loc = getLoc(call.debugData);
-  BuilderExt bExt(b, loc);
 
   mlir::SmallVector<mlir::Value> resVals;
   if (builtin) {
@@ -468,7 +446,7 @@ YulToMLIRPass::genExprs(FunctionCall const &call) {
     return builtinGenMap[builtin->name](call.arguments, loc);
   }
 
-  mlir::sol::FuncOp callee = lookupSymbol<mlir::sol::FuncOp>(
+  mlir::yul::FuncOp callee = lookupSymbol<mlir::yul::FuncOp>(
       yul::resolveFunctionName(call.functionName, yulDialect));
   assert(callee);
   std::vector<mlir::Value> args;
@@ -476,7 +454,7 @@ YulToMLIRPass::genExprs(FunctionCall const &call) {
   for (Expression const &arg : call.arguments) {
     args.push_back(genDefTyExpr(arg));
   }
-  auto callOp = b.create<mlir::sol::CallOp>(loc, callee, args);
+  auto callOp = b.create<mlir::yul::FuncCallOp>(loc, callee, args);
   for (mlir::Value res : callOp.getResults())
     resVals.push_back(res);
   return resVals;
@@ -488,14 +466,6 @@ mlir::Value YulToMLIRPass::genExpr(FunctionCall const &call) {
   return exprs.empty() ? mlir::Value{} : exprs.front();
 }
 
-mlir::Value YulToMLIRPass::genCast(mlir::Value val, mlir::IntegerType dstTy) {
-  mlir::IntegerType valTy = mlir::cast<mlir::IntegerType>(val.getType());
-  if (valTy == dstTy)
-    return val;
-  assert(dstTy.getWidth() > valTy.getWidth());
-  return b.create<mlir::arith::ExtUIOp>(val.getLoc(), dstTy, val);
-}
-
 mlir::Value YulToMLIRPass::genExpr(Expression const &expr,
                                    std::optional<mlir::IntegerType> resTy) {
   mlir::Value gen = std::visit(
@@ -504,11 +474,8 @@ mlir::Value YulToMLIRPass::genExpr(Expression const &expr,
   if (resTy) {
     assert(gen);
     auto genTy = mlir::cast<mlir::IntegerType>(gen.getType());
-    if (*resTy != genTy) {
-      assert(resTy->getWidth() > genTy.getWidth());
-      // Zero-extend the result to `resTy`
-      return b.create<mlir::arith::ExtUIOp>(gen.getLoc(), *resTy, gen);
-    }
+    if (*resTy != genTy)
+      llvm_unreachable("Yul import should only produce i256 values");
   }
 
   return gen;
@@ -535,7 +502,7 @@ YulToMLIRPass::genDefTyExprs(Expression const &expr) {
   mlir::SmallVector<mlir::Value> mlirExprs = genExprs(expr);
   mlir::SmallVector<mlir::Value, 2> castedExprs;
   for (mlir::Value mlirExpr : mlirExprs)
-    castedExprs.push_back(genCast(mlirExpr, getDefIntTy()));
+    castedExprs.push_back(mlirExpr);
   return castedExprs;
 }
 
@@ -556,18 +523,20 @@ void YulToMLIRPass::operator()(Assignment const &asgn) {
 
 void YulToMLIRPass::operator()(VariableDeclaration const &decl) {
   mlir::Location loc = getLoc(decl.debugData);
-  BuilderExt bExt(b, loc);
 
   // If no initializer is specified, the variable defaults to zero.
-  mlir::SmallVector<mlir::Value> rhsExprs =
-      (decl.value ? genDefTyExprs(*decl.value)
-                  : mlir::SmallVector<mlir::Value>(decl.variables.size(),
-                                                   bExt.genI256Const(0)));
+  mlir::SmallVector<mlir::Value> rhsExprs;
+  if (decl.value) {
+    rhsExprs = genDefTyExprs(*decl.value);
+  } else {
+    for (size_t i = 0; i < decl.variables.size(); ++i)
+      rhsExprs.push_back(genI256Const(loc, 0));
+  }
   for (auto [var, rhsExpr] : llvm::zip(decl.variables, rhsExprs)) {
     auto addr = b.create<mlir::LLVM::AllocaOp>(
         getLoc(var.debugData),
         /*resTy=*/mlir::LLVM::LLVMPointerType::get(b.getContext()),
-        /*eltTy=*/getDefIntTy(), bExt.genI256Const(1), getDefAlign());
+        /*eltTy=*/getDefIntTy(), genI256Const(loc, 1), getDefAlign());
     trackLocalVarAddr(var.name, addr);
     b.create<mlir::LLVM::StoreOp>(loc, rhsExpr, addr, getDefAlign());
   }
@@ -576,15 +545,12 @@ void YulToMLIRPass::operator()(VariableDeclaration const &decl) {
 void YulToMLIRPass::operator()(If const &ifStmt) {
   mlir::Location loc = getLoc(ifStmt.debugData);
 
-  // TODO: Should we expand here? Or is it beneficial to represent `if` with a
-  // non-boolean condition in the IR?
-  auto ifOp =
-      b.create<mlir::sol::IfOp>(loc, convToBool(genExpr(*ifStmt.condition)));
+  auto ifOp = b.create<mlir::yul::IfOp>(loc, genDefTyExpr(*ifStmt.condition));
   mlir::OpBuilder::InsertionGuard insertGuard(b);
 
   b.setInsertionPointToStart(&ifOp.getThenRegion().emplaceBlock());
   ASTWalker::operator()(ifStmt.body);
-  b.create<mlir::sol::YieldOp>(ifOp.getLoc());
+  b.create<mlir::yul::YieldOp>(ifOp.getLoc());
 }
 
 void YulToMLIRPass::operator()(Switch const &switchStmt) {
@@ -625,7 +591,7 @@ void YulToMLIRPass::operator()(Switch const &switchStmt) {
   }
 
   auto switchOp =
-      b.create<mlir::sol::SwitchOp>(loc, /*resultTypes=*/mlir::TypeRange{}, arg,
+      b.create<mlir::yul::SwitchOp>(loc, /*resultTypes=*/mlir::TypeRange{}, arg,
                                     caseValsAttr, caseVals.size());
   mlir::OpBuilder::InsertionGuard insertGuard(b);
 
@@ -634,7 +600,7 @@ void YulToMLIRPass::operator()(Switch const &switchStmt) {
   auto lowerBody = [&](mlir::Region &region, Case const &caseAST) {
     mlir::Block *blk = b.createBlock(&region);
     b.setInsertionPointToStart(blk);
-    b.create<mlir::sol::YieldOp>(loc);
+    b.create<mlir::yul::YieldOp>(loc);
     b.setInsertionPointToStart(blk);
     ASTWalker::operator()(caseAST.body);
   };
@@ -643,7 +609,7 @@ void YulToMLIRPass::operator()(Switch const &switchStmt) {
     lowerBody(switchOp.getDefaultRegion(), *defCaseAST);
   } else {
     b.setInsertionPointToStart(b.createBlock(&switchOp.getDefaultRegion()));
-    b.create<mlir::sol::YieldOp>(loc);
+    b.create<mlir::yul::YieldOp>(loc);
   }
 
   assert(switchOp.getCaseRegions().size() == caseASTs.size());
@@ -652,49 +618,46 @@ void YulToMLIRPass::operator()(Switch const &switchStmt) {
 }
 
 void YulToMLIRPass::operator()(Break const &brkStmt) {
-  b.create<mlir::sol::BreakOp>(getLoc(brkStmt.debugData));
+  b.create<mlir::yul::BreakOp>(getLoc(brkStmt.debugData));
   mlir::Block *newBlock = b.getBlock()->splitBlock(b.getInsertionPoint());
   b.setInsertionPointToStart(newBlock);
 }
 
 void YulToMLIRPass::operator()(Continue const &contStmt) {
-  b.create<mlir::sol::ContinueOp>(getLoc(contStmt.debugData));
+  b.create<mlir::yul::ContinueOp>(getLoc(contStmt.debugData));
   mlir::Block *newBlock = b.getBlock()->splitBlock(b.getInsertionPoint());
   b.setInsertionPointToStart(newBlock);
 }
 
 void YulToMLIRPass::operator()(ForLoop const &forStmt) {
-  BuilderExt bExt(b);
-
   // Lower pre block.
   ASTWalker::operator()(forStmt.pre);
 
-  auto forOp = b.create<mlir::sol::ForOp>(getLoc(forStmt.debugData));
+  auto forOp = b.create<mlir::yul::ForOp>(getLoc(forStmt.debugData));
   mlir::OpBuilder::InsertionGuard insertGuard(b);
 
   // Lower condition.
   b.setInsertionPointToStart(&forOp.getCond().emplaceBlock());
-  mlir::Value cond = forStmt.condition ? convToBool(genExpr(*forStmt.condition))
-                                       : bExt.genBool(true, forOp.getLoc());
-  b.create<mlir::sol::ConditionOp>(cond.getLoc(), cond);
+  mlir::Value cond = forStmt.condition ? genDefTyExpr(*forStmt.condition)
+                                       : genI256Const(forOp.getLoc(), 1);
+  b.create<mlir::yul::ConditionOp>(cond.getLoc(), cond);
 
   // Lower body.
   b.setInsertionPointToStart(&forOp.getBody().emplaceBlock());
   ASTWalker::operator()(forStmt.body);
-  b.create<mlir::sol::YieldOp>(forOp.getLoc());
+  b.create<mlir::yul::YieldOp>(forOp.getLoc());
 
   // Lower post block.
   b.setInsertionPointToStart(&forOp.getStep().emplaceBlock());
   ASTWalker::operator()(forStmt.post);
-  b.create<mlir::sol::YieldOp>(forOp.getLoc());
+  b.create<mlir::yul::YieldOp>(forOp.getLoc());
 }
 
 void YulToMLIRPass::operator()(FunctionDefinition const &fn) {
   mlir::Location loc = getLoc(fn.debugData);
-  BuilderExt bExt(b, loc);
 
   // Lookup FuncOp (should be declared by the yul block lowering).
-  auto fnOp = lookupSymbol<mlir::sol::FuncOp>(fn.name.str());
+  auto fnOp = lookupSymbol<mlir::yul::FuncOp>(fn.name.str());
   assert(fnOp);
 
   // Restore the insertion point after lowering the function definition.
@@ -710,14 +673,14 @@ void YulToMLIRPass::operator()(FunctionDefinition const &fn) {
     auto addr = b.create<mlir::LLVM::AllocaOp>(
         blkArg.getLoc(),
         /*resTy=*/mlir::LLVM::LLVMPointerType::get(b.getContext()),
-        /*eltTy=*/getDefIntTy(), bExt.genI256Const(1), getDefAlign());
+        /*eltTy=*/getDefIntTy(), genI256Const(loc, 1), getDefAlign());
     trackLocalVarAddr(in.name, addr);
   }
   for (const NameWithDebugData &retVar : fn.returnVariables) {
     auto addr = b.create<mlir::LLVM::AllocaOp>(
         getLoc(retVar.debugData),
         /*resTy=*/mlir::LLVM::LLVMPointerType::get(b.getContext()),
-        /*eltTy=*/getDefIntTy(), bExt.genI256Const(1), getDefAlign());
+        /*eltTy=*/getDefIntTy(), genI256Const(loc, 1), getDefAlign());
     trackLocalVarAddr(retVar.name, addr);
   }
 
@@ -731,7 +694,7 @@ void YulToMLIRPass::operator()(FunctionDefinition const &fn) {
         getLocalVarAddr(retVar.name), getDefAlign());
     retVarLds.push_back(ld);
   }
-  b.create<mlir::sol::ReturnOp>(loc, retVarLds);
+  b.create<mlir::yul::FuncReturnOp>(loc, retVarLds);
 }
 
 void YulToMLIRPass::operator()(Block const &blk) { lowerBlk(blk); }
@@ -744,14 +707,14 @@ void YulToMLIRPass::lowerBlk(Block const &blk) {
   // TODO: Stop relying on libyul's Disambiguator
   // We tried emitting a single block op for yul blocks with a symbol table
   // trait. We're able to define symbols with the same name in different blocks,
-  // but ops like sol::CallOp works with a FlatSymbolRefAttr which needs the
+  // but ops like yul.func_call works with a FlatSymbolRefAttr which needs the
   // symbol definition to be in the same symbol table
   for (Statement const &stmt : blk.statements) {
     if (const auto *fn = std::get_if<FunctionDefinition>(&stmt)) {
       std::vector<mlir::Type> inTys(fn->parameters.size(), getDefIntTy()),
           outTys(fn->returnVariables.size(), getDefIntTy());
       mlir::FunctionType funcTy = b.getFunctionType(inTys, outTys);
-      b.create<mlir::sol::FuncOp>(getLoc(fn->debugData), fn->name.str(),
+      b.create<mlir::yul::FuncOp>(getLoc(fn->debugData), fn->name.str(),
                                   funcTy);
     }
   }
@@ -816,8 +779,6 @@ solidity::mlirgen::Bytecode solidity::mlirgen::runYulToMLIRPass(
   mlir::MLIRContext ctx(mlir::MLIRContext::Threading::DISABLED);
   ctx.getOrLoadDialect<mlir::sol::SolDialect>();
   ctx.getOrLoadDialect<mlir::yul::YulDialect>();
-  ctx.getOrLoadDialect<mlir::arith::ArithDialect>();
-  ctx.getOrLoadDialect<mlir::scf::SCFDialect>();
   ctx.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
 
   // Register a diagnostic handler to capture the diagnostic so that we can

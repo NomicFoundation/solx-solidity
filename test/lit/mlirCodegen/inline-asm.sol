@@ -39,8 +39,8 @@ contract C {
 // CHECK-NEXT: #Pure = #sol<StateMutability Pure>
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka, sol.revert_strings = #Default} {
 // CHECK-NEXT:   sol.func @f_5() attributes {id = 5 : i64, state_mutability = #NonPayable} {
-// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc2)
-// CHECK-NEXT:     %c0_i256_0 = arith.constant 0 : i256 loc(#loc3)
+// CHECK-NEXT:     %c0_i256 = yul.constant 0 loc(#loc2)
+// CHECK-NEXT:     %c0_i256_0 = yul.constant 0 loc(#loc3)
 // CHECK-NEXT:     yul.mstore %c0_i256, %c0_i256_0 loc(#loc4)
 // CHECK-NEXT:     sol.return loc(#loc1)
 // CHECK-NEXT:   } loc(#loc1)
@@ -57,8 +57,8 @@ contract C {
 // CHECK-NEXT:       sol.store %1, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc10)
 // CHECK-NEXT:       %2 = sol.conv_cast %0 : !sol.ptr<ui256, Stack> -> !llvm.ptr loc(#loc11)
 // CHECK-NEXT:       %3 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc12)
-// CHECK-NEXT:       %c1_i256 = arith.constant 1 : i256 loc(#loc13)
-// CHECK-NEXT:       %4 = arith.addi %3, %c1_i256 : i256 loc(#loc14)
+// CHECK-NEXT:       %c1_i256 = yul.constant 1 loc(#loc13)
+// CHECK-NEXT:       %4 = yul.add %3, %c1_i256 loc(#loc14)
 // CHECK-NEXT:       %5 = sol.conv_cast %0 : !sol.ptr<ui256, Stack> -> !llvm.ptr loc(#loc11)
 // CHECK-NEXT:       llvm.store %4, %5 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc15)
 // CHECK-NEXT:       %6 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc16)
