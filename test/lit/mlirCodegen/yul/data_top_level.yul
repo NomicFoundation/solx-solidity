@@ -12,7 +12,7 @@ object "Test" {
 // CHECK: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   yul.object @Test {
-// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc1)
+// CHECK-NEXT:     %c0_i256 = yul.constant 0 loc(#loc1)
 // CHECK-NEXT:     %0 = yul.dataoffset {obj = @Test} loc(#loc2)
 // CHECK-NEXT:     %1 = yul.datasize {obj = @Test} loc(#loc3)
 // CHECK-NEXT:     yul.codecopy %c0_i256, %0, %1 loc(#loc4)

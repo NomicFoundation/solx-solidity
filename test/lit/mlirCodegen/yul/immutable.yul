@@ -16,19 +16,19 @@ object "Test" {
 // CHECK: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   yul.object @Test {
-// CHECK-NEXT:     %c10_i256 = arith.constant 10 : i256 loc(#loc1)
-// CHECK-NEXT:     %c32_i256 = arith.constant 32 : i256 loc(#loc2)
+// CHECK-NEXT:     %c10_i256 = yul.constant 10 loc(#loc1)
+// CHECK-NEXT:     %c32_i256 = yul.constant 32 loc(#loc2)
 // CHECK-NEXT:     yul.setimmutable %c10_i256, "foo", %c32_i256 loc(#loc3)
-// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc4)
-// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc5)
+// CHECK-NEXT:     %c0_i256 = yul.constant 0 loc(#loc4)
+// CHECK-NEXT:     %c1_i256 = yul.constant 1 loc(#loc5)
 // CHECK-NEXT:     yul.setimmutable %c0_i256, "10000000000000000000000000", %c1_i256 loc(#loc6)
 // CHECK-NEXT:     yul.object @Test_deployed {
 // CHECK-NEXT:       %0 = yul.loadimmutable "foo" loc(#loc7)
-// CHECK-NEXT:       %c1_i256_0 = arith.constant 1 : i256 loc(#loc8)
+// CHECK-NEXT:       %c1_i256_0 = yul.constant 1 loc(#loc8)
 // CHECK-NEXT:       %1 = llvm.alloca %c1_i256_0 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc9)
 // CHECK-NEXT:       llvm.store %0, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc8)
 // CHECK-NEXT:       %2 = yul.loadimmutable "10000000000000000000000000" loc(#loc10)
-// CHECK-NEXT:       %c1_i256_1 = arith.constant 1 : i256 loc(#loc11)
+// CHECK-NEXT:       %c1_i256_1 = yul.constant 1 loc(#loc11)
 // CHECK-NEXT:       %3 = llvm.alloca %c1_i256_1 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc12)
 // CHECK-NEXT:       llvm.store %2, %3 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc11)
 // CHECK-NEXT:     } loc(#loc)
