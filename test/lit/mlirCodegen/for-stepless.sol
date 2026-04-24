@@ -21,7 +21,7 @@ function no_step(uint n) {
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka, sol.revert_strings = #Default} {
 // CHECK-NEXT:   sol.func @infinite_7() attributes {id = 7 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     sol.for cond {
-// CHECK-NEXT:       %true = arith.constant true loc(#loc2)
+// CHECK-NEXT:       %true = sol.constant true loc(#loc2)
 // CHECK-NEXT:       sol.condition %true loc(#loc2)
 // CHECK-NEXT:     } body {
 // CHECK-NEXT:       sol.break loc(#loc3)

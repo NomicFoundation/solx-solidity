@@ -9,10 +9,10 @@ object "Test" {
 // CHECK: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   yul.object @Test {
-// CHECK-NEXT:     %c2863311530_i256 = yul.constant 2863311530 loc(#loc1)
-// CHECK-NEXT:     %c0_i256 = yul.constant 0 loc(#loc2)
-// CHECK-NEXT:     %c4_i256 = yul.constant 4 loc(#loc3)
-// CHECK-NEXT:     %c128_i256 = yul.constant 128 loc(#loc4)
+// CHECK-NEXT:     %c2863311530_i256 = yul.constant 2863311530 : i256 : i256 loc(#loc1)
+// CHECK-NEXT:     %c0_i256 = yul.constant 0 : i256 : i256 loc(#loc2)
+// CHECK-NEXT:     %c4_i256 = yul.constant 4 : i256 : i256 loc(#loc3)
+// CHECK-NEXT:     %c128_i256 = yul.constant 128 : i256 : i256 loc(#loc4)
 // CHECK-NEXT:     yul.extcodecopy %c2863311530_i256, %c0_i256, %c4_i256, %c128_i256 loc(#loc5)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)

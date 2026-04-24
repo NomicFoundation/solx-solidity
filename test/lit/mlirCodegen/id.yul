@@ -17,22 +17,22 @@ object "Test" {
 // CHECK: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   yul.object @Test {
-// CHECK-NEXT:     %c64_i256 = yul.constant 64 loc(#loc1)
+// CHECK-NEXT:     %c64_i256 = yul.constant 64 : i256 : i256 loc(#loc1)
 // CHECK-NEXT:     %0 = yul.mload %c64_i256 loc(#loc2)
-// CHECK-NEXT:     %c1_i256 = yul.constant 1 loc(#loc3)
+// CHECK-NEXT:     %c1_i256 = yul.constant 1 : i256 : i256 loc(#loc3)
 // CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc4)
 // CHECK-NEXT:     llvm.store %0, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc3)
 // CHECK-NEXT:     %2 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc5)
-// CHECK-NEXT:     %c0_i256 = yul.constant 0 loc(#loc6)
+// CHECK-NEXT:     %c0_i256 = yul.constant 0 : i256 : i256 loc(#loc6)
 // CHECK-NEXT:     yul.return %2, %c0_i256 loc(#loc7)
 // CHECK-NEXT:     yul.object @Test_deployed {
-// CHECK-NEXT:       %c64_i256_0 = yul.constant 64 loc(#loc8)
+// CHECK-NEXT:       %c64_i256_0 = yul.constant 64 : i256 : i256 loc(#loc8)
 // CHECK-NEXT:       %3 = yul.mload %c64_i256_0 loc(#loc9)
-// CHECK-NEXT:       %c1_i256_1 = yul.constant 1 loc(#loc10)
+// CHECK-NEXT:       %c1_i256_1 = yul.constant 1 : i256 : i256 loc(#loc10)
 // CHECK-NEXT:       %4 = llvm.alloca %c1_i256_1 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc11)
 // CHECK-NEXT:       llvm.store %3, %4 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc10)
 // CHECK-NEXT:       %5 = llvm.load %4 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc12)
-// CHECK-NEXT:       %c0_i256_2 = yul.constant 0 loc(#loc13)
+// CHECK-NEXT:       %c0_i256_2 = yul.constant 0 : i256 : i256 loc(#loc13)
 // CHECK-NEXT:       yul.return %5, %c0_i256_2 loc(#loc14)
 // CHECK-NEXT:     } loc(#loc)
 // CHECK-NEXT:   } loc(#loc)

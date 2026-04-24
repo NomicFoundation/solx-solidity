@@ -195,7 +195,7 @@ contract C {
 // CHECK-NEXT:       %5 = sol.alloca : !sol.ptr<!sol.ext_func_ref<(ui256) -> ui256>, Stack> loc(#loc34)
 // CHECK-NEXT:       sol.store %4, %5 : !sol.ext_func_ref<(ui256) -> ui256>, !sol.ptr<!sol.ext_func_ref<(ui256) -> ui256>, Stack> loc(#loc34)
 // CHECK-NEXT:       %6 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc35)
-// CHECK-NEXT:       %false = arith.constant false loc(#loc35)
+// CHECK-NEXT:       %false = sol.constant false loc(#loc35)
 // CHECK-NEXT:       sol.store %false, %6 : i1, !sol.ptr<i1, Stack> loc(#loc35)
 // CHECK-NEXT:       %7 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc36)
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc36)
@@ -208,7 +208,7 @@ contract C {
 // CHECK-NEXT:       sol.try %11#0 {
 // CHECK-NEXT:         %14 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc40)
 // CHECK-NEXT:         sol.store %11#1, %14 : ui256, !sol.ptr<ui256, Stack> loc(#loc40)
-// CHECK-NEXT:         %true = arith.constant true loc(#loc41)
+// CHECK-NEXT:         %true = sol.constant true loc(#loc41)
 // CHECK-NEXT:         sol.store %true, %6 : i1, !sol.ptr<i1, Stack> loc(#loc42)
 // CHECK-NEXT:         %15 = sol.load %14 : !sol.ptr<ui256, Stack>, ui256 loc(#loc43)
 // CHECK-NEXT:         sol.store %15, %7 : ui256, !sol.ptr<ui256, Stack> loc(#loc44)
@@ -216,7 +216,7 @@ contract C {
 // CHECK-NEXT:       } panic {
 // CHECK-NEXT:       } error {
 // CHECK-NEXT:       } fallback {
-// CHECK-NEXT:         %false_1 = arith.constant false loc(#loc45)
+// CHECK-NEXT:         %false_1 = sol.constant false loc(#loc45)
 // CHECK-NEXT:         sol.store %false_1, %6 : i1, !sol.ptr<i1, Stack> loc(#loc46)
 // CHECK-NEXT:         %c0_ui8 = sol.constant 0 : ui8 loc(#loc47)
 // CHECK-NEXT:         %14 = sol.cast %c0_ui8 : ui8 to ui256 loc(#loc47)
@@ -237,7 +237,7 @@ contract C {
 // CHECK-NEXT:       %5 = sol.alloca : !sol.ptr<!sol.ext_func_ref<(ui256) -> ui256>, Stack> loc(#loc54)
 // CHECK-NEXT:       sol.store %4, %5 : !sol.ext_func_ref<(ui256) -> ui256>, !sol.ptr<!sol.ext_func_ref<(ui256) -> ui256>, Stack> loc(#loc54)
 // CHECK-NEXT:       %6 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc55)
-// CHECK-NEXT:       %false = arith.constant false loc(#loc55)
+// CHECK-NEXT:       %false = sol.constant false loc(#loc55)
 // CHECK-NEXT:       sol.store %false, %6 : i1, !sol.ptr<i1, Stack> loc(#loc55)
 // CHECK-NEXT:       %7 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc56)
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc56)
@@ -251,7 +251,7 @@ contract C {
 // CHECK-NEXT:       sol.try %11#0 {
 // CHECK-NEXT:         %14 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc61)
 // CHECK-NEXT:         sol.store %11#1, %14 : ui256, !sol.ptr<ui256, Stack> loc(#loc61)
-// CHECK-NEXT:         %true = arith.constant true loc(#loc62)
+// CHECK-NEXT:         %true = sol.constant true loc(#loc62)
 // CHECK-NEXT:         sol.store %true, %6 : i1, !sol.ptr<i1, Stack> loc(#loc63)
 // CHECK-NEXT:         %15 = sol.load %14 : !sol.ptr<ui256, Stack>, ui256 loc(#loc64)
 // CHECK-NEXT:         sol.store %15, %7 : ui256, !sol.ptr<ui256, Stack> loc(#loc65)
@@ -259,7 +259,7 @@ contract C {
 // CHECK-NEXT:       } panic {
 // CHECK-NEXT:       } error {
 // CHECK-NEXT:       } fallback {
-// CHECK-NEXT:         %false_1 = arith.constant false loc(#loc66)
+// CHECK-NEXT:         %false_1 = sol.constant false loc(#loc66)
 // CHECK-NEXT:         sol.store %false_1, %6 : i1, !sol.ptr<i1, Stack> loc(#loc67)
 // CHECK-NEXT:         %c0_ui8 = sol.constant 0 : ui8 loc(#loc68)
 // CHECK-NEXT:         %14 = sol.cast %c0_ui8 : ui8 to ui256 loc(#loc68)

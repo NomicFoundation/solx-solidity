@@ -71,7 +71,7 @@ contract C {
 // CHECK-NEXT:       %12 = sol.load %2 : !sol.ptr<!sol.enum<2>, Stack>, !sol.enum<2> loc(#loc23)
 // CHECK-NEXT:       sol.store %12, %11 : !sol.enum<2>, !sol.ptr<!sol.enum<2>, Transient> loc(#loc24)
 // CHECK-NEXT:       %13 = sol.addr_of @g_19 : !sol.ptr<i1, Transient> loc(#loc8)
-// CHECK-NEXT:       %true = arith.constant true loc(#loc25)
+// CHECK-NEXT:       %true = sol.constant true loc(#loc25)
 // CHECK-NEXT:       sol.store %true, %13 : i1, !sol.ptr<i1, Transient> loc(#loc26)
 // CHECK-NEXT:       %14 = sol.addr_of @a_6 : !sol.ptr<ui256, Transient> loc(#loc2)
 // CHECK-NEXT:       %15 = sol.addr_of @b_8 : !sol.ptr<ui8, Transient> loc(#loc3)

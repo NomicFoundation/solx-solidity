@@ -15,12 +15,12 @@ object "Test" {
 // CHECK: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   yul.object @Test {
-// CHECK-NEXT:     %c10_i256 = yul.constant 10 loc(#loc1)
-// CHECK-NEXT:     %c11_i256 = yul.constant 11 loc(#loc2)
+// CHECK-NEXT:     %c10_i256 = yul.constant 10 : i256 : i256 loc(#loc1)
+// CHECK-NEXT:     %c11_i256 = yul.constant 11 : i256 : i256 loc(#loc2)
 // CHECK-NEXT:     yul.return %c10_i256, %c11_i256 loc(#loc3)
 // CHECK-NEXT:     yul.object @Test_deployed {
-// CHECK-NEXT:       %c20_i256 = yul.constant 20 loc(#loc4)
-// CHECK-NEXT:       %c21_i256 = yul.constant 21 loc(#loc5)
+// CHECK-NEXT:       %c20_i256 = yul.constant 20 : i256 : i256 loc(#loc4)
+// CHECK-NEXT:       %c21_i256 = yul.constant 21 : i256 : i256 loc(#loc5)
 // CHECK-NEXT:       yul.return %c20_i256, %c21_i256 loc(#loc6)
 // CHECK-NEXT:     } loc(#loc)
 // CHECK-NEXT:   } loc(#loc)

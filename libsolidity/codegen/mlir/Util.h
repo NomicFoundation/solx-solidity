@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/Sol/Sol.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/Support/ErrorHandling.h"
 
@@ -55,8 +55,8 @@ class BuilderExt {
   mlir::Value genConst(llvm::APInt const &val,
                        std::optional<mlir::Location> locArg) {
     mlir::IntegerType ty = b.getIntegerType(val.getBitWidth());
-    auto op = b.create<mlir::arith::ConstantOp>(locArg ? *locArg : defLoc,
-                                                b.getIntegerAttr(ty, val));
+    auto op = b.create<mlir::sol::ConstantOp>(locArg ? *locArg : defLoc,
+                                              b.getIntegerAttr(ty, val));
     return op.getResult();
   }
 
@@ -69,8 +69,8 @@ public:
   mlir::Value genBool(bool val,
                       std::optional<mlir::Location> locArg = std::nullopt) {
     mlir::IntegerType ty = b.getIntegerType(1);
-    auto op = b.create<mlir::arith::ConstantOp>(locArg ? *locArg : defLoc,
-                                                b.getIntegerAttr(ty, val));
+    auto op = b.create<mlir::sol::ConstantOp>(locArg ? *locArg : defLoc,
+                                              b.getIntegerAttr(ty, val));
     return op.getResult();
   }
 

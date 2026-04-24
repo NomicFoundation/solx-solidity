@@ -23,30 +23,30 @@ object "Test" {
 // CHECK: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   yul.object @Test {
-// CHECK-NEXT:     %c0_i256 = yul.constant 0 loc(#loc1)
-// CHECK-NEXT:     %c0_i256_0 = yul.constant 0 loc(#loc2)
+// CHECK-NEXT:     %c0_i256 = yul.constant 0 : i256 : i256 loc(#loc1)
+// CHECK-NEXT:     %c0_i256_0 = yul.constant 0 : i256 : i256 loc(#loc2)
 // CHECK-NEXT:     yul.return %c0_i256, %c0_i256_0 loc(#loc3)
 // CHECK-NEXT:     yul.object @Test_deployed {
-// CHECK-NEXT:       %c0_i256_1 = yul.constant 0 loc(#loc4)
+// CHECK-NEXT:       %c0_i256_1 = yul.constant 0 : i256 : i256 loc(#loc4)
 // CHECK-NEXT:       %0 = yul.mload %c0_i256_1 loc(#loc5)
 // CHECK-NEXT:       yul.switch %0 : i256
 // CHECK-NEXT:       case 0 {
-// CHECK-NEXT:         %c0_i256_4 = yul.constant 0 loc(#loc7)
-// CHECK-NEXT:         %c0_i256_5 = yul.constant 0 loc(#loc8)
+// CHECK-NEXT:         %c0_i256_4 = yul.constant 0 : i256 : i256 loc(#loc7)
+// CHECK-NEXT:         %c0_i256_5 = yul.constant 0 : i256 : i256 loc(#loc8)
 // CHECK-NEXT:         yul.mstore %c0_i256_4, %c0_i256_5 loc(#loc9)
 // CHECK-NEXT:         yul.yield loc(#loc6)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       case 1 {
-// CHECK-NEXT:         %c0_i256_4 = yul.constant 0 loc(#loc10)
-// CHECK-NEXT:         %c1_i256 = yul.constant 1 loc(#loc11)
+// CHECK-NEXT:         %c0_i256_4 = yul.constant 0 : i256 : i256 loc(#loc10)
+// CHECK-NEXT:         %c1_i256 = yul.constant 1 : i256 : i256 loc(#loc11)
 // CHECK-NEXT:         yul.mstore %c0_i256_4, %c1_i256 loc(#loc12)
 // CHECK-NEXT:         yul.yield loc(#loc6)
 // CHECK-NEXT:       }
 // CHECK-NEXT:       default {
 // CHECK-NEXT:         yul.yield loc(#loc6)
 // CHECK-NEXT:       } loc(#loc6)
-// CHECK-NEXT:       %c0_i256_2 = yul.constant 0 loc(#loc13)
-// CHECK-NEXT:       %c0_i256_3 = yul.constant 0 loc(#loc14)
+// CHECK-NEXT:       %c0_i256_2 = yul.constant 0 : i256 : i256 loc(#loc13)
+// CHECK-NEXT:       %c0_i256_3 = yul.constant 0 : i256 : i256 loc(#loc14)
 // CHECK-NEXT:       yul.return %c0_i256_2, %c0_i256_3 loc(#loc15)
 // CHECK-NEXT:     } loc(#loc)
 // CHECK-NEXT:   } loc(#loc)
