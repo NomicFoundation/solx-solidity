@@ -73,9 +73,9 @@ contract C {
 // CHECK-NEXT:     } loc(#loc9)
 // CHECK-NEXT:     sol.func @f_bool_48() -> i1 attributes {id = 48 : i64, orig_fn_type = () -> i1, selector = -1627436913 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc17)
-// CHECK-NEXT:       %false = arith.constant false loc(#loc17)
+// CHECK-NEXT:       %false = sol.constant false loc(#loc17)
 // CHECK-NEXT:       sol.store %false, %0 : i1, !sol.ptr<i1, Stack> loc(#loc17)
-// CHECK-NEXT:       %true = arith.constant true loc(#loc18)
+// CHECK-NEXT:       %true = sol.constant true loc(#loc18)
 // CHECK-NEXT:       sol.store %true, %0 : i1, !sol.ptr<i1, Stack> loc(#loc19)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<i1, Stack>, i1 loc(#loc16)
 // CHECK-NEXT:       sol.return %1 : i1 loc(#loc16)

@@ -38,7 +38,6 @@
 #include "libsolutil/FunctionSelector.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
-#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Sol/Sol.h"
 #include "mlir/Dialect/Yul/Yul.h"
 #include "mlir/IR/AsmState.h"
@@ -59,6 +58,7 @@
 #include "range/v3/view/zip.hpp"
 #include "llvm-c/Core.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/SaveAndRestore.h"
@@ -641,11 +641,8 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
 mlir::Value SolidityToMLIRPass::genZeroedVal(mlir::Type ty,
                                              mlir::Location loc) {
   if (auto intTy = mlir::dyn_cast<mlir::IntegerType>(ty)) {
-    auto attr = b.getIntegerAttr(intTy, llvm::APInt(intTy.getWidth(), 0));
-    if (intTy.isSignless()) {
-      return b.create<mlir::arith::ConstantOp>(loc, attr);
-    }
-    return b.create<mlir::sol::ConstantOp>(loc, attr);
+    return b.create<mlir::sol::ConstantOp>(
+        loc, b.getIntegerAttr(intTy, llvm::APInt(intTy.getWidth(), 0)));
   }
   if (mlir::isa<mlir::sol::FuncRefType>(ty)) {
     return b.create<mlir::sol::DefaultFuncConstantOp>(loc);
@@ -871,7 +868,7 @@ mlir::Value SolidityToMLIRPass::genExpr(Literal const &lit) {
 
   // Bool literal
   if (dynamic_cast<BoolType const *>(ty))
-    return b.create<mlir::arith::ConstantOp>(
+    return b.create<mlir::sol::ConstantOp>(
         loc, b.getBoolAttr(lit.token() == Token::TrueLiteral));
 
   // Rational number literal
@@ -1047,7 +1044,7 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const &unaryOp) {
   // Logical not
   case Token::Not: {
     mlir::Value expr = genRValExpr(unaryOp.subExpression());
-    mlir::Value zero = b.create<mlir::arith::ConstantOp>(
+    mlir::Value zero = b.create<mlir::sol::ConstantOp>(
         loc, b.getIntegerAttr(expr.getType(), 0));
     return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::eq, expr,
                                       zero);
@@ -1160,21 +1157,37 @@ SolidityToMLIRPass::genExprs(Conditional const &cond) {
     resTys.push_back(getType(cond.annotation().type));
   }
 
-  auto ifOp =
-      b.create<mlir::scf::IfOp>(loc, resTys, condVal, /*withElse=*/true);
-  mlir::OpBuilder::InsertionGuard guard(b);
+  mlir::SmallVector<mlir::sol::AllocaOp> allocas;
+  for (mlir::Type resTy : resTys) {
+    mlir::Type allocTy = mlir::sol::PointerType::get(
+        b.getContext(), resTy, mlir::sol::DataLocation::Stack);
+    allocas.push_back(b.create<mlir::sol::AllocaOp>(loc, allocTy));
+  }
 
-  // True branch
-  b.setInsertionPointToStart(&ifOp.getThenRegion().front());
-  b.create<mlir::scf::YieldOp>(loc,
-                               genRValExprs(cond.trueExpression(), resTys));
+  auto storeResults = [&](Expression const &expr) {
+    mlir::SmallVector<mlir::Value> values = genRValExprs(expr, resTys);
+    for (auto [value, alloca] : ranges::views::zip(values, allocas))
+      b.create<mlir::sol::StoreOp>(loc, value, alloca);
+  };
 
-  // False branch
-  b.setInsertionPointToStart(&ifOp.getElseRegion().front());
-  b.create<mlir::scf::YieldOp>(loc,
-                               genRValExprs(cond.falseExpression(), resTys));
+  auto ifOp = b.create<mlir::sol::IfOp>(loc, condVal);
+  {
+    mlir::OpBuilder::InsertionGuard guard(b);
 
-  return ifOp.getResults();
+    b.setInsertionPointToStart(&ifOp.getThenRegion().emplaceBlock());
+    storeResults(cond.trueExpression());
+    b.create<mlir::sol::YieldOp>(loc);
+
+    b.setInsertionPointToStart(&ifOp.getElseRegion().emplaceBlock());
+    storeResults(cond.falseExpression());
+    b.create<mlir::sol::YieldOp>(loc);
+  }
+
+  mlir::SmallVector<mlir::Value> results;
+  results.reserve(allocas.size());
+  for (mlir::sol::AllocaOp alloca : allocas)
+    results.push_back(b.create<mlir::sol::LoadOp>(loc, alloca));
+  return results;
 }
 
 mlir::Value SolidityToMLIRPass::genExpr(IndexAccess const &idxAcc) {
@@ -2719,8 +2732,8 @@ void SolidityToMLIRPass::lower(InlineAssembly const &inAsm) {
         if (suffix == "slot")
           return b.create<mlir::sol::ConvCastOp>(loc, i256Ty, ptr);
         else
-          return b.create<mlir::arith::ConstantOp>(loc,
-                                                   b.getIntegerAttr(i256Ty, 0));
+          return b.create<mlir::sol::ConstantOp>(loc,
+                                                 b.getIntegerAttr(i256Ty, 0));
       }
     }
 
@@ -3202,8 +3215,6 @@ static void loadDialects(mlir::MLIRContext &ctx) {
   ctx.getOrLoadDialect<mlir::sol::SolDialect>();
   ctx.getOrLoadDialect<mlir::yul::YulDialect>();
   // For lowering yul in inline-asm.
-  ctx.getOrLoadDialect<mlir::arith::ArithDialect>();
-  ctx.getOrLoadDialect<mlir::scf::SCFDialect>();
   ctx.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
 }
 

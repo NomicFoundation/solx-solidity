@@ -80,7 +80,7 @@ contract C {
 // CHECK-NEXT:       %0 = sol.func_constant @f_21 : !sol.func_ref<(ui256) -> ui256> loc(#loc22)
 // CHECK-NEXT:       %1 = sol.func_constant @g_33 : !sol.func_ref<(ui256) -> ui256> loc(#loc23)
 // CHECK-NEXT:       %2 = sol.cmp eq, %0, %1 : !sol.func_ref<(ui256) -> ui256> loc(#loc22)
-// CHECK-NEXT:       %false = arith.constant false loc(#loc24)
+// CHECK-NEXT:       %false = sol.constant false loc(#loc24)
 // CHECK-NEXT:       %3 = sol.cmp eq, %2, %false : i1 loc(#loc24)
 // CHECK-NEXT:       sol.return %3 : i1 loc(#loc25)
 // CHECK-NEXT:     } loc(#loc21)

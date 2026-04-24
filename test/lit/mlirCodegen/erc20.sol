@@ -247,7 +247,7 @@ contract ERC20 {
 // CHECK-NEXT:       %3 = sol.load %0 : !sol.ptr<!sol.address, Stack>, !sol.address loc(#loc36)
 // CHECK-NEXT:       %4 = sol.load %1 : !sol.ptr<ui256, Stack>, ui256 loc(#loc37)
 // CHECK-NEXT:       sol.call @_transfer_332(%2, %3, %4) : (!sol.address, !sol.address, ui256) -> () loc(#loc38)
-// CHECK-NEXT:       %true = arith.constant true loc(#loc39)
+// CHECK-NEXT:       %true = sol.constant true loc(#loc39)
 // CHECK-NEXT:       sol.return %true : i1 loc(#loc40)
 // CHECK-NEXT:     } loc(#loc32)
 // CHECK-NEXT:     sol.func @allowance_137(%arg0: !sol.address loc({{.*}}:50:21), %arg1: !sol.address loc({{.*}}:50:36)) -> ui256 attributes {id = 137 : i64, orig_fn_type = (!sol.address, !sol.address) -> ui256, selector = -580719298 : i32, state_mutability = #View} {
@@ -272,7 +272,7 @@ contract ERC20 {
 // CHECK-NEXT:       %3 = sol.load %0 : !sol.ptr<!sol.address, Stack>, !sol.address loc(#loc52)
 // CHECK-NEXT:       %4 = sol.load %1 : !sol.ptr<ui256, Stack>, ui256 loc(#loc53)
 // CHECK-NEXT:       sol.call @_approve_469(%2, %3, %4) : (!sol.address, !sol.address, ui256) -> () loc(#loc54)
-// CHECK-NEXT:       %true = arith.constant true loc(#loc55)
+// CHECK-NEXT:       %true = sol.constant true loc(#loc55)
 // CHECK-NEXT:       sol.return %true : i1 loc(#loc56)
 // CHECK-NEXT:     } loc(#loc48)
 // CHECK-NEXT:     sol.func @transferFrom_202(%arg0: !sol.address loc({{.*}}:59:24), %arg1: !sol.address loc({{.*}}:59:40), %arg2: ui256 loc({{.*}}:59:59)) -> i1 attributes {id = 202 : i64, orig_fn_type = (!sol.address, !sol.address, ui256) -> i1, selector = 599290589 : i32, state_mutability = #NonPayable} {
@@ -304,7 +304,7 @@ contract ERC20 {
 // CHECK-NEXT:       %19 = sol.load %2 : !sol.ptr<ui256, Stack>, ui256 loc(#loc75)
 // CHECK-NEXT:       %20 = sol.sub %18, %19 : ui256 loc(#loc74)
 // CHECK-NEXT:       sol.call @_approve_469(%16, %17, %20) : (!sol.address, !sol.address, ui256) -> () loc(#loc76)
-// CHECK-NEXT:       %true = arith.constant true loc(#loc77)
+// CHECK-NEXT:       %true = sol.constant true loc(#loc77)
 // CHECK-NEXT:       sol.return %true : i1 loc(#loc78)
 // CHECK-NEXT:     } loc(#loc57)
 // CHECK-NEXT:     sol.func @increaseAllowance_229(%arg0: !sol.address loc({{.*}}:74:29), %arg1: ui256 loc({{.*}}:74:46)) -> i1 attributes {id = 229 : i64, orig_fn_type = (!sol.address, ui256) -> i1, selector = 961581905 : i32, state_mutability = #NonPayable} {
@@ -323,7 +323,7 @@ contract ERC20 {
 // CHECK-NEXT:       %10 = sol.load %1 : !sol.ptr<ui256, Stack>, ui256 loc(#loc87)
 // CHECK-NEXT:       %11 = sol.add %9, %10 : ui256 loc(#loc85)
 // CHECK-NEXT:       sol.call @_approve_469(%2, %3, %11) : (!sol.address, !sol.address, ui256) -> () loc(#loc88)
-// CHECK-NEXT:       %true = arith.constant true loc(#loc89)
+// CHECK-NEXT:       %true = sol.constant true loc(#loc89)
 // CHECK-NEXT:       sol.return %true : i1 loc(#loc90)
 // CHECK-NEXT:     } loc(#loc79)
 // CHECK-NEXT:     sol.func @decreaseAllowance_267(%arg0: !sol.address loc({{.*}}:83:29), %arg1: ui256 loc({{.*}}:83:46)) -> i1 attributes {id = 267 : i64, orig_fn_type = (!sol.address, ui256) -> i1, selector = -1537752361 : i32, state_mutability = #NonPayable} {
@@ -349,7 +349,7 @@ contract ERC20 {
 // CHECK-NEXT:       %15 = sol.load %1 : !sol.ptr<ui256, Stack>, ui256 loc(#loc104)
 // CHECK-NEXT:       %16 = sol.sub %14, %15 : ui256 loc(#loc103)
 // CHECK-NEXT:       sol.call @_approve_469(%12, %13, %16) : (!sol.address, !sol.address, ui256) -> () loc(#loc105)
-// CHECK-NEXT:       %true = arith.constant true loc(#loc106)
+// CHECK-NEXT:       %true = sol.constant true loc(#loc106)
 // CHECK-NEXT:       sol.return %true : i1 loc(#loc107)
 // CHECK-NEXT:     } loc(#loc91)
 // CHECK-NEXT:     sol.func @_transfer_332(%arg0: !sol.address loc({{.*}}:96:21), %arg1: !sol.address loc({{.*}}:96:37), %arg2: ui256 loc({{.*}}:96:56)) attributes {id = 332 : i64, orig_fn_type = (!sol.address, !sol.address, ui256) -> (), selector = 820017310 : i32, state_mutability = #NonPayable} {

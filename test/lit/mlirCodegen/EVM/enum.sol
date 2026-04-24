@@ -51,15 +51,17 @@ function toUint(E x) returns (uint) {
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc11)
 // CHECK-NEXT:     %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc1)
 // CHECK-NEXT:     %2 = arith.cmpi ugt, %1, %c2_i256 : i256 loc(#loc1)
-// CHECK-NEXT:     scf.if %2 {
-// CHECK-NEXT:       %3 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       llvm.store %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256, %3 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       %4 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       llvm.store %c33_i256, %4 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       %5 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       "llvm.intrcall"(%5, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
-// CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc1)
-// CHECK-NEXT:     } loc(#loc1)
+// CHECK-NEXT:     cf.cond_br %2, ^bb1, ^bb2 loc(#loc1)
+// CHECK-NEXT:   ^bb1:  // pred: ^bb0
+// CHECK-NEXT:     %3 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
+// CHECK-NEXT:     llvm.store %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256, %3 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
+// CHECK-NEXT:     %4 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc1)
+// CHECK-NEXT:     llvm.store %c33_i256, %4 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
+// CHECK-NEXT:     %5 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
+// CHECK-NEXT:     "llvm.intrcall"(%5, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc1)
+// CHECK-NEXT:     cf.br ^bb2 loc(#loc1)
+// CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
 // CHECK-NEXT:     return %1 : i256 loc(#loc12)
 // CHECK-NEXT:   } loc(#loc10)
 // CHECK-NEXT:   func.func @toUint_53(%arg0: i256 loc({{.*}}:12:16)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {

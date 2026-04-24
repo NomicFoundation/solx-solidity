@@ -250,14 +250,9 @@ set(mlir_libs
 	MLIRSolToStandard
 	MLIRYulTransforms
 	MLIRYulDialect
-	MLIRFuncDialect
-	MLIRSCFDialect
-	MLIRArithDialect
 	MLIRLLVMDialect
-	MLIRControlFlowDialect
 
 	MLIRFuncToLLVM
-	MLIRSCFToControlFlow
 	MLIRControlFlowToLLVM
 	MLIRArithAttrToLLVMConversion
 	MLIRArithToLLVM

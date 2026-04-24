@@ -22,7 +22,6 @@
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
-#include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Dialect/LLVMIR/Transforms/Passes.h"
 #include "mlir/Dialect/Sol/Transforms/SolImmutables.h"
 #include "mlir/Pass/PassManager.h"
@@ -55,7 +54,6 @@ void solidity::mlirgen::addConversionPasses(mlir::PassManager &passMgr,
   // the translation to llvm-ir working correctly.
   passMgr.addPass(mlir::createCanonicalizerPass());
 
-  passMgr.addPass(mlir::createSCFToControlFlowPass());
   passMgr.addPass(
       mlir::createConvertFuncToLLVMPass(mlir::ConvertFuncToLLVMPassOptions(
           /*useBarePtrCallConv*/ false, /*indexBitwidth*/ 256)));

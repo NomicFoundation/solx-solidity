@@ -63,15 +63,17 @@ function use_operator(Price a, Price b) pure returns (Price) {
 // CHECK-NEXT:     %3 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i128 loc(#loc14)
 // CHECK-NEXT:     %4 = arith.addi %2, %3 : i128 loc(#loc1)
 // CHECK-NEXT:     %5 = arith.cmpi ugt, %2, %4 : i128 loc(#loc1)
-// CHECK-NEXT:     scf.if %5 {
-// CHECK-NEXT:       %6 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       llvm.store %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256, %6 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       %7 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       llvm.store %c17_i256, %7 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       %8 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       "llvm.intrcall"(%8, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
-// CHECK-NEXT:       func.call @".unreachable"() : () -> () loc(#loc1)
-// CHECK-NEXT:     } loc(#loc1)
+// CHECK-NEXT:     cf.cond_br %5, ^bb1, ^bb2 loc(#loc1)
+// CHECK-NEXT:   ^bb1:  // pred: ^bb0
+// CHECK-NEXT:     %6 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
+// CHECK-NEXT:     llvm.store %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256, %6 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
+// CHECK-NEXT:     %7 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc1)
+// CHECK-NEXT:     llvm.store %c17_i256, %7 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
+// CHECK-NEXT:     %8 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
+// CHECK-NEXT:     "llvm.intrcall"(%8, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc1)
+// CHECK-NEXT:     cf.br ^bb2 loc(#loc1)
+// CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
 // CHECK-NEXT:     return %4 : i128 loc(#loc15)
 // CHECK-NEXT:   } loc(#loc10)
 // CHECK-NEXT:   func.func @use_operator_77(%arg0: i128 loc({{.*}}:18:22), %arg1: i128 loc({{.*}}:18:31)) -> i128 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
