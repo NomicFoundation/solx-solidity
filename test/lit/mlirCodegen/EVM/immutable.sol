@@ -3,7 +3,7 @@
 contract C {
   uint immutable i;
   uint immutable j;
-  constructor() { i = 1; j = 2; }
+  constructor() { i = 1; j = i; }
   function f() public returns (uint, uint) { return (i, j); }
 }
 
@@ -82,13 +82,14 @@ contract C {
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT:   func.func @_16() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c160_i256 = arith.constant 160 : i256 loc(#loc)
-// CHECK-NEXT:     %c2_i256 = arith.constant 2 : i256 loc(#loc)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc)
-// CHECK-NEXT:     %c128_i256 = arith.constant 128 : i256 loc(#loc3)
-// CHECK-NEXT:     %0 = llvm.inttoptr %c128_i256 : i256 to !llvm.ptr<1> loc(#loc4)
-// CHECK-NEXT:     llvm.store %c1_i256, %0 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc4)
-// CHECK-NEXT:     %1 = llvm.inttoptr %c160_i256 : i256 to !llvm.ptr<1> loc(#loc5)
-// CHECK-NEXT:     llvm.store %c2_i256, %1 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc5)
+// CHECK-NEXT:     %c128_i256 = arith.constant 128 : i256 loc(#loc)
+// CHECK-NEXT:     %0 = llvm.inttoptr %c128_i256 : i256 to !llvm.ptr<1> loc(#loc3)
+// CHECK-NEXT:     llvm.store %c1_i256, %0 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc3)
+// CHECK-NEXT:     %1 = llvm.inttoptr %c128_i256 : i256 to !llvm.ptr<1> loc(#loc4)
+// CHECK-NEXT:     %2 = llvm.load %1 {alignment = 1 : i64} : !llvm.ptr<1> -> i256 loc(#loc4)
+// CHECK-NEXT:     %3 = llvm.inttoptr %c160_i256 : i256 to !llvm.ptr<1> loc(#loc5)
+// CHECK-NEXT:     llvm.store %2, %3 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc5)
 // CHECK-NEXT:     return loc(#loc2)
 // CHECK-NEXT:   } loc(#loc2)
 // CHECK-NEXT:   module @C_29_deployed attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka, sol.revert_strings = #Default} {
@@ -143,19 +144,20 @@ contract C {
 // CHECK-NEXT:       llvm.unreachable loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     func.func @f_28() -> (i256, i256) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
-// CHECK-NEXT:       %0 = "llvm.intrcall"() <{id = 4060 : i32, metadata = ["i_2"], name = "evm.loadimmutable"}> : () -> i256 loc(#loc3)
-// CHECK-NEXT:       %1 = "llvm.intrcall"() <{id = 4060 : i32, metadata = ["j_4"], name = "evm.loadimmutable"}> : () -> i256 loc(#loc7)
-// CHECK-NEXT:       return %0, %1 : i256, i256 loc(#loc8)
+// CHECK-NEXT:       %0 = "llvm.intrcall"() <{id = 4060 : i32, metadata = ["i_2"], name = "evm.loadimmutable"}> : () -> i256 loc(#loc7)
+// CHECK-NEXT:       %1 = "llvm.intrcall"() <{id = 4060 : i32, metadata = ["j_4"], name = "evm.loadimmutable"}> : () -> i256 loc(#loc8)
+// CHECK-NEXT:       return %0, %1 : i256, i256 loc(#loc9)
 // CHECK-NEXT:     } loc(#loc6)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
 // CHECK-NEXT: #loc2 = loc({{.*}}:5:2)
-// CHECK-NEXT: #loc3 = loc({{.*}}:3:2)
-// CHECK-NEXT: #loc4 = loc({{.*}}:5:18)
+// CHECK-NEXT: #loc3 = loc({{.*}}:5:18)
+// CHECK-NEXT: #loc4 = loc({{.*}}:5:29)
 // CHECK-NEXT: #loc5 = loc({{.*}}:5:25)
 // CHECK-NEXT: #loc6 = loc({{.*}}:6:2)
-// CHECK-NEXT: #loc7 = loc({{.*}}:4:2)
-// CHECK-NEXT: #loc8 = loc({{.*}}:6:45)
+// CHECK-NEXT: #loc7 = loc({{.*}}:3:2)
+// CHECK-NEXT: #loc8 = loc({{.*}}:4:2)
+// CHECK-NEXT: #loc9 = loc({{.*}}:6:45)
 // CHECK-EMPTY:
