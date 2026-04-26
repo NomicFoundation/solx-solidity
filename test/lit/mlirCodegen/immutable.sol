@@ -3,7 +3,7 @@
 contract C {
   uint immutable i;
   uint immutable j;
-  constructor() { i = 1; j = 2; }
+  constructor() { i = 1; j = i; }
   function f() public returns (uint, uint) { return (i, j); }
 }
 
@@ -23,9 +23,9 @@ contract C {
 // CHECK-NEXT:       %1 = sol.cast %c1_ui8 : ui8 to ui256 loc(#loc5)
 // CHECK-NEXT:       sol.store %1, %0 : ui256, !sol.ptr<ui256, Immutable> loc(#loc6)
 // CHECK-NEXT:       %2 = sol.addr_of @j_4 : !sol.ptr<ui256, Immutable> loc(#loc3)
-// CHECK-NEXT:       %c2_ui8 = sol.constant 2 : ui8 loc(#loc7)
-// CHECK-NEXT:       %3 = sol.cast %c2_ui8 : ui8 to ui256 loc(#loc7)
-// CHECK-NEXT:       sol.store %3, %2 : ui256, !sol.ptr<ui256, Immutable> loc(#loc8)
+// CHECK-NEXT:       %3 = sol.addr_of @i_2 : !sol.ptr<ui256, Immutable> loc(#loc2)
+// CHECK-NEXT:       %4 = sol.load %3 : !sol.ptr<ui256, Immutable>, ui256 loc(#loc7)
+// CHECK-NEXT:       sol.store %4, %2 : ui256, !sol.ptr<ui256, Immutable> loc(#loc8)
 // CHECK-NEXT:       sol.return loc(#loc4)
 // CHECK-NEXT:     } loc(#loc4)
 // CHECK-NEXT:     sol.func @f_28() -> (ui256, ui256) attributes {id = 28 : i64, orig_fn_type = () -> (ui256, ui256), selector = 638722032 : i32, state_mutability = #NonPayable} {

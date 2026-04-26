@@ -186,8 +186,6 @@ semanticTests/getters/string_and_bytes
 semanticTests/getters/struct_with_bytes
 semanticTests/getters/struct_with_bytes_simple
 semanticTests/immutable/assign_at_declaration
-semanticTests/immutable/assign_from_immutables
-semanticTests/immutable/delete
 semanticTests/immutable/getter
 semanticTests/immutable/getter_call_in_constructor
 semanticTests/immutable/immutable_signed
@@ -197,8 +195,6 @@ semanticTests/immutable/inheritance
 semanticTests/immutable/internal_function_pointer
 semanticTests/immutable/multi_creation
 semanticTests/immutable/multiple_initializations
-semanticTests/immutable/read_in_ctor
-semanticTests/immutable/small_types_in_reverse
 semanticTests/inheritance/address_overload_resolution
 semanticTests/inheritance/base_access_to_function_type_variables
 semanticTests/inheritance/constructor_inheritance_init_order
