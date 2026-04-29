@@ -129,7 +129,7 @@ contract Delete {
 // CHECK-NEXT:     sol.func @deleteEnum_66() attributes {id = 66 : i64, orig_fn_type = () -> (), selector = 140565673 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.addr_of @enumVar_17 : !sol.ptr<!sol.enum<2>, Storage> loc(#loc7)
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc21)
-// CHECK-NEXT:       %1 = sol.enum_cast %c0_ui256 : ui256 to <2> loc(#loc21)
+// CHECK-NEXT:       %1 = sol.enum_cast %c0_ui256 : ui256 to !sol.enum<2> loc(#loc21)
 // CHECK-NEXT:       sol.store %1, %0 : !sol.enum<2>, !sol.ptr<!sol.enum<2>, Storage> loc(#loc21)
 // CHECK-NEXT:       sol.return loc(#loc20)
 // CHECK-NEXT:     } loc(#loc20)

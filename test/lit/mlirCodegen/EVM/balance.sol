@@ -97,31 +97,30 @@ contract C {
 // CHECK-NEXT:       %3 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<2> loc(#loc1)
 // CHECK-NEXT:       %4 = llvm.load %3 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc1)
 // CHECK-NEXT:       %5 = arith.shrui %4, %c224_i256 : i256 loc(#loc1)
-// CHECK-NEXT:       %6 = arith.trunci %5 : i256 to i32 loc(#loc1)
-// CHECK-NEXT:       cf.switch %6 : i32, [
+// CHECK-NEXT:       cf.switch %5 : i256, [
 // CHECK-NEXT:         default: ^bb3,
 // CHECK-NEXT:         3213786140: ^bb2
 // CHECK-NEXT:       ] loc(#loc1)
 // CHECK-NEXT:     ^bb2:  // pred: ^bb1
-// CHECK-NEXT:       %7 = call @selfbalance_12() : () -> i256 loc(#loc1)
-// CHECK-NEXT:       %8 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       %9 = llvm.load %8 {alignment = 1 : i64} : !llvm.ptr<1> -> i256 loc(#loc1)
-// CHECK-NEXT:       %10 = llvm.inttoptr %9 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       llvm.store %7, %10 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       %11 = llvm.inttoptr %9 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       "llvm.intrcall"(%11, %c32_i256) <{id = 4078 : i32, name = "evm.return"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:       %6 = call @selfbalance_12() : () -> i256 loc(#loc1)
+// CHECK-NEXT:       %7 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1> loc(#loc1)
+// CHECK-NEXT:       %8 = llvm.load %7 {alignment = 1 : i64} : !llvm.ptr<1> -> i256 loc(#loc1)
+// CHECK-NEXT:       %9 = llvm.inttoptr %8 : i256 to !llvm.ptr<1> loc(#loc1)
+// CHECK-NEXT:       llvm.store %6, %9 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
+// CHECK-NEXT:       %10 = llvm.inttoptr %8 : i256 to !llvm.ptr<1> loc(#loc1)
+// CHECK-NEXT:       "llvm.intrcall"(%10, %c32_i256) <{id = 4078 : i32, name = "evm.return"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:       cf.br ^bb3 loc(#loc1)
 // CHECK-NEXT:     ^bb3:  // 3 preds: ^bb0, ^bb1, ^bb2
-// CHECK-NEXT:       %12 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:       "llvm.intrcall"(%12, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:       %11 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
+// CHECK-NEXT:       "llvm.intrcall"(%11, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:       llvm.unreachable loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     func.func @selfbalance_12() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       %c1461501637330902918203684832716283019655932542975_i256 = arith.constant 1461501637330902918203684832716283019655932542975 : i256 loc(#loc)
 // CHECK-NEXT:       %0 = "llvm.intrcall"() <{id = 4028 : i32, name = "evm.address"}> : () -> i256 loc(#loc3)
-// CHECK-NEXT:       %1 = arith.andi %0, %c1461501637330902918203684832716283019655932542975_i256 : i256 loc(#loc3)
+// CHECK-NEXT:       %1 = arith.andi %0, %c1461501637330902918203684832716283019655932542975_i256 : i256 loc(#loc4)
 // CHECK-NEXT:       %2 = "llvm.intrcall"(%1) <{id = 4029 : i32, name = "evm.balance"}> : (i256) -> i256 loc(#loc4)
 // CHECK-NEXT:       return %2 : i256 loc(#loc5)
 // CHECK-NEXT:     } loc(#loc2)

@@ -238,7 +238,7 @@ contract C {
 // CHECK-NEXT:       %c0_ui8 = sol.constant 0 : ui8 loc(#loc55)
 // CHECK-NEXT:       %2 = sol.gep %1, %c0_ui8 : !sol.array<? x !sol.enum<2>, Memory>, ui8, !sol.ptr<!sol.enum<2>, Memory> loc(#loc54)
 // CHECK-NEXT:       %3 = sol.load %2 : !sol.ptr<!sol.enum<2>, Memory>, !sol.enum<2> loc(#loc54)
-// CHECK-NEXT:       %4 = sol.cast %3 : !sol.enum<2> to ui8 loc(#loc54)
+// CHECK-NEXT:       %4 = sol.enum_cast %3 : !sol.enum<2> to ui8 loc(#loc54)
 // CHECK-NEXT:       sol.return %4 : ui8 loc(#loc56)
 // CHECK-NEXT:     } loc(#loc52)
 // CHECK-NEXT:     sol.func @discardMemoryEnum_161(%arg0: !sol.array<? x !sol.enum<2>, Memory> loc({{.*}}:45:29)) -> ui8 attributes {id = 161 : i64, orig_fn_type = (!sol.array<? x !sol.enum<2>, Memory>) -> ui8, selector = -307916275 : i32, state_mutability = #Pure} {
