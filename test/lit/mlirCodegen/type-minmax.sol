@@ -80,12 +80,12 @@ function enum_max() returns (E) {
 // CHECK-NEXT:   } loc(#loc22)
 // CHECK-NEXT:   sol.func @enum_min_112() -> !sol.enum<2> attributes {id = 112 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c0_ui256 = sol.constant 0 : ui256 loc(#loc26)
-// CHECK-NEXT:     %0 = sol.enum_cast %c0_ui256 : ui256 to <2> loc(#loc26)
+// CHECK-NEXT:     %0 = sol.enum_cast %c0_ui256 : ui256 to !sol.enum<2> loc(#loc26)
 // CHECK-NEXT:     sol.return %0 : !sol.enum<2> loc(#loc27)
 // CHECK-NEXT:   } loc(#loc25)
 // CHECK-NEXT:   sol.func @enum_max_124() -> !sol.enum<2> attributes {id = 124 : i64, state_mutability = #NonPayable} {
 // CHECK-NEXT:     %c2_ui256 = sol.constant 2 : ui256 loc(#loc29)
-// CHECK-NEXT:     %0 = sol.enum_cast %c2_ui256 : ui256 to <2> loc(#loc29)
+// CHECK-NEXT:     %0 = sol.enum_cast %c2_ui256 : ui256 to !sol.enum<2> loc(#loc29)
 // CHECK-NEXT:     sol.return %0 : !sol.enum<2> loc(#loc30)
 // CHECK-NEXT:   } loc(#loc28)
 // CHECK-NEXT: } loc(#loc)

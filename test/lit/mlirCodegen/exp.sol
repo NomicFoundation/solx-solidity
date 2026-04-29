@@ -19,7 +19,7 @@ function power(uint256 base, uint256 exponent) pure returns (uint256) {
 // CHECK-NEXT:     sol.store %arg1, %1 : ui256, !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:     %2 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc4)
 // CHECK-NEXT:     %3 = sol.load %1 : !sol.ptr<ui256, Stack>, ui256 loc(#loc5)
-// CHECK-NEXT:     %4 = sol.exp %2, %3 : ui256 loc(#loc4)
+// CHECK-NEXT:     %4 = sol.exp %2, %3 : ui256, ui256 -> ui256 loc(#loc4)
 // CHECK-NEXT:     sol.return %4 : ui256 loc(#loc6)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT: } loc(#loc)

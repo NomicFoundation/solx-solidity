@@ -31,6 +31,14 @@ contract C {
     return a * 2;
   }
 
+  function mul200(uint200 a, uint200 b) public returns (uint200) {
+    return a * b;
+  }
+
+  function smul200(int200 a, int200 b) public returns (int200) {
+    return a * b;
+  }
+
   function ofd(int8 a) public returns (int8) {
     return a / -1;
   }
@@ -85,6 +93,14 @@ contract C {
     return ~a;
   }
 
+  function f(uint8 a) public pure returns (uint r1, uint r2) {
+    a = ~a;
+    assembly {
+      r1 := a
+    }
+    r2 = a;
+  }
+
   function addmod8(uint8 a, uint8 b, uint8 m) public returns (uint256) {
     return addmod(a, b, m);
   }
@@ -120,6 +136,10 @@ contract C {
 // ofs(int8): -128 -> FAILURE, hex"4e487b71", 0x11
 // ofm(int8): 127 -> FAILURE, hex"4e487b71", 0x11
 // ofm(int8): 0 -> 0
+// mul200(uint200,uint200): 0x10000000000000000000000000, 0x8000000000000000000000000 -> 0x80000000000000000000000000000000000000000000000000
+// mul200(uint200,uint200): 0x80000000000000000000000000000000000000000000000000, 0x80000000000000000000000000000000000000000000000000 -> FAILURE, hex"4e487b71", 0x11
+// smul200(int200,int200): 0x8000000000000000000000000, 0x8000000000000000000000000 -> 0x40000000000000000000000000000000000000000000000000
+// smul200(int200,int200): 0x40000000000000000000000000000000000000000000000000, 0x40000000000000000000000000000000000000000000000000 -> FAILURE, hex"4e487b71", 0x11
 // ofd(int8): -128 -> FAILURE, hex"4e487b71", 0x11
 // dbz(int8): 1 -> FAILURE, hex"4e487b71", 0x12
 // neg(int256): 1 -> -1
@@ -133,6 +153,7 @@ contract C {
 // bit8(int8,int8): 6, 3 -> 2, 7, 5
 // bnot(uint256): 0 -> 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 // bnotBytes(bytes4): left(0x12345678) -> left(0xedcba987)
+// f(uint8): 1 -> 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe, 0x00000000000000000000000000000000000000000000000000000000000000fe
 // addmod8(uint8,uint8,uint8): 42, 25, 0 -> FAILURE, hex"4e487b71", 0x12
 // addmod8(uint8,uint8,uint8): 42, 25, 24 -> 19
 // addmod8(uint8,uint8,uint8): 200, 100, 7 -> 6

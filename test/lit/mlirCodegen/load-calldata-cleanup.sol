@@ -145,7 +145,7 @@ contract C {
 // CHECK-NEXT:       %c0_ui8 = sol.constant 0 : ui8 loc(#loc37)
 // CHECK-NEXT:       %2 = sol.gep %1, %c0_ui8 : !sol.array<? x !sol.enum<2>, CallData>, ui8, !sol.ptr<!sol.enum<2>, CallData> loc(#loc36)
 // CHECK-NEXT:       %3 = sol.load %2 : !sol.ptr<!sol.enum<2>, CallData>, !sol.enum<2> loc(#loc36)
-// CHECK-NEXT:       %4 = sol.cast %3 : !sol.enum<2> to ui8 loc(#loc36)
+// CHECK-NEXT:       %4 = sol.enum_cast %3 : !sol.enum<2> to ui8 loc(#loc36)
 // CHECK-NEXT:       sol.return %4 : ui8 loc(#loc38)
 // CHECK-NEXT:     } loc(#loc34)
 // CHECK-NEXT:     sol.func @loadCalldataAddress_114(%arg0: !sol.array<? x !sol.address, CallData> loc({{.*}}:34:31)) -> !sol.address attributes {id = 114 : i64, orig_fn_type = (!sol.array<? x !sol.address, CallData>) -> !sol.address, selector = -2116271283 : i32, state_mutability = #Pure} {

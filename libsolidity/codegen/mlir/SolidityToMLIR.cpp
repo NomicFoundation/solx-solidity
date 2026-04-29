@@ -845,8 +845,10 @@ mlir::Value SolidityToMLIRPass::genCast(mlir::Value val, mlir::Type dstTy) {
     return b.create<mlir::sol::BytesCastOp>(loc, dstTy, val);
   }
 
-  // Casting to enum type.
-  if (mlir::isa<mlir::sol::EnumType>(dstTy))
+  // Enum casts can validate and therefore use a dedicated op in both
+  // directions.
+  if (mlir::isa<mlir::sol::EnumType>(srcTy) ||
+      mlir::isa<mlir::sol::EnumType>(dstTy))
     return b.create<mlir::sol::EnumCastOp>(loc, dstTy, val);
 
   // Casting to integer type.
@@ -945,9 +947,9 @@ mlir::Value SolidityToMLIRPass::genBinExpr(Token op, mlir::Value lhs,
     return b.create<mlir::sol::ModOp>(loc, lhs, rhs);
   case Token::Exp:
     if (inUnchecked)
-      return b.create<mlir::sol::ExpOp>(loc, lhs, rhs);
+      return b.create<mlir::sol::ExpOp>(loc, lhs.getType(), lhs, rhs);
     else
-      return b.create<mlir::sol::CExpOp>(loc, lhs, rhs);
+      return b.create<mlir::sol::CExpOp>(loc, lhs.getType(), lhs, rhs);
     break;
   case Token::BitAnd:
     return b.create<mlir::sol::AndOp>(loc, convertBytesToInt(lhs),
@@ -1061,11 +1063,7 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const &unaryOp) {
       expr = genCast(expr, intTy);
     }
 
-    auto intTy = mlir::cast<mlir::IntegerType>(expr.getType());
-    mlir::Value allOnes = b.create<mlir::sol::ConstantOp>(
-        loc,
-        b.getIntegerAttr(intTy, llvm::APInt::getAllOnes(intTy.getWidth())));
-    return b.create<mlir::sol::XorOp>(loc, expr, allOnes);
+    return b.create<mlir::sol::NotOp>(loc, expr);
   }
   default:
     break;
@@ -1137,7 +1135,15 @@ mlir::Value SolidityToMLIRPass::genExpr(BinaryOperation const &binOp) {
     return b.create<mlir::sol::LoadOp>(loc, alloca);
   }
 
-  mlir::Value rhs = genRValExpr(binOp.rightExpression(), argTy);
+  mlir::Type rhsTy = argTy;
+  if (binOp.getOperator() == Token::Exp) {
+    Type const *rightTargetType =
+        binOp.rightExpression().annotation().type->mobileType();
+    assert(rightTargetType && "Expected exponent to have a mobile type");
+    rhsTy = getType(rightTargetType);
+  }
+
+  mlir::Value rhs = genRValExpr(binOp.rightExpression(), rhsTy);
 
   return genBinExpr(binOp.getOperator(), lhs, rhs, loc);
 }

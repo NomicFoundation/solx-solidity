@@ -42,15 +42,13 @@ function zeroInitFnptr() pure returns (function(uint) external pure returns (uin
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT:   func.func @structGet_29(%arg0: i256 loc({{.*}}:7:19)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
-// CHECK-NEXT:     %c-18446744073709551616_i256 = arith.constant -18446744073709551616 : i256 loc(#loc)
 // CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc3)
 // CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc3)
 // CHECK-NEXT:     llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc3)
 // CHECK-NEXT:     %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc4)
 // CHECK-NEXT:     %2 = llvm.inttoptr %1 : i256 to !llvm.ptr<1> loc(#loc4)
 // CHECK-NEXT:     %3 = llvm.load %2 {alignment = 1 : i64} : !llvm.ptr<1> -> i256 loc(#loc4)
-// CHECK-NEXT:     %4 = arith.andi %3, %c-18446744073709551616_i256 : i256 loc(#loc4)
-// CHECK-NEXT:     return %4 : i256 loc(#loc5)
+// CHECK-NEXT:     return %3 : i256 loc(#loc5)
 // CHECK-NEXT:   } loc(#loc2)
 // CHECK-NEXT:   func.func @structSet_50(%arg0: i256 loc({{.*}}:11:19), %arg1: i256 loc({{.*}}:11:31)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c-18446744073709551616_i256 = arith.constant -18446744073709551616 : i256 loc(#loc)
@@ -67,7 +65,6 @@ function zeroInitFnptr() pure returns (function(uint) external pure returns (uin
 // CHECK-NEXT:     return loc(#loc6)
 // CHECK-NEXT:   } loc(#loc6)
 // CHECK-NEXT:   func.func @arrayGet_78(%arg0: i256 loc({{.*}}:15:18), %arg1: i256 loc({{.*}}:15:75)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
-// CHECK-NEXT:     %c-18446744073709551616_i256 = arith.constant -18446744073709551616 : i256 loc(#loc)
 // CHECK-NEXT:     %c32_i256 = arith.constant 32 : i256 loc(#loc)
 // CHECK-NEXT:     %c36_i256 = arith.constant 36 : i256 loc(#loc)
 // CHECK-NEXT:     %c50_i256 = arith.constant 50 : i256 loc(#loc)
@@ -98,8 +95,7 @@ function zeroInitFnptr() pure returns (function(uint) external pure returns (uin
 // CHECK-NEXT:     %9 = arith.addi %2, %8 : i256 loc(#loc1)
 // CHECK-NEXT:     %10 = llvm.inttoptr %9 : i256 to !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:     %11 = llvm.load %10 {alignment = 1 : i64} : !llvm.ptr<1> -> i256 loc(#loc1)
-// CHECK-NEXT:     %12 = arith.andi %11, %c-18446744073709551616_i256 : i256 loc(#loc1)
-// CHECK-NEXT:     return %12 : i256 loc(#loc15)
+// CHECK-NEXT:     return %11 : i256 loc(#loc15)
 // CHECK-NEXT:   } loc(#loc11)
 // CHECK-NEXT:   func.func @arraySet_108(%arg0: i256 loc({{.*}}:19:18), %arg1: i256 loc({{.*}}:19:75), %arg2: i256 loc({{.*}}:19:83)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     %c-18446744073709551616_i256 = arith.constant -18446744073709551616 : i256 loc(#loc)
