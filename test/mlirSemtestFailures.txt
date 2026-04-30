@@ -533,7 +533,6 @@ semanticTests/viaYul/exp_literals
 semanticTests/viaYul/exp_literals_success
 semanticTests/viaYul/function_address
 semanticTests/viaYul/local_tuple_assignment
-semanticTests/viaYul/memory_struct_allow
 semanticTests/viaYul/require
 semanticTests/viaYul/return_and_convert
 semanticTests/viaYul/return_storage_pointers
