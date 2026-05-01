@@ -894,6 +894,16 @@ mlir::Value SolidityToMLIRPass::genExpr(Literal const &lit) {
                                             b.getStringAttr(lit.value()));
   }
 
+  // Address literal: emit a 160-bit integer constant and cast it to the
+  // sol address type, mirroring how `address(uint160(<n>))` already lowers.
+  if (dynamic_cast<AddressType const *>(ty)) {
+    u256 val = ty->literalValue(&lit);
+    auto uint160Ty = b.getIntegerType(/*width=*/160, /*isSigned=*/false);
+    mlir::Value intConst = b.create<mlir::sol::ConstantOp>(
+        loc, b.getIntegerAttr(uint160Ty, getAPInt(val, 160)));
+    return genCast(intConst, getType(ty));
+  }
+
   llvm_unreachable("NYI: Literal");
 }
 
