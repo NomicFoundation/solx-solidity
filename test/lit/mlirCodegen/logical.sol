@@ -69,7 +69,7 @@ function f(bool a, bool b, bool c) returns (bool) {
 // CHECK-NEXT:     %10 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc12)
 // CHECK-NEXT:     sol.store %9, %10 : i1, !sol.ptr<i1, Stack> loc(#loc12)
 // CHECK-NEXT:     %11 = sol.load %0 : !sol.ptr<i1, Stack>, i1 loc(#loc13)
-// CHECK-NEXT:     %false_0 = sol.constant false loc(#loc14)
+// CHECK-NEXT:     %false_0 = arith.constant false loc(#loc14)
 // CHECK-NEXT:     %12 = sol.cmp eq, %11, %false_0 : i1 loc(#loc14)
 // CHECK-NEXT:     %13 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc15)
 // CHECK-NEXT:     sol.store %12, %13 : i1, !sol.ptr<i1, Stack> loc(#loc15)
