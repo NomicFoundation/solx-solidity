@@ -366,7 +366,6 @@ semanticTests/state/blobhash
 semanticTests/state/blockhash_basic
 semanticTests/state/uncalled_blobhash
 semanticTests/state/uncalled_blockhash
-semanticTests/statements/empty_for_loop
 semanticTests/storage/accessors_mapping_for_array
 semanticTests/storage/array_accessor
 semanticTests/storage/chop_sign_bits
@@ -555,7 +554,6 @@ semanticTests/viaYul/exp_literals
 semanticTests/viaYul/exp_literals_success
 semanticTests/viaYul/function_address
 semanticTests/viaYul/local_tuple_assignment
-semanticTests/viaYul/loops/simple
 semanticTests/viaYul/mapping_enum_key_getter
 semanticTests/viaYul/mapping_string_key
 semanticTests/viaYul/memory_struct_allow
