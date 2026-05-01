@@ -868,7 +868,7 @@ mlir::Value SolidityToMLIRPass::genExpr(Literal const &lit) {
 
   // Bool literal
   if (dynamic_cast<BoolType const *>(ty))
-    return b.create<mlir::sol::ConstantOp>(
+    return b.create<mlir::arith::ConstantOp>(
         loc, b.getBoolAttr(lit.token() == Token::TrueLiteral));
 
   // Rational number literal
@@ -1034,7 +1034,7 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const &unaryOp) {
   // Logical not
   case Token::Not: {
     mlir::Value expr = genRValExpr(unaryOp.subExpression());
-    mlir::Value zero = b.create<mlir::sol::ConstantOp>(
+    mlir::Value zero = b.create<mlir::arith::ConstantOp>(
         loc, b.getIntegerAttr(expr.getType(), 0));
     return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::eq, expr,
                                       zero);

@@ -75,7 +75,7 @@ contract C {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<i1, Stack> loc(#loc17)
 // CHECK-NEXT:       %false = sol.constant false loc(#loc17)
 // CHECK-NEXT:       sol.store %false, %0 : i1, !sol.ptr<i1, Stack> loc(#loc17)
-// CHECK-NEXT:       %true = sol.constant true loc(#loc18)
+// CHECK-NEXT:       %true = arith.constant true loc(#loc18)
 // CHECK-NEXT:       sol.store %true, %0 : i1, !sol.ptr<i1, Stack> loc(#loc19)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<i1, Stack>, i1 loc(#loc16)
 // CHECK-NEXT:       sol.return %1 : i1 loc(#loc16)
