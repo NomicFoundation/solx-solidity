@@ -102,7 +102,7 @@ contract Delete {
 // CHECK-NEXT:     } loc(#loc10)
 // CHECK-NEXT:     sol.func @deleteBool_38() attributes {id = 38 : i64, orig_fn_type = () -> (), selector = 1278930689 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.addr_of @boolVar_8 : !sol.ptr<i1, Storage> loc(#loc3)
-// CHECK-NEXT:       %false = sol.constant false loc(#loc13)
+// CHECK-NEXT:       %false = arith.constant false loc(#loc13)
 // CHECK-NEXT:       sol.store %false, %0 : i1, !sol.ptr<i1, Storage> loc(#loc13)
 // CHECK-NEXT:       sol.return loc(#loc12)
 // CHECK-NEXT:     } loc(#loc12)
