@@ -68,8 +68,6 @@ semanticTests/calldata/calldata_attached_to_static_array
 semanticTests/calldata/calldata_attached_to_struct
 semanticTests/calldata/calldata_struct_cleaning
 semanticTests/cleanup/byte_array_to_storage_cleanup
-semanticTests/cleanup/cleanup_address_types_shortening
-semanticTests/cleanup/cleanup_address_types_v2
 semanticTests/cleanup/cleanup_bytes_types_shortening_OldCodeGen
 semanticTests/cleanup/cleanup_bytes_types_v2
 semanticTests/cleanup/dirty_calldata_dynamic_array
@@ -193,7 +191,6 @@ semanticTests/getters/mapping_to_struct
 semanticTests/getters/string_and_bytes
 semanticTests/getters/struct_with_bytes
 semanticTests/getters/struct_with_bytes_simple
-semanticTests/getters/value_types
 semanticTests/immutable/assign_at_declaration
 semanticTests/immutable/assign_from_immutables
 semanticTests/immutable/delete

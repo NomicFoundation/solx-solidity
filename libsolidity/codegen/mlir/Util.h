@@ -40,7 +40,7 @@ inline llvm::APInt getAPInt(solidity::u256 const &val, unsigned numBits) {
   case 64:
     return llvm::APInt(numBits, val.convert_to<uint64_t>());
   case 128:
-    return llvm::APInt(numBits, val.str().substr(128, 128), /*radix=*/10);
+  case 160:
   case 256:
     return llvm::APInt(numBits, val.str(), /*radix=*/10);
   }
