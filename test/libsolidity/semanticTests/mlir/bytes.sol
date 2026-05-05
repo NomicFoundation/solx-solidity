@@ -130,6 +130,56 @@ contract C {
     str.pop();
     return str;
   }
+
+  // push(arg) - argument forms convertible to bytes1.
+  function push_str_lit(bytes memory a) public returns (bytes memory) {
+    str = a;
+    str.push("B");
+    return str;
+  }
+  function push_hex_lit(bytes memory a) public returns (bytes memory) {
+    str = a;
+    str.push(hex"43");
+    return str;
+  }
+  function push_cast(bytes memory a) public returns (bytes memory) {
+    str = a;
+    str.push(bytes1(0x44));
+    return str;
+  }
+  function push_cast_from_uint8(bytes memory a) public returns (bytes memory) {
+    str = a;
+    str.push(bytes1(uint8(0x45)));
+    return str;
+  }
+  function push_index(bytes memory a) public returns (bytes memory) {
+    str = a;
+    str2 = "Z";
+    str.push(str2[0]);
+    return str;
+  }
+
+  // push() = arg - reference-assignment forms convertible to bytes1.
+  function push_ref_str_lit(bytes memory a) public returns (bytes memory) {
+    str = a;
+    str.push() = "G";
+    return str;
+  }
+  function push_ref_hex_lit(bytes memory a) public returns (bytes memory) {
+    str = a;
+    str.push() = hex"48";
+    return str;
+  }
+  function push_ref_cast(bytes memory a) public returns (bytes memory) {
+    str = a;
+    str.push() = bytes1(0x49);
+    return str;
+  }
+  function push_ref_void(bytes memory a) public returns (uint) {
+    str = a;
+    str.push();
+    return str.length;
+  }
 }
 
 // ====
@@ -200,3 +250,12 @@ contract C {
 // idx_write(bytes,uint256, bytes1): 96, 31, "Z", 33, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaX", "Y" -> 0x20, 33, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaZ", "Y"
 // idx_write(bytes,uint256, bytes1): 96, 32, "Z", 33, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaX", "Y" -> 0x20, 33, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaX", "Z"
 // idx_write(bytes,uint256, bytes1): 96, 5, "X", 5, "hello" -> FAILURE, hex"4e487b71", 0x32
+// push_str_lit(bytes): 32, 2, "ab" -> 0x20, 3, "abB"
+// push_hex_lit(bytes): 32, 2, "ab" -> 0x20, 3, "abC"
+// push_cast(bytes): 32, 2, "ab" -> 0x20, 3, "abD"
+// push_cast_from_uint8(bytes): 32, 2, "ab" -> 0x20, 3, "abE"
+// push_index(bytes): 32, 2, "ab" -> 0x20, 3, "abZ"
+// push_ref_str_lit(bytes): 32, 2, "ab" -> 0x20, 3, "abG"
+// push_ref_hex_lit(bytes): 32, 2, "ab" -> 0x20, 3, "abH"
+// push_ref_cast(bytes): 32, 2, "ab" -> 0x20, 3, "abI"
+// push_ref_void(bytes): 32, 2, "ab" -> 3

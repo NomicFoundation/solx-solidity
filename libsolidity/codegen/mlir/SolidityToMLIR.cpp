@@ -2185,8 +2185,11 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       // Handle:
       //   str.push(0x41);
       //
+      // Cast the argument to the parameter type (bytes1) so that string
+      // literals like "f" are folded to a single byte before the op is built.
       b.create<mlir::sol::PushStringOp>(
-          loc, genRValExpr(memberAcc->expression()), genRValExpr(*astArgs[0]));
+          loc, genRValExpr(memberAcc->expression()),
+          genRValExpr(*astArgs[0], getType(calleeTy->parameterTypes()[0])));
       return resVals;
     }
 
@@ -2283,8 +2286,10 @@ SolidityToMLIRPass::genExprs(TupleExpression const &tuple) {
 
 void SolidityToMLIRPass::genAssign(mlir::Value lhs, mlir::Value rhs,
                                    mlir::Location loc) {
-  // Generate copy for assignment to storage reference types.
-  if (mlir::sol::isNonPtrRefType(rhs.getType()) &&
+  // Aggregate copy into storage. Pointer LHS falls through so genCast can fold
+  // a literal RHS to the element type (e.g. bytes.push() = "G").
+  if (mlir::sol::isNonPtrRefType(lhs.getType()) &&
+      mlir::sol::isNonPtrRefType(rhs.getType()) &&
       mlir::sol::getDataLocation(lhs.getType()) ==
           mlir::sol::DataLocation::Storage) {
     b.create<mlir::sol::CopyOp>(loc, rhs, lhs);
