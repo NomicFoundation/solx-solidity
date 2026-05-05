@@ -387,13 +387,13 @@ contract ArrayCopy {
 // CHECK-NEXT:       llvm.store %c32_i256, %131 {alignment = 1 : i64} : i256, !llvm.ptr<1>
 // CHECK-NEXT:       %132 = llvm.inttoptr %127 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:       %133 = llvm.load %132 {alignment = 1 : i64} : !llvm.ptr<1> -> i256
-// CHECK-NEXT:       %134 = llvm.inttoptr %130 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       llvm.store %133, %134 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:       %135 = arith.addi %129, %c64_i256 : i256
-// CHECK-NEXT:       %136 = arith.addi %127, %c32_i256 : i256
+// CHECK-NEXT:       %134 = arith.addi %127, %c32_i256 : i256
+// CHECK-NEXT:       %135 = llvm.inttoptr %130 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       llvm.store %133, %135 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:       %136 = arith.addi %129, %c64_i256 : i256
 // CHECK-NEXT:       %137 = arith.muli %133, %c32_i256 : i256
-// CHECK-NEXT:       %138 = arith.addi %135, %137 : i256
-// CHECK-NEXT:       cf.br ^bb42(%c0_i256, %135, %136, %138 : i256, i256, i256, i256)
+// CHECK-NEXT:       %138 = arith.addi %136, %137 : i256
+// CHECK-NEXT:       cf.br ^bb42(%c0_i256, %136, %134, %138 : i256, i256, i256, i256)
 // CHECK-NEXT:     ^bb42(%139: i256, %140: i256, %141: i256, %142: i256):  // 2 preds: ^bb41, ^bb43
 // CHECK-NEXT:       %143 = arith.cmpi ult, %139, %133 : i256
 // CHECK-NEXT:       cf.cond_br %143, ^bb43(%139, %140, %141, %142 : i256, i256, i256, i256), ^bb44(%142 : i256)
@@ -532,13 +532,13 @@ contract ArrayCopy {
 // CHECK-NEXT:       llvm.store %c32_i256, %216 {alignment = 1 : i64} : i256, !llvm.ptr<1>
 // CHECK-NEXT:       %217 = llvm.inttoptr %212 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:       %218 = llvm.load %217 {alignment = 1 : i64} : !llvm.ptr<1> -> i256
-// CHECK-NEXT:       %219 = llvm.inttoptr %215 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       llvm.store %218, %219 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:       %220 = arith.addi %214, %c64_i256 : i256
-// CHECK-NEXT:       %221 = arith.addi %212, %c32_i256 : i256
+// CHECK-NEXT:       %219 = arith.addi %212, %c32_i256 : i256
+// CHECK-NEXT:       %220 = llvm.inttoptr %215 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       llvm.store %218, %220 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:       %221 = arith.addi %214, %c64_i256 : i256
 // CHECK-NEXT:       %222 = arith.muli %218, %c32_i256 : i256
-// CHECK-NEXT:       %223 = arith.addi %220, %222 : i256
-// CHECK-NEXT:       cf.br ^bb68(%c0_i256, %220, %221, %223 : i256, i256, i256, i256)
+// CHECK-NEXT:       %223 = arith.addi %221, %222 : i256
+// CHECK-NEXT:       cf.br ^bb68(%c0_i256, %221, %219, %223 : i256, i256, i256, i256)
 // CHECK-NEXT:     ^bb68(%224: i256, %225: i256, %226: i256, %227: i256):  // 2 preds: ^bb67, ^bb69
 // CHECK-NEXT:       %228 = arith.cmpi ult, %224, %218 : i256
 // CHECK-NEXT:       cf.cond_br %228, ^bb69(%224, %225, %226, %227 : i256, i256, i256, i256), ^bb70(%227 : i256)
@@ -932,31 +932,31 @@ contract ArrayCopy {
 // CHECK-NEXT:       llvm.store %c32_i256, %453 {alignment = 1 : i64} : i256, !llvm.ptr<1>
 // CHECK-NEXT:       %454 = llvm.inttoptr %449 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:       %455 = llvm.load %454 {alignment = 1 : i64} : !llvm.ptr<1> -> i256
-// CHECK-NEXT:       %456 = llvm.inttoptr %452 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       llvm.store %455, %456 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:       %457 = arith.addi %451, %c64_i256 : i256
-// CHECK-NEXT:       %458 = arith.addi %449, %c32_i256 : i256
+// CHECK-NEXT:       %456 = arith.addi %449, %c32_i256 : i256
+// CHECK-NEXT:       %457 = llvm.inttoptr %452 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       llvm.store %455, %457 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:       %458 = arith.addi %451, %c64_i256 : i256
 // CHECK-NEXT:       %459 = arith.muli %455, %c32_i256 : i256
-// CHECK-NEXT:       %460 = arith.addi %457, %459 : i256
-// CHECK-NEXT:       cf.br ^bb135(%c0_i256, %457, %458, %460 : i256, i256, i256, i256)
+// CHECK-NEXT:       %460 = arith.addi %458, %459 : i256
+// CHECK-NEXT:       cf.br ^bb135(%c0_i256, %458, %456, %460 : i256, i256, i256, i256)
 // CHECK-NEXT:     ^bb135(%461: i256, %462: i256, %463: i256, %464: i256):  // 2 preds: ^bb134, ^bb139
 // CHECK-NEXT:       %465 = arith.cmpi ult, %461, %455 : i256
 // CHECK-NEXT:       cf.cond_br %465, ^bb136(%461, %462, %463, %464 : i256, i256, i256, i256), ^bb140(%464 : i256)
 // CHECK-NEXT:     ^bb136(%466: i256, %467: i256, %468: i256, %469: i256):  // pred: ^bb135
 // CHECK-NEXT:       %470 = llvm.inttoptr %468 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:       %471 = llvm.load %470 {alignment = 1 : i64} : !llvm.ptr<1> -> i256
-// CHECK-NEXT:       %472 = arith.subi %469, %457 : i256
+// CHECK-NEXT:       %472 = arith.subi %469, %458 : i256
 // CHECK-NEXT:       %473 = llvm.inttoptr %467 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:       llvm.store %472, %473 {alignment = 1 : i64} : i256, !llvm.ptr<1>
 // CHECK-NEXT:       %474 = llvm.inttoptr %471 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:       %475 = llvm.load %474 {alignment = 1 : i64} : !llvm.ptr<1> -> i256
-// CHECK-NEXT:       %476 = llvm.inttoptr %469 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       llvm.store %475, %476 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:       %477 = arith.addi %469, %c32_i256 : i256
-// CHECK-NEXT:       %478 = arith.addi %471, %c32_i256 : i256
+// CHECK-NEXT:       %476 = arith.addi %471, %c32_i256 : i256
+// CHECK-NEXT:       %477 = llvm.inttoptr %469 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       llvm.store %475, %477 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:       %478 = arith.addi %469, %c32_i256 : i256
 // CHECK-NEXT:       %479 = arith.muli %475, %c32_i256 : i256
-// CHECK-NEXT:       %480 = arith.addi %477, %479 : i256
-// CHECK-NEXT:       cf.br ^bb137(%c0_i256, %477, %478, %480 : i256, i256, i256, i256)
+// CHECK-NEXT:       %480 = arith.addi %478, %479 : i256
+// CHECK-NEXT:       cf.br ^bb137(%c0_i256, %478, %476, %480 : i256, i256, i256, i256)
 // CHECK-NEXT:     ^bb137(%481: i256, %482: i256, %483: i256, %484: i256):  // 2 preds: ^bb136, ^bb138
 // CHECK-NEXT:       %485 = arith.cmpi ult, %481, %475 : i256
 // CHECK-NEXT:       cf.cond_br %485, ^bb138(%481, %482, %483, %484 : i256, i256, i256, i256), ^bb139(%484 : i256)
@@ -1112,31 +1112,31 @@ contract ArrayCopy {
 // CHECK-NEXT:       llvm.store %c32_i256, %577 {alignment = 1 : i64} : i256, !llvm.ptr<1>
 // CHECK-NEXT:       %578 = llvm.inttoptr %573 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:       %579 = llvm.load %578 {alignment = 1 : i64} : !llvm.ptr<1> -> i256
-// CHECK-NEXT:       %580 = llvm.inttoptr %576 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       llvm.store %579, %580 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:       %581 = arith.addi %575, %c64_i256 : i256
-// CHECK-NEXT:       %582 = arith.addi %573, %c32_i256 : i256
+// CHECK-NEXT:       %580 = arith.addi %573, %c32_i256 : i256
+// CHECK-NEXT:       %581 = llvm.inttoptr %576 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       llvm.store %579, %581 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:       %582 = arith.addi %575, %c64_i256 : i256
 // CHECK-NEXT:       %583 = arith.muli %579, %c32_i256 : i256
-// CHECK-NEXT:       %584 = arith.addi %581, %583 : i256
-// CHECK-NEXT:       cf.br ^bb167(%c0_i256, %581, %582, %584 : i256, i256, i256, i256)
+// CHECK-NEXT:       %584 = arith.addi %582, %583 : i256
+// CHECK-NEXT:       cf.br ^bb167(%c0_i256, %582, %580, %584 : i256, i256, i256, i256)
 // CHECK-NEXT:     ^bb167(%585: i256, %586: i256, %587: i256, %588: i256):  // 2 preds: ^bb166, ^bb171
 // CHECK-NEXT:       %589 = arith.cmpi ult, %585, %579 : i256
 // CHECK-NEXT:       cf.cond_br %589, ^bb168(%585, %586, %587, %588 : i256, i256, i256, i256), ^bb172(%588 : i256)
 // CHECK-NEXT:     ^bb168(%590: i256, %591: i256, %592: i256, %593: i256):  // pred: ^bb167
 // CHECK-NEXT:       %594 = llvm.inttoptr %592 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:       %595 = llvm.load %594 {alignment = 1 : i64} : !llvm.ptr<1> -> i256
-// CHECK-NEXT:       %596 = arith.subi %593, %581 : i256
+// CHECK-NEXT:       %596 = arith.subi %593, %582 : i256
 // CHECK-NEXT:       %597 = llvm.inttoptr %591 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:       llvm.store %596, %597 {alignment = 1 : i64} : i256, !llvm.ptr<1>
 // CHECK-NEXT:       %598 = llvm.inttoptr %595 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:       %599 = llvm.load %598 {alignment = 1 : i64} : !llvm.ptr<1> -> i256
-// CHECK-NEXT:       %600 = llvm.inttoptr %593 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       llvm.store %599, %600 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:       %601 = arith.addi %593, %c32_i256 : i256
-// CHECK-NEXT:       %602 = arith.addi %595, %c32_i256 : i256
+// CHECK-NEXT:       %600 = arith.addi %595, %c32_i256 : i256
+// CHECK-NEXT:       %601 = llvm.inttoptr %593 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       llvm.store %599, %601 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:       %602 = arith.addi %593, %c32_i256 : i256
 // CHECK-NEXT:       %603 = arith.muli %599, %c32_i256 : i256
-// CHECK-NEXT:       %604 = arith.addi %601, %603 : i256
-// CHECK-NEXT:       cf.br ^bb169(%c0_i256, %601, %602, %604 : i256, i256, i256, i256)
+// CHECK-NEXT:       %604 = arith.addi %602, %603 : i256
+// CHECK-NEXT:       cf.br ^bb169(%c0_i256, %602, %600, %604 : i256, i256, i256, i256)
 // CHECK-NEXT:     ^bb169(%605: i256, %606: i256, %607: i256, %608: i256):  // 2 preds: ^bb168, ^bb170
 // CHECK-NEXT:       %609 = arith.cmpi ult, %605, %599 : i256
 // CHECK-NEXT:       cf.cond_br %609, ^bb170(%605, %606, %607, %608 : i256, i256, i256, i256), ^bb171(%608 : i256)

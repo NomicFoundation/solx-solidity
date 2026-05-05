@@ -756,7 +756,7 @@ void SolidityToMLIRPass::genDeleteExpr(mlir::Value addr, mlir::Location loc) {
   mlir::Type pointeeTy =
       mlir::cast<mlir::sol::PointerType>(addrTy).getPointeeType();
 
-  if (mlir::sol::isRefType(pointeeTy)) {
+  if (!mlir::sol::isScalar(pointeeTy)) {
     genAssign(addr, genZeroedVal(toMemoryType(pointeeTy), loc), loc);
     return;
   }
