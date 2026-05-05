@@ -338,6 +338,32 @@ contract C {
     bytes memory b = abi.encodeWithSelector(I.foo.selector, x);
     return keccak256(a) == keccak256(b);
   }
+
+  // abi.encode vs abi.encodePacked over the same args: length, hash
+  // difference, and equality of repeated invocations.
+  function enc_vs_packed_same_args() public pure returns (bool, bool, bool, bool) {
+    uint8[] memory xs = new uint8[](3);
+    xs[0] = 1;
+    xs[1] = 2;
+    xs[2] = 3;
+    bytes memory tuple = abi.encode("abc", xs, bytes3(0xaabbcc));
+    bytes memory packed = abi.encodePacked("abc", xs, bytes3(0xaabbcc));
+    return (
+      tuple.length > packed.length,
+      keccak256(tuple) != keccak256(packed),
+      keccak256(abi.encode("abc", xs, bytes3(0xaabbcc))) == keccak256(tuple),
+      keccak256(abi.encodePacked("abc", xs, bytes3(0xaabbcc))) == keccak256(packed)
+    );
+  }
+
+  // keccak256(abi.encode(...)) vs keccak256(abi.encodePacked(...)) - pins
+  // the exact hashes plus the inequality.
+  function keccak_enc_vs_packed() public pure returns (bytes32, bytes32, bool) {
+    uint16[2] memory a = [uint16(0x1234), uint16(0xabcd)];
+    bytes32 tupleHash = keccak256(abi.encode("payload", a, uint8(7)));
+    bytes32 packedHash = keccak256(abi.encodePacked("payload", a, uint8(7)));
+    return (tupleHash, packedHash, tupleHash != packedHash);
+  }
 }
 
 // ====
@@ -436,3 +462,5 @@ contract C {
 // ec_tuple(uint256,uint8): 1, 2 -> 0x20, 0x44, left(0x06450a21), left(0x00000001), left(0x00000002)
 // ec_decl(uint256): 1 -> 0x20, 0x24, left(0x2fbebd38), left(0x00000001)
 // ec_ews(uint256): 1 -> 1
+// enc_vs_packed_same_args() -> true, true, true, true
+// keccak_enc_vs_packed() -> 0xc5281913de15038cf4b5d64cf1a05399d329c271980c67e3b7c5d456fd21e4b1, 0x39141b1e392d397bb25c932cad00ea54a6f71a14b1e0e88eac0502c9362c9b16, true
