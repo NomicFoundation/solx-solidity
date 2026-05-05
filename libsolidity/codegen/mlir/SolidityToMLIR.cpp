@@ -1899,13 +1899,11 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     const auto &event =
         dynamic_cast<EventDefinition const &>(calleeTy->declaration());
 
-    // Lower and track the indexed and non-indexed args.
+    // Lower and track the indexed and non-indexed args. The indexed-arg
+    // topic computation (cleanup for value types, keccak256-of-packed-encode
+    // for reference types) is handled by EmitOpLowering.
     std::vector<mlir::Value> indexedArgs, nonIndexedArgs;
     for (size_t i = 0; i < event.parameters().size(); ++i) {
-      assert(dynamic_cast<IntegerType const *>(calleeTy->parameterTypes()[i]) ||
-             dynamic_cast<AddressType const *>(calleeTy->parameterTypes()[i]) ||
-             dynamic_cast<ContractType const *>(calleeTy->parameterTypes()[i]));
-
       // TODO? YulUtilFunctions::conversionFunction
       mlir::Value arg =
           genRValExpr(*astArgs[i], getType(calleeTy->parameterTypes()[i]));
@@ -1990,8 +1988,7 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
       }
     } else {
       b.create<mlir::sol::RequireOp>(loc, genRValExpr(*astArgs[0]),
-                                     mlir::StringAttr{},
-                                     mlir::ValueRange{});
+                                     mlir::StringAttr{}, mlir::ValueRange{});
     }
     return {};
   }
