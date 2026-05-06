@@ -38,7 +38,6 @@ semanticTests/array/indexAccess/inline_array_index_access_strings
 semanticTests/array/invalid_encoding_for_storage_byte_array
 semanticTests/array/long_byte_array_cleanup_after_delete
 semanticTests/array/long_byte_array_cleanup_after_overwrite_with_long
-semanticTests/array/pop/array_pop_array_transition
 semanticTests/array/pop/array_pop_isolated
 semanticTests/array/pop/byte_array_pop_isolated
 semanticTests/array/pop/parenthesized
