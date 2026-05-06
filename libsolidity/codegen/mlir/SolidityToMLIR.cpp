@@ -3208,7 +3208,7 @@ static void loadDialects(mlir::MLIRContext &ctx) {
 }
 
 bool CompilerStack::runMlirPipeline() {
-  llvm::StdThreadPool threadPool;
+  llvm::DefaultThreadPool threadPool;
   // For sync'ing the output collection.
   std::mutex outMtx;
   // For sync'ing the error printing.
