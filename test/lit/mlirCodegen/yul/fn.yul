@@ -32,7 +32,7 @@ object "Test" {
 // CHECK-NEXT:       %c42_i256 = yul.constant 42 loc(#loc4)
 // CHECK-NEXT:       llvm.store %c42_i256, %5 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc5)
 // CHECK-NEXT:       %6 = llvm.load %5 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc3)
-// CHECK-NEXT:       yul.func_return %6 loc(#loc2)
+// CHECK-NEXT:       yul.func_return %6 : i256 loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
 // CHECK-NEXT:     yul.func @ret2 : () -> (i256, i256) {
 // CHECK-NEXT:       %c1_i256_2 = yul.constant 1 loc(#loc6)
@@ -45,7 +45,7 @@ object "Test" {
 // CHECK-NEXT:       llvm.store %c43_i256, %6 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc12)
 // CHECK-NEXT:       %7 = llvm.load %5 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc7)
 // CHECK-NEXT:       %8 = llvm.load %6 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc8)
-// CHECK-NEXT:       yul.func_return %7, %8 loc(#loc6)
+// CHECK-NEXT:       yul.func_return %7, %8 : i256, i256 loc(#loc6)
 // CHECK-NEXT:     } loc(#loc6)
 // CHECK-NEXT:     %0 = yul.func_call @ret() : () -> i256 loc(#loc13)
 // CHECK-NEXT:     %c1_i256 = yul.constant 1 loc(#loc14)
