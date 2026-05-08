@@ -247,7 +247,8 @@ include_directories(${PROJECT_BINARY_DIR}/libsolidity/codegen/mlir)
 set(mlir_libs
 	MLIRSolDialect
 	MLIRSolTransforms
-	MLIRSolToStandard
+	MLIRSolToYul
+	MLIRYulToStandard
 	MLIRYulTransforms
 	MLIRYulDialect
 	MLIRLLVMDialect
