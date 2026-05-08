@@ -28,7 +28,7 @@ object "Simple" {
 // CHECK-NEXT:         %c0_i256 = yul.constant 0 loc(#loc6)
 // CHECK-NEXT:         llvm.store %c0_i256, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc7)
 // CHECK-NEXT:         %2 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc5)
-// CHECK-NEXT:         yul.func_return %2 loc(#loc4)
+// CHECK-NEXT:         yul.func_return %2 : i256 loc(#loc4)
 // CHECK-NEXT:       } loc(#loc4)
 // CHECK-NEXT:       %c20_i256 = yul.constant 20 loc(#loc8)
 // CHECK-NEXT:       %0 = yul.func_call @f0() : () -> i256 loc(#loc9)
