@@ -46,8 +46,6 @@ semanticTests/array/slices/array_slice_calldata_to_calldata
 semanticTests/array/string_allocation_bug
 semanticTests/array/string_literal_assign_to_storage_bytes
 semanticTests/array/strings_in_struct
-semanticTests/builtinFunctions/blobhash
-semanticTests/builtinFunctions/blockhash
 semanticTests/calldata/calldata_attached_to_bytes
 semanticTests/calldata/calldata_attached_to_dynamic_array_or_slice
 semanticTests/calldata/calldata_attached_to_static_array
@@ -188,7 +186,6 @@ semanticTests/inlineAssembly/leave
 semanticTests/inlineAssembly/mcopy_overlap
 semanticTests/inlineAssembly/slot_access
 semanticTests/inlineAssembly/transient_storage_low_level_calls
-semanticTests/inlineAssembly/transient_storage_selfdestruct
 semanticTests/integer/basic
 semanticTests/integer/uint
 semanticTests/interfaceID/lisa
@@ -288,10 +285,6 @@ semanticTests/shanghai/evmone_support
 semanticTests/smoke/failure
 semanticTests/smoke/fallback
 semanticTests/specialFunctions/abi_functions_member_access
-semanticTests/state/blobhash
-semanticTests/state/blockhash_basic
-semanticTests/state/uncalled_blobhash
-semanticTests/state/uncalled_blockhash
 semanticTests/storage/accessors_mapping_for_array
 semanticTests/storage/array_accessor
 semanticTests/storage/delete_overlapping_transient_after_storage_struct_delete_same_value_type
@@ -434,7 +427,6 @@ semanticTests/various/nested_calldata_struct
 semanticTests/various/nested_calldata_struct_to_memory
 semanticTests/various/positive_integers_to_signed
 semanticTests/various/selfdestruct_post_cancun
-semanticTests/various/selfdestruct_post_cancun_multiple_beneficiaries
 semanticTests/various/skip_dynamic_types_for_static_arrays_with_dynamic_elements
 semanticTests/various/skip_dynamic_types_for_structs
 semanticTests/various/state_variable_local_variable_mixture
