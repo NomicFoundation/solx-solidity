@@ -2253,6 +2253,29 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     resVals.push_back(b.create<mlir::sol::GasLeftOp>(loc));
     return resVals;
 
+  case FunctionType::Kind::BlockHash: {
+    mlir::Value arg =
+        genRValExpr(*astArgs[0], getType(calleeTy->parameterTypes()[0]));
+    resVals.push_back(b.create<mlir::sol::BlockHashOp>(
+        loc, getType(calleeTy->returnParameterTypes()[0]), arg));
+    return resVals;
+  }
+
+  case FunctionType::Kind::BlobHash: {
+    mlir::Value arg =
+        genRValExpr(*astArgs[0], getType(calleeTy->parameterTypes()[0]));
+    resVals.push_back(b.create<mlir::sol::BlobHashOp>(
+        loc, getType(calleeTy->returnParameterTypes()[0]), arg));
+    return resVals;
+  }
+
+  case FunctionType::Kind::Selfdestruct: {
+    mlir::Value arg =
+        genRValExpr(*astArgs[0], getType(calleeTy->parameterTypes()[0]));
+    b.create<mlir::sol::SelfdestructOp>(loc, arg);
+    return resVals;
+  }
+
   default:
     break;
   }
