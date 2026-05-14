@@ -348,6 +348,7 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   defSimpleBuiltinGen<GasPriceOp>("gasprice");
   defSimpleBuiltinGen<BlockHashOp>("blockhash");
   defSimpleBuiltinGen<BlobHashOp>("blobhash");
+  defSimpleBuiltinGenNoRet<SelfDestructOp>("selfdestruct");
   defSimpleBuiltinGen<CoinBaseOp>("coinbase");
   defSimpleBuiltinGen<TimeStampOp>("timestamp");
   defSimpleBuiltinGen<NumberOp>("number");
