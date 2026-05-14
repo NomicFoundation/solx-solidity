@@ -842,6 +842,19 @@ mlir::Value SolidityToMLIRPass::genCast(mlir::Value val, mlir::Type dstTy) {
     } else if (mlir::isa<mlir::sol::ByteType>(dstTy) && litOp) {
       val = materializeStringLiteralAsBytesInt(litOp, /*dstBytes=*/1);
     }
+    // bytes_cast requires the integer operand width to match the destination
+    // byte count exactly; widen / narrow the operand to bridge the difference.
+    if (auto inpIntTy = mlir::dyn_cast<mlir::IntegerType>(val.getType())) {
+      unsigned dstWidth = 0;
+      if (auto dstBytesTy = mlir::dyn_cast<mlir::sol::FixedBytesType>(dstTy))
+        dstWidth = dstBytesTy.getSize() * 8;
+      else if (mlir::isa<mlir::sol::ByteType>(dstTy))
+        dstWidth = 8;
+      if (dstWidth != 0 && inpIntTy.getWidth() != dstWidth) {
+        mlir::Type dstIntTy = b.getIntegerType(dstWidth, inpIntTy.isSigned());
+        val = b.create<mlir::sol::CastOp>(loc, dstIntTy, val);
+      }
+    }
     return b.create<mlir::sol::BytesCastOp>(loc, dstTy, val);
   }
 
