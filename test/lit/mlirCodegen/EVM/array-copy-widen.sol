@@ -1021,52 +1021,68 @@ contract ArrayCopyWiden {
 // CHECK-NEXT:       llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc11)
 // CHECK-NEXT:       %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc12)
 // CHECK-NEXT:       cf.br ^bb1(%c0_i256, %1, %c6_i256, %c0_i256 : i256, i256, i256, i256) loc(#loc13)
-// CHECK-NEXT:     ^bb1(%2: i256 loc({{.*}}:16:61), %3: i256 loc({{.*}}:16:61), %4: i256 loc({{.*}}:16:61), %5: i256 loc({{.*}}:16:61)):  // 2 preds: ^bb0, ^bb5
+// CHECK-NEXT:     ^bb1(%2: i256 loc({{.*}}:16:61), %3: i256 loc({{.*}}:16:61), %4: i256 loc({{.*}}:16:61), %5: i256 loc({{.*}}:16:61)):  // 2 preds: ^bb0, ^bb7
 // CHECK-NEXT:       %6 = arith.cmpi ult, %2, %c0_i256 : i256 loc(#loc13)
-// CHECK-NEXT:       cf.cond_br %6, ^bb2(%2, %3, %4, %5 : i256, i256, i256, i256), ^bb6(%3, %4, %5 : i256, i256, i256) loc(#loc13)
+// CHECK-NEXT:       cf.cond_br %6, ^bb2(%2, %3, %4, %5 : i256, i256, i256, i256), ^bb8(%3, %4, %5 : i256, i256, i256) loc(#loc13)
 // CHECK-NEXT:     ^bb2(%7: i256 loc({{.*}}:16:61), %8: i256 loc({{.*}}:16:61), %9: i256 loc({{.*}}:16:61), %10: i256 loc({{.*}}:16:61)):  // pred: ^bb1
 // CHECK-NEXT:       cf.br ^bb3(%c0_i256, %8, %c0_i256, %c0_i256 : i256, i256, i256, i256) loc(#loc13)
-// CHECK-NEXT:     ^bb3(%11: i256 loc({{.*}}:16:61), %12: i256 loc({{.*}}:16:61), %13: i256 loc({{.*}}:16:61), %14: i256 loc({{.*}}:16:61)):  // 2 preds: ^bb2, ^bb4
+// CHECK-NEXT:     ^bb3(%11: i256 loc({{.*}}:16:61), %12: i256 loc({{.*}}:16:61), %13: i256 loc({{.*}}:16:61), %14: i256 loc({{.*}}:16:61)):  // 2 preds: ^bb2, ^bb6
 // CHECK-NEXT:       %15 = arith.cmpi ult, %11, %c16_i256 : i256 loc(#loc13)
-// CHECK-NEXT:       cf.cond_br %15, ^bb4(%11, %12, %13, %14 : i256, i256, i256, i256), ^bb5(%12, %14 : i256, i256) loc(#loc13)
+// CHECK-NEXT:       cf.cond_br %15, ^bb4(%11, %12, %13, %14 : i256, i256, i256, i256), ^bb7(%12, %14 : i256, i256) loc(#loc13)
 // CHECK-NEXT:     ^bb4(%16: i256 loc({{.*}}:16:61), %17: i256 loc({{.*}}:16:61), %18: i256 loc({{.*}}:16:61), %19: i256 loc({{.*}}:16:61)):  // pred: ^bb3
 // CHECK-NEXT:       %20 = llvm.inttoptr %17 : i256 to !llvm.ptr<2> loc(#loc13)
 // CHECK-NEXT:       %21 = llvm.load %20 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc13)
 // CHECK-NEXT:       %22 = arith.andi %21, %c65535_i256 : i256 loc(#loc13)
-// CHECK-NEXT:       %23 = arith.shli %22, %18 : i256 loc(#loc13)
-// CHECK-NEXT:       %24 = arith.ori %19, %23 : i256 loc(#loc13)
-// CHECK-NEXT:       %25 = arith.addi %17, %c32_i256 : i256 loc(#loc13)
-// CHECK-NEXT:       %26 = arith.addi %18, %c16_i256 : i256 loc(#loc13)
-// CHECK-NEXT:       %27 = arith.addi %16, %c1_i256 : i256 loc(#loc13)
-// CHECK-NEXT:       cf.br ^bb3(%27, %25, %26, %24 : i256, i256, i256, i256) loc(#loc13)
-// CHECK-NEXT:     ^bb5(%28: i256 loc({{.*}}:16:61), %29: i256 loc({{.*}}:16:61)):  // pred: ^bb3
-// CHECK-NEXT:       %30 = llvm.inttoptr %9 : i256 to !llvm.ptr<5> loc(#loc13)
-// CHECK-NEXT:       llvm.store %29, %30 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc13)
-// CHECK-NEXT:       %31 = arith.addi %9, %c1_i256 : i256 loc(#loc13)
-// CHECK-NEXT:       %32 = arith.addi %10, %c16_i256 : i256 loc(#loc13)
-// CHECK-NEXT:       %33 = arith.addi %7, %c16_i256 : i256 loc(#loc13)
-// CHECK-NEXT:       cf.br ^bb1(%33, %28, %31, %32 : i256, i256, i256, i256) loc(#loc13)
-// CHECK-NEXT:     ^bb6(%34: i256 loc({{.*}}:16:61), %35: i256 loc({{.*}}:16:61), %36: i256 loc({{.*}}:16:61)):  // pred: ^bb1
-// CHECK-NEXT:       %37 = arith.cmpi ult, %36, %c3_i256 : i256 loc(#loc13)
-// CHECK-NEXT:       cf.cond_br %37, ^bb7(%36, %34, %c0_i256, %c0_i256 : i256, i256, i256, i256), ^bb10 loc(#loc13)
-// CHECK-NEXT:     ^bb7(%38: i256 loc({{.*}}:16:61), %39: i256 loc({{.*}}:16:61), %40: i256 loc({{.*}}:16:61), %41: i256 loc({{.*}}:16:61)):  // 2 preds: ^bb6, ^bb8
-// CHECK-NEXT:       %42 = arith.cmpi ult, %38, %c3_i256 : i256 loc(#loc13)
-// CHECK-NEXT:       cf.cond_br %42, ^bb8(%38, %39, %40, %41 : i256, i256, i256, i256), ^bb9(%41 : i256) loc(#loc13)
-// CHECK-NEXT:     ^bb8(%43: i256 loc({{.*}}:16:61), %44: i256 loc({{.*}}:16:61), %45: i256 loc({{.*}}:16:61), %46: i256 loc({{.*}}:16:61)):  // pred: ^bb7
-// CHECK-NEXT:       %47 = llvm.inttoptr %44 : i256 to !llvm.ptr<2> loc(#loc13)
-// CHECK-NEXT:       %48 = llvm.load %47 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc13)
-// CHECK-NEXT:       %49 = arith.andi %48, %c65535_i256 : i256 loc(#loc13)
-// CHECK-NEXT:       %50 = arith.shli %49, %45 : i256 loc(#loc13)
-// CHECK-NEXT:       %51 = arith.ori %46, %50 : i256 loc(#loc13)
-// CHECK-NEXT:       %52 = arith.addi %44, %c32_i256 : i256 loc(#loc13)
-// CHECK-NEXT:       %53 = arith.addi %45, %c16_i256 : i256 loc(#loc13)
-// CHECK-NEXT:       %54 = arith.addi %43, %c1_i256 : i256 loc(#loc13)
-// CHECK-NEXT:       cf.br ^bb7(%54, %52, %53, %51 : i256, i256, i256, i256) {loop_annotation = #loop_annotation} loc(#loc13)
-// CHECK-NEXT:     ^bb9(%55: i256 loc({{.*}}:16:61)):  // pred: ^bb7
-// CHECK-NEXT:       %56 = llvm.inttoptr %35 : i256 to !llvm.ptr<5> loc(#loc13)
-// CHECK-NEXT:       llvm.store %55, %56 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc13)
-// CHECK-NEXT:       cf.br ^bb10 loc(#loc13)
-// CHECK-NEXT:     ^bb10:  // 2 preds: ^bb6, ^bb9
+// CHECK-NEXT:       %23 = arith.cmpi ne, %21, %22 : i256 loc(#loc13)
+// CHECK-NEXT:       cf.cond_br %23, ^bb5, ^bb6 loc(#loc13)
+// CHECK-NEXT:     ^bb5:  // pred: ^bb4
+// CHECK-NEXT:       %24 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc13)
+// CHECK-NEXT:       "llvm.intrcall"(%24, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc13)
+// CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc13)
+// CHECK-NEXT:       cf.br ^bb6 loc(#loc13)
+// CHECK-NEXT:     ^bb6:  // 2 preds: ^bb4, ^bb5
+// CHECK-NEXT:       %25 = arith.shli %22, %18 : i256 loc(#loc13)
+// CHECK-NEXT:       %26 = arith.ori %19, %25 : i256 loc(#loc13)
+// CHECK-NEXT:       %27 = arith.addi %17, %c32_i256 : i256 loc(#loc13)
+// CHECK-NEXT:       %28 = arith.addi %18, %c16_i256 : i256 loc(#loc13)
+// CHECK-NEXT:       %29 = arith.addi %16, %c1_i256 : i256 loc(#loc13)
+// CHECK-NEXT:       cf.br ^bb3(%29, %27, %28, %26 : i256, i256, i256, i256) loc(#loc13)
+// CHECK-NEXT:     ^bb7(%30: i256 loc({{.*}}:16:61), %31: i256 loc({{.*}}:16:61)):  // pred: ^bb3
+// CHECK-NEXT:       %32 = llvm.inttoptr %9 : i256 to !llvm.ptr<5> loc(#loc13)
+// CHECK-NEXT:       llvm.store %31, %32 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc13)
+// CHECK-NEXT:       %33 = arith.addi %9, %c1_i256 : i256 loc(#loc13)
+// CHECK-NEXT:       %34 = arith.addi %10, %c16_i256 : i256 loc(#loc13)
+// CHECK-NEXT:       %35 = arith.addi %7, %c16_i256 : i256 loc(#loc13)
+// CHECK-NEXT:       cf.br ^bb1(%35, %30, %33, %34 : i256, i256, i256, i256) loc(#loc13)
+// CHECK-NEXT:     ^bb8(%36: i256 loc({{.*}}:16:61), %37: i256 loc({{.*}}:16:61), %38: i256 loc({{.*}}:16:61)):  // pred: ^bb1
+// CHECK-NEXT:       %39 = arith.cmpi ult, %38, %c3_i256 : i256 loc(#loc13)
+// CHECK-NEXT:       cf.cond_br %39, ^bb9(%38, %36, %c0_i256, %c0_i256 : i256, i256, i256, i256), ^bb14 loc(#loc13)
+// CHECK-NEXT:     ^bb9(%40: i256 loc({{.*}}:16:61), %41: i256 loc({{.*}}:16:61), %42: i256 loc({{.*}}:16:61), %43: i256 loc({{.*}}:16:61)):  // 2 preds: ^bb8, ^bb12
+// CHECK-NEXT:       %44 = arith.cmpi ult, %40, %c3_i256 : i256 loc(#loc13)
+// CHECK-NEXT:       cf.cond_br %44, ^bb10(%40, %41, %42, %43 : i256, i256, i256, i256), ^bb13(%43 : i256) loc(#loc13)
+// CHECK-NEXT:     ^bb10(%45: i256 loc({{.*}}:16:61), %46: i256 loc({{.*}}:16:61), %47: i256 loc({{.*}}:16:61), %48: i256 loc({{.*}}:16:61)):  // pred: ^bb9
+// CHECK-NEXT:       %49 = llvm.inttoptr %46 : i256 to !llvm.ptr<2> loc(#loc13)
+// CHECK-NEXT:       %50 = llvm.load %49 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc13)
+// CHECK-NEXT:       %51 = arith.andi %50, %c65535_i256 : i256 loc(#loc13)
+// CHECK-NEXT:       %52 = arith.cmpi ne, %50, %51 : i256 loc(#loc13)
+// CHECK-NEXT:       cf.cond_br %52, ^bb11, ^bb12 loc(#loc13)
+// CHECK-NEXT:     ^bb11:  // pred: ^bb10
+// CHECK-NEXT:       %53 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc13)
+// CHECK-NEXT:       "llvm.intrcall"(%53, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc13)
+// CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc13)
+// CHECK-NEXT:       cf.br ^bb12 loc(#loc13)
+// CHECK-NEXT:     ^bb12:  // 2 preds: ^bb10, ^bb11
+// CHECK-NEXT:       %54 = arith.shli %51, %47 : i256 loc(#loc13)
+// CHECK-NEXT:       %55 = arith.ori %48, %54 : i256 loc(#loc13)
+// CHECK-NEXT:       %56 = arith.addi %46, %c32_i256 : i256 loc(#loc13)
+// CHECK-NEXT:       %57 = arith.addi %47, %c16_i256 : i256 loc(#loc13)
+// CHECK-NEXT:       %58 = arith.addi %45, %c1_i256 : i256 loc(#loc13)
+// CHECK-NEXT:       cf.br ^bb9(%58, %56, %57, %55 : i256, i256, i256, i256) {loop_annotation = #loop_annotation} loc(#loc13)
+// CHECK-NEXT:     ^bb13(%59: i256 loc({{.*}}:16:61)):  // pred: ^bb9
+// CHECK-NEXT:       %60 = llvm.inttoptr %37 : i256 to !llvm.ptr<5> loc(#loc13)
+// CHECK-NEXT:       llvm.store %59, %60 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc13)
+// CHECK-NEXT:       cf.br ^bb14 loc(#loc13)
+// CHECK-NEXT:     ^bb14:  // 2 preds: ^bb8, ^bb13
 // CHECK-NEXT:       return loc(#loc10)
 // CHECK-NEXT:     } loc(#loc10)
 // CHECK-NEXT:     func.func @cd2s_u8_u16_d_83(%arg0: !llvm.struct<(i256, i256)> loc({{.*}}:15:27)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
@@ -1153,57 +1169,74 @@ contract ArrayCopyWiden {
 // CHECK-NEXT:       %42 = arith.subi %2, %c15_i256 : i256 loc(#loc17)
 // CHECK-NEXT:       %43 = arith.select %41, %42, %c0_i256 : i256 loc(#loc17)
 // CHECK-NEXT:       cf.br ^bb9(%c0_i256, %3, %40, %c0_i256 : i256, i256, i256, i256) loc(#loc17)
-// CHECK-NEXT:     ^bb9(%44: i256 loc({{.*}}:15:60), %45: i256 loc({{.*}}:15:60), %46: i256 loc({{.*}}:15:60), %47: i256 loc({{.*}}:15:60)):  // 2 preds: ^bb8, ^bb13
+// CHECK-NEXT:     ^bb9(%44: i256 loc({{.*}}:15:60), %45: i256 loc({{.*}}:15:60), %46: i256 loc({{.*}}:15:60), %47: i256 loc({{.*}}:15:60)):  // 2 preds: ^bb8, ^bb15
 // CHECK-NEXT:       %48 = arith.cmpi ult, %44, %43 : i256 loc(#loc17)
-// CHECK-NEXT:       cf.cond_br %48, ^bb10(%44, %45, %46, %47 : i256, i256, i256, i256), ^bb14(%45, %46, %47 : i256, i256, i256) loc(#loc17)
+// CHECK-NEXT:       cf.cond_br %48, ^bb10(%44, %45, %46, %47 : i256, i256, i256, i256), ^bb16(%45, %46, %47 : i256, i256, i256) loc(#loc17)
 // CHECK-NEXT:     ^bb10(%49: i256 loc({{.*}}:15:60), %50: i256 loc({{.*}}:15:60), %51: i256 loc({{.*}}:15:60), %52: i256 loc({{.*}}:15:60)):  // pred: ^bb9
 // CHECK-NEXT:       cf.br ^bb11(%c0_i256, %50, %c0_i256, %c0_i256 : i256, i256, i256, i256) loc(#loc17)
-// CHECK-NEXT:     ^bb11(%53: i256 loc({{.*}}:15:60), %54: i256 loc({{.*}}:15:60), %55: i256 loc({{.*}}:15:60), %56: i256 loc({{.*}}:15:60)):  // 2 preds: ^bb10, ^bb12
+// CHECK-NEXT:     ^bb11(%53: i256 loc({{.*}}:15:60), %54: i256 loc({{.*}}:15:60), %55: i256 loc({{.*}}:15:60), %56: i256 loc({{.*}}:15:60)):  // 2 preds: ^bb10, ^bb14
 // CHECK-NEXT:       %57 = arith.cmpi ult, %53, %c16_i256 : i256 loc(#loc17)
-// CHECK-NEXT:       cf.cond_br %57, ^bb12(%53, %54, %55, %56 : i256, i256, i256, i256), ^bb13(%54, %56 : i256, i256) loc(#loc17)
+// CHECK-NEXT:       cf.cond_br %57, ^bb12(%53, %54, %55, %56 : i256, i256, i256, i256), ^bb15(%54, %56 : i256, i256) loc(#loc17)
 // CHECK-NEXT:     ^bb12(%58: i256 loc({{.*}}:15:60), %59: i256 loc({{.*}}:15:60), %60: i256 loc({{.*}}:15:60), %61: i256 loc({{.*}}:15:60)):  // pred: ^bb11
 // CHECK-NEXT:       %62 = llvm.inttoptr %59 : i256 to !llvm.ptr<2> loc(#loc17)
 // CHECK-NEXT:       %63 = llvm.load %62 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc17)
 // CHECK-NEXT:       %64 = arith.andi %63, %c65535_i256 : i256 loc(#loc17)
-// CHECK-NEXT:       %65 = arith.shli %64, %60 : i256 loc(#loc17)
-// CHECK-NEXT:       %66 = arith.ori %61, %65 : i256 loc(#loc17)
-// CHECK-NEXT:       %67 = arith.addi %59, %c32_i256 : i256 loc(#loc17)
-// CHECK-NEXT:       %68 = arith.addi %60, %c16_i256 : i256 loc(#loc17)
-// CHECK-NEXT:       %69 = arith.addi %58, %c1_i256 : i256 loc(#loc17)
-// CHECK-NEXT:       cf.br ^bb11(%69, %67, %68, %66 : i256, i256, i256, i256) loc(#loc17)
-// CHECK-NEXT:     ^bb13(%70: i256 loc({{.*}}:15:60), %71: i256 loc({{.*}}:15:60)):  // pred: ^bb11
-// CHECK-NEXT:       %72 = llvm.inttoptr %51 : i256 to !llvm.ptr<5> loc(#loc17)
-// CHECK-NEXT:       llvm.store %71, %72 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc17)
-// CHECK-NEXT:       %73 = arith.addi %51, %c1_i256 : i256 loc(#loc17)
-// CHECK-NEXT:       %74 = arith.addi %52, %c16_i256 : i256 loc(#loc17)
-// CHECK-NEXT:       %75 = arith.addi %49, %c16_i256 : i256 loc(#loc17)
-// CHECK-NEXT:       cf.br ^bb9(%75, %70, %73, %74 : i256, i256, i256, i256) loc(#loc17)
-// CHECK-NEXT:     ^bb14(%76: i256 loc({{.*}}:15:60), %77: i256 loc({{.*}}:15:60), %78: i256 loc({{.*}}:15:60)):  // pred: ^bb9
-// CHECK-NEXT:       %79 = arith.cmpi ult, %78, %2 : i256 loc(#loc17)
-// CHECK-NEXT:       cf.cond_br %79, ^bb15(%78, %76, %c0_i256, %c0_i256 : i256, i256, i256, i256), ^bb18 loc(#loc17)
-// CHECK-NEXT:     ^bb15(%80: i256 loc({{.*}}:15:60), %81: i256 loc({{.*}}:15:60), %82: i256 loc({{.*}}:15:60), %83: i256 loc({{.*}}:15:60)):  // 2 preds: ^bb14, ^bb16
-// CHECK-NEXT:       %84 = arith.cmpi ult, %80, %2 : i256 loc(#loc17)
-// CHECK-NEXT:       cf.cond_br %84, ^bb16(%80, %81, %82, %83 : i256, i256, i256, i256), ^bb17(%83 : i256) loc(#loc17)
-// CHECK-NEXT:     ^bb16(%85: i256 loc({{.*}}:15:60), %86: i256 loc({{.*}}:15:60), %87: i256 loc({{.*}}:15:60), %88: i256 loc({{.*}}:15:60)):  // pred: ^bb15
-// CHECK-NEXT:       %89 = llvm.inttoptr %86 : i256 to !llvm.ptr<2> loc(#loc17)
-// CHECK-NEXT:       %90 = llvm.load %89 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc17)
-// CHECK-NEXT:       %91 = arith.andi %90, %c65535_i256 : i256 loc(#loc17)
-// CHECK-NEXT:       %92 = arith.shli %91, %87 : i256 loc(#loc17)
-// CHECK-NEXT:       %93 = arith.ori %88, %92 : i256 loc(#loc17)
-// CHECK-NEXT:       %94 = arith.addi %86, %c32_i256 : i256 loc(#loc17)
-// CHECK-NEXT:       %95 = arith.addi %87, %c16_i256 : i256 loc(#loc17)
-// CHECK-NEXT:       %96 = arith.addi %85, %c1_i256 : i256 loc(#loc17)
-// CHECK-NEXT:       cf.br ^bb15(%96, %94, %95, %93 : i256, i256, i256, i256) loc(#loc17)
-// CHECK-NEXT:     ^bb17(%97: i256 loc({{.*}}:15:60)):  // pred: ^bb15
-// CHECK-NEXT:       %98 = llvm.inttoptr %77 : i256 to !llvm.ptr<5> loc(#loc17)
-// CHECK-NEXT:       llvm.store %97, %98 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc17)
-// CHECK-NEXT:       cf.br ^bb18 loc(#loc17)
-// CHECK-NEXT:     ^bb18:  // 2 preds: ^bb14, ^bb17
+// CHECK-NEXT:       %65 = arith.cmpi ne, %63, %64 : i256 loc(#loc17)
+// CHECK-NEXT:       cf.cond_br %65, ^bb13, ^bb14 loc(#loc17)
+// CHECK-NEXT:     ^bb13:  // pred: ^bb12
+// CHECK-NEXT:       %66 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc17)
+// CHECK-NEXT:       "llvm.intrcall"(%66, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc17)
+// CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc17)
+// CHECK-NEXT:       cf.br ^bb14 loc(#loc17)
+// CHECK-NEXT:     ^bb14:  // 2 preds: ^bb12, ^bb13
+// CHECK-NEXT:       %67 = arith.shli %64, %60 : i256 loc(#loc17)
+// CHECK-NEXT:       %68 = arith.ori %61, %67 : i256 loc(#loc17)
+// CHECK-NEXT:       %69 = arith.addi %59, %c32_i256 : i256 loc(#loc17)
+// CHECK-NEXT:       %70 = arith.addi %60, %c16_i256 : i256 loc(#loc17)
+// CHECK-NEXT:       %71 = arith.addi %58, %c1_i256 : i256 loc(#loc17)
+// CHECK-NEXT:       cf.br ^bb11(%71, %69, %70, %68 : i256, i256, i256, i256) loc(#loc17)
+// CHECK-NEXT:     ^bb15(%72: i256 loc({{.*}}:15:60), %73: i256 loc({{.*}}:15:60)):  // pred: ^bb11
+// CHECK-NEXT:       %74 = llvm.inttoptr %51 : i256 to !llvm.ptr<5> loc(#loc17)
+// CHECK-NEXT:       llvm.store %73, %74 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc17)
+// CHECK-NEXT:       %75 = arith.addi %51, %c1_i256 : i256 loc(#loc17)
+// CHECK-NEXT:       %76 = arith.addi %52, %c16_i256 : i256 loc(#loc17)
+// CHECK-NEXT:       %77 = arith.addi %49, %c16_i256 : i256 loc(#loc17)
+// CHECK-NEXT:       cf.br ^bb9(%77, %72, %75, %76 : i256, i256, i256, i256) loc(#loc17)
+// CHECK-NEXT:     ^bb16(%78: i256 loc({{.*}}:15:60), %79: i256 loc({{.*}}:15:60), %80: i256 loc({{.*}}:15:60)):  // pred: ^bb9
+// CHECK-NEXT:       %81 = arith.cmpi ult, %80, %2 : i256 loc(#loc17)
+// CHECK-NEXT:       cf.cond_br %81, ^bb17(%80, %78, %c0_i256, %c0_i256 : i256, i256, i256, i256), ^bb22 loc(#loc17)
+// CHECK-NEXT:     ^bb17(%82: i256 loc({{.*}}:15:60), %83: i256 loc({{.*}}:15:60), %84: i256 loc({{.*}}:15:60), %85: i256 loc({{.*}}:15:60)):  // 2 preds: ^bb16, ^bb20
+// CHECK-NEXT:       %86 = arith.cmpi ult, %82, %2 : i256 loc(#loc17)
+// CHECK-NEXT:       cf.cond_br %86, ^bb18(%82, %83, %84, %85 : i256, i256, i256, i256), ^bb21(%85 : i256) loc(#loc17)
+// CHECK-NEXT:     ^bb18(%87: i256 loc({{.*}}:15:60), %88: i256 loc({{.*}}:15:60), %89: i256 loc({{.*}}:15:60), %90: i256 loc({{.*}}:15:60)):  // pred: ^bb17
+// CHECK-NEXT:       %91 = llvm.inttoptr %88 : i256 to !llvm.ptr<2> loc(#loc17)
+// CHECK-NEXT:       %92 = llvm.load %91 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc17)
+// CHECK-NEXT:       %93 = arith.andi %92, %c65535_i256 : i256 loc(#loc17)
+// CHECK-NEXT:       %94 = arith.cmpi ne, %92, %93 : i256 loc(#loc17)
+// CHECK-NEXT:       cf.cond_br %94, ^bb19, ^bb20 loc(#loc17)
+// CHECK-NEXT:     ^bb19:  // pred: ^bb18
+// CHECK-NEXT:       %95 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc17)
+// CHECK-NEXT:       "llvm.intrcall"(%95, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc17)
+// CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc17)
+// CHECK-NEXT:       cf.br ^bb20 loc(#loc17)
+// CHECK-NEXT:     ^bb20:  // 2 preds: ^bb18, ^bb19
+// CHECK-NEXT:       %96 = arith.shli %93, %89 : i256 loc(#loc17)
+// CHECK-NEXT:       %97 = arith.ori %90, %96 : i256 loc(#loc17)
+// CHECK-NEXT:       %98 = arith.addi %88, %c32_i256 : i256 loc(#loc17)
+// CHECK-NEXT:       %99 = arith.addi %89, %c16_i256 : i256 loc(#loc17)
+// CHECK-NEXT:       %100 = arith.addi %87, %c1_i256 : i256 loc(#loc17)
+// CHECK-NEXT:       cf.br ^bb17(%100, %98, %99, %97 : i256, i256, i256, i256) loc(#loc17)
+// CHECK-NEXT:     ^bb21(%101: i256 loc({{.*}}:15:60)):  // pred: ^bb17
+// CHECK-NEXT:       %102 = llvm.inttoptr %79 : i256 to !llvm.ptr<5> loc(#loc17)
+// CHECK-NEXT:       llvm.store %101, %102 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc17)
+// CHECK-NEXT:       cf.br ^bb22 loc(#loc17)
+// CHECK-NEXT:     ^bb22:  // 2 preds: ^bb16, ^bb21
 // CHECK-NEXT:       return loc(#loc14)
 // CHECK-NEXT:     } loc(#loc14)
 // CHECK-NEXT:     func.func @cd2s_b15_b16_ds_72(%arg0: !llvm.struct<(i256, i256)> loc({{.*}}:14:29)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       %c340282366920938463463374607431768211455_i256 = arith.constant 340282366920938463463374607431768211455 : i256 loc(#loc)
 // CHECK-NEXT:       %c128_i256 = arith.constant 128 : i256 loc(#loc)
+// CHECK-NEXT:       %c-340282366920938463463374607431768211456_i256 = arith.constant -340282366920938463463374607431768211456 : i256 loc(#loc)
 // CHECK-NEXT:       %c2_i256 = arith.constant 2 : i256 loc(#loc)
 // CHECK-NEXT:       %c64_i256 = arith.constant 64 : i256 loc(#loc)
 // CHECK-NEXT:       %c32_i256 = arith.constant 32 : i256 loc(#loc)
@@ -1261,70 +1294,89 @@ contract ArrayCopyWiden {
 // CHECK-NEXT:       %25 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc21)
 // CHECK-NEXT:       %26 = "llvm.intrcall"(%25, %c32_i256) <{id = 4085 : i32, name = "evm.sha3"}> : (!llvm.ptr<1>, i256) -> i256 loc(#loc21)
 // CHECK-NEXT:       cf.br ^bb7(%c0_i256 : i256) loc(#loc21)
-// CHECK-NEXT:     ^bb7(%27: i256 loc({{.*}}:14:67)):  // 2 preds: ^bb6, ^bb18
+// CHECK-NEXT:     ^bb7(%27: i256 loc({{.*}}:14:67)):  // 2 preds: ^bb6, ^bb22
 // CHECK-NEXT:       %28 = arith.cmpi ult, %27, %2 : i256 loc(#loc21)
-// CHECK-NEXT:       cf.cond_br %28, ^bb8(%27 : i256), ^bb19 loc(#loc21)
+// CHECK-NEXT:       cf.cond_br %28, ^bb8(%27 : i256), ^bb23 loc(#loc21)
 // CHECK-NEXT:     ^bb8(%29: i256 loc({{.*}}:14:67)):  // pred: ^bb7
 // CHECK-NEXT:       %30 = arith.muli %29, %c64_i256 : i256 loc(#loc21)
 // CHECK-NEXT:       %31 = arith.addi %3, %30 : i256 loc(#loc21)
 // CHECK-NEXT:       %32 = arith.addi %26, %29 : i256 loc(#loc21)
 // CHECK-NEXT:       cf.br ^bb9(%c0_i256, %31, %32, %c0_i256 : i256, i256, i256, i256) loc(#loc21)
-// CHECK-NEXT:     ^bb9(%33: i256 loc({{.*}}:14:67), %34: i256 loc({{.*}}:14:67), %35: i256 loc({{.*}}:14:67), %36: i256 loc({{.*}}:14:67)):  // 2 preds: ^bb8, ^bb13
+// CHECK-NEXT:     ^bb9(%33: i256 loc({{.*}}:14:67), %34: i256 loc({{.*}}:14:67), %35: i256 loc({{.*}}:14:67), %36: i256 loc({{.*}}:14:67)):  // 2 preds: ^bb8, ^bb15
 // CHECK-NEXT:       %37 = arith.cmpi ult, %33, %c1_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       cf.cond_br %37, ^bb10(%33, %34, %35, %36 : i256, i256, i256, i256), ^bb14(%34, %35, %36 : i256, i256, i256) loc(#loc21)
+// CHECK-NEXT:       cf.cond_br %37, ^bb10(%33, %34, %35, %36 : i256, i256, i256, i256), ^bb16(%34, %35, %36 : i256, i256, i256) loc(#loc21)
 // CHECK-NEXT:     ^bb10(%38: i256 loc({{.*}}:14:67), %39: i256 loc({{.*}}:14:67), %40: i256 loc({{.*}}:14:67), %41: i256 loc({{.*}}:14:67)):  // pred: ^bb9
 // CHECK-NEXT:       cf.br ^bb11(%c0_i256, %39, %c0_i256, %c0_i256 : i256, i256, i256, i256) loc(#loc21)
-// CHECK-NEXT:     ^bb11(%42: i256 loc({{.*}}:14:67), %43: i256 loc({{.*}}:14:67), %44: i256 loc({{.*}}:14:67), %45: i256 loc({{.*}}:14:67)):  // 2 preds: ^bb10, ^bb12
+// CHECK-NEXT:     ^bb11(%42: i256 loc({{.*}}:14:67), %43: i256 loc({{.*}}:14:67), %44: i256 loc({{.*}}:14:67), %45: i256 loc({{.*}}:14:67)):  // 2 preds: ^bb10, ^bb14
 // CHECK-NEXT:       %46 = arith.cmpi ult, %42, %c2_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       cf.cond_br %46, ^bb12(%42, %43, %44, %45 : i256, i256, i256, i256), ^bb13(%43, %45 : i256, i256) loc(#loc21)
+// CHECK-NEXT:       cf.cond_br %46, ^bb12(%42, %43, %44, %45 : i256, i256, i256, i256), ^bb15(%43, %45 : i256, i256) loc(#loc21)
 // CHECK-NEXT:     ^bb12(%47: i256 loc({{.*}}:14:67), %48: i256 loc({{.*}}:14:67), %49: i256 loc({{.*}}:14:67), %50: i256 loc({{.*}}:14:67)):  // pred: ^bb11
 // CHECK-NEXT:       %51 = llvm.inttoptr %48 : i256 to !llvm.ptr<2> loc(#loc21)
 // CHECK-NEXT:       %52 = llvm.load %51 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc21)
-// CHECK-NEXT:       %53 = arith.shrui %52, %c128_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       %54 = arith.andi %53, %c340282366920938463463374607431768211455_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       %55 = arith.shli %54, %49 : i256 loc(#loc21)
-// CHECK-NEXT:       %56 = arith.ori %50, %55 : i256 loc(#loc21)
-// CHECK-NEXT:       %57 = arith.addi %48, %c32_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       %58 = arith.addi %49, %c128_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       %59 = arith.addi %47, %c1_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       cf.br ^bb11(%59, %57, %58, %56 : i256, i256, i256, i256) {loop_annotation = #loop_annotation} loc(#loc21)
-// CHECK-NEXT:     ^bb13(%60: i256 loc({{.*}}:14:67), %61: i256 loc({{.*}}:14:67)):  // pred: ^bb11
-// CHECK-NEXT:       %62 = llvm.inttoptr %40 : i256 to !llvm.ptr<5> loc(#loc21)
-// CHECK-NEXT:       llvm.store %61, %62 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc21)
-// CHECK-NEXT:       %63 = arith.addi %40, %c1_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       %64 = arith.addi %41, %c2_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       %65 = arith.addi %38, %c2_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       cf.br ^bb9(%65, %60, %63, %64 : i256, i256, i256, i256) loc(#loc21)
-// CHECK-NEXT:     ^bb14(%66: i256 loc({{.*}}:14:67), %67: i256 loc({{.*}}:14:67), %68: i256 loc({{.*}}:14:67)):  // pred: ^bb9
-// CHECK-NEXT:       %69 = arith.cmpi ult, %68, %c2_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       cf.cond_br %69, ^bb15(%68, %66, %c0_i256, %c0_i256 : i256, i256, i256, i256), ^bb18(%29 : i256) loc(#loc21)
-// CHECK-NEXT:     ^bb15(%70: i256 loc({{.*}}:14:67), %71: i256 loc({{.*}}:14:67), %72: i256 loc({{.*}}:14:67), %73: i256 loc({{.*}}:14:67)):  // 2 preds: ^bb14, ^bb16
-// CHECK-NEXT:       %74 = arith.cmpi ult, %70, %c2_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       cf.cond_br %74, ^bb16(%70, %71, %72, %73 : i256, i256, i256, i256), ^bb17(%73 : i256) loc(#loc21)
-// CHECK-NEXT:     ^bb16(%75: i256 loc({{.*}}:14:67), %76: i256 loc({{.*}}:14:67), %77: i256 loc({{.*}}:14:67), %78: i256 loc({{.*}}:14:67)):  // pred: ^bb15
-// CHECK-NEXT:       %79 = llvm.inttoptr %76 : i256 to !llvm.ptr<2> loc(#loc21)
-// CHECK-NEXT:       %80 = llvm.load %79 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc21)
-// CHECK-NEXT:       %81 = arith.shrui %80, %c128_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       %82 = arith.andi %81, %c340282366920938463463374607431768211455_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       %83 = arith.shli %82, %77 : i256 loc(#loc21)
-// CHECK-NEXT:       %84 = arith.ori %78, %83 : i256 loc(#loc21)
-// CHECK-NEXT:       %85 = arith.addi %76, %c32_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       %86 = arith.addi %77, %c128_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       %87 = arith.addi %75, %c1_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       cf.br ^bb15(%87, %85, %86, %84 : i256, i256, i256, i256) {loop_annotation = #loop_annotation} loc(#loc21)
-// CHECK-NEXT:     ^bb17(%88: i256 loc({{.*}}:14:67)):  // pred: ^bb15
-// CHECK-NEXT:       %89 = llvm.inttoptr %67 : i256 to !llvm.ptr<5> loc(#loc21)
-// CHECK-NEXT:       llvm.store %88, %89 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc21)
-// CHECK-NEXT:       cf.br ^bb18(%29 : i256) loc(#loc21)
-// CHECK-NEXT:     ^bb18(%90: i256 loc({{.*}}:14:67)):  // 2 preds: ^bb14, ^bb17
-// CHECK-NEXT:       %91 = arith.addi %90, %c1_i256 : i256 loc(#loc21)
-// CHECK-NEXT:       cf.br ^bb7(%91 : i256) loc(#loc21)
-// CHECK-NEXT:     ^bb19:  // pred: ^bb7
+// CHECK-NEXT:       %53 = arith.andi %52, %c-340282366920938463463374607431768211456_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       %54 = arith.cmpi ne, %52, %53 : i256 loc(#loc21)
+// CHECK-NEXT:       cf.cond_br %54, ^bb13, ^bb14 loc(#loc21)
+// CHECK-NEXT:     ^bb13:  // pred: ^bb12
+// CHECK-NEXT:       %55 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc21)
+// CHECK-NEXT:       "llvm.intrcall"(%55, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc21)
+// CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc21)
+// CHECK-NEXT:       cf.br ^bb14 loc(#loc21)
+// CHECK-NEXT:     ^bb14:  // 2 preds: ^bb12, ^bb13
+// CHECK-NEXT:       %56 = arith.shrui %53, %c128_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       %57 = arith.andi %56, %c340282366920938463463374607431768211455_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       %58 = arith.shli %57, %49 : i256 loc(#loc21)
+// CHECK-NEXT:       %59 = arith.ori %50, %58 : i256 loc(#loc21)
+// CHECK-NEXT:       %60 = arith.addi %48, %c32_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       %61 = arith.addi %49, %c128_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       %62 = arith.addi %47, %c1_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       cf.br ^bb11(%62, %60, %61, %59 : i256, i256, i256, i256) {loop_annotation = #loop_annotation} loc(#loc21)
+// CHECK-NEXT:     ^bb15(%63: i256 loc({{.*}}:14:67), %64: i256 loc({{.*}}:14:67)):  // pred: ^bb11
+// CHECK-NEXT:       %65 = llvm.inttoptr %40 : i256 to !llvm.ptr<5> loc(#loc21)
+// CHECK-NEXT:       llvm.store %64, %65 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc21)
+// CHECK-NEXT:       %66 = arith.addi %40, %c1_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       %67 = arith.addi %41, %c2_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       %68 = arith.addi %38, %c2_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       cf.br ^bb9(%68, %63, %66, %67 : i256, i256, i256, i256) loc(#loc21)
+// CHECK-NEXT:     ^bb16(%69: i256 loc({{.*}}:14:67), %70: i256 loc({{.*}}:14:67), %71: i256 loc({{.*}}:14:67)):  // pred: ^bb9
+// CHECK-NEXT:       %72 = arith.cmpi ult, %71, %c2_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       cf.cond_br %72, ^bb17(%71, %69, %c0_i256, %c0_i256 : i256, i256, i256, i256), ^bb22(%29 : i256) loc(#loc21)
+// CHECK-NEXT:     ^bb17(%73: i256 loc({{.*}}:14:67), %74: i256 loc({{.*}}:14:67), %75: i256 loc({{.*}}:14:67), %76: i256 loc({{.*}}:14:67)):  // 2 preds: ^bb16, ^bb20
+// CHECK-NEXT:       %77 = arith.cmpi ult, %73, %c2_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       cf.cond_br %77, ^bb18(%73, %74, %75, %76 : i256, i256, i256, i256), ^bb21(%76 : i256) loc(#loc21)
+// CHECK-NEXT:     ^bb18(%78: i256 loc({{.*}}:14:67), %79: i256 loc({{.*}}:14:67), %80: i256 loc({{.*}}:14:67), %81: i256 loc({{.*}}:14:67)):  // pred: ^bb17
+// CHECK-NEXT:       %82 = llvm.inttoptr %79 : i256 to !llvm.ptr<2> loc(#loc21)
+// CHECK-NEXT:       %83 = llvm.load %82 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc21)
+// CHECK-NEXT:       %84 = arith.andi %83, %c-340282366920938463463374607431768211456_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       %85 = arith.cmpi ne, %83, %84 : i256 loc(#loc21)
+// CHECK-NEXT:       cf.cond_br %85, ^bb19, ^bb20 loc(#loc21)
+// CHECK-NEXT:     ^bb19:  // pred: ^bb18
+// CHECK-NEXT:       %86 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc21)
+// CHECK-NEXT:       "llvm.intrcall"(%86, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc21)
+// CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc21)
+// CHECK-NEXT:       cf.br ^bb20 loc(#loc21)
+// CHECK-NEXT:     ^bb20:  // 2 preds: ^bb18, ^bb19
+// CHECK-NEXT:       %87 = arith.shrui %84, %c128_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       %88 = arith.andi %87, %c340282366920938463463374607431768211455_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       %89 = arith.shli %88, %80 : i256 loc(#loc21)
+// CHECK-NEXT:       %90 = arith.ori %81, %89 : i256 loc(#loc21)
+// CHECK-NEXT:       %91 = arith.addi %79, %c32_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       %92 = arith.addi %80, %c128_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       %93 = arith.addi %78, %c1_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       cf.br ^bb17(%93, %91, %92, %90 : i256, i256, i256, i256) {loop_annotation = #loop_annotation} loc(#loc21)
+// CHECK-NEXT:     ^bb21(%94: i256 loc({{.*}}:14:67)):  // pred: ^bb17
+// CHECK-NEXT:       %95 = llvm.inttoptr %70 : i256 to !llvm.ptr<5> loc(#loc21)
+// CHECK-NEXT:       llvm.store %94, %95 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc21)
+// CHECK-NEXT:       cf.br ^bb22(%29 : i256) loc(#loc21)
+// CHECK-NEXT:     ^bb22(%96: i256 loc({{.*}}:14:67)):  // 2 preds: ^bb16, ^bb21
+// CHECK-NEXT:       %97 = arith.addi %96, %c1_i256 : i256 loc(#loc21)
+// CHECK-NEXT:       cf.br ^bb7(%97 : i256) loc(#loc21)
+// CHECK-NEXT:     ^bb23:  // pred: ^bb7
 // CHECK-NEXT:       return loc(#loc18)
 // CHECK-NEXT:     } loc(#loc18)
 // CHECK-NEXT:     func.func @cd2s_b15_b16_dd_59(%arg0: !llvm.struct<(i256, i256)> loc({{.*}}:13:29)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       %c340282366920938463463374607431768211455_i256 = arith.constant 340282366920938463463374607431768211455 : i256 loc(#loc)
 // CHECK-NEXT:       %c128_i256 = arith.constant 128 : i256 loc(#loc)
+// CHECK-NEXT:       %c-340282366920938463463374607431768211456_i256 = arith.constant -340282366920938463463374607431768211456 : i256 loc(#loc)
 // CHECK-NEXT:       %c31_i256 = arith.constant 31 : i256 loc(#loc)
 // CHECK-NEXT:       %c256_i256 = arith.constant 256 : i256 loc(#loc)
 // CHECK-NEXT:       %c-1_i256 = arith.constant -1 : i256 loc(#loc)
@@ -1407,9 +1459,9 @@ contract ArrayCopyWiden {
 // CHECK-NEXT:       %40 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc25)
 // CHECK-NEXT:       %41 = "llvm.intrcall"(%40, %c32_i256) <{id = 4085 : i32, name = "evm.sha3"}> : (!llvm.ptr<1>, i256) -> i256 loc(#loc25)
 // CHECK-NEXT:       cf.br ^bb11(%c0_i256 : i256) loc(#loc25)
-// CHECK-NEXT:     ^bb11(%42: i256 loc({{.*}}:13:66)):  // 2 preds: ^bb10, ^bb36
+// CHECK-NEXT:     ^bb11(%42: i256 loc({{.*}}:13:66)):  // 2 preds: ^bb10, ^bb40
 // CHECK-NEXT:       %43 = arith.cmpi ult, %42, %2 : i256 loc(#loc25)
-// CHECK-NEXT:       cf.cond_br %43, ^bb12(%42 : i256), ^bb37 loc(#loc25)
+// CHECK-NEXT:       cf.cond_br %43, ^bb12(%42 : i256), ^bb41 loc(#loc25)
 // CHECK-NEXT:     ^bb12(%44: i256 loc({{.*}}:13:66)):  // pred: ^bb11
 // CHECK-NEXT:       %45 = arith.muli %44, %c32_i256 : i256 loc(#loc25)
 // CHECK-NEXT:       %46 = arith.addi %3, %45 : i256 loc(#loc25)
@@ -1513,57 +1565,75 @@ contract ArrayCopyWiden {
 // CHECK-NEXT:       %103 = arith.subi %57, %c1_i256 : i256 loc(#loc25)
 // CHECK-NEXT:       %104 = arith.select %102, %103, %c0_i256 : i256 loc(#loc25)
 // CHECK-NEXT:       cf.br ^bb27(%c0_i256, %58, %101, %c0_i256 : i256, i256, i256, i256) loc(#loc25)
-// CHECK-NEXT:     ^bb27(%105: i256 loc({{.*}}:13:66), %106: i256 loc({{.*}}:13:66), %107: i256 loc({{.*}}:13:66), %108: i256 loc({{.*}}:13:66)):  // 2 preds: ^bb26, ^bb31
+// CHECK-NEXT:     ^bb27(%105: i256 loc({{.*}}:13:66), %106: i256 loc({{.*}}:13:66), %107: i256 loc({{.*}}:13:66), %108: i256 loc({{.*}}:13:66)):  // 2 preds: ^bb26, ^bb33
 // CHECK-NEXT:       %109 = arith.cmpi ult, %105, %104 : i256 loc(#loc25)
-// CHECK-NEXT:       cf.cond_br %109, ^bb28(%105, %106, %107, %108 : i256, i256, i256, i256), ^bb32(%106, %107, %108 : i256, i256, i256) loc(#loc25)
+// CHECK-NEXT:       cf.cond_br %109, ^bb28(%105, %106, %107, %108 : i256, i256, i256, i256), ^bb34(%106, %107, %108 : i256, i256, i256) loc(#loc25)
 // CHECK-NEXT:     ^bb28(%110: i256 loc({{.*}}:13:66), %111: i256 loc({{.*}}:13:66), %112: i256 loc({{.*}}:13:66), %113: i256 loc({{.*}}:13:66)):  // pred: ^bb27
 // CHECK-NEXT:       cf.br ^bb29(%c0_i256, %111, %c0_i256, %c0_i256 : i256, i256, i256, i256) loc(#loc25)
-// CHECK-NEXT:     ^bb29(%114: i256 loc({{.*}}:13:66), %115: i256 loc({{.*}}:13:66), %116: i256 loc({{.*}}:13:66), %117: i256 loc({{.*}}:13:66)):  // 2 preds: ^bb28, ^bb30
+// CHECK-NEXT:     ^bb29(%114: i256 loc({{.*}}:13:66), %115: i256 loc({{.*}}:13:66), %116: i256 loc({{.*}}:13:66), %117: i256 loc({{.*}}:13:66)):  // 2 preds: ^bb28, ^bb32
 // CHECK-NEXT:       %118 = arith.cmpi ult, %114, %c2_i256 : i256 loc(#loc25)
-// CHECK-NEXT:       cf.cond_br %118, ^bb30(%114, %115, %116, %117 : i256, i256, i256, i256), ^bb31(%115, %117 : i256, i256) loc(#loc25)
+// CHECK-NEXT:       cf.cond_br %118, ^bb30(%114, %115, %116, %117 : i256, i256, i256, i256), ^bb33(%115, %117 : i256, i256) loc(#loc25)
 // CHECK-NEXT:     ^bb30(%119: i256 loc({{.*}}:13:66), %120: i256 loc({{.*}}:13:66), %121: i256 loc({{.*}}:13:66), %122: i256 loc({{.*}}:13:66)):  // pred: ^bb29
 // CHECK-NEXT:       %123 = llvm.inttoptr %120 : i256 to !llvm.ptr<2> loc(#loc25)
 // CHECK-NEXT:       %124 = llvm.load %123 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc25)
-// CHECK-NEXT:       %125 = arith.shrui %124, %c128_i256 : i256 loc(#loc25)
-// CHECK-NEXT:       %126 = arith.andi %125, %c340282366920938463463374607431768211455_i256 : i256 loc(#loc25)
-// CHECK-NEXT:       %127 = arith.shli %126, %121 : i256 loc(#loc25)
-// CHECK-NEXT:       %128 = arith.ori %122, %127 : i256 loc(#loc25)
-// CHECK-NEXT:       %129 = arith.addi %120, %c32_i256 : i256 loc(#loc25)
-// CHECK-NEXT:       %130 = arith.addi %121, %c128_i256 : i256 loc(#loc25)
-// CHECK-NEXT:       %131 = arith.addi %119, %c1_i256 : i256 loc(#loc25)
-// CHECK-NEXT:       cf.br ^bb29(%131, %129, %130, %128 : i256, i256, i256, i256) {loop_annotation = #loop_annotation} loc(#loc25)
-// CHECK-NEXT:     ^bb31(%132: i256 loc({{.*}}:13:66), %133: i256 loc({{.*}}:13:66)):  // pred: ^bb29
-// CHECK-NEXT:       %134 = llvm.inttoptr %112 : i256 to !llvm.ptr<5> loc(#loc25)
-// CHECK-NEXT:       llvm.store %133, %134 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc25)
-// CHECK-NEXT:       %135 = arith.addi %112, %c1_i256 : i256 loc(#loc25)
-// CHECK-NEXT:       %136 = arith.addi %113, %c2_i256 : i256 loc(#loc25)
-// CHECK-NEXT:       %137 = arith.addi %110, %c2_i256 : i256 loc(#loc25)
-// CHECK-NEXT:       cf.br ^bb27(%137, %132, %135, %136 : i256, i256, i256, i256) loc(#loc25)
-// CHECK-NEXT:     ^bb32(%138: i256 loc({{.*}}:13:66), %139: i256 loc({{.*}}:13:66), %140: i256 loc({{.*}}:13:66)):  // pred: ^bb27
-// CHECK-NEXT:       %141 = arith.cmpi ult, %140, %57 : i256 loc(#loc25)
-// CHECK-NEXT:       cf.cond_br %141, ^bb33(%140, %138, %c0_i256, %c0_i256 : i256, i256, i256, i256), ^bb36(%44 : i256) loc(#loc25)
-// CHECK-NEXT:     ^bb33(%142: i256 loc({{.*}}:13:66), %143: i256 loc({{.*}}:13:66), %144: i256 loc({{.*}}:13:66), %145: i256 loc({{.*}}:13:66)):  // 2 preds: ^bb32, ^bb34
-// CHECK-NEXT:       %146 = arith.cmpi ult, %142, %57 : i256 loc(#loc25)
-// CHECK-NEXT:       cf.cond_br %146, ^bb34(%142, %143, %144, %145 : i256, i256, i256, i256), ^bb35(%145 : i256) loc(#loc25)
-// CHECK-NEXT:     ^bb34(%147: i256 loc({{.*}}:13:66), %148: i256 loc({{.*}}:13:66), %149: i256 loc({{.*}}:13:66), %150: i256 loc({{.*}}:13:66)):  // pred: ^bb33
-// CHECK-NEXT:       %151 = llvm.inttoptr %148 : i256 to !llvm.ptr<2> loc(#loc25)
-// CHECK-NEXT:       %152 = llvm.load %151 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc25)
-// CHECK-NEXT:       %153 = arith.shrui %152, %c128_i256 : i256 loc(#loc25)
-// CHECK-NEXT:       %154 = arith.andi %153, %c340282366920938463463374607431768211455_i256 : i256 loc(#loc25)
-// CHECK-NEXT:       %155 = arith.shli %154, %149 : i256 loc(#loc25)
-// CHECK-NEXT:       %156 = arith.ori %150, %155 : i256 loc(#loc25)
-// CHECK-NEXT:       %157 = arith.addi %148, %c32_i256 : i256 loc(#loc25)
-// CHECK-NEXT:       %158 = arith.addi %149, %c128_i256 : i256 loc(#loc25)
-// CHECK-NEXT:       %159 = arith.addi %147, %c1_i256 : i256 loc(#loc25)
-// CHECK-NEXT:       cf.br ^bb33(%159, %157, %158, %156 : i256, i256, i256, i256) loc(#loc25)
-// CHECK-NEXT:     ^bb35(%160: i256 loc({{.*}}:13:66)):  // pred: ^bb33
-// CHECK-NEXT:       %161 = llvm.inttoptr %139 : i256 to !llvm.ptr<5> loc(#loc25)
-// CHECK-NEXT:       llvm.store %160, %161 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc25)
-// CHECK-NEXT:       cf.br ^bb36(%44 : i256) loc(#loc25)
-// CHECK-NEXT:     ^bb36(%162: i256 loc({{.*}}:13:66)):  // 2 preds: ^bb32, ^bb35
-// CHECK-NEXT:       %163 = arith.addi %162, %c1_i256 : i256 loc(#loc25)
-// CHECK-NEXT:       cf.br ^bb11(%163 : i256) loc(#loc25)
-// CHECK-NEXT:     ^bb37:  // pred: ^bb11
+// CHECK-NEXT:       %125 = arith.andi %124, %c-340282366920938463463374607431768211456_i256 : i256 loc(#loc25)
+// CHECK-NEXT:       %126 = arith.cmpi ne, %124, %125 : i256 loc(#loc25)
+// CHECK-NEXT:       cf.cond_br %126, ^bb31, ^bb32 loc(#loc25)
+// CHECK-NEXT:     ^bb31:  // pred: ^bb30
+// CHECK-NEXT:       %127 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc25)
+// CHECK-NEXT:       "llvm.intrcall"(%127, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc25)
+// CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc25)
+// CHECK-NEXT:       cf.br ^bb32 loc(#loc25)
+// CHECK-NEXT:     ^bb32:  // 2 preds: ^bb30, ^bb31
+// CHECK-NEXT:       %128 = arith.shrui %125, %c128_i256 : i256 loc(#loc25)
+// CHECK-NEXT:       %129 = arith.andi %128, %c340282366920938463463374607431768211455_i256 : i256 loc(#loc25)
+// CHECK-NEXT:       %130 = arith.shli %129, %121 : i256 loc(#loc25)
+// CHECK-NEXT:       %131 = arith.ori %122, %130 : i256 loc(#loc25)
+// CHECK-NEXT:       %132 = arith.addi %120, %c32_i256 : i256 loc(#loc25)
+// CHECK-NEXT:       %133 = arith.addi %121, %c128_i256 : i256 loc(#loc25)
+// CHECK-NEXT:       %134 = arith.addi %119, %c1_i256 : i256 loc(#loc25)
+// CHECK-NEXT:       cf.br ^bb29(%134, %132, %133, %131 : i256, i256, i256, i256) {loop_annotation = #loop_annotation} loc(#loc25)
+// CHECK-NEXT:     ^bb33(%135: i256 loc({{.*}}:13:66), %136: i256 loc({{.*}}:13:66)):  // pred: ^bb29
+// CHECK-NEXT:       %137 = llvm.inttoptr %112 : i256 to !llvm.ptr<5> loc(#loc25)
+// CHECK-NEXT:       llvm.store %136, %137 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc25)
+// CHECK-NEXT:       %138 = arith.addi %112, %c1_i256 : i256 loc(#loc25)
+// CHECK-NEXT:       %139 = arith.addi %113, %c2_i256 : i256 loc(#loc25)
+// CHECK-NEXT:       %140 = arith.addi %110, %c2_i256 : i256 loc(#loc25)
+// CHECK-NEXT:       cf.br ^bb27(%140, %135, %138, %139 : i256, i256, i256, i256) loc(#loc25)
+// CHECK-NEXT:     ^bb34(%141: i256 loc({{.*}}:13:66), %142: i256 loc({{.*}}:13:66), %143: i256 loc({{.*}}:13:66)):  // pred: ^bb27
+// CHECK-NEXT:       %144 = arith.cmpi ult, %143, %57 : i256 loc(#loc25)
+// CHECK-NEXT:       cf.cond_br %144, ^bb35(%143, %141, %c0_i256, %c0_i256 : i256, i256, i256, i256), ^bb40(%44 : i256) loc(#loc25)
+// CHECK-NEXT:     ^bb35(%145: i256 loc({{.*}}:13:66), %146: i256 loc({{.*}}:13:66), %147: i256 loc({{.*}}:13:66), %148: i256 loc({{.*}}:13:66)):  // 2 preds: ^bb34, ^bb38
+// CHECK-NEXT:       %149 = arith.cmpi ult, %145, %57 : i256 loc(#loc25)
+// CHECK-NEXT:       cf.cond_br %149, ^bb36(%145, %146, %147, %148 : i256, i256, i256, i256), ^bb39(%148 : i256) loc(#loc25)
+// CHECK-NEXT:     ^bb36(%150: i256 loc({{.*}}:13:66), %151: i256 loc({{.*}}:13:66), %152: i256 loc({{.*}}:13:66), %153: i256 loc({{.*}}:13:66)):  // pred: ^bb35
+// CHECK-NEXT:       %154 = llvm.inttoptr %151 : i256 to !llvm.ptr<2> loc(#loc25)
+// CHECK-NEXT:       %155 = llvm.load %154 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc25)
+// CHECK-NEXT:       %156 = arith.andi %155, %c-340282366920938463463374607431768211456_i256 : i256 loc(#loc25)
+// CHECK-NEXT:       %157 = arith.cmpi ne, %155, %156 : i256 loc(#loc25)
+// CHECK-NEXT:       cf.cond_br %157, ^bb37, ^bb38 loc(#loc25)
+// CHECK-NEXT:     ^bb37:  // pred: ^bb36
+// CHECK-NEXT:       %158 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc25)
+// CHECK-NEXT:       "llvm.intrcall"(%158, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc25)
+// CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc25)
+// CHECK-NEXT:       cf.br ^bb38 loc(#loc25)
+// CHECK-NEXT:     ^bb38:  // 2 preds: ^bb36, ^bb37
+// CHECK-NEXT:       %159 = arith.shrui %156, %c128_i256 : i256 loc(#loc25)
+// CHECK-NEXT:       %160 = arith.andi %159, %c340282366920938463463374607431768211455_i256 : i256 loc(#loc25)
+// CHECK-NEXT:       %161 = arith.shli %160, %152 : i256 loc(#loc25)
+// CHECK-NEXT:       %162 = arith.ori %153, %161 : i256 loc(#loc25)
+// CHECK-NEXT:       %163 = arith.addi %151, %c32_i256 : i256 loc(#loc25)
+// CHECK-NEXT:       %164 = arith.addi %152, %c128_i256 : i256 loc(#loc25)
+// CHECK-NEXT:       %165 = arith.addi %150, %c1_i256 : i256 loc(#loc25)
+// CHECK-NEXT:       cf.br ^bb35(%165, %163, %164, %162 : i256, i256, i256, i256) loc(#loc25)
+// CHECK-NEXT:     ^bb39(%166: i256 loc({{.*}}:13:66)):  // pred: ^bb35
+// CHECK-NEXT:       %167 = llvm.inttoptr %142 : i256 to !llvm.ptr<5> loc(#loc25)
+// CHECK-NEXT:       llvm.store %166, %167 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc25)
+// CHECK-NEXT:       cf.br ^bb40(%44 : i256) loc(#loc25)
+// CHECK-NEXT:     ^bb40(%168: i256 loc({{.*}}:13:66)):  // 2 preds: ^bb34, ^bb39
+// CHECK-NEXT:       %169 = arith.addi %168, %c1_i256 : i256 loc(#loc25)
+// CHECK-NEXT:       cf.br ^bb11(%169 : i256) loc(#loc25)
+// CHECK-NEXT:     ^bb41:  // pred: ^bb11
 // CHECK-NEXT:       return loc(#loc22)
 // CHECK-NEXT:     } loc(#loc22)
 // CHECK-NEXT:     func.func @cd2s_b15_b16_s_47(%arg0: i256 loc({{.*}}:12:28)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
@@ -1571,6 +1641,7 @@ contract ArrayCopyWiden {
 // CHECK-NEXT:       %c32_i256 = arith.constant 32 : i256 loc(#loc)
 // CHECK-NEXT:       %c340282366920938463463374607431768211455_i256 = arith.constant 340282366920938463463374607431768211455 : i256 loc(#loc)
 // CHECK-NEXT:       %c128_i256 = arith.constant 128 : i256 loc(#loc)
+// CHECK-NEXT:       %c-340282366920938463463374607431768211456_i256 = arith.constant -340282366920938463463374607431768211456 : i256 loc(#loc)
 // CHECK-NEXT:       %c2_i256 = arith.constant 2 : i256 loc(#loc)
 // CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:       %c4_i256 = arith.constant 4 : i256 loc(#loc)
@@ -1579,59 +1650,78 @@ contract ArrayCopyWiden {
 // CHECK-NEXT:       llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc27)
 // CHECK-NEXT:       %1 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc28)
 // CHECK-NEXT:       cf.br ^bb1(%c0_i256, %1, %c1_i256, %c0_i256 : i256, i256, i256, i256) loc(#loc29)
-// CHECK-NEXT:     ^bb1(%2: i256 loc({{.*}}:12:64), %3: i256 loc({{.*}}:12:64), %4: i256 loc({{.*}}:12:64), %5: i256 loc({{.*}}:12:64)):  // 2 preds: ^bb0, ^bb5
+// CHECK-NEXT:     ^bb1(%2: i256 loc({{.*}}:12:64), %3: i256 loc({{.*}}:12:64), %4: i256 loc({{.*}}:12:64), %5: i256 loc({{.*}}:12:64)):  // 2 preds: ^bb0, ^bb7
 // CHECK-NEXT:       %6 = arith.cmpi ult, %2, %c3_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       cf.cond_br %6, ^bb2(%2, %3, %4, %5 : i256, i256, i256, i256), ^bb6(%3, %4, %5 : i256, i256, i256) loc(#loc29)
+// CHECK-NEXT:       cf.cond_br %6, ^bb2(%2, %3, %4, %5 : i256, i256, i256, i256), ^bb8(%3, %4, %5 : i256, i256, i256) loc(#loc29)
 // CHECK-NEXT:     ^bb2(%7: i256 loc({{.*}}:12:64), %8: i256 loc({{.*}}:12:64), %9: i256 loc({{.*}}:12:64), %10: i256 loc({{.*}}:12:64)):  // pred: ^bb1
 // CHECK-NEXT:       cf.br ^bb3(%c0_i256, %8, %c0_i256, %c0_i256 : i256, i256, i256, i256) loc(#loc29)
-// CHECK-NEXT:     ^bb3(%11: i256 loc({{.*}}:12:64), %12: i256 loc({{.*}}:12:64), %13: i256 loc({{.*}}:12:64), %14: i256 loc({{.*}}:12:64)):  // 2 preds: ^bb2, ^bb4
+// CHECK-NEXT:     ^bb3(%11: i256 loc({{.*}}:12:64), %12: i256 loc({{.*}}:12:64), %13: i256 loc({{.*}}:12:64), %14: i256 loc({{.*}}:12:64)):  // 2 preds: ^bb2, ^bb6
 // CHECK-NEXT:       %15 = arith.cmpi ult, %11, %c2_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       cf.cond_br %15, ^bb4(%11, %12, %13, %14 : i256, i256, i256, i256), ^bb5(%12, %14 : i256, i256) loc(#loc29)
+// CHECK-NEXT:       cf.cond_br %15, ^bb4(%11, %12, %13, %14 : i256, i256, i256, i256), ^bb7(%12, %14 : i256, i256) loc(#loc29)
 // CHECK-NEXT:     ^bb4(%16: i256 loc({{.*}}:12:64), %17: i256 loc({{.*}}:12:64), %18: i256 loc({{.*}}:12:64), %19: i256 loc({{.*}}:12:64)):  // pred: ^bb3
 // CHECK-NEXT:       %20 = llvm.inttoptr %17 : i256 to !llvm.ptr<2> loc(#loc29)
 // CHECK-NEXT:       %21 = llvm.load %20 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc29)
-// CHECK-NEXT:       %22 = arith.shrui %21, %c128_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       %23 = arith.andi %22, %c340282366920938463463374607431768211455_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       %24 = arith.shli %23, %18 : i256 loc(#loc29)
-// CHECK-NEXT:       %25 = arith.ori %19, %24 : i256 loc(#loc29)
-// CHECK-NEXT:       %26 = arith.addi %17, %c32_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       %27 = arith.addi %18, %c128_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       %28 = arith.addi %16, %c1_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       cf.br ^bb3(%28, %26, %27, %25 : i256, i256, i256, i256) {loop_annotation = #loop_annotation} loc(#loc29)
-// CHECK-NEXT:     ^bb5(%29: i256 loc({{.*}}:12:64), %30: i256 loc({{.*}}:12:64)):  // pred: ^bb3
-// CHECK-NEXT:       %31 = llvm.inttoptr %9 : i256 to !llvm.ptr<5> loc(#loc29)
-// CHECK-NEXT:       llvm.store %30, %31 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc29)
-// CHECK-NEXT:       %32 = arith.addi %9, %c1_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       %33 = arith.addi %10, %c2_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       %34 = arith.addi %7, %c2_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       cf.br ^bb1(%34, %29, %32, %33 : i256, i256, i256, i256) loc(#loc29)
-// CHECK-NEXT:     ^bb6(%35: i256 loc({{.*}}:12:64), %36: i256 loc({{.*}}:12:64), %37: i256 loc({{.*}}:12:64)):  // pred: ^bb1
-// CHECK-NEXT:       %38 = arith.cmpi ult, %37, %c4_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       cf.cond_br %38, ^bb7(%37, %35, %c0_i256, %c0_i256 : i256, i256, i256, i256), ^bb10 loc(#loc29)
-// CHECK-NEXT:     ^bb7(%39: i256 loc({{.*}}:12:64), %40: i256 loc({{.*}}:12:64), %41: i256 loc({{.*}}:12:64), %42: i256 loc({{.*}}:12:64)):  // 2 preds: ^bb6, ^bb8
-// CHECK-NEXT:       %43 = arith.cmpi ult, %39, %c4_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       cf.cond_br %43, ^bb8(%39, %40, %41, %42 : i256, i256, i256, i256), ^bb9(%42 : i256) loc(#loc29)
-// CHECK-NEXT:     ^bb8(%44: i256 loc({{.*}}:12:64), %45: i256 loc({{.*}}:12:64), %46: i256 loc({{.*}}:12:64), %47: i256 loc({{.*}}:12:64)):  // pred: ^bb7
-// CHECK-NEXT:       %48 = llvm.inttoptr %45 : i256 to !llvm.ptr<2> loc(#loc29)
-// CHECK-NEXT:       %49 = llvm.load %48 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc29)
-// CHECK-NEXT:       %50 = arith.shrui %49, %c128_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       %51 = arith.andi %50, %c340282366920938463463374607431768211455_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       %52 = arith.shli %51, %46 : i256 loc(#loc29)
-// CHECK-NEXT:       %53 = arith.ori %47, %52 : i256 loc(#loc29)
-// CHECK-NEXT:       %54 = arith.addi %45, %c32_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       %55 = arith.addi %46, %c128_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       %56 = arith.addi %44, %c1_i256 : i256 loc(#loc29)
-// CHECK-NEXT:       cf.br ^bb7(%56, %54, %55, %53 : i256, i256, i256, i256) {loop_annotation = #loop_annotation} loc(#loc29)
-// CHECK-NEXT:     ^bb9(%57: i256 loc({{.*}}:12:64)):  // pred: ^bb7
-// CHECK-NEXT:       %58 = llvm.inttoptr %36 : i256 to !llvm.ptr<5> loc(#loc29)
-// CHECK-NEXT:       llvm.store %57, %58 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc29)
-// CHECK-NEXT:       cf.br ^bb10 loc(#loc29)
-// CHECK-NEXT:     ^bb10:  // 2 preds: ^bb6, ^bb9
+// CHECK-NEXT:       %22 = arith.andi %21, %c-340282366920938463463374607431768211456_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       %23 = arith.cmpi ne, %21, %22 : i256 loc(#loc29)
+// CHECK-NEXT:       cf.cond_br %23, ^bb5, ^bb6 loc(#loc29)
+// CHECK-NEXT:     ^bb5:  // pred: ^bb4
+// CHECK-NEXT:       %24 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc29)
+// CHECK-NEXT:       "llvm.intrcall"(%24, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc29)
+// CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc29)
+// CHECK-NEXT:       cf.br ^bb6 loc(#loc29)
+// CHECK-NEXT:     ^bb6:  // 2 preds: ^bb4, ^bb5
+// CHECK-NEXT:       %25 = arith.shrui %22, %c128_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       %26 = arith.andi %25, %c340282366920938463463374607431768211455_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       %27 = arith.shli %26, %18 : i256 loc(#loc29)
+// CHECK-NEXT:       %28 = arith.ori %19, %27 : i256 loc(#loc29)
+// CHECK-NEXT:       %29 = arith.addi %17, %c32_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       %30 = arith.addi %18, %c128_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       %31 = arith.addi %16, %c1_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       cf.br ^bb3(%31, %29, %30, %28 : i256, i256, i256, i256) {loop_annotation = #loop_annotation} loc(#loc29)
+// CHECK-NEXT:     ^bb7(%32: i256 loc({{.*}}:12:64), %33: i256 loc({{.*}}:12:64)):  // pred: ^bb3
+// CHECK-NEXT:       %34 = llvm.inttoptr %9 : i256 to !llvm.ptr<5> loc(#loc29)
+// CHECK-NEXT:       llvm.store %33, %34 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc29)
+// CHECK-NEXT:       %35 = arith.addi %9, %c1_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       %36 = arith.addi %10, %c2_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       %37 = arith.addi %7, %c2_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       cf.br ^bb1(%37, %32, %35, %36 : i256, i256, i256, i256) loc(#loc29)
+// CHECK-NEXT:     ^bb8(%38: i256 loc({{.*}}:12:64), %39: i256 loc({{.*}}:12:64), %40: i256 loc({{.*}}:12:64)):  // pred: ^bb1
+// CHECK-NEXT:       %41 = arith.cmpi ult, %40, %c4_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       cf.cond_br %41, ^bb9(%40, %38, %c0_i256, %c0_i256 : i256, i256, i256, i256), ^bb14 loc(#loc29)
+// CHECK-NEXT:     ^bb9(%42: i256 loc({{.*}}:12:64), %43: i256 loc({{.*}}:12:64), %44: i256 loc({{.*}}:12:64), %45: i256 loc({{.*}}:12:64)):  // 2 preds: ^bb8, ^bb12
+// CHECK-NEXT:       %46 = arith.cmpi ult, %42, %c4_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       cf.cond_br %46, ^bb10(%42, %43, %44, %45 : i256, i256, i256, i256), ^bb13(%45 : i256) loc(#loc29)
+// CHECK-NEXT:     ^bb10(%47: i256 loc({{.*}}:12:64), %48: i256 loc({{.*}}:12:64), %49: i256 loc({{.*}}:12:64), %50: i256 loc({{.*}}:12:64)):  // pred: ^bb9
+// CHECK-NEXT:       %51 = llvm.inttoptr %48 : i256 to !llvm.ptr<2> loc(#loc29)
+// CHECK-NEXT:       %52 = llvm.load %51 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc29)
+// CHECK-NEXT:       %53 = arith.andi %52, %c-340282366920938463463374607431768211456_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       %54 = arith.cmpi ne, %52, %53 : i256 loc(#loc29)
+// CHECK-NEXT:       cf.cond_br %54, ^bb11, ^bb12 loc(#loc29)
+// CHECK-NEXT:     ^bb11:  // pred: ^bb10
+// CHECK-NEXT:       %55 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc29)
+// CHECK-NEXT:       "llvm.intrcall"(%55, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc29)
+// CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc29)
+// CHECK-NEXT:       cf.br ^bb12 loc(#loc29)
+// CHECK-NEXT:     ^bb12:  // 2 preds: ^bb10, ^bb11
+// CHECK-NEXT:       %56 = arith.shrui %53, %c128_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       %57 = arith.andi %56, %c340282366920938463463374607431768211455_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       %58 = arith.shli %57, %49 : i256 loc(#loc29)
+// CHECK-NEXT:       %59 = arith.ori %50, %58 : i256 loc(#loc29)
+// CHECK-NEXT:       %60 = arith.addi %48, %c32_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       %61 = arith.addi %49, %c128_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       %62 = arith.addi %47, %c1_i256 : i256 loc(#loc29)
+// CHECK-NEXT:       cf.br ^bb9(%62, %60, %61, %59 : i256, i256, i256, i256) {loop_annotation = #loop_annotation} loc(#loc29)
+// CHECK-NEXT:     ^bb13(%63: i256 loc({{.*}}:12:64)):  // pred: ^bb9
+// CHECK-NEXT:       %64 = llvm.inttoptr %39 : i256 to !llvm.ptr<5> loc(#loc29)
+// CHECK-NEXT:       llvm.store %63, %64 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc29)
+// CHECK-NEXT:       cf.br ^bb14 loc(#loc29)
+// CHECK-NEXT:     ^bb14:  // 2 preds: ^bb8, ^bb13
 // CHECK-NEXT:       return loc(#loc26)
 // CHECK-NEXT:     } loc(#loc26)
 // CHECK-NEXT:     func.func @cd2s_b15_b16_d_35(%arg0: !llvm.struct<(i256, i256)> loc({{.*}}:11:28)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       %c340282366920938463463374607431768211455_i256 = arith.constant 340282366920938463463374607431768211455 : i256 loc(#loc)
 // CHECK-NEXT:       %c128_i256 = arith.constant 128 : i256 loc(#loc)
+// CHECK-NEXT:       %c-340282366920938463463374607431768211456_i256 = arith.constant -340282366920938463463374607431768211456 : i256 loc(#loc)
 // CHECK-NEXT:       %c256_i256 = arith.constant 256 : i256 loc(#loc)
 // CHECK-NEXT:       %c-1_i256 = arith.constant -1 : i256 loc(#loc)
 // CHECK-NEXT:       %c2_i256 = arith.constant 2 : i256 loc(#loc)
@@ -1712,54 +1802,72 @@ contract ArrayCopyWiden {
 // CHECK-NEXT:       %42 = arith.subi %2, %c1_i256 : i256 loc(#loc33)
 // CHECK-NEXT:       %43 = arith.select %41, %42, %c0_i256 : i256 loc(#loc33)
 // CHECK-NEXT:       cf.br ^bb9(%c0_i256, %3, %40, %c0_i256 : i256, i256, i256, i256) loc(#loc33)
-// CHECK-NEXT:     ^bb9(%44: i256 loc({{.*}}:11:63), %45: i256 loc({{.*}}:11:63), %46: i256 loc({{.*}}:11:63), %47: i256 loc({{.*}}:11:63)):  // 2 preds: ^bb8, ^bb13
+// CHECK-NEXT:     ^bb9(%44: i256 loc({{.*}}:11:63), %45: i256 loc({{.*}}:11:63), %46: i256 loc({{.*}}:11:63), %47: i256 loc({{.*}}:11:63)):  // 2 preds: ^bb8, ^bb15
 // CHECK-NEXT:       %48 = arith.cmpi ult, %44, %43 : i256 loc(#loc33)
-// CHECK-NEXT:       cf.cond_br %48, ^bb10(%44, %45, %46, %47 : i256, i256, i256, i256), ^bb14(%45, %46, %47 : i256, i256, i256) loc(#loc33)
+// CHECK-NEXT:       cf.cond_br %48, ^bb10(%44, %45, %46, %47 : i256, i256, i256, i256), ^bb16(%45, %46, %47 : i256, i256, i256) loc(#loc33)
 // CHECK-NEXT:     ^bb10(%49: i256 loc({{.*}}:11:63), %50: i256 loc({{.*}}:11:63), %51: i256 loc({{.*}}:11:63), %52: i256 loc({{.*}}:11:63)):  // pred: ^bb9
 // CHECK-NEXT:       cf.br ^bb11(%c0_i256, %50, %c0_i256, %c0_i256 : i256, i256, i256, i256) loc(#loc33)
-// CHECK-NEXT:     ^bb11(%53: i256 loc({{.*}}:11:63), %54: i256 loc({{.*}}:11:63), %55: i256 loc({{.*}}:11:63), %56: i256 loc({{.*}}:11:63)):  // 2 preds: ^bb10, ^bb12
+// CHECK-NEXT:     ^bb11(%53: i256 loc({{.*}}:11:63), %54: i256 loc({{.*}}:11:63), %55: i256 loc({{.*}}:11:63), %56: i256 loc({{.*}}:11:63)):  // 2 preds: ^bb10, ^bb14
 // CHECK-NEXT:       %57 = arith.cmpi ult, %53, %c2_i256 : i256 loc(#loc33)
-// CHECK-NEXT:       cf.cond_br %57, ^bb12(%53, %54, %55, %56 : i256, i256, i256, i256), ^bb13(%54, %56 : i256, i256) loc(#loc33)
+// CHECK-NEXT:       cf.cond_br %57, ^bb12(%53, %54, %55, %56 : i256, i256, i256, i256), ^bb15(%54, %56 : i256, i256) loc(#loc33)
 // CHECK-NEXT:     ^bb12(%58: i256 loc({{.*}}:11:63), %59: i256 loc({{.*}}:11:63), %60: i256 loc({{.*}}:11:63), %61: i256 loc({{.*}}:11:63)):  // pred: ^bb11
 // CHECK-NEXT:       %62 = llvm.inttoptr %59 : i256 to !llvm.ptr<2> loc(#loc33)
 // CHECK-NEXT:       %63 = llvm.load %62 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc33)
-// CHECK-NEXT:       %64 = arith.shrui %63, %c128_i256 : i256 loc(#loc33)
-// CHECK-NEXT:       %65 = arith.andi %64, %c340282366920938463463374607431768211455_i256 : i256 loc(#loc33)
-// CHECK-NEXT:       %66 = arith.shli %65, %60 : i256 loc(#loc33)
-// CHECK-NEXT:       %67 = arith.ori %61, %66 : i256 loc(#loc33)
-// CHECK-NEXT:       %68 = arith.addi %59, %c32_i256 : i256 loc(#loc33)
-// CHECK-NEXT:       %69 = arith.addi %60, %c128_i256 : i256 loc(#loc33)
-// CHECK-NEXT:       %70 = arith.addi %58, %c1_i256 : i256 loc(#loc33)
-// CHECK-NEXT:       cf.br ^bb11(%70, %68, %69, %67 : i256, i256, i256, i256) {loop_annotation = #loop_annotation} loc(#loc33)
-// CHECK-NEXT:     ^bb13(%71: i256 loc({{.*}}:11:63), %72: i256 loc({{.*}}:11:63)):  // pred: ^bb11
-// CHECK-NEXT:       %73 = llvm.inttoptr %51 : i256 to !llvm.ptr<5> loc(#loc33)
-// CHECK-NEXT:       llvm.store %72, %73 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc33)
-// CHECK-NEXT:       %74 = arith.addi %51, %c1_i256 : i256 loc(#loc33)
-// CHECK-NEXT:       %75 = arith.addi %52, %c2_i256 : i256 loc(#loc33)
-// CHECK-NEXT:       %76 = arith.addi %49, %c2_i256 : i256 loc(#loc33)
-// CHECK-NEXT:       cf.br ^bb9(%76, %71, %74, %75 : i256, i256, i256, i256) loc(#loc33)
-// CHECK-NEXT:     ^bb14(%77: i256 loc({{.*}}:11:63), %78: i256 loc({{.*}}:11:63), %79: i256 loc({{.*}}:11:63)):  // pred: ^bb9
-// CHECK-NEXT:       %80 = arith.cmpi ult, %79, %2 : i256 loc(#loc33)
-// CHECK-NEXT:       cf.cond_br %80, ^bb15(%79, %77, %c0_i256, %c0_i256 : i256, i256, i256, i256), ^bb18 loc(#loc33)
-// CHECK-NEXT:     ^bb15(%81: i256 loc({{.*}}:11:63), %82: i256 loc({{.*}}:11:63), %83: i256 loc({{.*}}:11:63), %84: i256 loc({{.*}}:11:63)):  // 2 preds: ^bb14, ^bb16
-// CHECK-NEXT:       %85 = arith.cmpi ult, %81, %2 : i256 loc(#loc33)
-// CHECK-NEXT:       cf.cond_br %85, ^bb16(%81, %82, %83, %84 : i256, i256, i256, i256), ^bb17(%84 : i256) loc(#loc33)
-// CHECK-NEXT:     ^bb16(%86: i256 loc({{.*}}:11:63), %87: i256 loc({{.*}}:11:63), %88: i256 loc({{.*}}:11:63), %89: i256 loc({{.*}}:11:63)):  // pred: ^bb15
-// CHECK-NEXT:       %90 = llvm.inttoptr %87 : i256 to !llvm.ptr<2> loc(#loc33)
-// CHECK-NEXT:       %91 = llvm.load %90 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc33)
-// CHECK-NEXT:       %92 = arith.shrui %91, %c128_i256 : i256 loc(#loc33)
-// CHECK-NEXT:       %93 = arith.andi %92, %c340282366920938463463374607431768211455_i256 : i256 loc(#loc33)
-// CHECK-NEXT:       %94 = arith.shli %93, %88 : i256 loc(#loc33)
-// CHECK-NEXT:       %95 = arith.ori %89, %94 : i256 loc(#loc33)
-// CHECK-NEXT:       %96 = arith.addi %87, %c32_i256 : i256 loc(#loc33)
-// CHECK-NEXT:       %97 = arith.addi %88, %c128_i256 : i256 loc(#loc33)
-// CHECK-NEXT:       %98 = arith.addi %86, %c1_i256 : i256 loc(#loc33)
-// CHECK-NEXT:       cf.br ^bb15(%98, %96, %97, %95 : i256, i256, i256, i256) loc(#loc33)
-// CHECK-NEXT:     ^bb17(%99: i256 loc({{.*}}:11:63)):  // pred: ^bb15
-// CHECK-NEXT:       %100 = llvm.inttoptr %78 : i256 to !llvm.ptr<5> loc(#loc33)
-// CHECK-NEXT:       llvm.store %99, %100 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc33)
-// CHECK-NEXT:       cf.br ^bb18 loc(#loc33)
-// CHECK-NEXT:     ^bb18:  // 2 preds: ^bb14, ^bb17
+// CHECK-NEXT:       %64 = arith.andi %63, %c-340282366920938463463374607431768211456_i256 : i256 loc(#loc33)
+// CHECK-NEXT:       %65 = arith.cmpi ne, %63, %64 : i256 loc(#loc33)
+// CHECK-NEXT:       cf.cond_br %65, ^bb13, ^bb14 loc(#loc33)
+// CHECK-NEXT:     ^bb13:  // pred: ^bb12
+// CHECK-NEXT:       %66 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc33)
+// CHECK-NEXT:       "llvm.intrcall"(%66, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc33)
+// CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc33)
+// CHECK-NEXT:       cf.br ^bb14 loc(#loc33)
+// CHECK-NEXT:     ^bb14:  // 2 preds: ^bb12, ^bb13
+// CHECK-NEXT:       %67 = arith.shrui %64, %c128_i256 : i256 loc(#loc33)
+// CHECK-NEXT:       %68 = arith.andi %67, %c340282366920938463463374607431768211455_i256 : i256 loc(#loc33)
+// CHECK-NEXT:       %69 = arith.shli %68, %60 : i256 loc(#loc33)
+// CHECK-NEXT:       %70 = arith.ori %61, %69 : i256 loc(#loc33)
+// CHECK-NEXT:       %71 = arith.addi %59, %c32_i256 : i256 loc(#loc33)
+// CHECK-NEXT:       %72 = arith.addi %60, %c128_i256 : i256 loc(#loc33)
+// CHECK-NEXT:       %73 = arith.addi %58, %c1_i256 : i256 loc(#loc33)
+// CHECK-NEXT:       cf.br ^bb11(%73, %71, %72, %70 : i256, i256, i256, i256) {loop_annotation = #loop_annotation} loc(#loc33)
+// CHECK-NEXT:     ^bb15(%74: i256 loc({{.*}}:11:63), %75: i256 loc({{.*}}:11:63)):  // pred: ^bb11
+// CHECK-NEXT:       %76 = llvm.inttoptr %51 : i256 to !llvm.ptr<5> loc(#loc33)
+// CHECK-NEXT:       llvm.store %75, %76 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc33)
+// CHECK-NEXT:       %77 = arith.addi %51, %c1_i256 : i256 loc(#loc33)
+// CHECK-NEXT:       %78 = arith.addi %52, %c2_i256 : i256 loc(#loc33)
+// CHECK-NEXT:       %79 = arith.addi %49, %c2_i256 : i256 loc(#loc33)
+// CHECK-NEXT:       cf.br ^bb9(%79, %74, %77, %78 : i256, i256, i256, i256) loc(#loc33)
+// CHECK-NEXT:     ^bb16(%80: i256 loc({{.*}}:11:63), %81: i256 loc({{.*}}:11:63), %82: i256 loc({{.*}}:11:63)):  // pred: ^bb9
+// CHECK-NEXT:       %83 = arith.cmpi ult, %82, %2 : i256 loc(#loc33)
+// CHECK-NEXT:       cf.cond_br %83, ^bb17(%82, %80, %c0_i256, %c0_i256 : i256, i256, i256, i256), ^bb22 loc(#loc33)
+// CHECK-NEXT:     ^bb17(%84: i256 loc({{.*}}:11:63), %85: i256 loc({{.*}}:11:63), %86: i256 loc({{.*}}:11:63), %87: i256 loc({{.*}}:11:63)):  // 2 preds: ^bb16, ^bb20
+// CHECK-NEXT:       %88 = arith.cmpi ult, %84, %2 : i256 loc(#loc33)
+// CHECK-NEXT:       cf.cond_br %88, ^bb18(%84, %85, %86, %87 : i256, i256, i256, i256), ^bb21(%87 : i256) loc(#loc33)
+// CHECK-NEXT:     ^bb18(%89: i256 loc({{.*}}:11:63), %90: i256 loc({{.*}}:11:63), %91: i256 loc({{.*}}:11:63), %92: i256 loc({{.*}}:11:63)):  // pred: ^bb17
+// CHECK-NEXT:       %93 = llvm.inttoptr %90 : i256 to !llvm.ptr<2> loc(#loc33)
+// CHECK-NEXT:       %94 = llvm.load %93 {alignment = 1 : i64} : !llvm.ptr<2> -> i256 loc(#loc33)
+// CHECK-NEXT:       %95 = arith.andi %94, %c-340282366920938463463374607431768211456_i256 : i256 loc(#loc33)
+// CHECK-NEXT:       %96 = arith.cmpi ne, %94, %95 : i256 loc(#loc33)
+// CHECK-NEXT:       cf.cond_br %96, ^bb19, ^bb20 loc(#loc33)
+// CHECK-NEXT:     ^bb19:  // pred: ^bb18
+// CHECK-NEXT:       %97 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc33)
+// CHECK-NEXT:       "llvm.intrcall"(%97, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc33)
+// CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc33)
+// CHECK-NEXT:       cf.br ^bb20 loc(#loc33)
+// CHECK-NEXT:     ^bb20:  // 2 preds: ^bb18, ^bb19
+// CHECK-NEXT:       %98 = arith.shrui %95, %c128_i256 : i256 loc(#loc33)
+// CHECK-NEXT:       %99 = arith.andi %98, %c340282366920938463463374607431768211455_i256 : i256 loc(#loc33)
+// CHECK-NEXT:       %100 = arith.shli %99, %91 : i256 loc(#loc33)
+// CHECK-NEXT:       %101 = arith.ori %92, %100 : i256 loc(#loc33)
+// CHECK-NEXT:       %102 = arith.addi %90, %c32_i256 : i256 loc(#loc33)
+// CHECK-NEXT:       %103 = arith.addi %91, %c128_i256 : i256 loc(#loc33)
+// CHECK-NEXT:       %104 = arith.addi %89, %c1_i256 : i256 loc(#loc33)
+// CHECK-NEXT:       cf.br ^bb17(%104, %102, %103, %101 : i256, i256, i256, i256) loc(#loc33)
+// CHECK-NEXT:     ^bb21(%105: i256 loc({{.*}}:11:63)):  // pred: ^bb17
+// CHECK-NEXT:       %106 = llvm.inttoptr %81 : i256 to !llvm.ptr<5> loc(#loc33)
+// CHECK-NEXT:       llvm.store %105, %106 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc33)
+// CHECK-NEXT:       cf.br ^bb22 loc(#loc33)
+// CHECK-NEXT:     ^bb22:  // 2 preds: ^bb16, ^bb21
 // CHECK-NEXT:       return loc(#loc30)
 // CHECK-NEXT:     } loc(#loc30)
 // CHECK-NEXT:   } loc(#loc1)

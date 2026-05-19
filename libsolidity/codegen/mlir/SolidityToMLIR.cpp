@@ -128,6 +128,9 @@ private:
   /// Tracks if the codegen is generating a constructor.
   bool inCtor = false;
 
+  /// Tracks struct types currently being converted to detect recursive structs.
+  mlir::DenseSet<StructType const *> structsInProgress;
+
   /// Forces generated locations to be unknown. FIXME: This is to avoid the slow
   /// translatePositionToLineColumn
   bool genUnkLoc;
@@ -556,11 +559,12 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
   }
   case Type::Category::Struct: {
     const auto *structTy = static_cast<StructType const *>(ty);
+    if (!structsInProgress.insert(structTy).second)
+      llvm_unreachable("NYI: recursive struct type");
     std::vector<mlir::Type> memberTys;
-    for (const auto &mem : structTy->nativeMembers(nullptr)) {
+    for (const auto &mem : structTy->nativeMembers(nullptr))
       memberTys.push_back(getType(mem.type));
-    }
-
+    structsInProgress.erase(structTy);
     return mlir::sol::StructType::get(b.getContext(), memberTys,
                                       getDataLocation(structTy));
   }
