@@ -2,10 +2,11 @@
 
 contract C {
   error E(uint a);
-  function f(uint a) public {
+  function f(uint a, string memory msg) public {
     revert E(a);
     revert("error message");
     revert();
+    revert(msg);
   }
 }
 
@@ -16,18 +17,23 @@ contract C {
 // CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
 // CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: #loc3 = loc({{.*}}:4:13)
+// CHECK-NEXT: #loc4 = loc({{.*}}:4:21)
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka, sol.revert_strings = #Default} {
-// CHECK-NEXT:   sol.contract @C_22 {
-// CHECK-NEXT:     sol.func @C_22() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:   sol.contract @C_28 {
+// CHECK-NEXT:     sol.func @C_28() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
-// CHECK-NEXT:     sol.func @f_21(%arg0: ui256 loc({{.*}}:4:13)) attributes {id = 21 : i64, orig_fn_type = (ui256) -> (), selector = -1277270901 : i32, state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @f_27(%arg0: ui256 loc({{.*}}:4:13), %arg1: !sol.string<Memory> loc({{.*}}:4:21)) attributes {id = 27 : i64, orig_fn_type = (ui256, !sol.string<Memory>) -> (), selector = 464014856 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc3)
-// CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc4)
-// CHECK-NEXT:       sol.revert "E(uint256)" %1 : ui256 {call} loc(#loc5)
-// CHECK-NEXT:       sol.revert "error message" loc(#loc6)
-// CHECK-NEXT:       sol.revert "" loc(#loc7)
+// CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack> loc(#loc4)
+// CHECK-NEXT:       sol.store %arg1, %1 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack> loc(#loc4)
+// CHECK-NEXT:       %2 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc5)
+// CHECK-NEXT:       sol.revert "E(uint256)" %2 : ui256 {call} loc(#loc6)
+// CHECK-NEXT:       sol.revert "error message" loc(#loc7)
+// CHECK-NEXT:       sol.revert "" loc(#loc8)
+// CHECK-NEXT:       %3 = sol.load %1 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory> loc(#loc9)
+// CHECK-NEXT:       sol.revert "Error(string)" %3 : !sol.string<Memory> {call} loc(#loc10)
 // CHECK-NEXT:       sol.return loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
@@ -35,8 +41,10 @@ contract C {
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
 // CHECK-NEXT: #loc2 = loc({{.*}}:4:2)
-// CHECK-NEXT: #loc4 = loc({{.*}}:5:13)
-// CHECK-NEXT: #loc5 = loc({{.*}}:5:11)
-// CHECK-NEXT: #loc6 = loc({{.*}}:6:4)
-// CHECK-NEXT: #loc7 = loc({{.*}}:7:4)
+// CHECK-NEXT: #loc5 = loc({{.*}}:5:13)
+// CHECK-NEXT: #loc6 = loc({{.*}}:5:11)
+// CHECK-NEXT: #loc7 = loc({{.*}}:6:4)
+// CHECK-NEXT: #loc8 = loc({{.*}}:7:4)
+// CHECK-NEXT: #loc9 = loc({{.*}}:8:11)
+// CHECK-NEXT: #loc10 = loc({{.*}}:8:4)
 // CHECK-EMPTY:

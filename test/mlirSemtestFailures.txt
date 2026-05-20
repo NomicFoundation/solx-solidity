@@ -278,7 +278,6 @@ semanticTests/revertStrings/unknown_sig_no_fallback
 semanticTests/saltedCreate/salted_create
 semanticTests/saltedCreate/salted_create_with_value
 semanticTests/shanghai/evmone_support
-semanticTests/smoke/failure
 semanticTests/smoke/fallback
 semanticTests/specialFunctions/abi_functions_member_access
 semanticTests/storage/accessors_mapping_for_array
@@ -441,7 +440,6 @@ semanticTests/viaYul/exp_literals
 semanticTests/viaYul/exp_literals_success
 semanticTests/viaYul/function_address
 semanticTests/viaYul/local_tuple_assignment
-semanticTests/viaYul/require
 semanticTests/viaYul/return_storage_pointers
 semanticTests/viaYul/tuple_evaluation_order
 semanticTests/viaYul/unary_fixedbytes

@@ -1947,15 +1947,25 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
 
   // Revert function call
   case FunctionType::Kind::Revert: {
-    if (!astArgs.empty()) {
-      // revert("reason")
-      const auto *msg = dynamic_cast<Literal const *>(astArgs[0].get());
-      assert(msg);
-      b.create<mlir::sol::RevertOp>(loc, mlir::ValueRange{}, msg->value());
-    } else {
+    if (astArgs.empty()) {
       // revert()
       b.create<mlir::sol::RevertOp>(loc, mlir::ValueRange{}, std::string(""));
+      return {};
     }
+
+    if (const auto *msg = dynamic_cast<Literal const *>(astArgs[0].get())) {
+      // revert("reason") with literal message.
+      b.create<mlir::sol::RevertOp>(loc, mlir::ValueRange{}, msg->value());
+      return {};
+    }
+
+    // revert(<string-expr>): lower as a runtime Error(string) revert.
+    mlir::Type memStringTy = mlir::sol::StringType::get(
+        b.getContext(), mlir::sol::DataLocation::Memory);
+    mlir::Value msgVal = genRValExpr(*astArgs[0], memStringTy);
+    b.create<mlir::sol::RevertOp>(loc, mlir::ValueRange{msgVal},
+                                  std::string("Error(string)"),
+                                  /*call=*/true);
     return {};
   }
 
@@ -1971,38 +1981,47 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
 
   // Require statement
   case FunctionType::Kind::Require: {
-    if (call.arguments().size() == 2) {
-      const auto *msg = dynamic_cast<Literal const *>(astArgs[1].get());
-      mlir::Value cond = genRValExpr(*astArgs[0]);
-      if (msg) {
-        // require(cond, "message") form.
-
-        b.create<mlir::sol::RequireOp>(loc, cond, b.getStringAttr(msg->value()),
-                                       mlir::ValueRange{});
-      } else {
-        // require(cond, Error(...)) form.
-
-        const auto *errorCall =
-            dynamic_cast<FunctionCall const *>(astArgs[1].get());
-        assert(errorCall);
-        const auto *errorDef = dynamic_cast<ErrorDefinition const *>(
-            ASTNode::referencedDeclaration(errorCall->expression()));
-        assert(errorDef);
-
-        mlir::SmallVector<mlir::Value> args;
-        for (auto [callArg, argDef] :
-             llvm::zip(errorCall->arguments(), errorDef->parameters()))
-          args.push_back(genRValExpr(*callArg, getType(argDef->type())));
-
-        b.create<mlir::sol::RequireOp>(
-            loc, cond,
-            b.getStringAttr(errorDef->functionType(true)->externalSignature()),
-            args, /*errorCall=*/true);
-      }
-    } else {
+    if (call.arguments().size() != 2) {
       b.create<mlir::sol::RequireOp>(loc, genRValExpr(*astArgs[0]),
                                      mlir::StringAttr{}, mlir::ValueRange{});
+      return {};
     }
+
+    mlir::Value cond = genRValExpr(*astArgs[0]);
+
+    if (const auto *msg = dynamic_cast<Literal const *>(astArgs[1].get())) {
+      // require(cond, "message") with literal message.
+      b.create<mlir::sol::RequireOp>(loc, cond, b.getStringAttr(msg->value()),
+                                     mlir::ValueRange{});
+      return {};
+    }
+
+    if (const auto *errorCall =
+            dynamic_cast<FunctionCall const *>(astArgs[1].get())) {
+      // require(cond, Error(...)) form.
+      const auto *errorDef = dynamic_cast<ErrorDefinition const *>(
+          ASTNode::referencedDeclaration(errorCall->expression()));
+      assert(errorDef);
+
+      mlir::SmallVector<mlir::Value> args;
+      for (auto [callArg, argDef] :
+           llvm::zip(errorCall->arguments(), errorDef->parameters()))
+        args.push_back(genRValExpr(*callArg, getType(argDef->type())));
+
+      b.create<mlir::sol::RequireOp>(
+          loc, cond,
+          b.getStringAttr(errorDef->functionType(true)->externalSignature()),
+          args, /*errorCall=*/true);
+      return {};
+    }
+
+    // require(cond, <string-expr>): lower as a runtime Error(string) revert.
+    mlir::Type memStringTy = mlir::sol::StringType::get(
+        b.getContext(), mlir::sol::DataLocation::Memory);
+    mlir::Value msgVal = genRValExpr(*astArgs[1], memStringTy);
+    b.create<mlir::sol::RequireOp>(loc, cond, b.getStringAttr("Error(string)"),
+                                   mlir::ValueRange{msgVal},
+                                   /*errorCall=*/true);
     return {};
   }
 
