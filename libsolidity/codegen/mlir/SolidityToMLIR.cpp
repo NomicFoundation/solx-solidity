@@ -475,6 +475,12 @@ private:
 
   /// Lowers the function definition.
   mlir::sol::FuncOp lower(FunctionDefinition const &);
+
+  /// Emits a free or library function into the nearest enclosing contract
+  /// scope on demand, if it hasn't been emitted there yet. A no-op when \p fn
+  /// doesn't require cross-scope emission (e.g. the callee is already in the
+  /// same library, or no contract scope is active).
+  void lowerFreeOrLibFuncIfAbsent(FunctionDefinition const &fn);
 };
 
 } // namespace solidity::frontend
@@ -605,6 +611,30 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
   llvm_unreachable("NYI");
 }
 
+void SolidityToMLIRPass::lowerFreeOrLibFuncIfAbsent(
+    FunctionDefinition const &fn) {
+  bool calleeInLib =
+      fn.annotation().contract && fn.annotation().contract->isLibrary();
+  bool currContrNotInLib = !currContract || !currContract->isLibrary();
+  bool freeCallee = !fn.annotation().contract;
+  if (!((calleeInLib && currContrNotInLib) || (freeCallee && currContract)))
+    return;
+
+  auto *symTableOp = mlir::SymbolTable::getNearestSymbolTable(
+      b.getInsertionBlock()->getParentOp());
+  assert(symTableOp);
+  if (mlir::SymbolTable::lookupSymbolIn(symTableOp, getMangledName(fn)))
+    return;
+
+  mlir::OpBuilder::InsertionGuard insertGuard(b);
+  auto *parentOp = b.getInsertionBlock()->getParentOp();
+  if (!mlir::isa<mlir::sol::FuncOp>(parentOp))
+    parentOp = parentOp->getParentOfType<mlir::sol::FuncOp>();
+  assert(parentOp);
+  b.setInsertionPoint(parentOp);
+  lower(fn);
+}
+
 mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
   Declaration const *decl = id.annotation().referencedDeclaration;
 
@@ -635,9 +665,14 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
         contr->fullyQualifiedName());
   }
 
-  if (const auto *fn = dynamic_cast<FunctionDefinition const *>(decl))
+  if (const auto *fn = dynamic_cast<FunctionDefinition const *>(decl)) {
+    // When a free/library function is referenced as a value (function pointer),
+    // the call-site handler never fires. Emit it on demand so
+    // FuncConstantOpLowering can resolve the symbol.
+    lowerFreeOrLibFuncIfAbsent(*fn);
     return b.create<mlir::sol::FuncConstantOp>(getLoc(id), getType(fn->type()),
                                                getMangledName(*fn));
+  }
 
   llvm_unreachable("NYI");
 }
@@ -1685,19 +1720,7 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     if (!callee)
       return resVals;
 
-    bool calleeInLib = callee->annotation().contract &&
-                       callee->annotation().contract->isLibrary();
-    bool currContrNotInLib = !currContract || !currContract->isLibrary();
-    bool freeCallee = !callee->annotation().contract;
-    if ((calleeInLib && currContrNotInLib) || (freeCallee && currContract)) {
-      mlir::OpBuilder::InsertionGuard insertGuard(b);
-      auto *parentOp = b.getInsertionBlock()->getParentOp();
-      if (!mlir::isa<mlir::sol::FuncOp>(parentOp))
-        parentOp = parentOp->getParentOfType<mlir::sol::FuncOp>();
-      assert(parentOp);
-      b.setInsertionPoint(parentOp);
-      lower(*callee);
-    }
+    lowerFreeOrLibFuncIfAbsent(*callee);
 
     return resVals;
   }
@@ -3300,8 +3323,11 @@ bool CompilerStack::runMlirPipeline() {
                                  /*genUnkLoc=*/m_mlirGenJob.action ==
                                      Action::GenObj);
           gen.init(src->charStream);
-          // Lower free functions.
-          gen.lowerFreeFuncs(*src->ast);
+          // Free functions are emitted on-demand inside the contract scope by
+          // the call-site handler when they are first referenced. Do NOT call
+          // lowerFreeFuncs here: it would place them at module level where they
+          // are invisible to callers inside sol.contract, and multiple call
+          // sites would produce duplicate symbols.
           gen.lower(*contr);
           mlir::ModuleOp mod = gen.getModule();
 
