@@ -2665,9 +2665,30 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
 
   // TODO: sol.new
   // Handle both direct external calls (ExtCallOp) and indirect calls via
-  // external function pointers (ExtICallOp).
-  mlir::Operation *externalCall =
-      genRValExpr(tryStmt.externalCall()).getDefiningOp();
+  // external function pointers (ExtICallOp). Use genExprs to support
+  // multi-result and 0-result external calls; the genRValExpr path asserts on
+  // both. The ExtCallOp's first result is the call's status.
+  mlir::Operation *externalCall = nullptr;
+  if (auto const *callExpr =
+          dynamic_cast<FunctionCall const *>(&tryStmt.externalCall())) {
+    mlir::SmallVector<mlir::Value> results = genExprs(*callExpr);
+    if (!results.empty()) {
+      externalCall = results.front().getDefiningOp();
+    } else {
+      // 0-return call - look back for the most recent ExtCallOp / ExtICallOp.
+      auto *blk = b.getInsertionBlock();
+      for (auto it = b.getInsertionPoint(); it != blk->begin();) {
+        --it;
+        if (mlir::isa<mlir::sol::ExtCallOp>(&*it) ||
+            mlir::isa<mlir::sol::ExtICallOp>(&*it)) {
+          externalCall = &*it;
+          break;
+        }
+      }
+    }
+  } else {
+    externalCall = genRValExpr(tryStmt.externalCall()).getDefiningOp();
+  }
   assert((mlir::isa<mlir::sol::ExtCallOp>(externalCall) ||
           mlir::isa<mlir::sol::ExtICallOp>(externalCall)) &&
          "Expected ExtCallOp or ExtICallOp");
@@ -2681,6 +2702,7 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
 
     // Lower parameters.
     if (successClause->parameters()) {
+      // ExtCallOp results[0] is the call's status; payload results start at 1.
       unsigned i = 1;
       for (ASTPointer<VariableDeclaration> const &param :
            successClause->parameters()->parameters()) {
@@ -2691,6 +2713,7 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
         auto addr = b.create<mlir::sol::AllocaOp>(loc, allocTy);
         trackLocalVarAddr(*param, addr);
         b.create<mlir::sol::StoreOp>(loc, externalCall->getResult(i), addr);
+        ++i;
       }
     }
 
@@ -2754,9 +2777,27 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
 
   // Lower fallback clause.
   if (TryCatchClause const *fallbackClause = tryStmt.fallbackClause()) {
-    assert(!fallbackClause->parameters() && "NYI");
     mlir::OpBuilder::InsertionGuard insertGuard(b);
-    b.setInsertionPointToStart(&tryOp.getFallbackRegion().emplaceBlock());
+    mlir::Block *blk = &tryOp.getFallbackRegion().emplaceBlock();
+    b.setInsertionPointToStart(blk);
+
+    // `catch (bytes memory data)` binds the raw revert data as a memory bytes
+    // string. Bind the block argument to the declared parameter.
+    if (fallbackClause->parameters()) {
+      assert(fallbackClause->parameters()->parameters().size() == 1);
+      auto memBytesTy = mlir::sol::StringType::get(
+          b.getContext(), mlir::sol::DataLocation::Memory);
+      ASTPointer<VariableDeclaration> const &dataParam =
+          fallbackClause->parameters()->parameters()[0];
+      mlir::Location dataLoc = getLoc(*dataParam);
+      mlir::BlockArgument dataBlkArg = blk->addArgument(memBytesTy, dataLoc);
+      mlir::Type allocTy = mlir::sol::PointerType::get(
+          b.getContext(), memBytesTy, mlir::sol::DataLocation::Stack);
+      auto dataAddr = b.create<mlir::sol::AllocaOp>(dataLoc, allocTy);
+      trackLocalVarAddr(*dataParam, dataAddr);
+      b.create<mlir::sol::StoreOp>(loc, dataBlkArg, dataAddr);
+    }
+
     lower(fallbackClause->block());
     b.create<mlir::sol::YieldOp>(loc);
   }
