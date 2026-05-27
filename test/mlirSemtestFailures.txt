@@ -105,7 +105,6 @@ semanticTests/getters/struct_with_bytes
 semanticTests/getters/struct_with_bytes_simple
 semanticTests/immutable/assign_at_declaration
 semanticTests/immutable/getter
-semanticTests/immutable/getter_call_in_constructor
 semanticTests/immutable/immutable_signed
 semanticTests/immutable/immutable_tag_too_large_bug
 semanticTests/immutable/increment_decrement
@@ -280,10 +279,6 @@ semanticTests/structs/struct_delete_storage_with_arrays_small
 semanticTests/structs/struct_reference
 semanticTests/structs/structs
 semanticTests/structs/using_for_function_on_struct
-semanticTests/tryCatch/create
-semanticTests/tryCatch/invalid_error_encoding
-semanticTests/tryCatch/lowLevel
-semanticTests/tryCatch/malformed_error
 semanticTests/tryCatch/try_catch_library_call
 semanticTests/types/array_mapping_abstract_constructor_param
 semanticTests/types/external_function_to_address
