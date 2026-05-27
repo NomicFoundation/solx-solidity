@@ -1968,9 +1968,12 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
 
     // Keep the creation result typed as the FE return contract type so
     // payability is preserved (contract vs contract<payable>).
-    resVals.push_back(b.create<mlir::sol::NewOp>(
+    auto newOp = b.create<mlir::sol::NewOp>(
         loc, getType(calleeTy->returnParameterTypes().front()), objName, value,
-        salt, args));
+        salt, args);
+    if (call.annotation().tryCall)
+      newOp.setTryCall(true);
+    resVals.push_back(newOp.getResult());
     return resVals;
   }
 
@@ -2712,14 +2715,35 @@ void SolidityToMLIRPass::lower(ForStatement const &forStmt) {
 void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
   mlir::Location loc = getLoc(tryStmt);
 
-  // TODO: sol.new
-  // `try` is the one frontend-level construct that needs the otherwise-hidden
-  // status of a high-level external call. Lower it through `genExternalCall`
-  // which exposes both status and results explicitly.
   auto const *callExpr =
       dynamic_cast<FunctionCall const *>(&tryStmt.externalCall());
   assert(callExpr && "Expected FunctionCall expression in TryStatement");
-  auto [status, results] = genExternalCall(*callExpr);
+  auto const *calleeTy = dynamic_cast<FunctionType const *>(
+      callExpr->expression().annotation().type);
+  assert(calleeTy);
+
+  mlir::Value status;
+  mlir::SmallVector<mlir::Value> results;
+  if (calleeTy->kind() == FunctionType::Kind::Creation) {
+    // genExprs propagates tryCall onto the sol.new (suppressing the
+    // forwarding-revert); status is `addr != 0`
+    results.append(genExprs(*callExpr));
+    assert(results.size() == 1 && "new returns exactly one contract value");
+    auto addrTy =
+        mlir::sol::AddressType::get(b.getContext(), /*payable=*/false);
+    auto ui160Ty = b.getIntegerType(160, /*isSigned=*/false);
+    mlir::Value addr =
+        b.create<mlir::sol::AddressCastOp>(loc, addrTy, results.front());
+    mlir::Value addrUi = b.create<mlir::sol::AddressCastOp>(loc, ui160Ty, addr);
+    mlir::Value zero = genUnsignedConst(0, /*numBits=*/160, loc);
+    status = b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::ne,
+                                        addrUi, zero);
+  } else {
+    auto extResult = genExternalCall(*callExpr);
+    status = extResult.status;
+    results = std::move(extResult.results);
+  }
+
   auto tryOp = b.create<mlir::sol::TryOp>(loc, status);
 
   // Lower success clause.
