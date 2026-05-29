@@ -207,8 +207,6 @@ semanticTests/modifiers/function_return_parameter
 semanticTests/modifiers/function_return_parameter_complex
 semanticTests/modifiers/return_in_modifier
 semanticTests/modifiers/stacked_return_with_modifiers
-semanticTests/operators/shifts/shift_bytes_cleanup
-semanticTests/operators/shifts/shift_bytes_cleanup_viaYul
 semanticTests/operators/shifts/shift_constant_right
 semanticTests/operators/shifts/shift_negative_constant_right
 semanticTests/operators/shifts/shift_right_negative_literal
