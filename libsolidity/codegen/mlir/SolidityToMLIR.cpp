@@ -1045,9 +1045,20 @@ mlir::Value SolidityToMLIRPass::genBinExpr(Token op, mlir::Value lhs,
     return b.create<mlir::sol::XorOp>(loc, convertBytesToInt(lhs),
                                       convertBytesToInt(rhs));
   case Token::SHL:
-    return b.create<mlir::sol::ShlOp>(loc, lhs, rhs);
-  case Token::SAR:
-    return b.create<mlir::sol::ShrOp>(loc, lhs, rhs);
+  case Token::SAR: {
+    // Old codegen semantics: convert bytesN lhs to its integer equivalent,
+    // perform the shift, then convert back. For integer lhs, convertBytesToInt
+    // is a no-op and genCast just widens the (mobile-type) rhs to match lhs.
+    mlir::Value shiftLhs = convertBytesToInt(lhs);
+    mlir::Value shiftRhs = genCast(rhs, shiftLhs.getType());
+    mlir::Value shifted =
+        op == Token::SHL
+            ? static_cast<mlir::Value>(
+                  b.create<mlir::sol::ShlOp>(loc, shiftLhs, shiftRhs))
+            : static_cast<mlir::Value>(
+                  b.create<mlir::sol::ShrOp>(loc, shiftLhs, shiftRhs));
+    return genCast(shifted, lhs.getType());
+  }
   case Token::Equal:
     return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::eq, lhs,
                                       rhs);
@@ -1220,10 +1231,11 @@ mlir::Value SolidityToMLIRPass::genExpr(BinaryOperation const &binOp) {
   }
 
   mlir::Type rhsTy = argTy;
-  if (binOp.getOperator() == Token::Exp) {
+  if (binOp.getOperator() == Token::Exp ||
+      TokenTraits::isShiftOp(binOp.getOperator())) {
     Type const *rightTargetType =
         binOp.rightExpression().annotation().type->mobileType();
-    assert(rightTargetType && "Expected exponent to have a mobile type");
+    assert(rightTargetType && "Expected right operand to have a mobile type");
     rhsTy = getType(rightTargetType);
   }
 
