@@ -2885,13 +2885,27 @@ void SolidityToMLIRPass::lower(InlineAssembly const &inAsm) {
     if (suffix == "slot" || suffix == "offset") {
       mlir::Value ptr = genLValRef(*decl);
 
-      // For local storage pointers, we need to load from stack first.
-      if (!decl->isStateVariable())
-        ptr = b.create<mlir::sol::LoadOp>(loc, ptr);
-
       // Value types use {slot, offset} representation (even 32-byte ones).
       // Reference types (arrays, structs, mappings) use slot-only.
       bool packable = decl->type()->isValueType();
+
+      // For local non-packable storage references (e.g. `Foo storage foo`),
+      // the stack slot *is* the i256 slot number. Return a raw pointer to that
+      // location so the Yul pass can both read (llvm.load) and write
+      // (llvm.store) it.
+      if (!decl->isStateVariable() && !packable) {
+        if (suffix == "slot")
+          return b.create<mlir::sol::ConvCastOp>(
+              loc, mlir::LLVM::LLVMPointerType::get(b.getContext()), ptr);
+        else
+          return b.create<mlir::sol::ConstantOp>(loc,
+                                                 b.getIntegerAttr(i256Ty, 0));
+      }
+
+      // For local storage pointers of value type, load from stack first.
+      if (!decl->isStateVariable())
+        ptr = b.create<mlir::sol::LoadOp>(loc, ptr);
+
       if (packable) {
         // Packable: conv_cast to {i256, i256} struct and extract.
         auto structTy = mlir::LLVM::LLVMStructType::getLiteral(
@@ -2902,7 +2916,7 @@ void SolidityToMLIRPass::lower(InlineAssembly const &inAsm) {
         else
           return b.create<mlir::LLVM::ExtractValueOp>(loc, raw, 1);
       } else {
-        // Non-packable: ptr is just slot, offset is always 0.
+        // Non-packable state variable: slot is fixed, offset is always 0.
         if (suffix == "slot")
           return b.create<mlir::sol::ConvCastOp>(loc, i256Ty, ptr);
         else
