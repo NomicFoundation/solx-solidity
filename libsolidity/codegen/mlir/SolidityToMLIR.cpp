@@ -63,6 +63,7 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/SaveAndRestore.h"
 #include "llvm/Support/ThreadPool.h"
+#include <functional>
 #include <mutex>
 #include <string>
 
@@ -286,51 +287,132 @@ private:
       stateVarLd = genRValExpr(stateVarRef, stateVarRef.getLoc());
     }
 
+    // Expands a storage struct into a flat tuple of returnable values,
+    // mirroring FunctionType(VariableDeclaration) in Types.cpp:
+    //   - mappings and non-byte arrays are excluded
+    //   - all reference-type members (strings, nested structs) are cast
+    //     from Storage to Memory
+    // The exclusion of arrays is intentionally one level deep (outermost struct
+    // only). This mirrors a historical asymmetry in Solidity's getter
+    // generation: before ABIEncoderV2, the outermost struct had to be flattened
+    // into primitives, so arrays were excluded because they cannot be
+    // individually returned without an index. Nested structs are returned as
+    // atomic StructType<Memory> values (ABIEncoderV2 tuples), so the ABI
+    // encoder encodes all their members — including arrays — without any
+    // filtering.
+    // TODO: #139, packed members that share a storage slot (e.g.
+    // uint8/bool/address in the same slot) each emit an independent sload,
+    // there is no caching of the slot word across members. The redundant sloads
+    // are eliminated by LLVM CSE during IR optimisation and do not appear in
+    // the final bytecode.
+    auto expandStructForReturn =
+        [&](mlir::sol::StructType structTy,
+            mlir::Value structVal) -> mlir::SmallVector<mlir::Value, 4> {
+      mlir::SmallVector<mlir::Value, 4> tuple;
+      for (auto [idx, memTy] : llvm::enumerate(structTy.getMemberTypes())) {
+        if (isa<mlir::sol::MappingType>(memTy) ||
+            isa<mlir::sol::ArrayType>(memTy))
+          continue;
+        auto gep = b.create<mlir::sol::GepOp>(
+            loc, structVal, genUnsignedConst(idx, /*numBits=*/64, loc));
+        mlir::Value memberVal = genRValExpr(gep, loc);
+        if (mlir::sol::isNonPtrRefType(memberVal.getType()))
+          memberVal = genCast(memberVal, toMemoryType(memberVal.getType()));
+        tuple.push_back(memberVal);
+      }
+      return tuple;
+    };
+
     // Array type
     if (isa<mlir::sol::ArrayType>(stateVarLd.getType())) {
       mlir::Value ret = stateVarLd;
       for (auto inpTy : fnTy.getInputs()) {
         mlir::BlockArgument blkArg = entryBlk->addArgument(inpTy, loc);
-        auto gep = b.create<mlir::sol::GepOp>(loc, ret, blkArg);
-        ret = genRValExpr(gep, loc);
+        if (isa<mlir::sol::ArrayType>(ret.getType())) {
+          auto gep = b.create<mlir::sol::GepOp>(loc, ret, blkArg);
+          gep.setNoPanicBoundsAttr(b.getUnitAttr());
+          ret = genRValExpr(gep, loc);
+        } else {
+          // `ret` is no longer an ArrayType but the loop still has parameters
+          // left. FunctionType(VariableDeclaration) only generates extra getter
+          // parameters beyond array indices when the element type is a mapping;
+          // scalars, structs, strings, and fixed-bytes each contribute at most
+          // one parameter per array dimension and never leave residual params
+          // after all GepOps are consumed. So reaching this branch guarantees
+          // ret.getType() is MappingType, the cast<> is an assertion of that
+          // invariant, not a blind guess.
+          auto mapTy = cast<mlir::sol::MappingType>(ret.getType());
+          mlir::Type addrTy = mapTy.getValType();
+          if (!mlir::sol::isNonPtrRefType(mapTy.getValType()))
+            addrTy = mlir::sol::PointerType::get(
+                b.getContext(), mapTy.getValType(),
+                mlir::sol::DataLocation::Storage);
+          auto map = b.create<mlir::sol::MapOp>(loc, addrTy, ret, blkArg);
+          ret = genRValExpr(map, loc);
+        }
       }
-      b.create<mlir::sol::ReturnOp>(loc, ret);
+      if (auto structTy = mlir::dyn_cast<mlir::sol::StructType>(ret.getType()))
+        b.create<mlir::sol::ReturnOp>(loc, expandStructForReturn(structTy, ret));
+      else {
+        if (mlir::sol::isNonPtrRefType(ret.getType()))
+          ret = genCast(ret, toMemoryType(ret.getType()));
+        b.create<mlir::sol::ReturnOp>(loc, ret);
+      }
 
       // Mapping type
     } else if (auto mappingTy =
                    dyn_cast<mlir::sol::MappingType>(stateVarLd.getType())) {
       mlir::Value lastMap = stateVarLd;
       for (auto inpTy : fnTy.getInputs()) {
-        auto lastMapTy = cast<mlir::sol::MappingType>(lastMap.getType());
-        mlir::Type addrTy = lastMapTy.getValType();
-        if (!mlir::sol::isNonPtrRefType(lastMapTy.getValType()))
-          addrTy = mlir::sol::PointerType::get(
-              b.getContext(), lastMapTy.getValType(),
-              mlir::sol::DataLocation::Storage);
         mlir::BlockArgument blkArg = entryBlk->addArgument(inpTy, loc);
-        auto map = b.create<mlir::sol::MapOp>(loc, addrTy, lastMap, blkArg);
-        lastMap = genRValExpr(map, loc);
+        if (isa<mlir::sol::ArrayType>(lastMap.getType())) {
+          // After resolving a mapping value that is an array type, switch to
+          // GepOp for each remaining (array-index) parameter.
+          auto gep = b.create<mlir::sol::GepOp>(loc, lastMap, blkArg);
+          gep.setNoPanicBoundsAttr(b.getUnitAttr());
+          lastMap = genRValExpr(gep, loc);
+        } else {
+          auto lastMapTy = cast<mlir::sol::MappingType>(lastMap.getType());
+          mlir::Type addrTy = lastMapTy.getValType();
+          if (!mlir::sol::isNonPtrRefType(lastMapTy.getValType()))
+            addrTy = mlir::sol::PointerType::get(
+                b.getContext(), lastMapTy.getValType(),
+                mlir::sol::DataLocation::Storage);
+          auto map = b.create<mlir::sol::MapOp>(loc, addrTy, lastMap, blkArg);
+          lastMap = genRValExpr(map, loc);
+        }
       }
-      b.create<mlir::sol::ReturnOp>(loc, genRValExpr(lastMap, loc));
+      // If the final mapped value is a struct, expand its members individually
+      // so the return types match the flattened scalar return signature.
+      mlir::Value finalVal = genRValExpr(lastMap, loc);
+      if (auto structTy =
+              mlir::dyn_cast<mlir::sol::StructType>(finalVal.getType()))
+        b.create<mlir::sol::ReturnOp>(
+            loc, expandStructForReturn(structTy, finalVal));
+      else {
+        // mapping(K => string/bytes) public: cast storage string to memory.
+        if (mlir::sol::isNonPtrRefType(finalVal.getType()))
+          finalVal = genCast(finalVal, toMemoryType(finalVal.getType()));
+        b.create<mlir::sol::ReturnOp>(loc, finalVal);
+      }
 
       // Struct type
     } else if (auto structTy =
                    dyn_cast<mlir::sol::StructType>(stateVarLd.getType())) {
-      mlir::SmallVector<mlir::Value, 4> tuple;
-      int64_t i = 0;
-      for (auto memTy : structTy.getMemberTypes()) {
-        if (mlir::sol::isNonPtrRefType(memTy))
-          llvm_unreachable("NYI");
-        auto gep = b.create<mlir::sol::GepOp>(
-            loc, stateVarLd, genUnsignedConst(i++, /*numBits=*/64, loc));
-        tuple.push_back(genRValExpr(gep, loc));
-      }
+      b.create<mlir::sol::ReturnOp>(
+          loc, expandStructForReturn(structTy, stateVarLd));
 
-      b.create<mlir::sol::ReturnOp>(loc, tuple);
-
-      // Scalar, string types etc.
+      // Scalar, string, bytes etc.
+      // For string/bytes public state variables, stateVarLd is
+      // StringType<Storage> (a non-ptr ref type that genRValExpr doesn't
+      // dereference). Cast to Memory so the ABI encoder reads the string data
+      // out of storage instead of treating the raw storage slot number as a
+      // memory pointer.
     } else {
-      b.create<mlir::sol::ReturnOp>(loc, stateVarLd);
+      mlir::Value ret = stateVarLd;
+      if (mlir::sol::isNonPtrRefType(ret.getType()))
+        ret = genCast(ret, toMemoryType(ret.getType()));
+      b.create<mlir::sol::ReturnOp>(loc, ret);
     }
 
     return fn;
@@ -345,6 +427,28 @@ private:
   /// Generates the side-effect of `delete addr`: zeros the value at any
   /// pointer (storage, memory, or stack).
   void genDeleteExpr(mlir::Value addr, mlir::Location loc);
+
+  /// Returns the Memory-location variant of a reference type, recursively
+  /// converting nested array element types, struct member types, and
+  /// StringType from any data location to Memory. Non-reference types
+  /// (scalars, address, fixedbytes, etc.) are returned unchanged.
+  mlir::Type toMemoryType(mlir::Type ty) const {
+    if (auto arrTy = mlir::dyn_cast<mlir::sol::ArrayType>(ty))
+      return mlir::sol::ArrayType::get(b.getContext(), arrTy.getSize(),
+                                       toMemoryType(arrTy.getEltType()),
+                                       mlir::sol::DataLocation::Memory);
+    if (auto structTy = mlir::dyn_cast<mlir::sol::StructType>(ty)) {
+      llvm::SmallVector<mlir::Type> memMemberTys;
+      for (auto mt : structTy.getMemberTypes())
+        memMemberTys.push_back(toMemoryType(mt));
+      return mlir::sol::StructType::get(b.getContext(), memMemberTys,
+                                        mlir::sol::DataLocation::Memory);
+    }
+    if (mlir::isa<mlir::sol::StringType>(ty))
+      return mlir::sol::StringType::get(b.getContext(),
+                                        mlir::sol::DataLocation::Memory);
+    return ty;
+  }
 
   /// Generates a integral constant op.
   mlir::Value genUnsignedConst(uint64_t val, unsigned numBits,
@@ -794,27 +898,6 @@ void SolidityToMLIRPass::genZeroedVal(mlir::sol::AllocaOp addr) {
 
 void SolidityToMLIRPass::genDeleteExpr(mlir::Value addr, mlir::Location loc) {
   mlir::Type addrTy = addr.getType();
-
-  // Returns the memory-location variant of a type, recursively transforming
-  // any nested reference-type elements and struct members.
-  std::function<mlir::Type(mlir::Type)> toMemoryType =
-      [&](mlir::Type ty) -> mlir::Type {
-    if (auto arrTy = mlir::dyn_cast<mlir::sol::ArrayType>(ty))
-      return mlir::sol::ArrayType::get(b.getContext(), arrTy.getSize(),
-                                       toMemoryType(arrTy.getEltType()),
-                                       mlir::sol::DataLocation::Memory);
-    if (auto structTy = mlir::dyn_cast<mlir::sol::StructType>(ty)) {
-      llvm::SmallVector<mlir::Type> memMemberTys;
-      for (auto mt : structTy.getMemberTypes())
-        memMemberTys.push_back(toMemoryType(mt));
-      return mlir::sol::StructType::get(b.getContext(), memMemberTys,
-                                        mlir::sol::DataLocation::Memory);
-    }
-    if (mlir::isa<mlir::sol::StringType>(ty))
-      return mlir::sol::StringType::get(b.getContext(),
-                                        mlir::sol::DataLocation::Memory);
-    return ty;
-  };
 
   // Zero-init reference types by allocating a memory version and copying it via
   // genAssign which emits sol.copy for storage destination.

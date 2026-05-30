@@ -41,15 +41,16 @@ contract C {
 // CHECK-NEXT:     sol.state_var @i2_8 slot 1 offset 0 : !sol.array<2 x !sol.array<2 x ui256, Storage>, Storage> loc(#loc3)
 // CHECK-NEXT:     sol.func @get_i2_8(%arg0: ui256 loc({{.*}}:4:2), %arg1: ui256 loc({{.*}}:4:2)) -> ui256 attributes {orig_fn_type = (ui256, ui256) -> ui256, selector = 1353720620 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.addr_of @i2_8 : !sol.array<2 x !sol.array<2 x ui256, Storage>, Storage> loc(#loc3)
-// CHECK-NEXT:       %1 = sol.gep %0, %arg0 : !sol.array<2 x !sol.array<2 x ui256, Storage>, Storage>, ui256, !sol.array<2 x ui256, Storage> loc(#loc3)
-// CHECK-NEXT:       %2 = sol.gep %1, %arg1 : !sol.array<2 x ui256, Storage>, ui256, !sol.ptr<ui256, Storage> loc(#loc3)
+// CHECK-NEXT:       %1 = sol.gep %0, %arg0 no_panic_bounds : !sol.array<2 x !sol.array<2 x ui256, Storage>, Storage>, ui256, !sol.array<2 x ui256, Storage> loc(#loc3)
+// CHECK-NEXT:       %2 = sol.gep %1, %arg1 no_panic_bounds : !sol.array<2 x ui256, Storage>, ui256, !sol.ptr<ui256, Storage> loc(#loc3)
 // CHECK-NEXT:       %3 = sol.load %2 : !sol.ptr<ui256, Storage>, ui256 loc(#loc3)
 // CHECK-NEXT:       sol.return %3 : ui256 loc(#loc3)
 // CHECK-NEXT:     } loc(#loc3)
 // CHECK-NEXT:     sol.state_var @str_10 slot 5 offset 0 : !sol.string<Storage> loc(#loc4)
 // CHECK-NEXT:     sol.func @get_str_10() -> !sol.string<Memory> attributes {orig_fn_type = () -> !sol.string<Memory>, selector = -1050956156 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.addr_of @str_10 : !sol.string<Storage> loc(#loc4)
-// CHECK-NEXT:       sol.return %0 : !sol.string<Storage> loc(#loc4)
+// CHECK-NEXT:       %1 = sol.data_loc_cast %0 : !sol.string<Storage>, !sol.string<Memory> loc(#loc4)
+// CHECK-NEXT:       sol.return %1 : !sol.string<Memory> loc(#loc4)
 // CHECK-NEXT:     } loc(#loc4)
 // CHECK-NEXT:     sol.state_var @s_18 slot 6 offset 0 : !sol.struct<(ui256, ui8), Storage> loc(#loc5)
 // CHECK-NEXT:     sol.func @get_s_18() -> (ui256, ui8) attributes {orig_fn_type = () -> (ui256, ui8), selector = -2034821918 : i32, state_mutability = #NonPayable} {
