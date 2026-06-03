@@ -42,7 +42,7 @@ contract C {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc3)
 // CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<!sol.struct<(ui256), Storage>, Stack> loc(#loc4)
-// CHECK-NEXT:       %2 = sol.malloc zero_init :  !sol.struct<(ui256), Storage> loc(#loc4)
+// CHECK-NEXT:       %2 = sol.default_storage : !sol.struct<(ui256), Storage> loc(#loc4)
 // CHECK-NEXT:       sol.store %2, %1 : !sol.struct<(ui256), Storage>, !sol.ptr<!sol.struct<(ui256), Storage>, Stack> loc(#loc4)
 // CHECK-NEXT:       %3 = sol.conv_cast %0 : !sol.ptr<ui256, Stack> -> !llvm.ptr loc(#loc5)
 // CHECK-NEXT:       %4 = llvm.load %3 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc6)
