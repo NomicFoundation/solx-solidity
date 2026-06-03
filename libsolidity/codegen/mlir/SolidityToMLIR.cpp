@@ -825,18 +825,27 @@ mlir::Value SolidityToMLIRPass::genZeroedVal(mlir::Type ty,
   if (auto arrTy = mlir::dyn_cast<mlir::sol::ArrayType>(ty)) {
     if (arrTy.getDataLocation() == mlir::sol::DataLocation::CallData)
       return b.create<mlir::sol::DefaultCallDataOp>(loc, arrTy);
+    if (arrTy.getDataLocation() == mlir::sol::DataLocation::Storage ||
+        arrTy.getDataLocation() == mlir::sol::DataLocation::Transient)
+      return b.create<mlir::sol::DefaultStorageOp>(loc, arrTy);
     return b.create<mlir::sol::MallocOp>(loc, arrTy, /*zeroInit=*/true,
                                          /*size=*/mlir::Value{});
   }
   if (auto structTy = mlir::dyn_cast<mlir::sol::StructType>(ty)) {
     if (structTy.getDataLocation() == mlir::sol::DataLocation::CallData)
       return b.create<mlir::sol::DefaultCallDataOp>(loc, structTy);
+    if (structTy.getDataLocation() == mlir::sol::DataLocation::Storage ||
+        structTy.getDataLocation() == mlir::sol::DataLocation::Transient)
+      return b.create<mlir::sol::DefaultStorageOp>(loc, structTy);
     return b.create<mlir::sol::MallocOp>(loc, structTy, /*zeroInit=*/true,
                                          /*size=*/mlir::Value{});
   }
   if (auto stringTy = mlir::dyn_cast<mlir::sol::StringType>(ty)) {
     if (stringTy.getDataLocation() == mlir::sol::DataLocation::CallData)
       return b.create<mlir::sol::DefaultCallDataOp>(loc, stringTy);
+    if (stringTy.getDataLocation() == mlir::sol::DataLocation::Storage ||
+        stringTy.getDataLocation() == mlir::sol::DataLocation::Transient)
+      return b.create<mlir::sol::DefaultStorageOp>(loc, stringTy);
     // TODO: Do we need to zero-init here?
     return b.create<mlir::sol::MallocOp>(loc, stringTy, /*zeroInit=*/false,
                                          /*size=*/mlir::Value{});
