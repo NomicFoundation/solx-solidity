@@ -11,14 +11,13 @@ object "Test" {
 // CHECK-NEXT:   yul.object @Test {
 // CHECK-NEXT:     %c2863311530_i256 = yul.constant 2863311530 loc(#loc1)
 // CHECK-NEXT:     %0 = yul.extcodehash %c2863311530_i256 loc(#loc2)
-// CHECK-NEXT:     %c1_i256 = yul.constant 1 loc(#loc3)
-// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc4)
-// CHECK-NEXT:     llvm.store %0, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc3)
+// CHECK-NEXT:     %1 = yul.alloca : !yul.ptr loc(#loc3)
+// CHECK-NEXT:     yul.store %0, %1 : i256, !yul.ptr loc(#loc4)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:4:25)
 // CHECK-NEXT: #loc2 = loc({{.*}}:4:13)
-// CHECK-NEXT: #loc3 = loc({{.*}}:4:4)
-// CHECK-NEXT: #loc4 = loc({{.*}}:4:8)
+// CHECK-NEXT: #loc3 = loc({{.*}}:4:8)
+// CHECK-NEXT: #loc4 = loc({{.*}}:4:4)
 // CHECK-EMPTY:

@@ -344,15 +344,16 @@ private:
           auto mapTy = cast<mlir::sol::MappingType>(ret.getType());
           mlir::Type addrTy = mapTy.getValType();
           if (!mlir::sol::isNonPtrRefType(mapTy.getValType()))
-            addrTy = mlir::sol::PointerType::get(
-                b.getContext(), mapTy.getValType(),
-                mlir::sol::DataLocation::Storage);
+            addrTy =
+                mlir::sol::PointerType::get(b.getContext(), mapTy.getValType(),
+                                            mlir::sol::DataLocation::Storage);
           auto map = b.create<mlir::sol::MapOp>(loc, addrTy, ret, blkArg);
           ret = genRValExpr(map, loc);
         }
       }
       if (auto structTy = mlir::dyn_cast<mlir::sol::StructType>(ret.getType()))
-        b.create<mlir::sol::ReturnOp>(loc, expandStructForReturn(structTy, ret));
+        b.create<mlir::sol::ReturnOp>(loc,
+                                      expandStructForReturn(structTy, ret));
       else {
         if (mlir::sol::isNonPtrRefType(ret.getType()))
           ret = genCast(ret, toMemoryType(ret.getType()));
@@ -1271,8 +1272,8 @@ mlir::Value SolidityToMLIRPass::genExpr(BinaryOperation const &binOp) {
   auto loc = getLoc(binOp);
   BuilderExt bExt(b, loc);
 
-  // Both operands are compile-time rational constants AND the result is itself a
-  // rational number (arithmetic ops).
+  // Both operands are compile-time rational constants AND the result is itself
+  // a rational number (arithmetic ops).
   if (binOp.annotation().type->category() == Type::Category::RationalNumber) {
     auto intTy = mlir::cast<mlir::IntegerType>(argTy);
     u256 val = binOp.annotation().commonType->literalValue(nullptr);
@@ -1669,7 +1670,8 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
     }
     if (memberName == "address") {
       Expression const *fnExpr = &memberAcc.expression();
-      while (auto const *opts = dynamic_cast<FunctionCallOptions const *>(fnExpr))
+      while (auto const *opts =
+                 dynamic_cast<FunctionCallOptions const *>(fnExpr))
         fnExpr = &opts->expression();
       auto const &fnTy = dynamic_cast<FunctionType const &>(*memberAccTy);
       mlir::Type addrTy =
@@ -2980,6 +2982,15 @@ void SolidityToMLIRPass::lower(TryStatement const &tryStmt) {
 void SolidityToMLIRPass::lower(InlineAssembly const &inAsm) {
   mlir::Location loc = getLoc(inAsm.location());
   mlir::Type i256Ty = b.getIntegerType(256);
+  auto yulPtrTy = mlir::yul::PtrType::get(b.getContext());
+
+  auto memorySafeAttr = inAsm.annotation().markedMemorySafe
+                            ? mlir::UnitAttr::get(b.getContext())
+                            : mlir::UnitAttr();
+  auto inAsmOp = b.create<mlir::sol::InlineAsmOp>(loc, memorySafeAttr);
+  mlir::OpBuilder::InsertionGuard guard(b);
+  mlir::Block *body = b.createBlock(&inAsmOp.getBody());
+  b.setInsertionPointToStart(body);
 
   std::function<mlir::Value(yul::Identifier const *)> externalRefResolver =
       [&](yul::Identifier const *id) -> mlir::Value {
@@ -2993,54 +3004,42 @@ void SolidityToMLIRPass::lower(InlineAssembly const &inAsm) {
     assert(decl);
     std::string const &suffix = info.suffix;
 
-    // Handle .slot and .offset suffixes for storage references.
-    if (suffix == "slot" || suffix == "offset") {
-      mlir::Value ptr = genLValRef(*decl);
-
-      // Value types use {slot, offset} representation (even 32-byte ones).
-      // Reference types (arrays, structs, mappings) use slot-only.
-      bool packable = decl->type()->isValueType();
-
-      // For local non-packable storage references (e.g. `Foo storage foo`),
-      // the stack slot *is* the i256 slot number. Return a raw pointer to that
-      // location so the Yul pass can both read (llvm.load) and write
-      // (llvm.store) it.
-      if (!decl->isStateVariable() && !packable) {
-        if (suffix == "slot")
-          return b.create<mlir::sol::ConvCastOp>(
-              loc, mlir::LLVM::LLVMPointerType::get(b.getContext()), ptr);
-        else
-          return b.create<mlir::sol::ConstantOp>(loc,
-                                                 b.getIntegerAttr(i256Ty, 0));
-      }
-
-      // For local storage pointers of value type, load from stack first.
-      if (!decl->isStateVariable())
-        ptr = b.create<mlir::sol::LoadOp>(loc, ptr);
-
-      if (packable) {
-        // Packable: conv_cast to {i256, i256} struct and extract.
-        auto structTy = mlir::LLVM::LLVMStructType::getLiteral(
-            b.getContext(), {i256Ty, i256Ty});
-        mlir::Value raw = b.create<mlir::sol::ConvCastOp>(loc, structTy, ptr);
-        if (suffix == "slot")
-          return b.create<mlir::LLVM::ExtractValueOp>(loc, raw, 0);
-        else
-          return b.create<mlir::LLVM::ExtractValueOp>(loc, raw, 1);
-      } else {
-        // Non-packable state variable: slot is fixed, offset is always 0.
-        if (suffix == "slot")
-          return b.create<mlir::sol::ConvCastOp>(loc, i256Ty, ptr);
-        else
-          return b.create<mlir::sol::ConstantOp>(loc,
-                                                 b.getIntegerAttr(i256Ty, 0));
-      }
+    if (decl->isConstant()) {
+      mlir::Value cst = genRValExpr(*decl->value(), getType(decl->type()));
+      return b.create<mlir::sol::YulValCastOp>(loc, i256Ty, cst);
     }
 
-    // No suffix: return pointer to the local variable.
-    mlir::Value localVarAddr = getLocalVarAddr(*decl);
-    return b.create<mlir::sol::ConvCastOp>(
-        loc, mlir::LLVM::LLVMPointerType::get(b.getContext()), localVarAddr);
+    if (decl->isStateVariable()) {
+      auto sym =
+          mlir::FlatSymbolRefAttr::get(b.getContext(), getMangledName(*decl));
+      if (suffix == "slot")
+        return b.create<mlir::sol::YulStateVarSlotOp>(loc, i256Ty, sym);
+      if (suffix == "offset")
+        return b.create<mlir::sol::YulStateVarOffsetOp>(loc, i256Ty, sym);
+    }
+
+    mlir::Value localAddr = getLocalVarAddr(*decl);
+
+    if (suffix == "slot")
+      return b.create<mlir::sol::YulStorageSlotOp>(loc, yulPtrTy, localAddr);
+
+    if (suffix == "offset") {
+      auto const *refTy = dynamic_cast<ReferenceType const *>(decl->type());
+      if (refTy && refTy->location() == DataLocation::CallData)
+        return b.create<mlir::sol::YulCallDataOffsetOp>(loc, yulPtrTy,
+                                                        localAddr);
+      return b.create<mlir::sol::YulStorageOffsetOp>(loc, i256Ty, localAddr);
+    }
+
+    if (suffix == "length")
+      return b.create<mlir::sol::YulCallDataLengthOp>(loc, yulPtrTy, localAddr);
+
+    if (suffix == "selector")
+      return b.create<mlir::sol::YulSelectorOp>(loc, yulPtrTy, localAddr);
+    if (suffix == "address")
+      return b.create<mlir::sol::YulFuncAddrOp>(loc, yulPtrTy, localAddr);
+
+    return b.create<mlir::sol::YulPtrCastOp>(loc, yulPtrTy, localAddr);
   };
 
   // TODO: YulToMLIRPass has an expensive ctor (Due to things like

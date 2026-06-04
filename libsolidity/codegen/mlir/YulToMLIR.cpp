@@ -32,8 +32,6 @@
 #include "libyul/Object.h"
 #include "libyul/Utilities.h"
 #include "libyul/optimiser/ASTWalker.h"
-#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "mlir/Dialect/Sol/Sol.h"
 #include "mlir/Dialect/Yul/Yul.h"
 #include "mlir/IR/Builders.h"
@@ -238,9 +236,6 @@ private:
 
   /// Lowers a function
   void operator()(FunctionDefinition const &fn) override;
-
-  /// Lowers a block
-  void operator()(Block const &blk) override;
 };
 
 /// Returns the llvm::APInt of `num`
@@ -428,11 +423,12 @@ mlir::Value YulToMLIRPass::genExpr(Literal const &lit) {
 
 mlir::Value YulToMLIRPass::genExpr(Identifier const &id) {
   mlir::Value val = resolveIdentifier(id);
-  // Direct value, not an address.
-  if (!mlir::isa<mlir::LLVM::LLVMPointerType>(val.getType()))
-    return val;
-  return b.create<mlir::LLVM::LoadOp>(
-      getLoc(id.debugData), /*resTy=*/getDefIntTy(), val, getDefAlign());
+  if (mlir::isa<mlir::yul::PtrType>(val.getType()))
+    return b.create<mlir::yul::LoadOp>(getLoc(id.debugData), getDefIntTy(),
+                                       val);
+  // Direct value (e.g. an RO state-var slot/offset projection returned by the
+  // external-reference resolver as an i256).
+  return val;
 }
 
 mlir::SmallVector<mlir::Value>
@@ -447,14 +443,15 @@ YulToMLIRPass::genExprs(FunctionCall const &call) {
     return builtinGenMap[builtin->name](call.arguments, loc);
   }
 
-  mlir::yul::FuncOp callee = lookupSymbol<mlir::yul::FuncOp>(
-      yul::resolveFunctionName(call.functionName, yulDialect));
-  assert(callee);
   std::vector<mlir::Value> args;
   args.reserve(call.arguments.size());
   for (Expression const &arg : call.arguments) {
     args.push_back(genDefTyExpr(arg));
   }
+
+  mlir::yul::FuncOp callee = lookupSymbol<mlir::yul::FuncOp>(
+      yul::resolveFunctionName(call.functionName, yulDialect));
+  assert(callee);
   auto callOp = b.create<mlir::yul::FuncCallOp>(loc, callee, args);
   for (mlir::Value res : callOp.getResults())
     resVals.push_back(res);
@@ -517,8 +514,7 @@ void YulToMLIRPass::operator()(Assignment const &asgn) {
   assert(asgn.variableNames.size() == rhsExprs.size());
 
   for (auto [lhs, rhsExpr] : llvm::zip(asgn.variableNames, rhsExprs)) {
-    b.create<mlir::LLVM::StoreOp>(loc, rhsExpr, resolveIdentifier(lhs),
-                                  getDefAlign());
+    b.create<mlir::yul::StoreOp>(loc, rhsExpr, resolveIdentifier(lhs));
   }
 }
 
@@ -534,12 +530,10 @@ void YulToMLIRPass::operator()(VariableDeclaration const &decl) {
       rhsExprs.push_back(genI256Const(loc, 0));
   }
   for (auto [var, rhsExpr] : llvm::zip(decl.variables, rhsExprs)) {
-    auto addr = b.create<mlir::LLVM::AllocaOp>(
-        getLoc(var.debugData),
-        /*resTy=*/mlir::LLVM::LLVMPointerType::get(b.getContext()),
-        /*eltTy=*/getDefIntTy(), genI256Const(loc, 1), getDefAlign());
+    auto addr = b.create<mlir::yul::AllocaOp>(
+        getLoc(var.debugData), mlir::yul::PtrType::get(b.getContext()));
     trackLocalVarAddr(var.name, addr);
-    b.create<mlir::LLVM::StoreOp>(loc, rhsExpr, addr, getDefAlign());
+    b.create<mlir::yul::StoreOp>(loc, rhsExpr, addr);
   }
 }
 
@@ -657,31 +651,30 @@ void YulToMLIRPass::operator()(ForLoop const &forStmt) {
 void YulToMLIRPass::operator()(FunctionDefinition const &fn) {
   mlir::Location loc = getLoc(fn.debugData);
 
-  // Lookup FuncOp (should be declared by the yul block lowering).
-  auto fnOp = lookupSymbol<mlir::yul::FuncOp>(fn.name.str());
+  // Pre-declared (empty) by declareFns in the enclosing symbol table; look it
+  // up by name and fill in its body here.
+  mlir::yul::FuncOp fnOp = lookupSymbol<mlir::yul::FuncOp>(fn.name.str());
   assert(fnOp);
+  mlir::FunctionType funcTy = fnOp.getFunctionType();
 
   // Restore the insertion point after lowering the function definition.
   mlir::OpBuilder::InsertionGuard insertGuard(b);
 
   // Generate entry block and args.
   mlir::Block *entryBlk = b.createBlock(&fnOp.getRegion());
-  std::vector<mlir::Location> inpLocs;
   unsigned i = 0;
+  auto yulPtrTy = mlir::yul::PtrType::get(b.getContext());
   for (const NameWithDebugData &in : fn.parameters) {
-    mlir::BlockArgument blkArg = entryBlk->addArgument(
-        fnOp.getFunctionType().getInput(i++), getLoc(in.debugData));
-    auto addr = b.create<mlir::LLVM::AllocaOp>(
-        blkArg.getLoc(),
-        /*resTy=*/mlir::LLVM::LLVMPointerType::get(b.getContext()),
-        /*eltTy=*/getDefIntTy(), genI256Const(loc, 1), getDefAlign());
+    mlir::BlockArgument blkArg =
+        entryBlk->addArgument(funcTy.getInput(i++), getLoc(in.debugData));
+    auto addr = b.create<mlir::yul::AllocaOp>(blkArg.getLoc(), yulPtrTy);
+    b.create<mlir::yul::StoreOp>(blkArg.getLoc(), blkArg, addr);
     trackLocalVarAddr(in.name, addr);
   }
   for (const NameWithDebugData &retVar : fn.returnVariables) {
-    auto addr = b.create<mlir::LLVM::AllocaOp>(
-        getLoc(retVar.debugData),
-        /*resTy=*/mlir::LLVM::LLVMPointerType::get(b.getContext()),
-        /*eltTy=*/getDefIntTy(), genI256Const(loc, 1), getDefAlign());
+    mlir::Location varLoc = getLoc(retVar.debugData);
+    auto addr = b.create<mlir::yul::AllocaOp>(varLoc, yulPtrTy);
+    b.create<mlir::yul::StoreOp>(varLoc, genI256Const(varLoc, 0), addr);
     trackLocalVarAddr(retVar.name, addr);
   }
 
@@ -690,35 +683,29 @@ void YulToMLIRPass::operator()(FunctionDefinition const &fn) {
 
   mlir::SmallVector<mlir::Value> retVarLds;
   for (const NameWithDebugData &retVar : fn.returnVariables) {
-    auto ld = b.create<mlir::LLVM::LoadOp>(
-        getLoc(retVar.debugData), /*resTy=*/getDefIntTy(),
-        getLocalVarAddr(retVar.name), getDefAlign());
+    auto ld = b.create<mlir::yul::LoadOp>(
+        getLoc(retVar.debugData), getDefIntTy(), getLocalVarAddr(retVar.name));
     retVarLds.push_back(ld);
   }
   b.create<mlir::yul::FuncReturnOp>(loc, retVarLds);
 }
 
-void YulToMLIRPass::operator()(Block const &blk) { lowerBlk(blk); }
-
 void YulToMLIRPass::lowerBlk(Block const &blk) {
-  // "Forward declare" FuncOps (i.e. create them with an empty region) at this
-  // block so that we can lower calls before lowering the functions. The
-  // function lowering is expected to lookup the FuncOp without creating it.
-  //
-  // TODO: Stop relying on libyul's Disambiguator
-  // We tried emitting a single block op for yul blocks with a symbol table
-  // trait. We're able to define symbols with the same name in different blocks,
-  // but ops like yul.func_call works with a FlatSymbolRefAttr which needs the
-  // symbol definition to be in the same symbol table
-  for (Statement const &stmt : blk.statements) {
-    if (const auto *fn = std::get_if<FunctionDefinition>(&stmt)) {
-      std::vector<mlir::Type> inTys(fn->parameters.size(), getDefIntTy()),
-          outTys(fn->returnVariables.size(), getDefIntTy());
-      mlir::FunctionType funcTy = b.getFunctionType(inTys, outTys);
-      b.create<mlir::yul::FuncOp>(getLoc(fn->debugData), fn->name.str(),
-                                  funcTy);
+  // Forward-declare all yul functions (incl. nested ones - yul allows function
+  // definitions in any block)
+  struct FnDeclarer : ASTWalker {
+    YulToMLIRPass &gen;
+    explicit FnDeclarer(YulToMLIRPass &gen) : gen(gen) {}
+    using ASTWalker::operator();
+    void operator()(FunctionDefinition const &fn) override {
+      std::vector<mlir::Type> inTys(fn.parameters.size(), gen.getDefIntTy()),
+          outTys(fn.returnVariables.size(), gen.getDefIntTy());
+      gen.b.create<mlir::yul::FuncOp>(gen.getLoc(fn.debugData), fn.name.str(),
+                                      gen.b.getFunctionType(inTys, outTys));
+      ASTWalker::operator()(fn);
     }
-  }
+  };
+  FnDeclarer{*this}(blk);
 
   ASTWalker::operator()(blk);
 }
@@ -780,7 +767,6 @@ solidity::mlirgen::Bytecode solidity::mlirgen::runYulToMLIRPass(
   mlir::MLIRContext ctx(mlir::MLIRContext::Threading::DISABLED);
   ctx.getOrLoadDialect<mlir::sol::SolDialect>();
   ctx.getOrLoadDialect<mlir::yul::YulDialect>();
-  ctx.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
 
   // Register a diagnostic handler to capture the diagnostic so that we can
   // check it later.

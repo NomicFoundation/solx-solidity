@@ -23,11 +23,12 @@ object "Simple" {
 // CHECK-NEXT:     yul.return %c10_i256, %c11_i256 loc(#loc3)
 // CHECK-NEXT:     yul.object @Simple_deployed {
 // CHECK-NEXT:       yul.func @f0 : () -> i256 {
-// CHECK-NEXT:         %c1_i256 = yul.constant 1 loc(#loc4)
-// CHECK-NEXT:         %1 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc5)
-// CHECK-NEXT:         %c0_i256 = yul.constant 0 loc(#loc6)
-// CHECK-NEXT:         llvm.store %c0_i256, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc7)
-// CHECK-NEXT:         %2 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc5)
+// CHECK-NEXT:         %1 = yul.alloca : !yul.ptr loc(#loc5)
+// CHECK-NEXT:         %c0_i256 = yul.constant 0 loc(#loc5)
+// CHECK-NEXT:         yul.store %c0_i256, %1 : i256, !yul.ptr loc(#loc5)
+// CHECK-NEXT:         %c0_i256_0 = yul.constant 0 loc(#loc6)
+// CHECK-NEXT:         yul.store %c0_i256_0, %1 : i256, !yul.ptr loc(#loc7)
+// CHECK-NEXT:         %2 = yul.load %1 : !yul.ptr -> i256 loc(#loc5)
 // CHECK-NEXT:         yul.func_return %2 : i256 loc(#loc4)
 // CHECK-NEXT:       } loc(#loc4)
 // CHECK-NEXT:       %c20_i256 = yul.constant 20 loc(#loc8)
