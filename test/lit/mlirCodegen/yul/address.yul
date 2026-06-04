@@ -11,13 +11,12 @@ object "Test" {
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka} {
 // CHECK-NEXT:   yul.object @Test {
 // CHECK-NEXT:     %0 = yul.address loc(#loc1)
-// CHECK-NEXT:     %c1_i256 = yul.constant 1 loc(#loc2)
-// CHECK-NEXT:     %1 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc3)
-// CHECK-NEXT:     llvm.store %0, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc2)
+// CHECK-NEXT:     %1 = yul.alloca : !yul.ptr loc(#loc2)
+// CHECK-NEXT:     yul.store %0, %1 : i256, !yul.ptr loc(#loc3)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:4:13)
-// CHECK-NEXT: #loc2 = loc({{.*}}:4:4)
-// CHECK-NEXT: #loc3 = loc({{.*}}:4:8)
+// CHECK-NEXT: #loc2 = loc({{.*}}:4:8)
+// CHECK-NEXT: #loc3 = loc({{.*}}:4:4)
 // CHECK-EMPTY:
