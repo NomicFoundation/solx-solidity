@@ -42,7 +42,6 @@ semanticTests/experimental/type_class
 semanticTests/expressions/module_from_ternary_expression
 semanticTests/expressions/tuple_from_ternary_expression
 semanticTests/expressions/uncalled_address_transfer_send
-semanticTests/externalContracts/FixedFeeRegistrar
 semanticTests/externalContracts/prbmath_signed
 semanticTests/externalContracts/prbmath_unsigned
 semanticTests/externalContracts/ramanujan_pi
@@ -169,7 +168,6 @@ semanticTests/saltedCreate/salted_create_with_value
 semanticTests/shanghai/evmone_support
 semanticTests/smoke/failure
 semanticTests/specialFunctions/abi_functions_member_access
-semanticTests/storage/storage_boundary_delete_overflow_bug
 semanticTests/storageLayoutSpecifier/state_variable_constant_and_immutable
 semanticTests/structs/function_type_copy
 semanticTests/structs/lone_struct_array_type
