@@ -8,7 +8,6 @@ semanticTests/array/copying/calldata_1d_array_into_2d_memory_array_element
 semanticTests/array/copying/copying_bytes_multiassign
 semanticTests/array/create_memory_array_too_large
 semanticTests/array/fixed_bytes_length_access
-semanticTests/array/indexAccess/bytes_index_access
 semanticTests/array/indexAccess/fixed_bytes_index_access
 semanticTests/array/indexAccess/index_access
 semanticTests/array/pop/array_pop_isolated
@@ -292,7 +291,6 @@ semanticTests/viaYul/function_address
 semanticTests/viaYul/local_tuple_assignment
 semanticTests/viaYul/require
 semanticTests/viaYul/tuple_evaluation_order
-semanticTests/viaYul/unary_fixedbytes
 semanticTests/viaYul/unary_operations
 semanticTests/viaYul/various_inline_asm
 semanticTests/virtualFunctions/internal_virtual_function_calls_through_dispatch

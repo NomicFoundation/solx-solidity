@@ -1088,16 +1088,6 @@ mlir::Value SolidityToMLIRPass::genExpr(Literal const &lit) {
 mlir::Value SolidityToMLIRPass::genBinExpr(Token op, mlir::Value lhs,
                                            mlir::Value rhs,
                                            mlir::Location loc) {
-  auto convertBytesToInt = [&](mlir::Value val) -> mlir::Value {
-    auto bytesTy = mlir::dyn_cast<mlir::sol::FixedBytesType>(val.getType());
-    if (!bytesTy)
-      return val;
-
-    mlir::Type intTy =
-        b.getIntegerType(bytesTy.getSize() * 8, /*isSigned=*/false);
-    return genCast(val, intTy);
-  };
-
   switch (op) {
   case Token::Add:
     if (inUnchecked)
@@ -1128,28 +1118,20 @@ mlir::Value SolidityToMLIRPass::genBinExpr(Token op, mlir::Value lhs,
       return b.create<mlir::sol::CExpOp>(loc, lhs.getType(), lhs, rhs);
     break;
   case Token::BitAnd:
-    return b.create<mlir::sol::AndOp>(loc, convertBytesToInt(lhs),
-                                      convertBytesToInt(rhs));
+    return b.create<mlir::sol::AndOp>(loc, lhs, rhs);
   case Token::BitOr:
-    return b.create<mlir::sol::OrOp>(loc, convertBytesToInt(lhs),
-                                     convertBytesToInt(rhs));
+    return b.create<mlir::sol::OrOp>(loc, lhs, rhs);
   case Token::BitXor:
-    return b.create<mlir::sol::XorOp>(loc, convertBytesToInt(lhs),
-                                      convertBytesToInt(rhs));
+    return b.create<mlir::sol::XorOp>(loc, lhs, rhs);
   case Token::SHL:
   case Token::SAR: {
-    // Old codegen semantics: convert bytesN lhs to its integer equivalent,
-    // perform the shift, then convert back. For integer lhs, convertBytesToInt
-    // is a no-op and genCast just widens the (mobile-type) rhs to match lhs.
-    mlir::Value shiftLhs = convertBytesToInt(lhs);
-    mlir::Value shiftRhs = genCast(rhs, shiftLhs.getType());
-    mlir::Value shifted =
-        op == Token::SHL
-            ? static_cast<mlir::Value>(
-                  b.create<mlir::sol::ShlOp>(loc, shiftLhs, shiftRhs))
-            : static_cast<mlir::Value>(
-                  b.create<mlir::sol::ShrOp>(loc, shiftLhs, shiftRhs));
-    return genCast(shifted, lhs.getType());
+    // rhs stays as its mobile integer type; Sol_BitwiseShiftOp allows
+    // independent lhs and rhs types (AllTypesMatch only links lhs and result).
+    return op == Token::SHL
+               ? static_cast<mlir::Value>(
+                     b.create<mlir::sol::ShlOp>(loc, lhs.getType(), lhs, rhs))
+               : static_cast<mlir::Value>(
+                     b.create<mlir::sol::ShrOp>(loc, lhs.getType(), lhs, rhs));
   }
   case Token::Equal:
     return b.create<mlir::sol::CmpOp>(loc, mlir::sol::CmpPredicate::eq, lhs,
@@ -1241,15 +1223,6 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const &unaryOp) {
   // Bitwise not (~x == x ^ -1)
   case Token::BitNot: {
     mlir::Value expr = genRValExpr(unaryOp.subExpression());
-
-    // Convert bytes to int if needed.
-    if (auto bytesTy =
-            mlir::dyn_cast<mlir::sol::FixedBytesType>(expr.getType())) {
-      mlir::Type intTy =
-          b.getIntegerType(bytesTy.getSize() * 8, /*isSigned=*/false);
-      expr = genCast(expr, intTy);
-    }
-
     return b.create<mlir::sol::NotOp>(loc, expr);
   }
   default:
