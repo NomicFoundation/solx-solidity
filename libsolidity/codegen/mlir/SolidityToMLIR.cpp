@@ -1251,6 +1251,15 @@ mlir::Value SolidityToMLIRPass::genExpr(BinaryOperation const &binOp) {
   auto loc = getLoc(binOp);
   BuilderExt bExt(b, loc);
 
+  // Both operands are compile-time rational constants AND the result is itself a
+  // rational number (arithmetic ops).
+  if (binOp.annotation().type->category() == Type::Category::RationalNumber) {
+    auto intTy = mlir::cast<mlir::IntegerType>(argTy);
+    u256 val = binOp.annotation().commonType->literalValue(nullptr);
+    return b.create<mlir::sol::ConstantOp>(
+        loc, b.getIntegerAttr(intTy, getAPInt(val, intTy.getWidth())));
+  }
+
   mlir::Value lhs = genRValExpr(binOp.leftExpression(), argTy);
 
   // Handle logical operators that can short-circuit.

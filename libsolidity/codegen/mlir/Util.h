@@ -39,12 +39,13 @@ inline llvm::APInt getAPInt(solidity::u256 const &val, unsigned numBits) {
     return llvm::APInt(numBits, val.convert_to<uint32_t>());
   case 64:
     return llvm::APInt(numBits, val.convert_to<uint64_t>());
-  case 128:
-  case 160:
   case 256:
-    return llvm::APInt(numBits, val.str(), /*radix=*/10);
+    return llvm::APInt(256, val.str(), /*radix=*/10);
+  default:
+    // For all other widths: parse into 256 bits (sufficient for any u256
+    // decimal), then truncate.
+    return llvm::APInt(256, val.str(), /*radix=*/10).trunc(numBits);
   }
-  llvm_unreachable("Unsupported bit width");
 }
 
 /// Extension of mlir::OpBuilder with APIs helpful for codegen in solidity.

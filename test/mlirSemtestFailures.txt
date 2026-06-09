@@ -1,5 +1,4 @@
 semanticTests/abiEncoderV2/calldata_struct_array_reencode
-semanticTests/arithmetics/addmod_mulmod
 semanticTests/arithmetics/block_inside_unchecked
 semanticTests/arithmetics/signed_mod
 semanticTests/array/array_function_pointers
@@ -19,7 +18,6 @@ semanticTests/calldata/calldata_attached_to_static_array
 semanticTests/calldata/calldata_attached_to_struct
 semanticTests/cleanup/cleanup_bytes_types_shortening_newCodeGen
 semanticTests/cleanup/indexed_log_topic_during_explicit_downcast
-semanticTests/constantEvaluator/negative_fractional_mod
 semanticTests/constants/asm_address_constant_regression
 semanticTests/constants/asm_constant_file_level
 semanticTests/constants/assign_type_info
@@ -127,8 +125,6 @@ semanticTests/inlineAssembly/inline_assembly_storage_access_inside_function
 semanticTests/inlineAssembly/inline_assembly_transient_storage_access_inside_function
 semanticTests/inlineAssembly/leave
 semanticTests/inlineAssembly/transient_storage_low_level_calls
-semanticTests/integer/basic
-semanticTests/integer/uint
 semanticTests/interfaceID/lisa
 semanticTests/interfaceID/lisa_interfaceId
 semanticTests/libraries/attached_internal_library_function_accepting_calldata
@@ -165,7 +161,6 @@ semanticTests/libraries/using_for_by_name
 semanticTests/libraries/using_for_function_on_int
 semanticTests/libraries/using_for_overload
 semanticTests/libraries/using_for_storage_structs
-semanticTests/literals/scientific_notation
 semanticTests/memoryManagement/return_variable
 semanticTests/modifiers/evaluation_order
 semanticTests/modifiers/function_modifier
@@ -184,9 +179,6 @@ semanticTests/modifiers/function_return_parameter
 semanticTests/modifiers/function_return_parameter_complex
 semanticTests/modifiers/return_in_modifier
 semanticTests/modifiers/stacked_return_with_modifiers
-semanticTests/operators/shifts/shift_constant_right
-semanticTests/operators/shifts/shift_negative_constant_right
-semanticTests/operators/shifts/shift_right_negative_literal
 semanticTests/operators/userDefined/all_possible_operators
 semanticTests/operators/userDefined/all_possible_user_defined_value_types_with_operators
 semanticTests/operators/userDefined/attaching_and_defining_operator_with_same_function
@@ -203,7 +195,6 @@ semanticTests/operators/userDefined/operator_parameter_and_return_cleanup_betwee
 semanticTests/operators/userDefined/operator_precendence
 semanticTests/operators/userDefined/recursive_operator
 semanticTests/operators/userDefined/unchecked_operators
-semanticTests/optimizer/shift_bytes
 semanticTests/revertStrings/empty_v2
 semanticTests/revertStrings/ether_non_payable_function
 semanticTests/revertStrings/library_non_view_call
@@ -237,7 +228,6 @@ semanticTests/tryCatch/try_catch_library_call
 semanticTests/types/external_function_to_address
 semanticTests/types/nested_tuples
 semanticTests/types/tuple_assign_multi_slot_grow
-semanticTests/types/type_conversion_cleanup
 semanticTests/uninitializedFunctionPointer/uninitialized_internal_storage_function_legacy
 semanticTests/userDefinedValueType/assembly_access_bytes2_abicoder_v1
 semanticTests/userDefinedValueType/calldata
@@ -269,7 +259,6 @@ semanticTests/various/code_length_contract_member
 semanticTests/various/crazy_elementary_typenames_on_stack
 semanticTests/various/destructuring_assignment
 semanticTests/various/many_subassemblies
-semanticTests/various/positive_integers_to_signed
 semanticTests/various/selfdestruct_post_cancun
 semanticTests/various/skip_dynamic_types_for_static_arrays_with_dynamic_elements
 semanticTests/various/state_variable_local_variable_mixture
@@ -285,8 +274,6 @@ semanticTests/viaYul/dirty_memory_int32
 semanticTests/viaYul/dirty_memory_static_array
 semanticTests/viaYul/dirty_memory_struct
 semanticTests/viaYul/dirty_memory_uint32
-semanticTests/viaYul/exp_literals
-semanticTests/viaYul/exp_literals_success
 semanticTests/viaYul/function_address
 semanticTests/viaYul/local_tuple_assignment
 semanticTests/viaYul/require
