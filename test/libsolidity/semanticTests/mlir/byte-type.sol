@@ -31,6 +31,33 @@ contract C {
     a[0] = "X";
     return a[0];
   }
+
+  function borMemory(bytes memory a) public pure returns (bytes1) {
+    a[0] |= 0x05;
+    return a[0];
+  }
+
+  function bandMemory(bytes memory a) public pure returns (bytes1) {
+    a[0] &= 0xf8;
+    return a[0];
+  }
+
+  function bxorMemory(bytes memory a) public pure returns (bytes1) {
+    a[0] ^= 0x07;
+    return a[0];
+  }
+
+  function bnotMemory(bytes memory a) public pure returns (bytes1) {
+    return ~a[0];
+  }
+
+  function bshlMemory(bytes memory a) public pure returns (bytes1) {
+    return a[0] << 4;
+  }
+
+  function bshrMemory(bytes memory a) public pure returns (bytes1) {
+    return a[0] >> 1;
+  }
 }
 // ====
 // compileViaMlir: true
@@ -41,3 +68,9 @@ contract C {
 // readStorage() -> "e"
 // writeStorage(bytes1): "X" -> "X"
 // storeLiteral(bytes): 32, 5, "hello" -> "X"
+// borMemory(bytes): 32, 5, "hello" -> "m"
+// bandMemory(bytes): 32, 5, "hello" -> "h"
+// bxorMemory(bytes): 32, 5, "hello" -> "o"
+// bnotMemory(bytes): 32, 5, "hello" -> left(0x97)
+// bshlMemory(bytes): 32, 5, "hello" -> left(0x80)
+// bshrMemory(bytes): 32, 1, left(0x80) -> left(0x40)
