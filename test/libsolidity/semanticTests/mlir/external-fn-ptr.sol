@@ -157,6 +157,15 @@ contract C {
     return 1;
   }
 
+  function() external[] fns;
+
+  function fn() external {}
+
+  // ABI-encode directly from storage (raw sload of the storage-form word).
+  function encodeStorageArray() public returns (bytes32) {
+    fns.push(this.fn);
+    return keccak256(abi.encode(fns));
+  }
 }
 
 // ====
@@ -177,3 +186,4 @@ contract C {
 // abiRoundtripArray() -> 10
 // packedOverwriteFn() -> 17, 77
 // acceptFn(function): 0x0000000000000000000000000000123412345678000000000000000000000001 -> FAILURE
+// encodeStorageArray() -> 0x83487ff180c7061b0f6df9b6958d439cb6f74b3a82c07c5e92cede783cbc7817
