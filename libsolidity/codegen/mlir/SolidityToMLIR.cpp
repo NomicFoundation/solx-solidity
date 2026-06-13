@@ -344,15 +344,16 @@ private:
           auto mapTy = cast<mlir::sol::MappingType>(ret.getType());
           mlir::Type addrTy = mapTy.getValType();
           if (!mlir::sol::isNonPtrRefType(mapTy.getValType()))
-            addrTy = mlir::sol::PointerType::get(
-                b.getContext(), mapTy.getValType(),
-                mlir::sol::DataLocation::Storage);
+            addrTy =
+                mlir::sol::PointerType::get(b.getContext(), mapTy.getValType(),
+                                            mlir::sol::DataLocation::Storage);
           auto map = b.create<mlir::sol::MapOp>(loc, addrTy, ret, blkArg);
           ret = genRValExpr(map, loc);
         }
       }
       if (auto structTy = mlir::dyn_cast<mlir::sol::StructType>(ret.getType()))
-        b.create<mlir::sol::ReturnOp>(loc, expandStructForReturn(structTy, ret));
+        b.create<mlir::sol::ReturnOp>(loc,
+                                      expandStructForReturn(structTy, ret));
       else {
         if (mlir::sol::isNonPtrRefType(ret.getType()))
           ret = genCast(ret, toMemoryType(ret.getType()));
@@ -815,86 +816,7 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
 
 mlir::Value SolidityToMLIRPass::genZeroedVal(mlir::Type ty,
                                              mlir::Location loc) {
-  if (auto intTy = mlir::dyn_cast<mlir::IntegerType>(ty)) {
-    return b.create<mlir::sol::ConstantOp>(
-        loc, b.getIntegerAttr(intTy, llvm::APInt(intTy.getWidth(), 0)));
-  }
-  if (mlir::isa<mlir::sol::FuncRefType>(ty)) {
-    return b.create<mlir::sol::DefaultFuncConstantOp>(loc);
-  }
-  if (auto arrTy = mlir::dyn_cast<mlir::sol::ArrayType>(ty)) {
-    if (arrTy.getDataLocation() == mlir::sol::DataLocation::CallData)
-      return b.create<mlir::sol::DefaultCallDataOp>(loc, arrTy);
-    if (arrTy.getDataLocation() == mlir::sol::DataLocation::Storage ||
-        arrTy.getDataLocation() == mlir::sol::DataLocation::Transient)
-      return b.create<mlir::sol::DefaultStorageOp>(loc, arrTy);
-    return b.create<mlir::sol::MallocOp>(loc, arrTy, /*zeroInit=*/true,
-                                         /*size=*/mlir::Value{});
-  }
-  if (auto structTy = mlir::dyn_cast<mlir::sol::StructType>(ty)) {
-    if (structTy.getDataLocation() == mlir::sol::DataLocation::CallData)
-      return b.create<mlir::sol::DefaultCallDataOp>(loc, structTy);
-    if (structTy.getDataLocation() == mlir::sol::DataLocation::Storage ||
-        structTy.getDataLocation() == mlir::sol::DataLocation::Transient)
-      return b.create<mlir::sol::DefaultStorageOp>(loc, structTy);
-    return b.create<mlir::sol::MallocOp>(loc, structTy, /*zeroInit=*/true,
-                                         /*size=*/mlir::Value{});
-  }
-  if (auto stringTy = mlir::dyn_cast<mlir::sol::StringType>(ty)) {
-    if (stringTy.getDataLocation() == mlir::sol::DataLocation::CallData)
-      return b.create<mlir::sol::DefaultCallDataOp>(loc, stringTy);
-    if (stringTy.getDataLocation() == mlir::sol::DataLocation::Storage ||
-        stringTy.getDataLocation() == mlir::sol::DataLocation::Transient)
-      return b.create<mlir::sol::DefaultStorageOp>(loc, stringTy);
-    // TODO: Do we need to zero-init here?
-    return b.create<mlir::sol::MallocOp>(loc, stringTy, /*zeroInit=*/false,
-                                         /*size=*/mlir::Value{});
-  }
-  if (auto addressTy = mlir::dyn_cast<mlir::sol::AddressType>(ty)) {
-    auto uint160Ty = b.getIntegerType(160, /*isSigned=*/false);
-    auto zero = b.create<mlir::sol::ConstantOp>(
-        loc, b.getIntegerAttr(uint160Ty, llvm::APInt(160, 0)));
-    return genCast(zero, addressTy);
-  }
-  if (auto bytesTy = mlir::dyn_cast<mlir::sol::FixedBytesType>(ty)) {
-    unsigned width = bytesTy.getSize() * 8;
-    auto uintTy = b.getIntegerType(width, /*isSigned=*/false);
-    auto zero = b.create<mlir::sol::ConstantOp>(
-        loc, b.getIntegerAttr(uintTy, llvm::APInt(width, 0)));
-    return genCast(zero, bytesTy);
-  }
-  if (mlir::isa<mlir::sol::ByteType>(ty)) {
-    auto uintTy = b.getIntegerType(/*width=*/8, /*isSigned=*/false);
-    auto zero = b.create<mlir::sol::ConstantOp>(
-        loc, b.getIntegerAttr(uintTy, llvm::APInt(8, 0)));
-    return genCast(zero, ty);
-  }
-  if (auto contractTy = mlir::dyn_cast<mlir::sol::ContractType>(ty)) {
-    auto uint160Ty = b.getIntegerType(160, /*isSigned=*/false);
-    auto zero = b.create<mlir::sol::ConstantOp>(
-        loc, b.getIntegerAttr(uint160Ty, llvm::APInt(160, 0)));
-    auto addrTy =
-        mlir::sol::AddressType::get(b.getContext(), contractTy.getPayable());
-    return genCast(genCast(zero, addrTy), contractTy);
-  }
-  if (auto enumTy = mlir::dyn_cast<mlir::sol::EnumType>(ty)) {
-    auto ui256Ty = b.getIntegerType(256, /*isSigned=*/false);
-    auto zero = b.create<mlir::sol::ConstantOp>(
-        loc, b.getIntegerAttr(ui256Ty, llvm::APInt(256, 0)));
-    return genCast(zero, enumTy);
-  }
-  if (auto extFnTy = mlir::dyn_cast<mlir::sol::ExtFuncRefType>(ty)) {
-    auto addrTy =
-        mlir::sol::AddressType::get(b.getContext(), /*payable=*/false);
-    auto uint160Ty = b.getIntegerType(160, /*isSigned=*/false);
-    auto zeroAddr =
-        genCast(b.create<mlir::sol::ConstantOp>(
-                    loc, b.getIntegerAttr(uint160Ty, llvm::APInt(160, 0))),
-                addrTy);
-    return b.create<mlir::sol::ExtFuncConstantOp>(loc, extFnTy, zeroAddr,
-                                                  b.getI32IntegerAttr(0));
-  }
-  llvm_unreachable("Unexpected type");
+  return mlir::sol::emitZeroedVal(b, ty, loc);
 }
 
 void SolidityToMLIRPass::genZeroedVal(mlir::sol::AllocaOp addr) {
@@ -1251,8 +1173,8 @@ mlir::Value SolidityToMLIRPass::genExpr(BinaryOperation const &binOp) {
   auto loc = getLoc(binOp);
   BuilderExt bExt(b, loc);
 
-  // Both operands are compile-time rational constants AND the result is itself a
-  // rational number (arithmetic ops).
+  // Both operands are compile-time rational constants AND the result is itself
+  // a rational number (arithmetic ops).
   if (binOp.annotation().type->category() == Type::Category::RationalNumber) {
     auto intTy = mlir::cast<mlir::IntegerType>(argTy);
     u256 val = binOp.annotation().commonType->literalValue(nullptr);
