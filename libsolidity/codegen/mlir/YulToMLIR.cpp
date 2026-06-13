@@ -32,8 +32,6 @@
 #include "libyul/Object.h"
 #include "libyul/Utilities.h"
 #include "libyul/optimiser/ASTWalker.h"
-#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "mlir/Dialect/Sol/Sol.h"
 #include "mlir/Dialect/Yul/Yul.h"
 #include "mlir/IR/Builders.h"
@@ -428,11 +426,12 @@ mlir::Value YulToMLIRPass::genExpr(Literal const &lit) {
 
 mlir::Value YulToMLIRPass::genExpr(Identifier const &id) {
   mlir::Value val = resolveIdentifier(id);
-  // Direct value, not an address.
-  if (!mlir::isa<mlir::LLVM::LLVMPointerType>(val.getType()))
-    return val;
-  return b.create<mlir::LLVM::LoadOp>(
-      getLoc(id.debugData), /*resTy=*/getDefIntTy(), val, getDefAlign());
+  if (mlir::isa<mlir::yul::PtrType>(val.getType()))
+    return b.create<mlir::yul::LoadOp>(getLoc(id.debugData), getDefIntTy(),
+                                       val);
+  // Direct value (e.g. an RO state-var slot/offset projection returned by the
+  // external-reference resolver as an i256).
+  return val;
 }
 
 mlir::SmallVector<mlir::Value>
@@ -517,8 +516,7 @@ void YulToMLIRPass::operator()(Assignment const &asgn) {
   assert(asgn.variableNames.size() == rhsExprs.size());
 
   for (auto [lhs, rhsExpr] : llvm::zip(asgn.variableNames, rhsExprs)) {
-    b.create<mlir::LLVM::StoreOp>(loc, rhsExpr, resolveIdentifier(lhs),
-                                  getDefAlign());
+    b.create<mlir::yul::StoreOp>(loc, rhsExpr, resolveIdentifier(lhs));
   }
 }
 
@@ -534,12 +532,10 @@ void YulToMLIRPass::operator()(VariableDeclaration const &decl) {
       rhsExprs.push_back(genI256Const(loc, 0));
   }
   for (auto [var, rhsExpr] : llvm::zip(decl.variables, rhsExprs)) {
-    auto addr = b.create<mlir::LLVM::AllocaOp>(
-        getLoc(var.debugData),
-        /*resTy=*/mlir::LLVM::LLVMPointerType::get(b.getContext()),
-        /*eltTy=*/getDefIntTy(), genI256Const(loc, 1), getDefAlign());
+    auto addr = b.create<mlir::yul::AllocaOp>(
+        getLoc(var.debugData), mlir::yul::PtrType::get(b.getContext()));
     trackLocalVarAddr(var.name, addr);
-    b.create<mlir::LLVM::StoreOp>(loc, rhsExpr, addr, getDefAlign());
+    b.create<mlir::yul::StoreOp>(loc, rhsExpr, addr);
   }
 }
 
@@ -668,20 +664,18 @@ void YulToMLIRPass::operator()(FunctionDefinition const &fn) {
   mlir::Block *entryBlk = b.createBlock(&fnOp.getRegion());
   std::vector<mlir::Location> inpLocs;
   unsigned i = 0;
+  auto yulPtrTy = mlir::yul::PtrType::get(b.getContext());
   for (const NameWithDebugData &in : fn.parameters) {
     mlir::BlockArgument blkArg = entryBlk->addArgument(
         fnOp.getFunctionType().getInput(i++), getLoc(in.debugData));
-    auto addr = b.create<mlir::LLVM::AllocaOp>(
-        blkArg.getLoc(),
-        /*resTy=*/mlir::LLVM::LLVMPointerType::get(b.getContext()),
-        /*eltTy=*/getDefIntTy(), genI256Const(loc, 1), getDefAlign());
+    auto addr = b.create<mlir::yul::AllocaOp>(blkArg.getLoc(), yulPtrTy);
+    b.create<mlir::yul::StoreOp>(blkArg.getLoc(), blkArg, addr);
     trackLocalVarAddr(in.name, addr);
   }
   for (const NameWithDebugData &retVar : fn.returnVariables) {
-    auto addr = b.create<mlir::LLVM::AllocaOp>(
-        getLoc(retVar.debugData),
-        /*resTy=*/mlir::LLVM::LLVMPointerType::get(b.getContext()),
-        /*eltTy=*/getDefIntTy(), genI256Const(loc, 1), getDefAlign());
+    mlir::Location varLoc = getLoc(retVar.debugData);
+    auto addr = b.create<mlir::yul::AllocaOp>(varLoc, yulPtrTy);
+    b.create<mlir::yul::StoreOp>(varLoc, genI256Const(varLoc, 0), addr);
     trackLocalVarAddr(retVar.name, addr);
   }
 
@@ -690,9 +684,8 @@ void YulToMLIRPass::operator()(FunctionDefinition const &fn) {
 
   mlir::SmallVector<mlir::Value> retVarLds;
   for (const NameWithDebugData &retVar : fn.returnVariables) {
-    auto ld = b.create<mlir::LLVM::LoadOp>(
-        getLoc(retVar.debugData), /*resTy=*/getDefIntTy(),
-        getLocalVarAddr(retVar.name), getDefAlign());
+    auto ld = b.create<mlir::yul::LoadOp>(
+        getLoc(retVar.debugData), getDefIntTy(), getLocalVarAddr(retVar.name));
     retVarLds.push_back(ld);
   }
   b.create<mlir::yul::FuncReturnOp>(loc, retVarLds);
@@ -780,7 +773,6 @@ solidity::mlirgen::Bytecode solidity::mlirgen::runYulToMLIRPass(
   mlir::MLIRContext ctx(mlir::MLIRContext::Threading::DISABLED);
   ctx.getOrLoadDialect<mlir::sol::SolDialect>();
   ctx.getOrLoadDialect<mlir::yul::YulDialect>();
-  ctx.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
 
   // Register a diagnostic handler to capture the diagnostic so that we can
   // check it later.
