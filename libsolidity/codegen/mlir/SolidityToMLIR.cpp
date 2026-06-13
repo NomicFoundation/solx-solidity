@@ -434,7 +434,7 @@ private:
   /// (scalars, address, fixedbytes, etc.) are returned unchanged.
   mlir::Type toMemoryType(mlir::Type ty) const {
     if (auto arrTy = mlir::dyn_cast<mlir::sol::ArrayType>(ty))
-      return mlir::sol::ArrayType::get(b.getContext(), arrTy.getSize(),
+      return mlir::sol::ArrayType::get(b.getContext(), arrTy.getSizeOpt(),
                                        toMemoryType(arrTy.getEltType()),
                                        mlir::sol::DataLocation::Memory);
     if (auto structTy = mlir::dyn_cast<mlir::sol::StructType>(ty)) {
@@ -680,11 +680,11 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
       return mlir::sol::StringType::get(b.getContext(), getDataLocation(arrTy));
     mlir::Type eltTy = getType(arrTy->baseType());
 
-    // TODO: Does convert_to alreay do this?
-    assert(arrTy->length() <= INT64_MAX);
-    int64_t size = arrTy->isDynamicallySized()
-                       ? -1
-                       : arrTy->length().convert_to<int64_t>();
+    std::optional<llvm::APInt> size =
+        arrTy->isDynamicallySized()
+            ? /*size=*/std::nullopt
+            : std::optional<llvm::APInt>(
+                  mlirgen::getAPInt(arrTy->length(), 256));
     return mlir::sol::ArrayType::get(b.getContext(), size, eltTy,
                                      getDataLocation(arrTy));
   }
@@ -696,8 +696,8 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
                                         getDataLocation(&arrTy));
 
     mlir::Type eltTy = getType(arrTy.baseType());
-    return mlir::sol::ArrayType::get(b.getContext(), /*size=*/-1, eltTy,
-                                     getDataLocation(&arrTy));
+    return mlir::sol::ArrayType::get(b.getContext(), /*size=*/std::nullopt,
+                                     eltTy, getDataLocation(&arrTy));
   }
   case Type::Category::Struct: {
     const auto *structTy = static_cast<StructType const *>(ty);
