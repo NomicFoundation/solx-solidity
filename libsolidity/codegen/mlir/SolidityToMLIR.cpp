@@ -1639,6 +1639,16 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
       if (fnTy.kind() == FunctionType::Kind::External)
         return genRuntimeFunctionSelector(memberAcc.expression(), fnTy, loc);
     }
+    if (memberName == "address") {
+      Expression const *fnExpr = &memberAcc.expression();
+      while (auto const *opts = dynamic_cast<FunctionCallOptions const *>(fnExpr))
+        fnExpr = &opts->expression();
+      auto const &fnTy = dynamic_cast<FunctionType const &>(*memberAccTy);
+      mlir::Type addrTy =
+          mlir::sol::AddressType::get(b.getContext(), /*payable=*/false);
+      return b.create<mlir::sol::ExtFuncAddrOp>(
+          loc, addrTy, genRValExpr(*fnExpr, getType(&fnTy)));
+    }
     break;
   }
   case Type::Category::TypeType: {
