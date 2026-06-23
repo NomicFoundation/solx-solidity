@@ -908,9 +908,20 @@ void SolidityToMLIRPass::genZeroedVal(mlir::sol::AllocaOp addr) {
 void SolidityToMLIRPass::genDeleteExpr(mlir::Value addr, mlir::Location loc) {
   mlir::Type addrTy = addr.getType();
 
-  // Zero-init reference types by allocating a memory version and copying it via
-  // genAssign which emits sol.copy for storage destination.
+  // Reference types (arrays, structs, strings).
   if (mlir::sol::isNonPtrRefType(addrTy)) {
+    // Storage references clear in place via sol.delete, which recursively
+    // zeroes every occupied slot. Unlike the allocate-empty-and-copy approach
+    // below, this never attempts to copy uncopyable members (e.g. mappings) and
+    // matches the legacy codegen's `delete` semantics.
+    if (mlir::sol::getDataLocation(addrTy) ==
+        mlir::sol::DataLocation::Storage) {
+      b.create<mlir::sol::DeleteOp>(loc, addr);
+      return;
+    }
+
+    // Non-storage references (e.g. memory): zero-init by allocating a memory
+    // version and copying it via genAssign which emits sol.copy.
     genAssign(addr, genZeroedVal(toMemoryType(addrTy), loc), loc);
     return;
   }
@@ -918,6 +929,20 @@ void SolidityToMLIRPass::genDeleteExpr(mlir::Value addr, mlir::Location loc) {
   // Value types and pointer-wrapped reference types.
   mlir::Type pointeeTy =
       mlir::cast<mlir::sol::PointerType>(addrTy).getPointeeType();
+
+  // NOTE: This is a defensive guard, not a fix for a currently-triggerable bug.
+  // The type checker rejects `delete` on every storage-pointer lvalue (local
+  // bindings, internal-function `storage` parameters, etc.), and member/element
+  // deletes are dereferenced to a bare NonPtrRefType before reaching here, so
+  // no valid Solidity source currently routes such an lvalue to this path. The
+  // guard documents the intended semantics and hardens against future changes.
+  if (mlir::sol::isNonPtrRefType(pointeeTy) &&
+      mlir::sol::getDataLocation(pointeeTy) ==
+          mlir::sol::DataLocation::Storage) {
+    mlir::Value ref = b.create<mlir::sol::LoadOp>(loc, addr);
+    b.create<mlir::sol::DeleteOp>(loc, ref);
+    return;
+  }
 
   if (!mlir::sol::isScalar(pointeeTy)) {
     genAssign(addr, genZeroedVal(toMemoryType(pointeeTy), loc), loc);
