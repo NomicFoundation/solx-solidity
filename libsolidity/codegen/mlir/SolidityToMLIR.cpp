@@ -1410,6 +1410,14 @@ mlir::Value SolidityToMLIRPass::genExpr(IndexAccess const &idxAcc) {
       mlir::isa<mlir::sol::StringType>(baseExpr.getType()))
     return b.create<mlir::sol::GepOp>(loc, baseExpr, idxExpr);
 
+  // Fixed-bytes indexing (`bytesN[i]`): yields the i-th byte as a `bytes1`.
+  if (mlir::isa<mlir::sol::FixedBytesType>(baseExpr.getType())) {
+    mlir::Type bytes1Ty =
+        mlir::sol::FixedBytesType::get(b.getContext(), /*size=*/1);
+    return b.create<mlir::sol::FixedBytesIndexOp>(loc, bytes1Ty, baseExpr,
+                                                  idxExpr);
+  }
+
   llvm_unreachable("Invalid IndexAccess");
 }
 
