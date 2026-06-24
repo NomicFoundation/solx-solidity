@@ -7,8 +7,6 @@ semanticTests/array/copying/calldata_1d_array_into_2d_memory_array_element
 semanticTests/array/copying/copying_bytes_multiassign
 semanticTests/array/create_memory_array_too_large
 semanticTests/array/fixed_bytes_length_access
-semanticTests/array/indexAccess/fixed_bytes_index_access
-semanticTests/array/indexAccess/index_access
 semanticTests/array/pop/array_pop_isolated
 semanticTests/array/pop/byte_array_pop_isolated
 semanticTests/array/pop/parenthesized
@@ -48,7 +46,6 @@ semanticTests/expressions/module_from_ternary_expression
 semanticTests/expressions/tuple_from_ternary_expression
 semanticTests/expressions/uncalled_address_transfer_send
 semanticTests/externalContracts/FixedFeeRegistrar
-semanticTests/externalContracts/deposit_contract
 semanticTests/externalContracts/prbmath_signed
 semanticTests/externalContracts/prbmath_unsigned
 semanticTests/externalContracts/ramanujan_pi
@@ -203,8 +200,6 @@ semanticTests/specialFunctions/abi_functions_member_access
 semanticTests/storage/storage_boundary_delete_overflow_bug
 semanticTests/storageLayoutSpecifier/state_variable_constant_and_immutable
 semanticTests/structs/array_of_recursive_struct
-semanticTests/structs/calldata/calldata_struct_to_memory
-semanticTests/structs/calldata/calldata_struct_to_storage
 semanticTests/structs/conversion/recursive_storage_memory
 semanticTests/structs/conversion/recursive_storage_memory_complex
 semanticTests/structs/function_type_copy
@@ -223,7 +218,6 @@ semanticTests/userDefinedValueType/assembly_access_bytes2_abicoder_v1
 semanticTests/userDefinedValueType/calldata
 semanticTests/userDefinedValueType/cleanup_abicoderv1
 semanticTests/userDefinedValueType/conversion_abicoderv1
-semanticTests/userDefinedValueType/dirty_slot
 semanticTests/userDefinedValueType/erc20
 semanticTests/userDefinedValueType/immutable_signed
 semanticTests/using/calldata_memory_copy
