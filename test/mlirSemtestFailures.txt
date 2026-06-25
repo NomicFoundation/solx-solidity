@@ -1,6 +1,5 @@
 semanticTests/abiEncoderV2/calldata_struct_array_reencode
 semanticTests/arithmetics/block_inside_unchecked
-semanticTests/arithmetics/signed_mod
 semanticTests/array/array_function_pointers
 semanticTests/array/array_storage_push_empty
 semanticTests/array/copying/calldata_1d_array_into_2d_memory_array_element
