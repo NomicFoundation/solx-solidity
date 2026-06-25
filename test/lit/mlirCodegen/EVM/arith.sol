@@ -519,7 +519,7 @@ function exp8(int8 a, uint8 b) {
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc86)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc86)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
-// CHECK-NEXT:     %18 = arith.divsi %13, %12 : i256 loc(#loc86)
+// CHECK-NEXT:     %18 = "llvm.intrcall"(%13, %12) <{id = 4082 : i32, name = "evm.sdiv"}> : (i256, i256) -> i256 loc(#loc86)
 // CHECK-NEXT:     llvm.store %18, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc86)
 // CHECK-NEXT:     %19 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc87)
 // CHECK-NEXT:     %20 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc88)
@@ -535,7 +535,7 @@ function exp8(int8 a, uint8 b) {
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc88)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc88)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
-// CHECK-NEXT:     %25 = arith.remsi %20, %19 : i256 loc(#loc88)
+// CHECK-NEXT:     %25 = "llvm.intrcall"(%20, %19) <{id = 4089 : i32, name = "evm.smod"}> : (i256, i256) -> i256 loc(#loc88)
 // CHECK-NEXT:     llvm.store %25, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc88)
 // CHECK-NEXT:     %26 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc89)
 // CHECK-NEXT:     %27 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc90)
@@ -583,7 +583,7 @@ function exp8(int8 a, uint8 b) {
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc108)
 // CHECK-NEXT:     cf.br ^bb6 loc(#loc108)
 // CHECK-NEXT:   ^bb6:  // 2 preds: ^bb4, ^bb5
-// CHECK-NEXT:     %56 = arith.divsi %50, %51 : i256 loc(#loc108)
+// CHECK-NEXT:     %56 = "llvm.intrcall"(%50, %51) <{id = 4082 : i32, name = "evm.sdiv"}> : (i256, i256) -> i256 loc(#loc108)
 // CHECK-NEXT:     call @f_si_12(%56) : (i256) -> () loc(#loc110)
 // CHECK-NEXT:     %57 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc111)
 // CHECK-NEXT:     %58 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc112)
@@ -599,7 +599,7 @@ function exp8(int8 a, uint8 b) {
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc111)
 // CHECK-NEXT:     cf.br ^bb8 loc(#loc111)
 // CHECK-NEXT:   ^bb8:  // 2 preds: ^bb6, ^bb7
-// CHECK-NEXT:     %63 = arith.remsi %57, %58 : i256 loc(#loc111)
+// CHECK-NEXT:     %63 = "llvm.intrcall"(%57, %58) <{id = 4089 : i32, name = "evm.smod"}> : (i256, i256) -> i256 loc(#loc111)
 // CHECK-NEXT:     call @f_si_12(%63) : (i256) -> () loc(#loc113)
 // CHECK-NEXT:     %64 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc114)
 // CHECK-NEXT:     %65 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc115)
@@ -829,7 +829,7 @@ function exp8(int8 a, uint8 b) {
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc196)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc196)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
-// CHECK-NEXT:     %20 = arith.divsi %14, %15 : i256 loc(#loc196)
+// CHECK-NEXT:     %20 = "llvm.intrcall"(%14, %15) <{id = 4082 : i32, name = "evm.sdiv"}> : (i256, i256) -> i256 loc(#loc196)
 // CHECK-NEXT:     llvm.store %20, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc196)
 // CHECK-NEXT:     %21 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc197)
 // CHECK-NEXT:     %22 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc198)
@@ -847,7 +847,7 @@ function exp8(int8 a, uint8 b) {
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc198)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc198)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
-// CHECK-NEXT:     %29 = arith.remsi %23, %24 : i256 loc(#loc198)
+// CHECK-NEXT:     %29 = "llvm.intrcall"(%23, %24) <{id = 4089 : i32, name = "evm.smod"}> : (i256, i256) -> i256 loc(#loc198)
 // CHECK-NEXT:     llvm.store %29, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc198)
 // CHECK-NEXT:     %30 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc199)
 // CHECK-NEXT:     %31 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc200)
@@ -901,7 +901,7 @@ function exp8(int8 a, uint8 b) {
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc218)
 // CHECK-NEXT:     cf.br ^bb6 loc(#loc218)
 // CHECK-NEXT:   ^bb6:  // 2 preds: ^bb4, ^bb5
-// CHECK-NEXT:     %66 = arith.divsi %60, %61 : i256 loc(#loc218)
+// CHECK-NEXT:     %66 = "llvm.intrcall"(%60, %61) <{id = 4082 : i32, name = "evm.sdiv"}> : (i256, i256) -> i256 loc(#loc218)
 // CHECK-NEXT:     call @f_si8_24(%66) : (i256) -> () loc(#loc220)
 // CHECK-NEXT:     %67 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc221)
 // CHECK-NEXT:     %68 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc222)
@@ -919,7 +919,7 @@ function exp8(int8 a, uint8 b) {
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc221)
 // CHECK-NEXT:     cf.br ^bb8 loc(#loc221)
 // CHECK-NEXT:   ^bb8:  // 2 preds: ^bb6, ^bb7
-// CHECK-NEXT:     %75 = arith.remsi %69, %70 : i256 loc(#loc221)
+// CHECK-NEXT:     %75 = "llvm.intrcall"(%69, %70) <{id = 4089 : i32, name = "evm.smod"}> : (i256, i256) -> i256 loc(#loc221)
 // CHECK-NEXT:     call @f_si8_24(%75) : (i256) -> () loc(#loc223)
 // CHECK-NEXT:     %76 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc224)
 // CHECK-NEXT:     %77 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc225)
@@ -1304,7 +1304,7 @@ function exp8(int8 a, uint8 b) {
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc305)
 // CHECK-NEXT:     cf.br ^bb14 loc(#loc305)
 // CHECK-NEXT:   ^bb14:  // 2 preds: ^bb12, ^bb13
-// CHECK-NEXT:     %64 = arith.remsi %59, %58 : i256 loc(#loc305)
+// CHECK-NEXT:     %64 = "llvm.intrcall"(%59, %58) <{id = 4089 : i32, name = "evm.smod"}> : (i256, i256) -> i256 loc(#loc305)
 // CHECK-NEXT:     llvm.store %64, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc305)
 // CHECK-NEXT:     %65 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc306)
 // CHECK-NEXT:     %66 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc307)
@@ -1447,7 +1447,7 @@ function exp8(int8 a, uint8 b) {
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc328)
 // CHECK-NEXT:     cf.br ^bb28 loc(#loc328)
 // CHECK-NEXT:   ^bb28:  // 2 preds: ^bb26, ^bb27
-// CHECK-NEXT:     %141 = arith.remsi %135, %136 : i256 loc(#loc328)
+// CHECK-NEXT:     %141 = "llvm.intrcall"(%135, %136) <{id = 4089 : i32, name = "evm.smod"}> : (i256, i256) -> i256 loc(#loc328)
 // CHECK-NEXT:     call @f_si_12(%141) : (i256) -> () loc(#loc330)
 // CHECK-NEXT:     %142 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc331)
 // CHECK-NEXT:     %143 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc332)
@@ -1841,7 +1841,7 @@ function exp8(int8 a, uint8 b) {
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc412)
 // CHECK-NEXT:     cf.br ^bb12 loc(#loc412)
 // CHECK-NEXT:   ^bb12:  // 2 preds: ^bb10, ^bb11
-// CHECK-NEXT:     %58 = arith.remsi %52, %53 : i256 loc(#loc412)
+// CHECK-NEXT:     %58 = "llvm.intrcall"(%52, %53) <{id = 4089 : i32, name = "evm.smod"}> : (i256, i256) -> i256 loc(#loc412)
 // CHECK-NEXT:     llvm.store %58, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc412)
 // CHECK-NEXT:     %59 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc413)
 // CHECK-NEXT:     %60 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc414)
@@ -1974,7 +1974,7 @@ function exp8(int8 a, uint8 b) {
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc435)
 // CHECK-NEXT:     cf.br ^bb24 loc(#loc435)
 // CHECK-NEXT:   ^bb24:  // 2 preds: ^bb22, ^bb23
-// CHECK-NEXT:     %133 = arith.remsi %127, %128 : i256 loc(#loc435)
+// CHECK-NEXT:     %133 = "llvm.intrcall"(%127, %128) <{id = 4089 : i32, name = "evm.smod"}> : (i256, i256) -> i256 loc(#loc435)
 // CHECK-NEXT:     call @f_si8_24(%133) : (i256) -> () loc(#loc437)
 // CHECK-NEXT:     %134 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc438)
 // CHECK-NEXT:     %135 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc439)
