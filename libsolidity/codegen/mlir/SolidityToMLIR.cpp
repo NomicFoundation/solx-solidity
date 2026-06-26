@@ -155,6 +155,16 @@ private:
   /// Returns the corresponding mlir type for the solidity type `ty`.
   mlir::Type getType(Type const *ty, bool indirectFn = true);
 
+  /// Recursive worker for getType(). `identifiedStructsInProgress` tracks
+  /// identified (recursive) Sol struct types whose body is currently being
+  /// built, keyed by the uniqued Sol type, so a self-reference resolves to the
+  /// same in-progress instance and the cycle terminates. Every recursive call
+  /// within the worker must thread this set through. The public getType()
+  /// overload above seeds a fresh one per top-level conversion.
+  mlir::Type
+  getType(Type const *ty, bool indirectFn,
+          mlir::DenseSet<mlir::sol::StructType> &identifiedStructsInProgress);
+
   /// Tracks the address of the local variable.
   void trackLocalVarAddr(VariableDeclaration const &decl, mlir::Value addr) {
     localVarAddrMap[&decl] = addr;
@@ -434,14 +444,48 @@ private:
   /// StringType from any data location to Memory. Non-reference types
   /// (scalars, address, fixedbytes, etc.) are returned unchanged.
   mlir::Type toMemoryType(mlir::Type ty) const {
+    mlir::DenseSet<mlir::sol::StructType> identifiedStructsInProgress;
+    return toMemoryType(ty, identifiedStructsInProgress);
+  }
+
+  /// Recursive worker for toMemoryType(). `identifiedStructsInProgress` tracks
+  /// identified (recursive) Sol struct types whose body is currently being
+  /// rebuilt in the Memory location, keyed by the uniqued Sol type rather than
+  /// the Solidity `StructType` pointer, so a self-reference (e.g. the `S
+  /// memory` element reached through an `S[] memory` member) resolves to the
+  /// same in-progress instance and the cycle terminates. Every recursive call
+  /// must thread this set through. The public overload above seeds a fresh one.
+  mlir::Type toMemoryType(mlir::Type ty,
+                          mlir::DenseSet<mlir::sol::StructType>
+                              &identifiedStructsInProgress) const {
     if (auto arrTy = mlir::dyn_cast<mlir::sol::ArrayType>(ty))
-      return mlir::sol::ArrayType::get(b.getContext(), arrTy.getSize(),
-                                       toMemoryType(arrTy.getEltType()),
-                                       mlir::sol::DataLocation::Memory);
+      return mlir::sol::ArrayType::get(
+          b.getContext(), arrTy.getSize(),
+          toMemoryType(arrTy.getEltType(), identifiedStructsInProgress),
+          mlir::sol::DataLocation::Memory);
     if (auto structTy = mlir::dyn_cast<mlir::sol::StructType>(ty)) {
+      // Identified (recursive) structs must stay identified: building a literal
+      // memory struct would recurse forever on the self-reference. Re-fetch the
+      // identified type by name in the memory location (idempotent when the
+      // input is already memory) and break the cycle via the in-progress set.
+      if (structTy.isIdentified()) {
+        auto memTy = mlir::sol::StructType::getIdentified(
+            b.getContext(), structTy.getName(), mlir::sol::DataLocation::Memory);
+        if (!memTy.isOpaque() ||
+            !identifiedStructsInProgress.insert(memTy).second)
+          return memTy;
+        llvm::SmallVector<mlir::Type> memMemberTys;
+        for (auto mt : structTy.getMemberTypes())
+          memMemberTys.push_back(toMemoryType(mt, identifiedStructsInProgress));
+        identifiedStructsInProgress.erase(memTy);
+        bool bodySet = mlir::succeeded(memTy.setBody(memMemberTys));
+        (void)bodySet;
+        assert(bodySet && "conflicting body for identified struct");
+        return memTy;
+      }
       llvm::SmallVector<mlir::Type> memMemberTys;
       for (auto mt : structTy.getMemberTypes())
-        memMemberTys.push_back(toMemoryType(mt));
+        memMemberTys.push_back(toMemoryType(mt, identifiedStructsInProgress));
       return mlir::sol::StructType::get(b.getContext(), memMemberTys,
                                         mlir::sol::DataLocation::Memory);
     }
@@ -637,6 +681,13 @@ static mlir::sol::DataLocation getDataLocation(ReferenceType const *ty) {
 }
 
 mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
+  mlir::DenseSet<mlir::sol::StructType> identifiedStructsInProgress;
+  return getType(ty, indirectFn, identifiedStructsInProgress);
+}
+
+mlir::Type SolidityToMLIRPass::getType(
+    Type const *ty, bool indirectFn,
+    mlir::DenseSet<mlir::sol::StructType> &identifiedStructsInProgress) {
   switch (ty->category()) {
   case Type::Category::Bool:
     return b.getIntegerType(/*width=*/1);
@@ -670,18 +721,22 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
   }
   case Type::Category::Mapping: {
     auto *mappingTy = static_cast<MappingType const *>(ty);
-    return mlir::sol::MappingType::get(b.getContext(),
-                                       getType(mappingTy->keyType()),
-                                       getType(mappingTy->valueType()));
+    return mlir::sol::MappingType::get(
+        b.getContext(),
+        getType(mappingTy->keyType(), /*indirectFn=*/true,
+                identifiedStructsInProgress),
+        getType(mappingTy->valueType(), /*indirectFn=*/true,
+                identifiedStructsInProgress));
   }
   case Type::Category::Array: {
     // Array or string type
     const auto *arrTy = static_cast<ArrayType const *>(ty);
     if (arrTy->isByteArrayOrString())
       return mlir::sol::StringType::get(b.getContext(), getDataLocation(arrTy));
-    mlir::Type eltTy = getType(arrTy->baseType());
+    mlir::Type eltTy = getType(arrTy->baseType(), /*indirectFn=*/true,
+                               identifiedStructsInProgress);
 
-    // TODO: Does convert_to alreay do this?
+    // TODO: Does convert_to already do this?
     assert(arrTy->length() <= INT64_MAX);
     int64_t size = arrTy->isDynamicallySized()
                        ? -1
@@ -696,20 +751,60 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
       return mlir::sol::StringType::get(b.getContext(),
                                         getDataLocation(&arrTy));
 
-    mlir::Type eltTy = getType(arrTy.baseType());
+    mlir::Type eltTy = getType(arrTy.baseType(), /*indirectFn=*/true,
+                               identifiedStructsInProgress);
     return mlir::sol::ArrayType::get(b.getContext(), /*size=*/-1, eltTy,
                                      getDataLocation(&arrTy));
   }
   case Type::Category::Struct: {
     const auto *structTy = static_cast<StructType const *>(ty);
+    mlir::sol::DataLocation loc = getDataLocation(structTy);
+
+    // Self-referential structs (e.g. `struct S { S[] arr; }`) are represented
+    // as *identified* Sol structs: created opaque and keyed by a unique name,
+    // so a self-reference encountered while building the body resolves to the
+    // same instance. The body (and storage layout) is then filled in once.
+    if (structTy->structDefinition().annotation().recursive.value_or(false)) {
+      // The name is the declaration name + AST id (like getMangledName for
+      // functions): location-independent and pointer-independent. Data
+      // location is already a uniquing key of the identified type, so encoding
+      // it in the name (as Solidity's type identifier does) would be redundant
+      // — and would let independently derived keys for the same struct
+      // disagree, e.g. toMemoryType() re-fetching a storage struct's name in
+      // the Memory location. Pointer-ness is modeled by sol.ptr<>, not by the
+      // struct type, so it stays out of the name too: one identified type per
+      // (struct declaration, location).
+      StructDefinition const &structDef = structTy->structDefinition();
+      std::string name =
+          structDef.name() + "_" + std::to_string(structDef.id());
+      auto structMlirTy =
+          mlir::sol::StructType::getIdentified(b.getContext(), name, loc);
+      // Already built, or a self-reference while still building: the (possibly
+      // opaque) identified type is exactly what we want to hand back. The
+      // in-progress set is keyed by the uniqued Sol type so the cycle is
+      // detected regardless of which Solidity instance triggered the recursion.
+      if (!structMlirTy.isOpaque() ||
+          !identifiedStructsInProgress.insert(structMlirTy).second)
+        return structMlirTy;
+      std::vector<mlir::Type> memberTys;
+      for (const auto &mem : structTy->nativeMembers(nullptr))
+        memberTys.push_back(getType(mem.type, /*indirectFn=*/true,
+                                    identifiedStructsInProgress));
+      identifiedStructsInProgress.erase(structMlirTy);
+      bool bodySet = mlir::succeeded(structMlirTy.setBody(memberTys));
+      (void)bodySet;
+      assert(bodySet && "conflicting body for identified struct");
+      return structMlirTy;
+    }
+
     if (!structsInProgress.insert(structTy).second)
-      llvm_unreachable("NYI: recursive struct type");
+      llvm_unreachable("unexpected recursive non-identified struct type");
     std::vector<mlir::Type> memberTys;
     for (const auto &mem : structTy->nativeMembers(nullptr))
-      memberTys.push_back(getType(mem.type));
+      memberTys.push_back(
+          getType(mem.type, /*indirectFn=*/true, identifiedStructsInProgress));
     structsInProgress.erase(structTy);
-    return mlir::sol::StructType::get(b.getContext(), memberTys,
-                                      getDataLocation(structTy));
+    return mlir::sol::StructType::get(b.getContext(), memberTys, loc);
   }
   case Type::Category::Function: {
     const auto *fnTy = static_cast<FunctionType const *>(ty);
@@ -717,11 +812,13 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
 
     inTys.reserve(fnTy->parameterTypes().size());
     for (Type const *inTy : fnTy->parameterTypes())
-      inTys.push_back(getType(inTy));
+      inTys.push_back(
+          getType(inTy, /*indirectFn=*/true, identifiedStructsInProgress));
 
     outTys.reserve(fnTy->returnParameterTypes().size());
     for (Type const *outTy : fnTy->returnParameterTypes())
-      outTys.push_back(getType(outTy));
+      outTys.push_back(
+          getType(outTy, /*indirectFn=*/true, identifiedStructsInProgress));
 
     mlir::FunctionType mlirFnTy = b.getFunctionType(inTys, outTys);
     if (indirectFn) {
@@ -739,7 +836,8 @@ mlir::Type SolidityToMLIRPass::getType(Type const *ty, bool indirectFn) {
   }
   case Type::Category::UserDefinedValueType: {
     const auto *userDefTy = static_cast<UserDefinedValueType const *>(ty);
-    return getType(&userDefTy->underlyingType(), indirectFn);
+    return getType(&userDefTy->underlyingType(), indirectFn,
+                   identifiedStructsInProgress);
   }
   default:
     break;
