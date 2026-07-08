@@ -2682,16 +2682,17 @@ void SolidityToMLIRPass::lower(PlaceholderStatement const &placeholder) {
 }
 
 void SolidityToMLIRPass::lower(Return const &ret) {
-  mlir::SmallVector<mlir::Type> fnResTys;
-  for (ASTPointer<VariableDeclaration> const &retParam :
-       ret.annotation().function->returnParameters())
-    fnResTys.push_back(getType(retParam->type()));
-
+  // annotation().function is null for a return inside a modifier, which is
+  // necessarily expression-less.
   Expression const *astExpr = ret.expression();
-  if (astExpr)
+  if (astExpr) {
+    mlir::SmallVector<mlir::Type> fnResTys;
+    for (ASTPointer<VariableDeclaration> const &retParam :
+         ret.annotation().function->returnParameters())
+      fnResTys.push_back(getType(retParam->type()));
     b.create<mlir::sol::ReturnOp>(getLoc(ret),
                                   genRValExprs(*astExpr, fnResTys));
-  else
+  } else
     b.create<mlir::sol::ReturnOp>(getLoc(ret));
   b.setInsertionPointToStart(b.createBlock(b.getBlock()->getParent()));
 }
@@ -3157,46 +3158,6 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   mlir::Block *entryBlk = b.createBlock(&op.getRegion());
   b.setInsertionPointToStart(entryBlk);
 
-  // Lower modifier invocations.
-  for (const ASTPointer<ModifierInvocation> &modifier : fn.modifiers()) {
-    // FIXME: Handle lookup!
-    ModifierDefinition const *modifierDef =
-        dynamic_cast<ModifierDefinition const *>(
-            modifier->name().annotation().referencedDeclaration);
-    if (!modifierDef) {
-      assert(dynamic_cast<ContractDefinition const *>(
-          modifier->name().annotation().referencedDeclaration));
-      continue;
-    }
-
-    mlir::Location loc = getLoc(*modifier);
-
-    auto modifierCallBlk = b.create<mlir::sol::ModifierCallBlkOp>(loc);
-    mlir::OpBuilder::InsertionGuard insertGuard(b);
-
-    // sol.modifier_call_blk's block args should match that of the function.
-    // We don't need to generate stack allocations since the block args are
-    // "forwarded" in the call chain of modifiers and the modified function.
-    for (auto &&[inpTy, inpLoc, param] :
-         ranges::views::zip(inpTys, inpLocs, fn.parameters()))
-      trackLocalVarAddr(*param,
-                        modifierCallBlk.getBody()->addArgument(inpTy, inpLoc));
-
-    b.setInsertionPointToStart(modifierCallBlk.getBody());
-
-    std::vector<mlir::Value> loweredArgs;
-    if (modifier->arguments()) {
-      loweredArgs.reserve(modifier->arguments()->size());
-      unsigned i = 0;
-      for (const ASTPointer<Expression> &arg : *modifier->arguments()) {
-        mlir::Type reqTy = getType(modifierDef->parameters()[i++]->type());
-        loweredArgs.push_back(genRValExpr(*arg, reqTy));
-      }
-    }
-    b.create<mlir::sol::CallOp>(loc, getMangledName(*modifierDef),
-                                /*results=*/mlir::TypeRange{}, loweredArgs);
-  }
-
   // Lower the args.
   for (auto &&[inpTy, inpLoc, param] :
        ranges::views::zip(inpTys, inpLocs, fn.parameters())) {
@@ -3252,6 +3213,59 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
       b.create<mlir::sol::CallOp>(fnLoc, getMangledName(*nextCtor),
                                   /*resTys=*/mlir::TypeRange{}, loweredArgs);
     }
+  }
+
+  // Lower modifier invocations. Argument expressions reference the param and
+  // named-return allocas above, so this must follow them.
+  for (const ASTPointer<ModifierInvocation> &modifier : fn.modifiers()) {
+    Declaration const *refDecl =
+        modifier->name().annotation().referencedDeclaration;
+    ModifierDefinition const *modifierDef =
+        dynamic_cast<ModifierDefinition const *>(refDecl);
+    if (!modifierDef) {
+      // Base constructor invocations are lowered via the next-ctor call.
+      assert(dynamic_cast<ContractDefinition const *>(refDecl));
+      continue;
+    }
+    if (*modifier->name().annotation().requiredLookup ==
+        VirtualLookup::Virtual)
+      modifierDef = &modifierDef->resolveVirtual(*currContract);
+
+    // A library function lowered on-demand into a non-library contract brings
+    // its modifiers along: they are otherwise only lowered in the library's
+    // own module.
+    auto const *modifierContr =
+        dynamic_cast<ContractDefinition const *>(modifierDef->scope());
+    if (modifierContr && modifierContr->isLibrary() &&
+        (!currContract || !currContract->isLibrary())) {
+      auto *symTableOp = mlir::SymbolTable::getNearestSymbolTable(op);
+      assert(symTableOp);
+      if (!mlir::SymbolTable::lookupSymbolIn(symTableOp,
+                                             getMangledName(*modifierDef))) {
+        mlir::OpBuilder::InsertionGuard insertGuard(b);
+        b.setInsertionPoint(op);
+        lower(*modifierDef);
+      }
+    }
+
+    mlir::Location loc = getLoc(*modifier);
+
+    auto invocation = b.create<mlir::sol::ModifierInvocationOp>(
+        loc, mlir::FlatSymbolRefAttr::get(b.getContext(),
+                                          getMangledName(*modifierDef)));
+    mlir::OpBuilder::InsertionGuard insertGuard(b);
+    b.setInsertionPointToStart(&invocation.getArgsRegion().front());
+
+    std::vector<mlir::Value> loweredArgs;
+    if (modifier->arguments()) {
+      loweredArgs.reserve(modifier->arguments()->size());
+      unsigned i = 0;
+      for (const ASTPointer<Expression> &arg : *modifier->arguments()) {
+        mlir::Type reqTy = getType(modifierDef->parameters()[i++]->type());
+        loweredArgs.push_back(genRValExpr(*arg, reqTy));
+      }
+    }
+    b.create<mlir::sol::YieldOp>(loc, loweredArgs);
   }
 
   // Lower the body.
@@ -3415,7 +3429,8 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
 
     // Lower modifiers.
     for (auto *modifier : baseCont.functionModifiers()) {
-      lower(*modifier);
+      if (modifier->isImplemented())
+        lower(*modifier);
     }
   };
   for (ContractDefinition const *baseCont :
