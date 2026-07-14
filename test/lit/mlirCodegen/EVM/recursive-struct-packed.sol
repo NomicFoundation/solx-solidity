@@ -25,6 +25,8 @@ contract C {
 // CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: #loc2 = loc({{.*}}:10:2)
 // CHECK-NEXT: #loc3 = loc({{.*}}:14:4)
+// CHECK-NEXT: #loop_unroll = #llvm.loop_unroll<full = true>
+// CHECK-NEXT: #loop_annotation = #llvm.loop_annotation<unroll = #loop_unroll>
 // CHECK-NEXT: module @C_44 attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka, sol.revert_strings = #Default} {
 // CHECK-NEXT:   func.func @".unreachable"() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
@@ -271,31 +273,40 @@ contract C {
 // CHECK-NEXT:       %c32_i256 = arith.constant 32 : i256 loc(#loc)
 // CHECK-NEXT:       %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc)
-// CHECK-NEXT:       %0 = llvm.inttoptr %arg0 : i256 to !llvm.ptr<5> loc(#loc3)
-// CHECK-NEXT:       llvm.store %c0_i256, %0 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc3)
-// CHECK-NEXT:       %1 = arith.addi %arg0, %c1_i256 : i256 loc(#loc3)
-// CHECK-NEXT:       %2 = llvm.inttoptr %1 : i256 to !llvm.ptr<5> loc(#loc3)
-// CHECK-NEXT:       %3 = llvm.load %2 {alignment = 1 : i64} : !llvm.ptr<5> -> i256 loc(#loc3)
-// CHECK-NEXT:       %4 = llvm.inttoptr %1 : i256 to !llvm.ptr<5> loc(#loc3)
+// CHECK-NEXT:       cf.br ^bb1(%c0_i256 : i256) loc(#loc3)
+// CHECK-NEXT:     ^bb1(%0: i256 loc({{.*}}:14:4)):  // 2 preds: ^bb0, ^bb2
+// CHECK-NEXT:       %1 = arith.cmpi ult, %0, %c1_i256 : i256 loc(#loc3)
+// CHECK-NEXT:       cf.cond_br %1, ^bb2(%0 : i256), ^bb3 loc(#loc3)
+// CHECK-NEXT:     ^bb2(%2: i256 loc({{.*}}:14:4)):  // pred: ^bb1
+// CHECK-NEXT:       %3 = arith.addi %arg0, %2 : i256 loc(#loc3)
+// CHECK-NEXT:       %4 = llvm.inttoptr %3 : i256 to !llvm.ptr<5> loc(#loc3)
 // CHECK-NEXT:       llvm.store %c0_i256, %4 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc3)
-// CHECK-NEXT:       %5 = arith.cmpi ugt, %3, %c0_i256 : i256 loc(#loc3)
-// CHECK-NEXT:       cf.cond_br %5, ^bb1, ^bb4 loc(#loc3)
-// CHECK-NEXT:     ^bb1:  // pred: ^bb0
-// CHECK-NEXT:       %6 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc3)
-// CHECK-NEXT:       llvm.store %1, %6 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc3)
-// CHECK-NEXT:       %7 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc3)
-// CHECK-NEXT:       %8 = "llvm.intrcall"(%7, %c32_i256) <{id = 4085 : i32, name = "evm.sha3"}> : (!llvm.ptr<1>, i256) -> i256 loc(#loc3)
-// CHECK-NEXT:       %9 = arith.muli %3, %c2_i256 : i256 loc(#loc3)
-// CHECK-NEXT:       cf.br ^bb2(%c0_i256 : i256) loc(#loc3)
-// CHECK-NEXT:     ^bb2(%10: i256 loc({{.*}}:14:4)):  // 2 preds: ^bb1, ^bb3
-// CHECK-NEXT:       %11 = arith.cmpi ult, %10, %9 : i256 loc(#loc3)
-// CHECK-NEXT:       cf.cond_br %11, ^bb3(%10 : i256), ^bb4 loc(#loc3)
-// CHECK-NEXT:     ^bb3(%12: i256 loc({{.*}}:14:4)):  // pred: ^bb2
-// CHECK-NEXT:       %13 = arith.addi %8, %12 : i256 loc(#loc3)
-// CHECK-NEXT:       call @__sol.clear_storage.S_10(%13) : (i256) -> () loc(#loc3)
-// CHECK-NEXT:       %14 = arith.addi %12, %c2_i256 : i256 loc(#loc3)
-// CHECK-NEXT:       cf.br ^bb2(%14 : i256) loc(#loc3)
-// CHECK-NEXT:     ^bb4:  // 2 preds: ^bb0, ^bb2
+// CHECK-NEXT:       %5 = arith.addi %2, %c1_i256 : i256 loc(#loc3)
+// CHECK-NEXT:       cf.br ^bb1(%5 : i256) {loop_annotation = #loop_annotation} loc(#loc3)
+// CHECK-NEXT:     ^bb3:  // pred: ^bb1
+// CHECK-NEXT:       %6 = arith.addi %arg0, %c1_i256 : i256 loc(#loc3)
+// CHECK-NEXT:       %7 = llvm.inttoptr %6 : i256 to !llvm.ptr<5> loc(#loc3)
+// CHECK-NEXT:       %8 = llvm.load %7 {alignment = 1 : i64} : !llvm.ptr<5> -> i256 loc(#loc3)
+// CHECK-NEXT:       %9 = llvm.inttoptr %6 : i256 to !llvm.ptr<5> loc(#loc3)
+// CHECK-NEXT:       llvm.store %c0_i256, %9 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc3)
+// CHECK-NEXT:       %10 = arith.cmpi ugt, %8, %c0_i256 : i256 loc(#loc3)
+// CHECK-NEXT:       cf.cond_br %10, ^bb4, ^bb7 loc(#loc3)
+// CHECK-NEXT:     ^bb4:  // pred: ^bb3
+// CHECK-NEXT:       %11 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc3)
+// CHECK-NEXT:       llvm.store %6, %11 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc3)
+// CHECK-NEXT:       %12 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc3)
+// CHECK-NEXT:       %13 = "llvm.intrcall"(%12, %c32_i256) <{id = 4085 : i32, name = "evm.sha3"}> : (!llvm.ptr<1>, i256) -> i256 loc(#loc3)
+// CHECK-NEXT:       %14 = arith.muli %8, %c2_i256 : i256 loc(#loc3)
+// CHECK-NEXT:       cf.br ^bb5(%c0_i256 : i256) loc(#loc3)
+// CHECK-NEXT:     ^bb5(%15: i256 loc({{.*}}:14:4)):  // 2 preds: ^bb4, ^bb6
+// CHECK-NEXT:       %16 = arith.cmpi ult, %15, %14 : i256 loc(#loc3)
+// CHECK-NEXT:       cf.cond_br %16, ^bb6(%15 : i256), ^bb7 loc(#loc3)
+// CHECK-NEXT:     ^bb6(%17: i256 loc({{.*}}:14:4)):  // pred: ^bb5
+// CHECK-NEXT:       %18 = arith.addi %13, %17 : i256 loc(#loc3)
+// CHECK-NEXT:       call @__sol.clear_storage.S_10(%18) : (i256) -> () loc(#loc3)
+// CHECK-NEXT:       %19 = arith.addi %17, %c2_i256 : i256 loc(#loc3)
+// CHECK-NEXT:       cf.br ^bb5(%19 : i256) loc(#loc3)
+// CHECK-NEXT:     ^bb7:  // 2 preds: ^bb3, ^bb5
 // CHECK-NEXT:       return loc(#loc3)
 // CHECK-NEXT:     } loc(#loc3)
 // CHECK-NEXT:     func.func @__sol.copy.storage.storage.S_10(%arg0: i256 loc({{.*}}:14:4), %arg1: i256 loc({{.*}}:14:4)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
