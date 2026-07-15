@@ -17,6 +17,8 @@ contract C {
 // CHECK: #Default = #sol<RevertStrings Default>
 // CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: #loc2 = loc({{.*}}:12:4)
+// CHECK-NEXT: #loop_unroll = #llvm.loop_unroll<full = true>
+// CHECK-NEXT: #loop_annotation = #llvm.loop_annotation<unroll = #loop_unroll>
 // CHECK-NEXT: module @C_20 attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka, sol.revert_strings = #Default} {
 // CHECK-NEXT:   func.func @".unreachable"() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
@@ -133,9 +135,19 @@ contract C {
 // CHECK-NEXT:       llvm.unreachable loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     func.func @__sol.clear_storage.S_9(%arg0: i256 loc({{.*}}:12:4)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
+// CHECK-NEXT:       %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc)
-// CHECK-NEXT:       %0 = llvm.inttoptr %arg0 : i256 to !llvm.ptr<5> loc(#loc2)
-// CHECK-NEXT:       llvm.store %c0_i256, %0 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc2)
+// CHECK-NEXT:       cf.br ^bb1(%c0_i256 : i256) loc(#loc2)
+// CHECK-NEXT:     ^bb1(%0: i256 loc({{.*}}:12:4)):  // 2 preds: ^bb0, ^bb2
+// CHECK-NEXT:       %1 = arith.cmpi ult, %0, %c1_i256 : i256 loc(#loc2)
+// CHECK-NEXT:       cf.cond_br %1, ^bb2(%0 : i256), ^bb3 loc(#loc2)
+// CHECK-NEXT:     ^bb2(%2: i256 loc({{.*}}:12:4)):  // pred: ^bb1
+// CHECK-NEXT:       %3 = arith.addi %arg0, %2 : i256 loc(#loc2)
+// CHECK-NEXT:       %4 = llvm.inttoptr %3 : i256 to !llvm.ptr<5> loc(#loc2)
+// CHECK-NEXT:       llvm.store %c0_i256, %4 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc2)
+// CHECK-NEXT:       %5 = arith.addi %2, %c1_i256 : i256 loc(#loc2)
+// CHECK-NEXT:       cf.br ^bb1(%5 : i256) {loop_annotation = #loop_annotation} loc(#loc2)
+// CHECK-NEXT:     ^bb3:  // pred: ^bb1
 // CHECK-NEXT:       return loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
 // CHECK-NEXT:     func.func @del_19() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
