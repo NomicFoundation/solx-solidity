@@ -64,6 +64,10 @@ class YulToMLIRPass : public ASTWalker {
   CharStream const &stream;
   Dialect const &yulDialect;
   std::map<YulName, mlir::Value> localVarAddrMap;
+
+  /// The yul function currently being lowered, for `leave` to find its return
+  /// variables. Saved/restored across nested function definitions.
+  FunctionDefinition const *currentFn = nullptr;
   std::map<std::string,
            std::function<mlir::SmallVector<mlir::Value>(
                std::vector<Expression> const &args, mlir::Location loc)>>
@@ -231,6 +235,9 @@ private:
   /// Lowers the continue statement.
   void operator()(Continue const &) override;
 
+  /// Lowers the leave statement (early return from a yul function).
+  void operator()(Leave const &) override;
+
   /// Lowers the for statement.
   void operator()(ForLoop const &) override;
 
@@ -275,6 +282,7 @@ void YulToMLIRPass::populateBuiltinGenMap() {
   defSimpleBuiltinGen<ShrOp>("shr");
   defSimpleBuiltinGen<ShlOp>("shl");
   defSimpleBuiltinGen<SarOp>("sar");
+  defSimpleBuiltinGen<ClzOp>("clz");
   defCmpBuiltinGen("lt", CmpPredicate::ult);
   defCmpBuiltinGen("slt", CmpPredicate::slt);
   defCmpBuiltinGen("gt", CmpPredicate::ugt);
@@ -624,6 +632,18 @@ void YulToMLIRPass::operator()(Continue const &contStmt) {
   b.setInsertionPointToStart(newBlock);
 }
 
+void YulToMLIRPass::operator()(Leave const &leaveStmt) {
+  mlir::Location loc = getLoc(leaveStmt.debugData);
+  assert(currentFn && "leave outside a function");
+  mlir::SmallVector<mlir::Value> retVarLds;
+  for (const NameWithDebugData &retVar : currentFn->returnVariables)
+    retVarLds.push_back(b.create<mlir::yul::LoadOp>(
+        loc, getDefIntTy(), getLocalVarAddr(retVar.name)));
+  b.create<mlir::yul::FuncReturnOp>(loc, retVarLds);
+  mlir::Block *newBlock = b.getBlock()->splitBlock(b.getInsertionPoint());
+  b.setInsertionPointToStart(newBlock);
+}
+
 void YulToMLIRPass::operator()(ForLoop const &forStmt) {
   // Lower pre block.
   ASTWalker::operator()(forStmt.pre);
@@ -679,7 +699,10 @@ void YulToMLIRPass::operator()(FunctionDefinition const &fn) {
   }
 
   // Lower the body.
+  FunctionDefinition const *savedFn = currentFn;
+  currentFn = &fn;
   ASTWalker::operator()(fn.body);
+  currentFn = savedFn;
 
   mlir::SmallVector<mlir::Value> retVarLds;
   for (const NameWithDebugData &retVar : fn.returnVariables) {
