@@ -185,7 +185,6 @@ semanticTests/using/using_global_library
 semanticTests/various/code_access_content
 semanticTests/various/code_access_padding
 semanticTests/various/code_access_runtime
-semanticTests/various/code_length
 semanticTests/various/code_length_contract_member
 semanticTests/various/crazy_elementary_typenames_on_stack
 semanticTests/various/destructuring_assignment
