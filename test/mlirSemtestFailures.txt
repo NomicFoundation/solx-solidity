@@ -133,8 +133,6 @@ semanticTests/operators/userDefined/operator_precendence
 semanticTests/operators/userDefined/recursive_operator
 semanticTests/operators/userDefined/unchecked_operators
 semanticTests/revertStrings/empty_v2
-semanticTests/revertStrings/ether_non_payable_function
-semanticTests/revertStrings/unknown_sig_no_fallback
 semanticTests/saltedCreate/salted_create
 semanticTests/saltedCreate/salted_create_with_value
 semanticTests/shanghai/evmone_support
