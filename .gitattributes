@@ -1,1 +1,5 @@
 *.sol linguist-language=Solidity
+
+# Deliberately-CRLF fixtures: no eol conversion, or autocrlf checkouts see a perpetually dirty tree and builds get stamped `.mod`.
+test/libsolidity/syntaxTests/license/license_crlf_endings.sol -text
+test/scripts/fixtures/smt_contract_with_crlf_newlines.sol -text
