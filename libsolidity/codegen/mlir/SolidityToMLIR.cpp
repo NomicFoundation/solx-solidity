@@ -1727,10 +1727,28 @@ SolidityToMLIRPass::genExternalCall(FunctionCall const &call) {
   mlir::Value value = callInfo.value;
   MemberAccess const *memberAcc = callInfo.memberAcc;
 
+  // Attached (using-for) public library calls are direct delegatecalls to
+  // the library with the member-access base as the hidden first argument.
+  FunctionDefinition const *boundLibFn = nullptr;
+  if (memberAcc && calleeTy->hasBoundFirstArgument() &&
+      calleeTy->kind() == FunctionType::Kind::DelegateCall) {
+    auto const *fn = dynamic_cast<FunctionDefinition const *>(
+        memberAcc->annotation().referencedDeclaration);
+    if (fn && fn->libraryFunction())
+      boundLibFn = fn;
+  }
+
   // Lower the args.
   std::vector<ASTPointer<Expression const>> const &astArgs =
       call.sortedArguments();
   std::vector<mlir::Value> args;
+  if (boundLibFn) {
+    Expression const &self = memberAcc->expression();
+    if (dynamic_cast<ReferenceType const *>(self.annotation().type))
+      args.push_back(genRValExpr(self));
+    else
+      args.push_back(genRValExpr(self, getType(calleeTy->selfType())));
+  }
   for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes())) {
     // External-call ABI encoding can consume reference arguments directly
     // from their original data location (e.g. calldata or storage), so
@@ -1761,7 +1779,8 @@ SolidityToMLIRPass::genExternalCall(FunctionCall const &call) {
       memberAcc && isDirectLibraryMemberCallBase(*memberAcc, *calleeTy);
 
   mlir::Operation *callOp = nullptr;
-  if (!isDirectContractMemberCall && !isDirectLibraryMemberCall) {
+  if (!isDirectContractMemberCall && !isDirectLibraryMemberCall &&
+      !boundLibFn) {
     // Indirect call via external function pointer - use sol.ext_icall.
     mlir::Value fnPtr = genRValExpr(*callInfo.callExpr);
     bool isStatic = calleeTy->stateMutability() == StateMutability::Pure ||
@@ -1797,16 +1816,29 @@ SolidityToMLIRPass::genExternalCall(FunctionCall const &call) {
     if (!value)
       value = genUnsignedConst(0, /*numBits=*/256, loc);
 
+    // The op's calleeType must cover the hidden first argument of attached
+    // library calls, so use the declared function type there.
+    mlir::FunctionType opCalleeTy;
+    if (boundLibFn) {
+      addr = b.create<mlir::sol::LibAddrOp>(
+          loc, mlir::sol::AddressType::get(b.getContext(), false),
+          dynamic_cast<ContractDefinition const *>(boundLibFn->scope())
+              ->fullyQualifiedName());
+      FunctionType declaredTy(*boundLibFn);
+      opCalleeTy = mlir::cast<mlir::FunctionType>(
+          getType(&declaredTy, /*indirectFn=*/false));
+    } else {
+      opCalleeTy = mlir::cast<mlir::FunctionType>(
+          getType(calleeTy, /*indirectFn=*/false));
+    }
+
     callOp = b.create<mlir::sol::ExtCallOp>(
         loc, resTys, calleeSymbol, args, addr, gas, value, selector,
         /*tryCall=*/call.annotation().tryCall,
         /*staticCall=*/calleeTy->stateMutability() <= StateMutability::View,
         /*delegateCall=*/calleeTy->kind() == FunctionType::Kind::DelegateCall,
-        /*libraryCall=*/isDirectLibraryMemberCall,
-        /*calleeType=*/
-        mlir::cast<mlir::FunctionType>(getType(calleeTy,
-                                               /*indirectFn=*/false)),
-        mlir::ArrayAttr{}, mlir::ArrayAttr{});
+        /*libraryCall=*/isDirectLibraryMemberCall || boundLibFn != nullptr,
+        /*calleeType=*/opCalleeTy, mlir::ArrayAttr{}, mlir::ArrayAttr{});
   }
 
   ExternalCallResult out;
