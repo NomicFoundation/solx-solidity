@@ -1744,8 +1744,15 @@ SolidityToMLIRPass::genExternalCall(FunctionCall const &call) {
   // Collect the return types; prepend i1 for the status flag.
   std::vector<mlir::Type> resTys;
   resTys.push_back(b.getI1Type());
-  for (Type const *ty : calleeTy->returnParameterTypes())
-    resTys.push_back(getType(ty));
+  for (Type const *ty : calleeTy->returnParameterTypes()) {
+    mlir::Type resTy = getType(ty);
+    // Calldata-typed returns are decoded into fresh memory at the call
+    // boundary; there is no calldata for them to point into.
+    if (mlir::sol::isNonPtrRefType(resTy) &&
+        mlir::sol::getDataLocation(resTy) == mlir::sol::DataLocation::CallData)
+      resTy = toMemoryType(resTy);
+    resTys.push_back(resTy);
+  }
 
   bool isDirectContractMemberCall =
       memberAcc && memberAcc->expression().annotation().type->category() ==
@@ -3227,8 +3234,7 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
       assert(dynamic_cast<ContractDefinition const *>(refDecl));
       continue;
     }
-    if (*modifier->name().annotation().requiredLookup ==
-        VirtualLookup::Virtual)
+    if (*modifier->name().annotation().requiredLookup == VirtualLookup::Virtual)
       modifierDef = &modifierDef->resolveVirtual(*currContract);
 
     // A library function lowered on-demand into a non-library contract brings
