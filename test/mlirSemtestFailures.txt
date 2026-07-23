@@ -83,8 +83,6 @@ semanticTests/inheritance/pass_dynamic_arguments_to_the_base_base
 semanticTests/inheritance/pass_dynamic_arguments_to_the_base_base_with_gap
 semanticTests/inheritance/state_variables_init_order_3
 semanticTests/inheritance/super_in_constructor_assignment
-semanticTests/inlineAssembly/clz
-semanticTests/inlineAssembly/leave
 semanticTests/inlineAssembly/transient_storage_low_level_calls
 semanticTests/interfaceID/lisa
 semanticTests/interfaceID/lisa_interfaceId
@@ -185,7 +183,6 @@ semanticTests/using/using_global_library
 semanticTests/various/code_access_content
 semanticTests/various/code_access_padding
 semanticTests/various/code_access_runtime
-semanticTests/various/code_length
 semanticTests/various/code_length_contract_member
 semanticTests/various/crazy_elementary_typenames_on_stack
 semanticTests/various/destructuring_assignment

@@ -1570,9 +1570,22 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
   }
 
   case Type::Category::Array:
-    if (memberName == "length")
+    if (memberName == "length") {
+      // `addr.code.length` reads just the size (extcodesize); materializing
+      // the code bytes would allocate memory via-IR doesn't.
+      if (auto const *codeAcc =
+              dynamic_cast<MemberAccess const *>(&memberAcc.expression());
+          codeAcc && codeAcc->memberName() == "code" &&
+          codeAcc->expression().annotation().type->category() ==
+              Type::Category::Address) {
+        auto nonPayableAddrTy =
+            mlir::sol::AddressType::get(b.getContext(), /*payable=*/false);
+        return b.create<mlir::sol::CodeSizeOp>(
+            loc, genRValExpr(codeAcc->expression(), nonPayableAddrTy));
+      }
       return b.create<mlir::sol::LengthOp>(loc,
                                            genRValExpr(memberAcc.expression()));
+    }
     break;
   case Type::Category::Struct: {
     const auto *structTy = dynamic_cast<StructType const *>(memberAccTy);
