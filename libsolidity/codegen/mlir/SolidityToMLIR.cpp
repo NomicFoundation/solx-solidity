@@ -39,6 +39,7 @@
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "mlir/Dialect/Sol/Sol.h"
+#include "mlir/Dialect/Sol/Utils.h"
 #include "mlir/Dialect/Yul/Yul.h"
 #include "mlir/IR/AsmState.h"
 #include "mlir/IR/Builders.h"
@@ -429,11 +430,11 @@ private:
     return fn;
   }
 
-  /// Returns a zero value of the given type.
-  mlir::Value genZeroedVal(mlir::Type ty, mlir::Location loc);
+  /// Returns the Solidity default value of the given type.
+  mlir::Value genDefaultVal(mlir::Type ty, mlir::Location loc);
 
-  /// Generates the ir to zero the allocation.
-  void genZeroedVal(mlir::sol::AllocaOp addr);
+  /// Generates the ir to default-initialize the allocation.
+  void genDefaultVal(mlir::sol::AllocaOp addr);
 
   /// Generates the side-effect of `delete addr`: zeros the value at any
   /// pointer (storage, memory, or stack).
@@ -912,95 +913,16 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
   llvm_unreachable("NYI");
 }
 
-mlir::Value SolidityToMLIRPass::genZeroedVal(mlir::Type ty,
-                                             mlir::Location loc) {
-  if (auto intTy = mlir::dyn_cast<mlir::IntegerType>(ty)) {
-    return b.create<mlir::sol::ConstantOp>(
-        loc, b.getIntegerAttr(intTy, llvm::APInt(intTy.getWidth(), 0)));
-  }
-  if (mlir::isa<mlir::sol::FuncRefType>(ty)) {
-    return b.create<mlir::sol::DefaultFuncConstantOp>(loc);
-  }
-  if (auto arrTy = mlir::dyn_cast<mlir::sol::ArrayType>(ty)) {
-    if (arrTy.getDataLocation() == mlir::sol::DataLocation::CallData)
-      return b.create<mlir::sol::DefaultCallDataOp>(loc, arrTy);
-    if (arrTy.getDataLocation() == mlir::sol::DataLocation::Storage ||
-        arrTy.getDataLocation() == mlir::sol::DataLocation::Transient)
-      return b.create<mlir::sol::DefaultStorageOp>(loc, arrTy);
-    return b.create<mlir::sol::MallocOp>(loc, arrTy, /*zeroInit=*/true,
-                                         /*size=*/mlir::Value{});
-  }
-  if (auto structTy = mlir::dyn_cast<mlir::sol::StructType>(ty)) {
-    if (structTy.getDataLocation() == mlir::sol::DataLocation::CallData)
-      return b.create<mlir::sol::DefaultCallDataOp>(loc, structTy);
-    if (structTy.getDataLocation() == mlir::sol::DataLocation::Storage ||
-        structTy.getDataLocation() == mlir::sol::DataLocation::Transient)
-      return b.create<mlir::sol::DefaultStorageOp>(loc, structTy);
-    return b.create<mlir::sol::MallocOp>(loc, structTy, /*zeroInit=*/true,
-                                         /*size=*/mlir::Value{});
-  }
-  if (auto stringTy = mlir::dyn_cast<mlir::sol::StringType>(ty)) {
-    if (stringTy.getDataLocation() == mlir::sol::DataLocation::CallData)
-      return b.create<mlir::sol::DefaultCallDataOp>(loc, stringTy);
-    if (stringTy.getDataLocation() == mlir::sol::DataLocation::Storage ||
-        stringTy.getDataLocation() == mlir::sol::DataLocation::Transient)
-      return b.create<mlir::sol::DefaultStorageOp>(loc, stringTy);
-    // TODO: Do we need to zero-init here?
-    return b.create<mlir::sol::MallocOp>(loc, stringTy, /*zeroInit=*/false,
-                                         /*size=*/mlir::Value{});
-  }
-  if (auto addressTy = mlir::dyn_cast<mlir::sol::AddressType>(ty)) {
-    auto uint160Ty = b.getIntegerType(160, /*isSigned=*/false);
-    auto zero = b.create<mlir::sol::ConstantOp>(
-        loc, b.getIntegerAttr(uint160Ty, llvm::APInt(160, 0)));
-    return genCast(zero, addressTy);
-  }
-  if (auto bytesTy = mlir::dyn_cast<mlir::sol::FixedBytesType>(ty)) {
-    unsigned width = bytesTy.getSize() * 8;
-    auto uintTy = b.getIntegerType(width, /*isSigned=*/false);
-    auto zero = b.create<mlir::sol::ConstantOp>(
-        loc, b.getIntegerAttr(uintTy, llvm::APInt(width, 0)));
-    return genCast(zero, bytesTy);
-  }
-  if (mlir::isa<mlir::sol::ByteType>(ty)) {
-    auto uintTy = b.getIntegerType(/*width=*/8, /*isSigned=*/false);
-    auto zero = b.create<mlir::sol::ConstantOp>(
-        loc, b.getIntegerAttr(uintTy, llvm::APInt(8, 0)));
-    return genCast(zero, ty);
-  }
-  if (auto contractTy = mlir::dyn_cast<mlir::sol::ContractType>(ty)) {
-    auto uint160Ty = b.getIntegerType(160, /*isSigned=*/false);
-    auto zero = b.create<mlir::sol::ConstantOp>(
-        loc, b.getIntegerAttr(uint160Ty, llvm::APInt(160, 0)));
-    auto addrTy =
-        mlir::sol::AddressType::get(b.getContext(), contractTy.getPayable());
-    return genCast(genCast(zero, addrTy), contractTy);
-  }
-  if (auto enumTy = mlir::dyn_cast<mlir::sol::EnumType>(ty)) {
-    auto ui256Ty = b.getIntegerType(256, /*isSigned=*/false);
-    auto zero = b.create<mlir::sol::ConstantOp>(
-        loc, b.getIntegerAttr(ui256Ty, llvm::APInt(256, 0)));
-    return genCast(zero, enumTy);
-  }
-  if (auto extFnTy = mlir::dyn_cast<mlir::sol::ExtFuncRefType>(ty)) {
-    auto addrTy =
-        mlir::sol::AddressType::get(b.getContext(), /*payable=*/false);
-    auto uint160Ty = b.getIntegerType(160, /*isSigned=*/false);
-    auto zeroAddr =
-        genCast(b.create<mlir::sol::ConstantOp>(
-                    loc, b.getIntegerAttr(uint160Ty, llvm::APInt(160, 0))),
-                addrTy);
-    return b.create<mlir::sol::ExtFuncConstantOp>(loc, extFnTy, zeroAddr,
-                                                  b.getI32IntegerAttr(0));
-  }
-  llvm_unreachable("Unexpected type");
+mlir::Value SolidityToMLIRPass::genDefaultVal(mlir::Type ty,
+                                              mlir::Location loc) {
+  return mlir::sol::genDefaultVal(b, ty, loc);
 }
 
-void SolidityToMLIRPass::genZeroedVal(mlir::sol::AllocaOp addr) {
+void SolidityToMLIRPass::genDefaultVal(mlir::sol::AllocaOp addr) {
   mlir::Location loc = addr.getLoc();
   auto pointeeTy =
       mlir::cast<mlir::sol::PointerType>(addr.getType()).getPointeeType();
-  auto val = genZeroedVal(pointeeTy, loc);
+  auto val = genDefaultVal(pointeeTy, loc);
   b.create<mlir::sol::StoreOp>(loc, val, addr);
 }
 
@@ -1021,7 +943,7 @@ void SolidityToMLIRPass::genDeleteExpr(mlir::Value addr, mlir::Location loc) {
 
     // Non-storage references (e.g. memory): zero-init by allocating a memory
     // version and copying it via genAssign which emits sol.copy.
-    genAssign(addr, genZeroedVal(toMemoryType(addrTy), loc), loc);
+    genAssign(addr, genDefaultVal(toMemoryType(addrTy), loc), loc);
     return;
   }
 
@@ -1039,12 +961,12 @@ void SolidityToMLIRPass::genDeleteExpr(mlir::Value addr, mlir::Location loc) {
          "delete on storage-pointer-to-reference lvalue is unreachable");
 
   if (!mlir::sol::isScalar(pointeeTy)) {
-    genAssign(addr, genZeroedVal(toMemoryType(pointeeTy), loc), loc);
+    genAssign(addr, genDefaultVal(toMemoryType(pointeeTy), loc), loc);
     return;
   }
 
   // Value types: zero and store directly.
-  auto val = genZeroedVal(pointeeTy, loc);
+  auto val = genDefaultVal(pointeeTy, loc);
   b.create<mlir::sol::StoreOp>(loc, val, addr);
 }
 
@@ -2829,7 +2751,7 @@ void SolidityToMLIRPass::lower(
     if (initExpr)
       b.create<mlir::sol::StoreOp>(loc, genCast(initExpr, varTy), addr);
     else
-      genZeroedVal(addr);
+      genDefaultVal(addr);
   }
 }
 
@@ -2858,16 +2780,17 @@ void SolidityToMLIRPass::lower(PlaceholderStatement const &placeholder) {
 }
 
 void SolidityToMLIRPass::lower(Return const &ret) {
-  mlir::SmallVector<mlir::Type> fnResTys;
-  for (ASTPointer<VariableDeclaration> const &retParam :
-       ret.annotation().function->returnParameters())
-    fnResTys.push_back(getType(retParam->type()));
-
+  // annotation().function is null for a return inside a modifier, which is
+  // necessarily expression-less.
   Expression const *astExpr = ret.expression();
-  if (astExpr)
+  if (astExpr) {
+    mlir::SmallVector<mlir::Type> fnResTys;
+    for (ASTPointer<VariableDeclaration> const &retParam :
+         ret.annotation().function->returnParameters())
+      fnResTys.push_back(getType(retParam->type()));
     b.create<mlir::sol::ReturnOp>(getLoc(ret),
                                   genRValExprs(*astExpr, fnResTys));
-  else
+  } else
     b.create<mlir::sol::ReturnOp>(getLoc(ret));
   b.setInsertionPointToStart(b.createBlock(b.getBlock()->getParent()));
 }
@@ -3333,46 +3256,6 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   mlir::Block *entryBlk = b.createBlock(&op.getRegion());
   b.setInsertionPointToStart(entryBlk);
 
-  // Lower modifier invocations.
-  for (const ASTPointer<ModifierInvocation> &modifier : fn.modifiers()) {
-    // FIXME: Handle lookup!
-    ModifierDefinition const *modifierDef =
-        dynamic_cast<ModifierDefinition const *>(
-            modifier->name().annotation().referencedDeclaration);
-    if (!modifierDef) {
-      assert(dynamic_cast<ContractDefinition const *>(
-          modifier->name().annotation().referencedDeclaration));
-      continue;
-    }
-
-    mlir::Location loc = getLoc(*modifier);
-
-    auto modifierCallBlk = b.create<mlir::sol::ModifierCallBlkOp>(loc);
-    mlir::OpBuilder::InsertionGuard insertGuard(b);
-
-    // sol.modifier_call_blk's block args should match that of the function.
-    // We don't need to generate stack allocations since the block args are
-    // "forwarded" in the call chain of modifiers and the modified function.
-    for (auto &&[inpTy, inpLoc, param] :
-         ranges::views::zip(inpTys, inpLocs, fn.parameters()))
-      trackLocalVarAddr(*param,
-                        modifierCallBlk.getBody()->addArgument(inpTy, inpLoc));
-
-    b.setInsertionPointToStart(modifierCallBlk.getBody());
-
-    std::vector<mlir::Value> loweredArgs;
-    if (modifier->arguments()) {
-      loweredArgs.reserve(modifier->arguments()->size());
-      unsigned i = 0;
-      for (const ASTPointer<Expression> &arg : *modifier->arguments()) {
-        mlir::Type reqTy = getType(modifierDef->parameters()[i++]->type());
-        loweredArgs.push_back(genRValExpr(*arg, reqTy));
-      }
-    }
-    b.create<mlir::sol::CallOp>(loc, getMangledName(*modifierDef),
-                                /*results=*/mlir::TypeRange{}, loweredArgs);
-  }
-
   // Lower the args.
   for (auto &&[inpTy, inpLoc, param] :
        ranges::views::zip(inpTys, inpLocs, fn.parameters())) {
@@ -3395,7 +3278,7 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
         paramLoc, mlir::sol::PointerType::get(b.getContext(), paramTy,
                                               mlir::sol::DataLocation::Stack));
     trackLocalVarAddr(*param, addr);
-    genZeroedVal(addr);
+    genDefaultVal(addr);
   }
 
   // Generate the call to the next ctor (if any) if `fn` is a ctor.
@@ -3428,6 +3311,59 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
       b.create<mlir::sol::CallOp>(fnLoc, getMangledName(*nextCtor),
                                   /*resTys=*/mlir::TypeRange{}, loweredArgs);
     }
+  }
+
+  // Lower modifier invocations. Argument expressions reference the param and
+  // named-return allocas above, so this must follow them.
+  for (const ASTPointer<ModifierInvocation> &modifier : fn.modifiers()) {
+    Declaration const *refDecl =
+        modifier->name().annotation().referencedDeclaration;
+    ModifierDefinition const *modifierDef =
+        dynamic_cast<ModifierDefinition const *>(refDecl);
+    if (!modifierDef) {
+      // Base constructor invocations are lowered via the next-ctor call.
+      assert(dynamic_cast<ContractDefinition const *>(refDecl));
+      continue;
+    }
+    if (*modifier->name().annotation().requiredLookup ==
+        VirtualLookup::Virtual)
+      modifierDef = &modifierDef->resolveVirtual(*currContract);
+
+    // A library function lowered on-demand into a non-library contract brings
+    // its modifiers along: they are otherwise only lowered in the library's
+    // own module.
+    auto const *modifierContr =
+        dynamic_cast<ContractDefinition const *>(modifierDef->scope());
+    if (modifierContr && modifierContr->isLibrary() &&
+        (!currContract || !currContract->isLibrary())) {
+      auto *symTableOp = mlir::SymbolTable::getNearestSymbolTable(op);
+      assert(symTableOp);
+      if (!mlir::SymbolTable::lookupSymbolIn(symTableOp,
+                                             getMangledName(*modifierDef))) {
+        mlir::OpBuilder::InsertionGuard insertGuard(b);
+        b.setInsertionPoint(op);
+        lower(*modifierDef);
+      }
+    }
+
+    mlir::Location loc = getLoc(*modifier);
+
+    auto invocation = b.create<mlir::sol::ModifierInvocationOp>(
+        loc, mlir::FlatSymbolRefAttr::get(b.getContext(),
+                                          getMangledName(*modifierDef)));
+    mlir::OpBuilder::InsertionGuard insertGuard(b);
+    b.setInsertionPointToStart(&invocation.getArgsRegion().front());
+
+    std::vector<mlir::Value> loweredArgs;
+    if (modifier->arguments()) {
+      loweredArgs.reserve(modifier->arguments()->size());
+      unsigned i = 0;
+      for (const ASTPointer<Expression> &arg : *modifier->arguments()) {
+        mlir::Type reqTy = getType(modifierDef->parameters()[i++]->type());
+        loweredArgs.push_back(genRValExpr(*arg, reqTy));
+      }
+    }
+    b.create<mlir::sol::YieldOp>(loc, loweredArgs);
   }
 
   // Lower the body.
@@ -3468,7 +3404,7 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
       auto addr = b.create<mlir::sol::AllocaOp>(
           fnLoc, mlir::sol::PointerType::get(b.getContext(), paramTy,
                                              mlir::sol::DataLocation::Stack));
-      genZeroedVal(addr);
+      genDefaultVal(addr);
       retVals.push_back(b.create<mlir::sol::LoadOp>(fnLoc, addr));
     } else {
       // Named return param: load from its local variable address.
@@ -3591,7 +3527,8 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
 
     // Lower modifiers.
     for (auto *modifier : baseCont.functionModifiers()) {
-      lower(*modifier);
+      if (modifier->isImplemented())
+        lower(*modifier);
     }
   };
   for (ContractDefinition const *baseCont :

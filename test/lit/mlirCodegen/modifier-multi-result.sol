@@ -76,8 +76,8 @@ contract B {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     sol.func @test_61() -> (ui256, ui256) attributes {id = 61 : i64, orig_fn_type = () -> (ui256, ui256), selector = -123142803 : i32, state_mutability = #NonPayable} {
-// CHECK-NEXT:       sol.modifier_call_blk {
-// CHECK-NEXT:         sol.call @updateStorage_47() : () -> () loc(#loc7)
+// CHECK-NEXT:       sol.modifier_invocation @updateStorage_47 {
+// CHECK-NEXT:         sol.yield loc(#loc7)
 // CHECK-NEXT:       } loc(#loc7)
 // CHECK-NEXT:       %0 = sol.addr_of @x_18 : !sol.ptr<ui256, Storage> loc(#loc2)
 // CHECK-NEXT:       %1 = sol.addr_of @y_21 : !sol.ptr<ui256, Storage> loc(#loc3)
