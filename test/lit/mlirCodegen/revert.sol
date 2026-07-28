@@ -27,7 +27,7 @@ contract C {
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc4)
 // CHECK-NEXT:       sol.revert "E(uint256)" %1 : ui256 {call} loc(#loc5)
 // CHECK-NEXT:       sol.revert "error message" loc(#loc6)
-// CHECK-NEXT:       sol.revert "" loc(#loc7)
+// CHECK-NEXT:       sol.revert loc(#loc7)
 // CHECK-NEXT:       sol.return loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)

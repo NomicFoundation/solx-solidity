@@ -2224,14 +2224,33 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
 
   // Revert function call
   case FunctionType::Kind::Revert: {
-    if (!astArgs.empty()) {
-      // revert("reason")
-      const auto *msg = dynamic_cast<Literal const *>(astArgs[0].get());
-      assert(msg);
-      b.create<mlir::sol::RevertOp>(loc, mlir::ValueRange{}, msg->value());
-    } else {
+    if (astArgs.empty()) {
       // revert()
-      b.create<mlir::sol::RevertOp>(loc, mlir::ValueRange{}, std::string(""));
+      b.create<mlir::sol::RevertOp>(loc, mlir::ValueRange{},
+                                    /*signature=*/mlir::StringAttr{});
+    } else if (const auto *msg =
+                   dynamic_cast<Literal const *>(astArgs[0].get())) {
+      // revert("reason"). An empty reason is kept distinct from revert() as it
+      // still ABI-encodes Error("").
+      b.create<mlir::sol::RevertOp>(loc, mlir::ValueRange{},
+                                    b.getStringAttr(msg->value()));
+    } else {
+      // revert(<string expression>): revert with the Error(string) encoding of
+      // the runtime message. When stripped, the revert carries no data and the
+      // message is only evaluated for its side effects (skipped for pure
+      // expressions, as in the old codegen).
+      if (revertStrings == RevertStrings::Strip) {
+        if (!*astArgs[0]->annotation().isPure)
+          (void)genRValExpr(*astArgs[0], getType(calleeTy->parameterTypes()[0]));
+        b.create<mlir::sol::RevertOp>(loc, mlir::ValueRange{},
+                                      /*signature=*/mlir::StringAttr{});
+      } else {
+        mlir::Value msgVal =
+            genRValExpr(*astArgs[0], getType(calleeTy->parameterTypes()[0]));
+        b.create<mlir::sol::RevertOp>(loc, mlir::ValueRange{msgVal},
+                                      b.getStringAttr("Error(string)"),
+                                      /*call=*/true);
+      }
     }
     return {};
   }
@@ -2241,8 +2260,9 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     mlir::SmallVector<mlir::Value> args;
     for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes()))
       args.push_back(genRValExpr(*arg, getType(dstTy)));
-    b.create<mlir::sol::RevertOp>(loc, args, calleeTy->externalSignature(),
-                                  /*call=*/true);
+    b.create<mlir::sol::RevertOp>(
+        loc, args, b.getStringAttr(calleeTy->externalSignature()),
+        /*call=*/true);
     return {};
   }
 
@@ -2250,21 +2270,19 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
   case FunctionType::Kind::Require: {
     if (call.arguments().size() == 2) {
       const auto *msg = dynamic_cast<Literal const *>(astArgs[1].get());
+      const auto *errorCall = dynamic_cast<FunctionCall const *>(astArgs[1].get());
+      const auto *errorDef =
+          errorCall ? dynamic_cast<ErrorDefinition const *>(
+                          ASTNode::referencedDeclaration(errorCall->expression()))
+                    : nullptr;
       mlir::Value cond = genRValExpr(*astArgs[0]);
       if (msg) {
         // require(cond, "message") form.
 
         b.create<mlir::sol::RequireOp>(loc, cond, b.getStringAttr(msg->value()),
                                        mlir::ValueRange{});
-      } else {
+      } else if (errorDef) {
         // require(cond, Error(...)) form.
-
-        const auto *errorCall =
-            dynamic_cast<FunctionCall const *>(astArgs[1].get());
-        assert(errorCall);
-        const auto *errorDef = dynamic_cast<ErrorDefinition const *>(
-            ASTNode::referencedDeclaration(errorCall->expression()));
-        assert(errorDef);
 
         mlir::SmallVector<mlir::Value> args;
         for (auto [callArg, argDef] :
@@ -2275,6 +2293,27 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
             loc, cond,
             b.getStringAttr(errorDef->functionType(true)->externalSignature()),
             args, /*errorCall=*/true);
+      } else {
+        // require(cond, <string expression>) form: revert with the
+        // Error(string) encoding of the runtime message. The message is
+        // evaluated unconditionally after the condition, matching the old
+        // codegen's call-argument evaluation order. When stripped, the
+        // revert carries no data and the message is only evaluated for its
+        // side effects (skipped for pure expressions, as in the old codegen).
+        if (revertStrings == RevertStrings::Strip) {
+          if (!*astArgs[1]->annotation().isPure)
+            (void)genRValExpr(*astArgs[1],
+                              getType(calleeTy->parameterTypes()[1]));
+          b.create<mlir::sol::RequireOp>(loc, cond, mlir::StringAttr{},
+                                         mlir::ValueRange{});
+        } else {
+          mlir::Value msgVal =
+              genRValExpr(*astArgs[1], getType(calleeTy->parameterTypes()[1]));
+          b.create<mlir::sol::RequireOp>(loc, cond,
+                                         b.getStringAttr("Error(string)"),
+                                         mlir::ValueRange{msgVal},
+                                         /*errorCall=*/true);
+        }
       }
     } else {
       b.create<mlir::sol::RequireOp>(loc, genRValExpr(*astArgs[0]),
