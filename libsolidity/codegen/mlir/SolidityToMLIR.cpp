@@ -659,6 +659,72 @@ private:
   /// Lowers the function definition.
   mlir::sol::FuncOp lower(FunctionDefinition const &);
 
+  /// The constructor chain of the contract being lowered, most-derived
+  /// first: {contract, its constructor}. The head's constructor is null when
+  /// it is synthesized. Contracts without constructors do not appear
+  /// (except as the head).
+  std::vector<
+      std::pair<ContractDefinition const *, FunctionDefinition const *>>
+      ctorChain;
+
+  /// The provider of each base constructor's argument list: the contract
+  /// whose inheritance specifier or constructor modifier supplies the
+  /// arguments. Argument expressions can only reference the provider's
+  /// constructor parameters, so they must be lowered in the provider's
+  /// constructor and the values threaded down the chain (via-ir style).
+  std::map<FunctionDefinition const *, ContractDefinition const *>
+      baseCtorArgProviders;
+
+  /// Base-constructor argument values available in the constructor-chain
+  /// function currently being lowered, keyed by target constructor: values
+  /// received as threaded parameters plus values evaluated here.
+  std::map<FunctionDefinition const *, mlir::SmallVector<mlir::Value>>
+      pendingBaseCtorArgs;
+
+  /// Returns the position of the constructor of `cont` in ctorChain.
+  size_t ctorChainPos(ContractDefinition const &cont) {
+    for (size_t i = 0; i < ctorChain.size(); ++i)
+      if (ctorChain[i].first == &cont)
+        return i;
+    llvm_unreachable("Contract not in the constructor chain");
+  }
+
+  /// Returns the target constructors whose pending argument values the
+  /// constructor at chain position `pos` receives as threaded parameters:
+  /// deeper constructors whose provider sits strictly above `pos` in the
+  /// chain.
+  mlir::SmallVector<FunctionDefinition const *>
+  pendingBaseCtorTargets(size_t pos) {
+    mlir::SmallVector<FunctionDefinition const *> targets;
+    for (size_t j = pos + 1; j < ctorChain.size(); ++j) {
+      FunctionDefinition const *target = ctorChain[j].second;
+      auto provider = baseCtorArgProviders.find(target);
+      if (provider == baseCtorArgProviders.end())
+        continue;
+      // Providers without a constructor of their own are not in the chain;
+      // their argument expressions cannot reference constructor parameters
+      // and are lowered at the call to the target instead.
+      bool providerInChain = false;
+      size_t providerPos = 0;
+      for (size_t p = 0; p < ctorChain.size(); ++p)
+        if (ctorChain[p].first == provider->second) {
+          providerInChain = true;
+          providerPos = p;
+          break;
+        }
+      if (providerInChain && providerPos < pos)
+        targets.push_back(target);
+    }
+    return targets;
+  }
+
+  /// Generates the call to the next constructor in `currContract`'s
+  /// linearization from `curCont`'s constructor: lowers every argument list
+  /// provided by `curCont`, then passes the next constructor its arguments
+  /// along with the pending values for deeper constructors.
+  void genBaseCtorCall(ContractDefinition const &curCont,
+                       FunctionDefinition const &nextCtor, mlir::Location loc);
+
   /// Emits a free or library function into the nearest enclosing contract
   /// scope on demand, if it hasn't been emitted there yet. A no-op when \p fn
   /// doesn't require cross-scope emission (e.g. the callee is already in the
@@ -1738,6 +1804,16 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
     if (dynamic_cast<ContractType const *>(&actualType) &&
         dynamic_cast<TypeType const *>(memberAcc.annotation().type))
       return {};
+    // State variable accessed via the contract type (e.g. `A.x`): constants
+    // and, in the creation context, immutables. Resolves to the same
+    // reference an unqualified identifier would.
+    if (dynamic_cast<ContractType const *>(&actualType)) {
+      if (auto const *var = dynamic_cast<VariableDeclaration const *>(
+              memberAcc.annotation().referencedDeclaration)) {
+        assert(var->isStateVariable());
+        return genLValRef(*var);
+      }
+    }
     break;
   }
   default:
@@ -3307,14 +3383,94 @@ void SolidityToMLIRPass::lower(ModifierDefinition const &modifier) {
   b.setInsertionPointAfter(op);
 }
 
+void SolidityToMLIRPass::genBaseCtorCall(ContractDefinition const &curCont,
+                                         FunctionDefinition const &nextCtor,
+                                         mlir::Location loc) {
+  auto const &argMap = currContract->annotation().baseConstructorArguments;
+
+  auto lowerArgsNode = [&](ASTNode const *argsNode,
+                           FunctionDefinition const &target) {
+    std::vector<ASTPointer<Expression>> const *args = nullptr;
+    if (const auto *inheritanceSpec =
+            dynamic_cast<InheritanceSpecifier const *>(argsNode))
+      args = inheritanceSpec->arguments();
+    else if (const auto *modifierInvoc =
+                 dynamic_cast<ModifierInvocation const *>(argsNode))
+      args = modifierInvoc->arguments();
+    assert(args);
+    mlir::SmallVector<mlir::Value> vals;
+    for (auto [arg, param] : llvm::zip(*args, target.parameters()))
+      vals.push_back(genRValExpr(*arg, getType(param->annotation().type)));
+    return vals;
+  };
+
+  // Lower every argument list this contract provides, in chain order, so the
+  // expressions reference constructor parameters local to this region.
+  size_t curPos = ctorChainPos(curCont);
+  for (size_t j = curPos + 1; j < ctorChain.size(); ++j) {
+    FunctionDefinition const *target = ctorChain[j].second;
+    auto provider = baseCtorArgProviders.find(target);
+    if (provider == baseCtorArgProviders.end() ||
+        provider->second != &curCont)
+      continue;
+    pendingBaseCtorArgs[target] = lowerArgsNode(argMap.at(target), *target);
+  }
+
+  // Argument values for the next constructor: threaded or just lowered
+  // above. When the provider has no constructor of its own (e.g. a plain
+  // `is A(1)` on a constructor-less contract), the expressions cannot
+  // reference constructor parameters and are lowered right here.
+  mlir::SmallVector<mlir::Value> callArgs;
+  auto pendingFound = pendingBaseCtorArgs.find(&nextCtor);
+  if (pendingFound != pendingBaseCtorArgs.end()) {
+    callArgs = pendingFound->second;
+  } else if (auto argsFound = argMap.find(&nextCtor);
+             argsFound != argMap.end()) {
+    callArgs = lowerArgsNode(argsFound->second, nextCtor);
+  }
+
+  // Forward the pending values for deeper constructors the callee expects.
+  for (FunctionDefinition const *target :
+       pendingBaseCtorTargets(curPos + 1)) {
+    auto found = pendingBaseCtorArgs.find(target);
+    assert(found != pendingBaseCtorArgs.end() &&
+           "Pending base-constructor arguments not yet lowered");
+    llvm::append_range(callArgs, found->second);
+  }
+
+  b.create<mlir::sol::CallOp>(loc, getMangledName(nextCtor),
+                              /*resTys=*/mlir::TypeRange{}, callArgs);
+}
+
 mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   assert(fn.isImplemented());
+
+  // Immutable references resolve differently in the creation context (lvalues
+  // into the reserved immutables memory vs. sol.load_immutable rvalues), and
+  // every constructor body executes in it. Base constructors are lowered
+  // through the generic function path, so derive the flag from the function
+  // itself instead of relying on the caller to set it.
+  llvm::SaveAndRestore<bool> inCtorGuard(inCtor, fn.isConstructor());
+
   // Create the function type.
   std::vector<mlir::Type> inpTys, outTys;
   std::vector<mlir::Location> inpLocs;
   for (const auto &param : fn.parameters()) {
     inpTys.push_back(getType(param->annotation().type));
     inpLocs.push_back(getLoc(*param));
+  }
+  // Constructors additionally receive the pending base-constructor argument
+  // values threaded down the chain from more-derived providers.
+  mlir::SmallVector<FunctionDefinition const *> pendingTargets;
+  if (fn.isConstructor() && !ctorChain.empty()) {
+    auto const &ctorCont =
+        dynamic_cast<ContractDefinition const &>(*fn.scope());
+    pendingTargets = pendingBaseCtorTargets(ctorChainPos(ctorCont));
+    for (FunctionDefinition const *target : pendingTargets)
+      for (const auto &param : target->parameters()) {
+        inpTys.push_back(getType(param->annotation().type));
+        inpLocs.push_back(getLoc(*param));
+      }
   }
   for (const auto &param : fn.returnParameters())
     outTys.push_back(getType(param->annotation().type));
@@ -3364,6 +3520,15 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
     b.create<mlir::sol::StoreOp>(inpLoc, arg, addr);
   }
 
+  // Bind the threaded pending base-constructor argument values.
+  pendingBaseCtorArgs.clear();
+  for (FunctionDefinition const *target : pendingTargets) {
+    auto &vals = pendingBaseCtorArgs[target];
+    for (const auto &param : target->parameters())
+      vals.push_back(entryBlk->addArgument(getType(param->annotation().type),
+                                           getLoc(*param)));
+  }
+
   // Allocate and zero-initialize named return parameters so they can be
   // loaded at implicit-return sites.
   for (const auto &param : fn.returnParameters()) {
@@ -3385,29 +3550,8 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
         dynamic_cast<ContractDefinition const &>(*fn.scope());
 
     if (FunctionDefinition const *nextCtor =
-            baseCont.nextConstructor(*currContract)) {
-      auto nextCtorArgsFound =
-          currContract->annotation().baseConstructorArguments.find(nextCtor);
-      mlir::SmallVector<mlir::Value> loweredArgs;
-      if (nextCtorArgsFound !=
-          currContract->annotation().baseConstructorArguments.end()) {
-        std::vector<ASTPointer<Expression>> const *nextCtorArgs = nullptr;
-        ASTNode const *argsNode =
-            currContract->annotation().baseConstructorArguments.at(nextCtor);
-        if (const auto *inheritanceSpec =
-                dynamic_cast<InheritanceSpecifier const *>(argsNode))
-          nextCtorArgs = inheritanceSpec->arguments();
-        else if (const auto *modifierInvoc =
-                     dynamic_cast<ModifierInvocation const *>(argsNode))
-          nextCtorArgs = modifierInvoc->arguments();
-        assert(nextCtorArgs);
-        for (ASTPointer<Expression> const &arg : *nextCtorArgs)
-          loweredArgs.push_back(
-              genRValExpr(*arg, getType(arg->annotation().type)));
-      }
-      b.create<mlir::sol::CallOp>(fnLoc, getMangledName(*nextCtor),
-                                  /*resTys=*/mlir::TypeRange{}, loweredArgs);
-    }
+            baseCont.nextConstructor(*currContract))
+      genBaseCtorCall(baseCont, *nextCtor, fnLoc);
   }
 
   // Lower modifier invocations. Argument expressions reference the param and
@@ -3538,6 +3682,38 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
   for (const auto &i : interfaceFnInfos)
     selectorMap[&i.second->declaration()] = i.first;
 
+  // Build the constructor chain and the argument-list providers.
+  ctorChain.clear();
+  baseCtorArgProviders.clear();
+  if (!cont.isLibrary()) {
+    ctorChain.emplace_back(&cont, cont.constructor());
+    ContractDefinition const *chainCont = &cont;
+    while (FunctionDefinition const *next = chainCont->nextConstructor(cont)) {
+      chainCont = dynamic_cast<ContractDefinition const *>(next->scope());
+      assert(chainCont);
+      ctorChain.emplace_back(chainCont, next);
+    }
+    for (auto const &[ctor, argsNode] :
+         cont.annotation().baseConstructorArguments) {
+      for (ContractDefinition const *q :
+           cont.annotation().linearizedBaseContracts) {
+        bool provides = false;
+        for (ASTPointer<InheritanceSpecifier> const &spec : q->baseContracts())
+          if (spec.get() == argsNode)
+            provides = true;
+        if (q->constructor())
+          for (ASTPointer<ModifierInvocation> const &mi :
+               q->constructor()->modifiers())
+            if (mi.get() == argsNode)
+              provides = true;
+        if (provides) {
+          baseCtorArgProviders[ctor] = q;
+          break;
+        }
+      }
+    }
+  }
+
   // Create the contract op.
   mlir::sol::ContractOp contOp = b.create<mlir::sol::ContractOp>(
       loc, getMangledName(cont), getContractKind(cont));
@@ -3587,10 +3763,11 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
           loc, contOp.getName(), b.getFunctionType({}, {}),
           mlir::sol::StateMutability::NonPayable);
       b.setInsertionPointToStart(b.createBlock(&ctorFn.getRegion()));
-      FunctionDefinition const *nextCtor = cont.nextConstructor(cont);
-      if (nextCtor)
-        b.create<mlir::sol::CallOp>(loc, getMangledName(*nextCtor),
-                                    /*resTys=*/mlir::TypeRange{});
+      // The synthesized ctor must still evaluate base-constructor arguments
+      // given in the inheritance specifier (e.g. `contract B is A(...) {}`).
+      pendingBaseCtorArgs.clear();
+      if (FunctionDefinition const *nextCtor = cont.nextConstructor(cont))
+        genBaseCtorCall(cont, *nextCtor, loc);
       b.create<mlir::sol::ReturnOp>(loc);
     }
     ctorFn.setKind(mlir::sol::FunctionKind::Constructor);
