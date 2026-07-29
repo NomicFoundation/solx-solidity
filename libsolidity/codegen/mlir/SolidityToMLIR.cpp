@@ -2094,6 +2094,19 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
   case FunctionType::Kind::Internal: {
     // Lower args.
     std::vector<mlir::Value> args;
+    // Attached (using-for) calls pass the member-access base as the hidden
+    // first argument, which bound function types exclude from
+    // parameterTypes(). Like any other internal-call argument, it is
+    // converted to the callee's declared self type — including its data
+    // location (e.g. an attached call on a calldata array whose callee takes
+    // memory requires a copy).
+    if (calleeTy->hasBoundFirstArgument()) {
+      auto const *memberAcc =
+          dynamic_cast<MemberAccess const *>(&call.expression());
+      assert(memberAcc && "Expected a member access as the bound call base");
+      args.push_back(genRValExpr(memberAcc->expression(),
+                                 getType(calleeTy->selfType())));
+    }
     for (auto [arg, dstTy] : llvm::zip(astArgs, calleeTy->parameterTypes())) {
       args.push_back(genRValExpr(*arg, getType(dstTy)));
     }
