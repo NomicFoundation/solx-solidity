@@ -28,6 +28,7 @@
 #include "libsolidity/ast/ASTEnums.h"
 #include "libsolidity/ast/ASTForward.h"
 #include "libsolidity/ast/ASTUtils.h"
+#include "libsolidity/ast/TypeProvider.h"
 #include "libsolidity/ast/Types.h"
 #include "libsolidity/codegen/mlir/Interface.h"
 #include "libsolidity/codegen/mlir/Passes.h"
@@ -2154,11 +2155,16 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
            llvm::zip(fnCallOpt->names(), fnCallOpt->options())) {
         ASTString const &name = *namePtr;
         Expression const &expr = *exprPtr;
-        mlir::Value loweredExpr = genRValExpr(expr, ui256Ty);
-        if (name == "salt")
-          salt = loweredExpr;
-        else if (name == "value")
-          value = loweredExpr;
+        if (name == "salt") {
+          // The salt is a bytes32: lower it as such (string and hex literals
+          // fold to a left-aligned fixed-bytes constant) and widen to the
+          // word type expected by sol.new.
+          mlir::Value saltVal =
+              genRValExpr(expr, getType(TypeProvider::fixedBytes(32)));
+          salt = genCast(saltVal, ui256Ty);
+        } else if (name == "value") {
+          value = genRValExpr(expr, ui256Ty);
+        }
       }
     }
     if (!value)
