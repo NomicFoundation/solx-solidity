@@ -3590,14 +3590,19 @@ void SolidityToMLIRPass::lower(ContractDefinition const &cont) {
     ctorFn.setKind(mlir::sol::FunctionKind::Constructor);
     ctorFn.setOrigFnType(ctorFn.getFunctionType());
 
-    // Generate state variable init in the ctor.
+    // Generate state variable init in the ctor. Iterate base-to-derived in
+    // declaration order so that storage, transient and immutable initializers
+    // run interleaved in the same order as the old codegen
+    // (linearizedStateVariables only tracks slot-assigned variables and would
+    // skip immutables).
     b.setInsertionPointToStart(&ctorFn.getBody().front());
-    for (auto &var :
-         ContractType(cont).linearizedStateVariables(DataLocation::Storage)) {
-      VariableDeclaration const *stateVar = std::get<0>(var);
-      if (!stateVar->isConstant() && stateVar->value()) {
-        genAssign(genStateVarRef(*stateVar, /*inCreationContext=*/true),
-                  genRValExpr(*stateVar->value()), getLoc(*stateVar));
+    for (ContractDefinition const *baseCont :
+         llvm::reverse(cont.annotation().linearizedBaseContracts)) {
+      for (VariableDeclaration const *stateVar : baseCont->stateVariables()) {
+        if (!stateVar->isConstant() && stateVar->value()) {
+          genAssign(genStateVarRef(*stateVar, /*inCreationContext=*/true),
+                    genRValExpr(*stateVar->value()), getLoc(*stateVar));
+        }
       }
     }
     b.setInsertionPointAfter(ctorFn);
