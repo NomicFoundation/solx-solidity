@@ -918,9 +918,13 @@ void SolidityToMLIRPass::lowerFreeOrLibFuncIfAbsent(
     FunctionDefinition const &fn) {
   bool calleeInLib =
       fn.annotation().contract && fn.annotation().contract->isLibrary();
-  bool currContrNotInLib = !currContract || !currContract->isLibrary();
+  // A library callee is already part of the module when it belongs to the
+  // library currently being compiled. Functions of a foreign library (e.g. a
+  // cross-library call while compiling a library's own module) must be
+  // emitted on demand.
+  bool calleeForeign = fn.annotation().contract != currContract;
   bool freeCallee = !fn.annotation().contract;
-  if (!((calleeInLib && currContrNotInLib) || (freeCallee && currContract)))
+  if (!((calleeInLib && calleeForeign) || (freeCallee && currContract)))
     return;
 
   auto *symTableOp = mlir::SymbolTable::getNearestSymbolTable(
@@ -1270,6 +1274,9 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const &unaryOp) {
 
   if (FunctionDefinition const *fn =
           *unaryOp.annotation().userDefinedFunction) {
+    // Operator functions are free functions that may be referenced only
+    // through the operator, so emit the callee on demand.
+    lowerFreeOrLibFuncIfAbsent(*fn);
     mlir::Value arg = genRValExpr(unaryOp.subExpression(),
                                   getType(fn->parameters()[0]->type()));
     mlir::Type resTy = getType(fn->returnParameters()[0]->type());
@@ -1343,6 +1350,9 @@ mlir::Value SolidityToMLIRPass::genExpr(UnaryOperation const &unaryOp) {
 mlir::Value SolidityToMLIRPass::genExpr(BinaryOperation const &binOp) {
   if (FunctionDefinition const *fn = *binOp.annotation().userDefinedFunction) {
     auto loc = getLoc(binOp);
+    // Operator functions are free functions that may be referenced only
+    // through the operator, so emit the callee on demand.
+    lowerFreeOrLibFuncIfAbsent(*fn);
     mlir::Value lhs = genRValExpr(binOp.leftExpression(),
                                   getType(fn->parameters()[0]->type()));
     mlir::Value rhs = genRValExpr(binOp.rightExpression(),
