@@ -1,11 +1,7 @@
 # Comment and blank lines are ignored: mlirSemtests.sh matches entries against
 # test names with `grep -F -x`, so only exact test-name lines have any effect.
 
-semanticTests/fallback/fallback_override
-semanticTests/fallback/fallback_override2
-semanticTests/fallback/fallback_override_multi
 semanticTests/functionTypes/call_to_zero_initialized_function_type_legacy
-semanticTests/inheritance/inherited_function_calldata_memory
 semanticTests/operators/userDefined/recursive_operator
 semanticTests/uninitializedFunctionPointer/uninitialized_internal_storage_function_legacy
 
@@ -35,13 +31,32 @@ semanticTests/array/array_storage_push_empty
 # body (ContractCompiler.cpp:155); via-ir interleaves per contract. The three
 # init-order tests pin the via-ir interleaving (e.g. y() -> 42 where legacy
 # and this pipeline correctly yield 0).
+semanticTests/inheritance/constructor_inheritance_init_order
+semanticTests/inheritance/constructor_inheritance_init_order_3_viaIR
+semanticTests/inheritance/state_variables_init_order_3
 # Experimental Solidity language (pragma experimental solidity) - unsupported.
+semanticTests/experimental/stub
+semanticTests/experimental/type_class
 # Pin via-ir cleanup/dirty-value semantics that legacy intentionally lacks.
+semanticTests/cleanup/cleanup_bytes_types_shortening_newCodeGen
+semanticTests/cleanup/indexed_log_topic_during_explicit_downcast
+semanticTests/viaYul/dirty_calldata_struct
+semanticTests/viaYul/dirty_memory_dynamic_array
+semanticTests/viaYul/dirty_memory_int32
+semanticTests/viaYul/dirty_memory_static_array
+semanticTests/viaYul/dirty_memory_struct
+semanticTests/viaYul/dirty_memory_uint32
 # Via-ir-pinned; pinned expectation may be codegen-agnostic - not yet triaged
 # whether the failure hides a real bug.
+semanticTests/viaYul/unary_operations
+semanticTests/modifiers/function_modifier_loop_viair
+semanticTests/modifiers/function_modifier_multi_invocation_viair
 
 # ABI coder v1 (pragma abicoder v1): not supported by this pipeline, which
 # targets ABI coder v2 only. Unsupported-feature failures, not bugs.
+semanticTests/userDefinedValueType/assembly_access_bytes2_abicoder_v1
+semanticTests/userDefinedValueType/cleanup_abicoderv1
+semanticTests/userDefinedValueType/conversion_abicoderv1
 
 # Stack too deep: the EVM backend aborts with "LLVM ERROR: Total stack size: N
 # is larger than the allocated stack region size: 0". Needs the spill-region
@@ -49,3 +64,4 @@ semanticTests/array/array_storage_push_empty
 # memoryguard rewrite retry, as solx does); design documented, not implemented
 # in this pipeline. Scanned 2026-08-04: this is the only baselined test with
 # this signature.
+semanticTests/abiEncoderV2/calldata_struct_array_reencode

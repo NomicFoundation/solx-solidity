@@ -23,6 +23,8 @@
 #include "liblangutil/CharStream.h"
 #include "liblangutil/EVMVersion.h"
 #include "liblangutil/Exceptions.h"
+
+#include <boost/exception/diagnostic_information.hpp>
 #include "liblangutil/SourceLocation.h"
 #include "libsolidity/ast/AST.h"
 #include "libsolidity/ast/ASTEnums.h"
@@ -3649,7 +3651,26 @@ static bool isOverriddenByFunctionInCurrentContract(
   if (!fn.virtualSemantics() || fn.isConstructor() || fn.isFree() ||
       fn.libraryFunction() || !fn.isOrdinary() || fn.name().empty())
     return false;
-  return &fn.resolveVirtual(currContract) != &fn;
+  // Do not use resolveVirtual here: its strict parameter-type assertion
+  // rejects overrides that only change the data location (e.g. an external
+  // `calldata` function overridden by a public `memory` one), which are
+  // exactly the overrides this check must recognize. Use the loose
+  // externally-callable comparison the dispatcher resolution uses.
+  FunctionType const *externalFnTy =
+      TypeProvider::function(fn)->asExternallyCallableFunction(false);
+  for (ContractDefinition const *c :
+       currContract.annotation().linearizedBaseContracts) {
+    // Contracts at or below the declaring contract cannot override it.
+    if (c == declaringContract)
+      break;
+    for (FunctionDefinition const *candidate : c->definedFunctions(fn.name()))
+      if (candidate != &fn && candidate->isImplemented() &&
+          FunctionType(*candidate)
+              .asExternallyCallableFunction(false)
+              ->hasEqualParameterTypes(*externalFnTy))
+        return true;
+  }
+  return false;
 }
 
 /// Returns true if a public state variable declared in 'currContract' overrides
@@ -3812,11 +3833,16 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
     }
   }
 
-  // Set function kind.
+  // Set function kind. Only the contract's resolved (most-derived) fallback
+  // and receive are marked: overridden base definitions are unreachable, as
+  // fallback/receive cannot be referenced by name, and must not compete for
+  // the dispatcher slot.
   if (fn.isReceive()) {
-    op.setKind(mlir::sol::FunctionKind::Receive);
+    if (currContract && currContract->receiveFunction() == &fn)
+      op.setKind(mlir::sol::FunctionKind::Receive);
   } else if (fn.isFallback()) {
-    op.setKind(mlir::sol::FunctionKind::Fallback);
+    if (currContract && currContract->fallbackFunction() == &fn)
+      op.setKind(mlir::sol::FunctionKind::Fallback);
   }
 
   mlir::Block *entryBlk = b.createBlock(&op.getRegion());
@@ -4180,7 +4206,7 @@ bool CompilerStack::runMlirPipeline() {
             hadError.store(true, std::memory_order_relaxed);
             std::lock_guard<std::mutex> g(errMtx);
             llvm::errs() << "Exception lowering contract " << contr->name()
-                         << ": " << e.what() << "\n";
+                         << ": " << boost::diagnostic_information(e) << "\n";
             return;
           }
           mlir::ModuleOp mod = gen.getModule();
