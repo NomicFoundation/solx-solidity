@@ -43,7 +43,7 @@ contract B is A(A.x += 8) {
 // CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
 // CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: #Pure = #sol<StateMutability Pure>
-// CHECK-NEXT: #loc10 = loc({{.*}}:5:14)
+// CHECK-NEXT: #loc11 = loc({{.*}}:5:14)
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka, sol.revert_strings = #Default} {
 // CHECK-NEXT:   sol.contract @B_29 {
 // CHECK-NEXT:     sol.immutable @x_6 : ui256 loc(#loc2)
@@ -52,8 +52,8 @@ contract B is A(A.x += 8) {
 // CHECK-NEXT:       %c1_ui8 = sol.constant 1 : ui8 loc(#loc3)
 // CHECK-NEXT:       %1 = sol.cast %c1_ui8 : ui8 to ui256 loc(#loc3)
 // CHECK-NEXT:       sol.store %1, %0 : ui256, !sol.ptr<ui256, Immutable> loc(#loc2)
-// CHECK-NEXT:       %2 = sol.addr_of @x_6 : !sol.ptr<ui256, Immutable> loc(#loc2)
 // CHECK-NEXT:       %c8_ui8 = sol.constant 8 : ui8 loc(#loc4)
+// CHECK-NEXT:       %2 = sol.addr_of @x_6 : !sol.ptr<ui256, Immutable> loc(#loc2)
 // CHECK-NEXT:       %3 = sol.load %2 : !sol.ptr<ui256, Immutable>, ui256 loc(#loc5)
 // CHECK-NEXT:       %4 = sol.cast %c8_ui8 : ui8 to ui256 loc(#loc4)
 // CHECK-NEXT:       %5 = sol.cadd %3, %4 : ui256 loc(#loc5)
@@ -63,15 +63,18 @@ contract B is A(A.x += 8) {
 // CHECK-NEXT:       sol.return loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     sol.func @f_28() -> ui256 attributes {id = 28 : i64, orig_fn_type = () -> ui256, selector = 638722032 : i32, state_mutability = #Pure} {
-// CHECK-NEXT:       %c7_ui8 = sol.constant 7 : ui8 loc(#loc7)
-// CHECK-NEXT:       %0 = sol.cast %c7_ui8 : ui8 to ui256 loc(#loc7)
-// CHECK-NEXT:       sol.return %0 : ui256 loc(#loc8)
+// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc7)
+// CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc7)
+// CHECK-NEXT:       sol.store %c0_ui256, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc7)
+// CHECK-NEXT:       %c7_ui8 = sol.constant 7 : ui8 loc(#loc8)
+// CHECK-NEXT:       %1 = sol.cast %c7_ui8 : ui8 to ui256 loc(#loc8)
+// CHECK-NEXT:       sol.return %1 : ui256 loc(#loc9)
 // CHECK-NEXT:     } loc(#loc6)
 // CHECK-NEXT:     sol.func @_12(%arg0: ui256 loc({{.*}}:5:14)) attributes {id = 12 : i64, state_mutability = #NonPayable} {
-// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc10)
-// CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc10)
-// CHECK-NEXT:       sol.return loc(#loc9)
-// CHECK-NEXT:     } loc(#loc9)
+// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc11)
+// CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc11)
+// CHECK-NEXT:       sol.return loc(#loc10)
+// CHECK-NEXT:     } loc(#loc10)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
@@ -81,7 +84,8 @@ contract B is A(A.x += 8) {
 // CHECK-NEXT: #loc4 = loc({{.*}}:8:23)
 // CHECK-NEXT: #loc5 = loc({{.*}}:8:16)
 // CHECK-NEXT: #loc6 = loc({{.*}}:9:2)
-// CHECK-NEXT: #loc7 = loc({{.*}}:3:20)
-// CHECK-NEXT: #loc8 = loc({{.*}}:10:4)
-// CHECK-NEXT: #loc9 = loc({{.*}}:5:2)
+// CHECK-NEXT: #loc7 = loc({{.*}}:9:36)
+// CHECK-NEXT: #loc8 = loc({{.*}}:3:20)
+// CHECK-NEXT: #loc9 = loc({{.*}}:10:4)
+// CHECK-NEXT: #loc10 = loc({{.*}}:5:2)
 // CHECK-EMPTY:

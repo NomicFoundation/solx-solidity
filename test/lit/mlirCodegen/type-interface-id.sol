@@ -13,13 +13,18 @@ function interface_id() returns (bytes4) {
 // CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka, sol.revert_strings = #Default} {
 // CHECK-NEXT:   sol.func @interface_id_15() -> !sol.fixedbytes<4> attributes {id = 15 : i64, state_mutability = #NonPayable} {
-// CHECK-NEXT:     %c638722032_ui32 = sol.constant 638722032 : ui32 loc(#loc2)
-// CHECK-NEXT:     %0 = sol.bytes_cast %c638722032_ui32 : ui32 to !sol.fixedbytes<4> loc(#loc2)
-// CHECK-NEXT:     sol.return %0 : !sol.fixedbytes<4> loc(#loc3)
+// CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<!sol.fixedbytes<4>, Stack> loc(#loc2)
+// CHECK-NEXT:     %c0_ui32 = sol.constant 0 : ui32 loc(#loc2)
+// CHECK-NEXT:     %1 = sol.bytes_cast %c0_ui32 : ui32 to !sol.fixedbytes<4> loc(#loc2)
+// CHECK-NEXT:     sol.store %1, %0 : !sol.fixedbytes<4>, !sol.ptr<!sol.fixedbytes<4>, Stack> loc(#loc2)
+// CHECK-NEXT:     %c638722032_ui32 = sol.constant 638722032 : ui32 loc(#loc3)
+// CHECK-NEXT:     %2 = sol.bytes_cast %c638722032_ui32 : ui32 to !sol.fixedbytes<4> loc(#loc3)
+// CHECK-NEXT:     sol.return %2 : !sol.fixedbytes<4> loc(#loc4)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:6:0)
-// CHECK-NEXT: #loc2 = loc({{.*}}:7:9)
-// CHECK-NEXT: #loc3 = loc({{.*}}:7:2)
+// CHECK-NEXT: #loc2 = loc({{.*}}:6:33)
+// CHECK-NEXT: #loc3 = loc({{.*}}:7:9)
+// CHECK-NEXT: #loc4 = loc({{.*}}:7:2)
 // CHECK-EMPTY:

@@ -75,46 +75,52 @@ contract C {
 // CHECK-NEXT:       sol.return
 // CHECK-NEXT:     }
 // CHECK-NEXT:     sol.func @slotRewrite_36() -> ui256 attributes {id = 36 : i64, orig_fn_type = () -> ui256, selector = 747285107 : i32, state_mutability = #NonPayable} {
-// CHECK-NEXT:       %0 = sol.addr_of @sa_3 : !sol.array<? x ui256, Storage>
-// CHECK-NEXT:       %1 = sol.push %0 : !sol.array<? x ui256, Storage> -> !sol.ptr<ui256, Storage>
+// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack>
+// CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256
+// CHECK-NEXT:       sol.store %c0_ui256, %0 : ui256, !sol.ptr<ui256, Stack>
+// CHECK-NEXT:       %1 = sol.addr_of @sa_3 : !sol.array<? x ui256, Storage>
+// CHECK-NEXT:       %2 = sol.push %1 : !sol.array<? x ui256, Storage> -> !sol.ptr<ui256, Storage>
 // CHECK-NEXT:       %c1_ui8 = sol.constant 1 : ui8
-// CHECK-NEXT:       %2 = sol.cast %c1_ui8 : ui8 to ui256
-// CHECK-NEXT:       sol.store %2, %1 : ui256, !sol.ptr<ui256, Storage>
-// CHECK-NEXT:       %3 = sol.addr_of @sb_6 : !sol.array<? x ui256, Storage>
-// CHECK-NEXT:       %4 = sol.push %3 : !sol.array<? x ui256, Storage> -> !sol.ptr<ui256, Storage>
+// CHECK-NEXT:       %3 = sol.cast %c1_ui8 : ui8 to ui256
+// CHECK-NEXT:       sol.store %3, %2 : ui256, !sol.ptr<ui256, Storage>
+// CHECK-NEXT:       %4 = sol.addr_of @sb_6 : !sol.array<? x ui256, Storage>
+// CHECK-NEXT:       %5 = sol.push %4 : !sol.array<? x ui256, Storage> -> !sol.ptr<ui256, Storage>
 // CHECK-NEXT:       %c2_ui8 = sol.constant 2 : ui8
-// CHECK-NEXT:       %5 = sol.cast %c2_ui8 : ui8 to ui256
-// CHECK-NEXT:       sol.store %5, %4 : ui256, !sol.ptr<ui256, Storage>
-// CHECK-NEXT:       %6 = sol.addr_of @sa_3 : !sol.array<? x ui256, Storage>
-// CHECK-NEXT:       %7 = sol.alloca : !sol.ptr<!sol.array<? x ui256, Storage>, Stack>
-// CHECK-NEXT:       sol.store %6, %7 : !sol.array<? x ui256, Storage>, !sol.ptr<!sol.array<? x ui256, Storage>, Stack>
+// CHECK-NEXT:       %6 = sol.cast %c2_ui8 : ui8 to ui256
+// CHECK-NEXT:       sol.store %6, %5 : ui256, !sol.ptr<ui256, Storage>
+// CHECK-NEXT:       %7 = sol.addr_of @sa_3 : !sol.array<? x ui256, Storage>
+// CHECK-NEXT:       %8 = sol.alloca : !sol.ptr<!sol.array<? x ui256, Storage>, Stack>
+// CHECK-NEXT:       sol.store %7, %8 : !sol.array<? x ui256, Storage>, !sol.ptr<!sol.array<? x ui256, Storage>, Stack>
 // CHECK-NEXT:       sol.inline_asm {
-// CHECK-NEXT:         %11 = sol.yul_state_var_slot @sb_6
-// CHECK-NEXT:         %12 = sol.yul_storage_slot %7 : !sol.ptr<!sol.array<? x ui256, Storage>, Stack> -> !yul.ptr
-// CHECK-NEXT:         yul.store %11, %12 : i256, !yul.ptr
+// CHECK-NEXT:         %12 = sol.yul_state_var_slot @sb_6
+// CHECK-NEXT:         %13 = sol.yul_storage_slot %8 : !sol.ptr<!sol.array<? x ui256, Storage>, Stack> -> !yul.ptr
+// CHECK-NEXT:         yul.store %12, %13 : i256, !yul.ptr
 // CHECK-NEXT:       }
-// CHECK-NEXT:       %8 = sol.load %7 : !sol.ptr<!sol.array<? x ui256, Storage>, Stack>, !sol.array<? x ui256, Storage>
+// CHECK-NEXT:       %9 = sol.load %8 : !sol.ptr<!sol.array<? x ui256, Storage>, Stack>, !sol.array<? x ui256, Storage>
 // CHECK-NEXT:       %c0_ui8 = sol.constant 0 : ui8
-// CHECK-NEXT:       %9 = sol.gep %8, %c0_ui8 : !sol.array<? x ui256, Storage>, ui8, !sol.ptr<ui256, Storage>
-// CHECK-NEXT:       %10 = sol.load %9 : !sol.ptr<ui256, Storage>, ui256
-// CHECK-NEXT:       sol.return %10 : ui256
+// CHECK-NEXT:       %10 = sol.gep %9, %c0_ui8 : !sol.array<? x ui256, Storage>, ui8, !sol.ptr<ui256, Storage>
+// CHECK-NEXT:       %11 = sol.load %10 : !sol.ptr<ui256, Storage>, ui256
+// CHECK-NEXT:       sol.return %11 : ui256
 // CHECK-NEXT:     }
 // CHECK-NEXT:     sol.func @memRewrite_54() -> ui256 attributes {id = 54 : i64, orig_fn_type = () -> ui256, selector = 1542083971 : i32, state_mutability = #Pure} {
-// CHECK-NEXT:       %0 = sol.string_lit "\AA" -> !sol.string<Memory>
-// CHECK-NEXT:       %1 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack>
-// CHECK-NEXT:       sol.store %0, %1 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack>
-// CHECK-NEXT:       %2 = sol.string_lit "\BB\CC" -> !sol.string<Memory>
-// CHECK-NEXT:       %3 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack>
-// CHECK-NEXT:       sol.store %2, %3 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack>
+// CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack>
+// CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256
+// CHECK-NEXT:       sol.store %c0_ui256, %0 : ui256, !sol.ptr<ui256, Stack>
+// CHECK-NEXT:       %1 = sol.string_lit "\AA" -> !sol.string<Memory>
+// CHECK-NEXT:       %2 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack>
+// CHECK-NEXT:       sol.store %1, %2 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack>
+// CHECK-NEXT:       %3 = sol.string_lit "\BB\CC" -> !sol.string<Memory>
+// CHECK-NEXT:       %4 = sol.alloca : !sol.ptr<!sol.string<Memory>, Stack>
+// CHECK-NEXT:       sol.store %3, %4 : !sol.string<Memory>, !sol.ptr<!sol.string<Memory>, Stack>
 // CHECK-NEXT:       sol.inline_asm {
-// CHECK-NEXT:         %6 = sol.yul_ptr_cast %3 : !sol.ptr<!sol.string<Memory>, Stack> -> !yul.ptr
-// CHECK-NEXT:         %7 = yul.load %6 : !yul.ptr -> i256
-// CHECK-NEXT:         %8 = sol.yul_ptr_cast %1 : !sol.ptr<!sol.string<Memory>, Stack> -> !yul.ptr
-// CHECK-NEXT:         yul.store %7, %8 : i256, !yul.ptr
+// CHECK-NEXT:         %7 = sol.yul_ptr_cast %4 : !sol.ptr<!sol.string<Memory>, Stack> -> !yul.ptr
+// CHECK-NEXT:         %8 = yul.load %7 : !yul.ptr -> i256
+// CHECK-NEXT:         %9 = sol.yul_ptr_cast %2 : !sol.ptr<!sol.string<Memory>, Stack> -> !yul.ptr
+// CHECK-NEXT:         yul.store %8, %9 : i256, !yul.ptr
 // CHECK-NEXT:       }
-// CHECK-NEXT:       %4 = sol.load %1 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory>
-// CHECK-NEXT:       %5 = sol.length %4 : !sol.string<Memory>
-// CHECK-NEXT:       sol.return %5 : ui256
+// CHECK-NEXT:       %5 = sol.load %2 : !sol.ptr<!sol.string<Memory>, Stack>, !sol.string<Memory>
+// CHECK-NEXT:       %6 = sol.length %5 : !sol.string<Memory>
+// CHECK-NEXT:       sol.return %6 : ui256
 // CHECK-NEXT:     }
 // CHECK-NEXT:     sol.func @fn_58() attributes {id = 58 : i64, orig_fn_type = () -> (), selector = -1532836853 : i32, state_mutability = #NonPayable} {
 // CHECK-NEXT:       sol.return

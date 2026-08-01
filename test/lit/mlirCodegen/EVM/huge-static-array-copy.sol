@@ -130,8 +130,8 @@ contract C {
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     func.func @copy_21() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       %c1_i256 = arith.constant 1 : i256 loc(#loc)
-// CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:       %c18446744073709551616_i256 = arith.constant 18446744073709551616 : i256 loc(#loc)
+// CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc)
 // CHECK-NEXT:       cf.br ^bb1(%c0_i256 : i256) loc(#loc3)
 // CHECK-NEXT:     ^bb1(%0: i256 loc({{.*}}:8:8)):  // 2 preds: ^bb0, ^bb2
 // CHECK-NEXT:       %1 = arith.cmpi ult, %0, %c18446744073709551616_i256 : i256 loc(#loc3)
