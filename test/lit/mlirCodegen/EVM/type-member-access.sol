@@ -282,7 +282,11 @@ contract B is A(A.x += 8) {
 // CHECK-NEXT:       llvm.unreachable loc(#loc1)
 // CHECK-NEXT:     } loc(#loc1)
 // CHECK-NEXT:     func.func @f_28() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
-// CHECK-NEXT:       %c7_i256 = arith.constant 7 : i256 loc(#loc5)
+// CHECK-NEXT:       %c7_i256 = arith.constant 7 : i256 loc(#loc)
+// CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc)
+// CHECK-NEXT:       %c1_i256 = arith.constant 1 : i256 loc(#loc5)
+// CHECK-NEXT:       %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc5)
+// CHECK-NEXT:       llvm.store %c0_i256, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc5)
 // CHECK-NEXT:       return %c7_i256 : i256 loc(#loc6)
 // CHECK-NEXT:     } loc(#loc4)
 // CHECK-NEXT:     func.func @_12(%arg0: i256 loc({{.*}}:5:14)) attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
@@ -304,7 +308,7 @@ contract B is A(A.x += 8) {
 // CHECK-NEXT: #loc2 = loc({{.*}}:4:2)
 // CHECK-NEXT: #loc3 = loc({{.*}}:8:16)
 // CHECK-NEXT: #loc4 = loc({{.*}}:9:2)
-// CHECK-NEXT: #loc5 = loc({{.*}}:3:20)
+// CHECK-NEXT: #loc5 = loc({{.*}}:9:36)
 // CHECK-NEXT: #loc6 = loc({{.*}}:10:4)
 // CHECK-NEXT: #loc7 = loc({{.*}}:5:2)
 // CHECK-EMPTY:

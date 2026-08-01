@@ -632,6 +632,10 @@ private:
   /// Lowers the variable declaration statement.
   void lower(VariableDeclarationStatement const &);
 
+  /// Lowers the expression of a statement for its side effects, discarding
+  /// the values. Tuple statements are discarded per component.
+  void genDiscardedExpr(Expression const &expr);
+
   /// Lowers the if-then-else statement.
   void lower(IfStatement const &);
 
@@ -2733,8 +2737,17 @@ SolidityToMLIRPass::genExprs(TupleExpression const &tuple) {
     return res;
   }
 
-  for (const ASTPointer<Expression> &subExpr : tuple.components())
-    vals.push_back(genLValExpr(*subExpr));
+  for (const ASTPointer<Expression> &subExpr : tuple.components()) {
+    // Wildcard component of a destructuring assignment: keep a null
+    // placeholder so the flattened sides stay aligned.
+    if (!subExpr) {
+      vals.push_back({});
+      continue;
+    }
+    // Nested tuples and multi-value components (calls, conditionals) are
+    // flattened, matching the component-wise assignment semantics.
+    llvm::append_range(vals, genLValExprs(*subExpr));
+  }
   return vals;
 }
 
@@ -2755,34 +2768,87 @@ void SolidityToMLIRPass::genAssign(mlir::Value lhs, mlir::Value rhs,
   }
 }
 
+/// Number of scalar leaves a type contributes to a flattened tuple.
+static size_t tupleLeafCount(Type const *ty) {
+  if (const auto *tupleTy = dynamic_cast<TupleType const *>(ty)) {
+    size_t n = 0;
+    for (Type const *comp : tupleTy->components())
+      // A tuple type slot may be null for an omitted (wildcard) component.
+      n += comp ? tupleLeafCount(comp) : 1;
+    return n;
+  }
+  return 1;
+}
+
+/// Flattens the (possibly nested) left-hand side of an assignment into its
+/// non-tuple components. Null entries denote wildcards of a destructuring
+/// assignment. \p rhsTy is the type of the right-hand side paired with \p
+/// expr: a wildcard's slot type is not recorded on the left-hand side (the
+/// LHS type of `(a, ) = (4, (8, 16, 32))` is `tuple(int,)`), so the number of
+/// leaves a wildcard absorbs is taken from the right-hand side instead.
+static void
+flattenLHSComponents(Expression const &expr, Type const *rhsTy,
+                     mlir::SmallVectorImpl<Expression const *> &out) {
+  const auto *tuple = dynamic_cast<TupleExpression const *>(&expr);
+  if (!tuple || tuple->isInlineArray()) {
+    out.push_back(&expr);
+    return;
+  }
+  const auto *rhsTupleTy = dynamic_cast<TupleType const *>(rhsTy);
+  bool haveRhsSlots =
+      rhsTupleTy &&
+      rhsTupleTy->components().size() == tuple->components().size();
+  for (size_t i = 0; i < tuple->components().size(); ++i) {
+    ASTPointer<Expression> const &comp = tuple->components()[i];
+    Type const *compRhsTy = haveRhsSlots ? rhsTupleTy->components()[i] : nullptr;
+    if (comp)
+      flattenLHSComponents(*comp, compRhsTy, out);
+    else
+      out.append(compRhsTy ? tupleLeafCount(compRhsTy) : 1, nullptr);
+  }
+}
+
 mlir::SmallVector<mlir::Value>
 SolidityToMLIRPass::lower(Assignment const &asgnStmt) {
   mlir::Location loc = getLoc(asgnStmt);
 
-  mlir::SmallVector<mlir::Value> lhsVals =
-      genLValExprs(asgnStmt.leftHandSide());
-  mlir::SmallVector<mlir::Value> rhsVals =
-      genRValExprs(asgnStmt.rightHandSide());
-  assert(lhsVals.size() == rhsVals.size());
-
   if (asgnStmt.assignmentOperator() == Token::Assign) {
-    for (auto [lhsVal, rhsVal] : llvm::zip(lhsVals, rhsVals))
-      genAssign(lhsVal, rhsVal, loc);
+    // The right-hand side is evaluated first (left to right); the left-hand
+    // side components are then resolved and assigned right to left, matching
+    // the old codegen (e.g. `(y, y, y) = (1, 2, 3)` leaves y == 1).
+    mlir::SmallVector<mlir::Value> rhsVals =
+        genRValExprs(asgnStmt.rightHandSide());
+    mlir::SmallVector<Expression const *> lhsComps;
+    flattenLHSComponents(asgnStmt.leftHandSide(),
+                         asgnStmt.rightHandSide().annotation().type, lhsComps);
+    assert(lhsComps.size() == rhsVals.size());
 
-    // Compound assignment statement
-  } else {
-    assert(lhsVals.size() == 1);
-    mlir::Value lhs = lhsVals.front();
-    mlir::Value rhs = rhsVals.front();
-    mlir::Value lhsAsRVal = genRValExpr(lhs, loc);
-    Token binOp =
-        TokenTraits::AssignmentToBinaryOp(asgnStmt.assignmentOperator());
-    b.create<mlir::sol::StoreOp>(
-        loc,
-        genBinExpr(binOp, lhsAsRVal, genCast(rhs, lhsAsRVal.getType()), loc),
-        lhs);
+    // The left-hand side lvalue references are evaluated left to right before
+    // any store happens (e.g. `(s[1], s) = (4, [0])` resolves s[1] against the
+    // old array), and the stores are then performed right to left — the old
+    // codegen's stack discipline. Wildcard components discard the
+    // corresponding right-hand side value.
+    mlir::SmallVector<mlir::Value> lhsVals(lhsComps.size());
+    for (size_t i = 0; i < lhsComps.size(); ++i)
+      if (lhsComps[i])
+        lhsVals[i] = genLValExpr(*lhsComps[i]);
+    for (size_t i = lhsComps.size(); i-- > 0;)
+      if (lhsVals[i])
+        genAssign(lhsVals[i], rhsVals[i], loc);
+    return lhsVals;
   }
-  return lhsVals;
+
+  // Compound assignment statement. The right-hand side is evaluated before
+  // the left-hand side, as in the old codegen.
+  mlir::Value rhs = genRValExpr(asgnStmt.rightHandSide());
+  mlir::Value lhs = genLValExpr(asgnStmt.leftHandSide());
+  mlir::Value lhsAsRVal = genRValExpr(lhs, loc);
+  Token binOp =
+      TokenTraits::AssignmentToBinaryOp(asgnStmt.assignmentOperator());
+  b.create<mlir::sol::StoreOp>(
+      loc, genBinExpr(binOp, lhsAsRVal, genCast(rhs, lhsAsRVal.getType()), loc),
+      lhs);
+  return {lhs};
 }
 
 mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
@@ -2901,10 +2967,11 @@ SolidityToMLIRPass::genRValExprs(Expression const &expr,
   mlir::SmallVector<mlir::Value, 2> rVals;
   if (resTys.empty()) {
     for (mlir::Value lVal : lVals)
-      rVals.push_back(genRValExpr(lVal, getLoc(expr)));
+      rVals.push_back(lVal ? genRValExpr(lVal, getLoc(expr)) : mlir::Value());
   } else {
     for (auto [lVal, resTy] : llvm::zip(lVals, resTys))
-      rVals.push_back(genRValExpr(lVal, getLoc(expr), resTy));
+      rVals.push_back(lVal ? genRValExpr(lVal, getLoc(expr), resTy)
+                           : mlir::Value());
   }
 
   return rVals;
@@ -2916,13 +2983,33 @@ static bool needsDiscardedLoad(Expression const &expr) {
          dynamic_cast<MemberAccess const *>(&expr);
 }
 
-void SolidityToMLIRPass::lower(ExpressionStatement const &exprStmt) {
-  mlir::Value expr = genLValExpr(exprStmt.expression());
-  if (expr && mlir::isa<mlir::sol::PointerType>(expr.getType()) &&
-      needsDiscardedLoad(exprStmt.expression()))
+void SolidityToMLIRPass::genDiscardedExpr(Expression const &expr) {
+  // Tuple statements discard each component individually so that the
+  // load-side semantics below apply per component.
+  if (const auto *tuple = dynamic_cast<TupleExpression const *>(&expr)) {
+    if (!tuple->isInlineArray()) {
+      for (ASTPointer<Expression> const &comp : tuple->components())
+        if (comp)
+          genDiscardedExpr(*comp);
+      return;
+    }
+  }
+
+  // Multi-value expressions (e.g. a discarded call returning several values)
+  // are lowered for their side effects only.
+  mlir::SmallVector<mlir::Value> vals = genLValExprs(expr);
+  if (vals.size() != 1)
+    return;
+  mlir::Value val = vals.front();
+  if (val && mlir::isa<mlir::sol::PointerType>(val.getType()) &&
+      needsDiscardedLoad(expr))
     // Discarded lvalue expressions still need a load so calldata validation
     // and other load-side cleanup semantics are preserved.
-    (void)b.create<mlir::sol::LoadOp>(getLoc(exprStmt.expression()), expr);
+    (void)b.create<mlir::sol::LoadOp>(getLoc(expr), val);
+}
+
+void SolidityToMLIRPass::lower(ExpressionStatement const &exprStmt) {
+  genDiscardedExpr(exprStmt.expression());
 }
 
 void SolidityToMLIRPass::lower(
@@ -3552,11 +3639,12 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
                                            getLoc(*param)));
   }
 
-  // Allocate and zero-initialize named return parameters so they can be
-  // loaded at implicit-return sites.
+  // Allocate and zero-initialize return parameters so they can be loaded at
+  // implicit-return sites. Unnamed parameters get the same treatment: the old
+  // codegen allocates (and for memory reference types, heap-allocates) every
+  // return variable at function entry, which is observable through the free
+  // memory pointer.
   for (const auto &param : fn.returnParameters()) {
-    if (param->name().empty())
-      continue;
     mlir::Location paramLoc = getLoc(*param);
     mlir::Type paramTy = getType(param->annotation().type);
     auto addr = b.create<mlir::sol::AllocaOp>(
@@ -3657,24 +3745,11 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
   }
 
   mlir::SmallVector<mlir::Value> retVals;
-  // Unnamed params are lowered as zero-initialized temporaries. Named
-  // params are loaded from their corresponding local variables.
-  for (const auto &param : fn.returnParameters()) {
-    mlir::Type paramTy = getType(param->annotation().type);
-    if (param->name().empty()) {
-      // Unnamed return param: allocate and zero-initialize a temporary, then
-      // load it as the return value.
-      auto addr = b.create<mlir::sol::AllocaOp>(
-          fnLoc, mlir::sol::PointerType::get(b.getContext(), paramTy,
-                                             mlir::sol::DataLocation::Stack));
-      genDefaultVal(addr);
-      retVals.push_back(b.create<mlir::sol::LoadOp>(fnLoc, addr));
-    } else {
-      // Named return param: load from its local variable address.
-      retVals.push_back(
-          b.create<mlir::sol::LoadOp>(fnLoc, getLocalVarAddr(*param)));
-    }
-  }
+  // Load all return params (named and unnamed) from the zero-initialized
+  // local variables allocated at function entry.
+  for (const auto &param : fn.returnParameters())
+    retVals.push_back(
+        b.create<mlir::sol::LoadOp>(fnLoc, getLocalVarAddr(*param)));
   b.create<mlir::sol::ReturnOp>(fnLoc, retVals);
 
   b.setInsertionPointAfter(op);

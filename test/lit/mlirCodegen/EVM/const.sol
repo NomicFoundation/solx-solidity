@@ -8,19 +8,27 @@ function ui256() returns (uint256) { return 578960446186580977117854925043439539
 // CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka, sol.revert_strings = #Default} {
 // CHECK-NEXT:   func.func @ui8_8() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
-// CHECK-NEXT:     %c42_i256 = arith.constant 42 : i256 loc(#loc2)
+// CHECK-NEXT:     %c42_i256 = arith.constant 42 : i256 loc(#loc)
+// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
+// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc2)
+// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc2)
+// CHECK-NEXT:     llvm.store %c0_i256, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc2)
 // CHECK-NEXT:     return %c42_i256 : i256 loc(#loc3)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT:   func.func @ui256_16() -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
-// CHECK-NEXT:     %c-57896044618658097711785492504343953926634992332820282019728792003956564819968_i256 = arith.constant -57896044618658097711785492504343953926634992332820282019728792003956564819968 : i256 loc(#loc5)
+// CHECK-NEXT:     %c-57896044618658097711785492504343953926634992332820282019728792003956564819968_i256 = arith.constant -57896044618658097711785492504343953926634992332820282019728792003956564819968 : i256 loc(#loc)
+// CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256 loc(#loc)
+// CHECK-NEXT:     %c1_i256 = arith.constant 1 : i256 loc(#loc5)
+// CHECK-NEXT:     %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc5)
+// CHECK-NEXT:     llvm.store %c0_i256, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc5)
 // CHECK-NEXT:     return %c-57896044618658097711785492504343953926634992332820282019728792003956564819968_i256 : i256 loc(#loc6)
 // CHECK-NEXT:   } loc(#loc4)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
-// CHECK-NEXT: #loc2 = loc({{.*}}:2:42)
+// CHECK-NEXT: #loc2 = loc({{.*}}:2:24)
 // CHECK-NEXT: #loc3 = loc({{.*}}:2:35)
 // CHECK-NEXT: #loc4 = loc({{.*}}:3:0)
-// CHECK-NEXT: #loc5 = loc({{.*}}:3:44)
+// CHECK-NEXT: #loc5 = loc({{.*}}:3:26)
 // CHECK-NEXT: #loc6 = loc({{.*}}:3:37)
 // CHECK-EMPTY:

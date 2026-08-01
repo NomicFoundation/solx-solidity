@@ -10,13 +10,17 @@ function ret_42() returns (uint256) {
 // CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka, sol.revert_strings = #Default} {
 // CHECK-NEXT:   sol.func @ret_42_8() -> ui256 attributes {id = 8 : i64, state_mutability = #NonPayable} {
-// CHECK-NEXT:     %c42_ui8 = sol.constant 42 : ui8 loc(#loc2)
-// CHECK-NEXT:     %0 = sol.cast %c42_ui8 : ui8 to ui256 loc(#loc2)
-// CHECK-NEXT:     sol.return %0 : ui256 loc(#loc3)
+// CHECK-NEXT:     %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc2)
+// CHECK-NEXT:     %c0_ui256 = sol.constant 0 : ui256 loc(#loc2)
+// CHECK-NEXT:     sol.store %c0_ui256, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc2)
+// CHECK-NEXT:     %c42_ui8 = sol.constant 42 : ui8 loc(#loc3)
+// CHECK-NEXT:     %1 = sol.cast %c42_ui8 : ui8 to ui256 loc(#loc3)
+// CHECK-NEXT:     sol.return %1 : ui256 loc(#loc4)
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
 // CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
-// CHECK-NEXT: #loc2 = loc({{.*}}:3:9)
-// CHECK-NEXT: #loc3 = loc({{.*}}:3:2)
+// CHECK-NEXT: #loc2 = loc({{.*}}:2:27)
+// CHECK-NEXT: #loc3 = loc({{.*}}:3:9)
+// CHECK-NEXT: #loc4 = loc({{.*}}:3:2)
 // CHECK-EMPTY:
