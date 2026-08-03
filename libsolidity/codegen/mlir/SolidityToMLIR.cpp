@@ -1766,6 +1766,19 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
                                            genRValExpr(memberAcc.expression()));
     }
     break;
+  case Type::Category::FixedBytes: {
+    auto const *fixedBytesTy = dynamic_cast<FixedBytesType const *>(memberAccTy);
+    assert(fixedBytesTy);
+    assert(memberName == "length" && "Illegal fixed bytes member");
+    // The length is a compile-time constant, but the base expression must
+    // still be evaluated for its side effects.
+    (void)genRValExpr(memberAcc.expression());
+    auto ui8Ty = b.getIntegerType(8, /*isSigned=*/false);
+    auto len = b.create<mlir::sol::ConstantOp>(
+        loc,
+        b.getIntegerAttr(ui8Ty, llvm::APInt(8, fixedBytesTy->numBytes())));
+    return genCast(len, getType(memberAcc.annotation().type));
+  }
   case Type::Category::Struct: {
     const auto *structTy = dynamic_cast<StructType const *>(memberAccTy);
     auto memberIdx = genUnsignedConst(structTy->index(memberAcc.memberName()),
