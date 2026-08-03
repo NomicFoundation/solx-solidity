@@ -1568,11 +1568,23 @@ mlir::Value SolidityToMLIRPass::genCompileTimeFunctionSelector(
     (void)genLValExpr(expr);
   };
 
+  // Call options attached to an uncalled function reference (e.g.
+  // `this.g{gas: 42}.selector`) are evaluated for their side effects. The
+  // selector comes from the underlying reference.
+  Expression const *unwrappedFnExpr = &fnExpr;
+  while (auto const *opts =
+             dynamic_cast<FunctionCallOptions const *>(unwrappedFnExpr)) {
+    for (ASTPointer<Expression const> const &optExpr : opts->options())
+      (void)genRValExpr(*optExpr);
+    unwrappedFnExpr = &opts->expression();
+  }
+
   // Preserve side effects of the base expression in forms like 'expr.f'.
-  if (auto const *fnMember = dynamic_cast<MemberAccess const *>(&fnExpr))
+  if (auto const *fnMember =
+          dynamic_cast<MemberAccess const *>(unwrappedFnExpr))
     genExprSideEffects(fnMember->expression());
   else
-    genExprSideEffects(fnExpr);
+    genExprSideEffects(*unwrappedFnExpr);
 
   if (fnTy.hasDeclaration()) {
     auto selector = fnTy.externalIdentifier().convert_to<uint32_t>();
@@ -1604,7 +1616,8 @@ mlir::Value SolidityToMLIRPass::genCompileTimeFunctionSelector(
   };
 
   // Handle unresolved declaration in cases like 'this.f'.
-  if (auto const *fnMember = dynamic_cast<MemberAccess const *>(&fnExpr))
+  if (auto const *fnMember =
+          dynamic_cast<MemberAccess const *>(unwrappedFnExpr))
     return genSelectorFromDecl(fnMember->annotation().referencedDeclaration);
 
   return {};
@@ -1798,8 +1811,13 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
     if (memberName == "address") {
       Expression const *fnExpr = &memberAcc.expression();
       while (auto const *opts =
-                 dynamic_cast<FunctionCallOptions const *>(fnExpr))
+                 dynamic_cast<FunctionCallOptions const *>(fnExpr)) {
+        // Call options are evaluated for their side effects even though the
+        // address comes from the underlying reference.
+        for (ASTPointer<Expression const> const &optExpr : opts->options())
+          (void)genRValExpr(*optExpr);
         fnExpr = &opts->expression();
+      }
       auto const &fnTy = dynamic_cast<FunctionType const &>(*memberAccTy);
       mlir::Type addrTy =
           mlir::sol::AddressType::get(b.getContext(), /*payable=*/false);
@@ -1862,6 +1880,37 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
   }
   }
 
+  // An isolated (uncalled) reference to a builtin member function (e.g.
+  // `data.pop;`, `payable(this).transfer;`) yields no value. Only the base
+  // expression is evaluated, matching the legacy codegen.
+  if (auto const *fnTy =
+          dynamic_cast<FunctionType const *>(memberAcc.annotation().type)) {
+    switch (fnTy->kind()) {
+    case FunctionType::Kind::ArrayPush:
+    case FunctionType::Kind::ArrayPop:
+    case FunctionType::Kind::Transfer:
+    case FunctionType::Kind::Send:
+    case FunctionType::Kind::BareCall:
+    case FunctionType::Kind::BareCallCode:
+    case FunctionType::Kind::BareDelegateCall:
+    case FunctionType::Kind::BareStaticCall:
+      (void)genRValExpr(memberAcc.expression());
+      return {};
+    // Builtins on magic bases (`abi.encode`, `bytes.concat`): the base has
+    // no runtime representation and no side effects to evaluate.
+    case FunctionType::Kind::ABIEncode:
+    case FunctionType::Kind::ABIEncodePacked:
+    case FunctionType::Kind::ABIEncodeWithSelector:
+    case FunctionType::Kind::ABIEncodeWithSignature:
+    case FunctionType::Kind::ABIDecode:
+    case FunctionType::Kind::BytesConcat:
+    case FunctionType::Kind::StringConcat:
+      return {};
+    default:
+      break;
+    }
+  }
+
   llvm_unreachable("NYI");
 }
 
@@ -1893,7 +1942,8 @@ SolidityToMLIRPass::parseLowLevelCallInfo(FunctionCall const &call,
     }
     info.callExpr = &fnCallOpt->expression();
   }
-  info.memberAcc = dynamic_cast<MemberAccess const *>(info.callExpr);
+  info.memberAcc = dynamic_cast<MemberAccess const *>(
+      resolveOuterUnaryTuples(info.callExpr));
 
   // memberAcc is null for indirect calls via function pointers.
   if (info.memberAcc &&
@@ -2128,8 +2178,8 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     // location (e.g. an attached call on a calldata array whose callee takes
     // memory requires a copy).
     if (calleeTy->hasBoundFirstArgument()) {
-      auto const *memberAcc =
-          dynamic_cast<MemberAccess const *>(&call.expression());
+      auto const *memberAcc = dynamic_cast<MemberAccess const *>(
+          resolveOuterUnaryTuples(&call.expression()));
       assert(memberAcc && "Expected a member access as the bound call base");
       args.push_back(genRValExpr(memberAcc->expression(),
                                  getType(calleeTy->selfType())));
@@ -2232,8 +2282,8 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
   case FunctionType::Kind::Transfer: {
     assert(astArgs.size() == 1);
 
-    const auto *memberAcc =
-        dynamic_cast<MemberAccess const *>(&call.expression());
+    const auto *memberAcc = dynamic_cast<MemberAccess const *>(
+        resolveOuterUnaryTuples(&call.expression()));
     assert(memberAcc);
 
     mlir::Value addr = genRValExpr(
@@ -2612,8 +2662,8 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
 
   case FunctionType::Kind::ArrayPush:
   case FunctionType::Kind::ArrayPop: {
-    const auto *memberAcc =
-        dynamic_cast<MemberAccess const *>(&call.expression());
+    const auto *memberAcc = dynamic_cast<MemberAccess const *>(
+        resolveOuterUnaryTuples(&call.expression()));
     solAssert(memberAcc);
 
     // Lower `pop`
@@ -3980,7 +4030,19 @@ bool CompilerStack::runMlirPipeline() {
           // lowerFreeFuncs here: it would place them at module level where they
           // are invisible to callers inside sol.contract, and multiple call
           // sites would produce duplicate symbols.
-          gen.lower(*contr);
+          //
+          // An exception escaping the thread-pool task would silently drop
+          // this contract's output while the job still reports success -
+          // record it as an error instead.
+          try {
+            gen.lower(*contr);
+          } catch (std::exception const &e) {
+            hadError.store(true, std::memory_order_relaxed);
+            std::lock_guard<std::mutex> g(errMtx);
+            llvm::errs() << "Exception lowering contract " << contr->name()
+                         << ": " << e.what() << "\n";
+            return;
+          }
           mlir::ModuleOp mod = gen.getModule();
 
           // Verify the module.

@@ -23,6 +23,7 @@
 
 #include <libsolidity/ast/AST.h>
 
+#include <libsolidity/ast/ASTUtils.h>
 #include <libsolidity/ast/CallGraph.h>
 #include <libsolidity/ast/ASTVisitor.h>
 #include <libsolidity/ast/AST_accept.h>
@@ -73,14 +74,16 @@ Declaration const* ASTNode::referencedDeclaration(Expression const& _expression)
 
 FunctionDefinition const* ASTNode::resolveFunctionCall(FunctionCall const& _functionCall, ContractDefinition const* _mostDerivedContract)
 {
+	// Parenthesized callees like `(x.f)()` still resolve statically.
+	Expression const& calleeExpr = *resolveOuterUnaryTuples(&_functionCall.expression());
 	auto const* functionDef = dynamic_cast<FunctionDefinition const*>(
-		ASTNode::referencedDeclaration(_functionCall.expression())
+		ASTNode::referencedDeclaration(calleeExpr)
 	);
 
 	if (!functionDef)
 		return nullptr;
 
-	if (auto const* memberAccess = dynamic_cast<MemberAccess const*>(&_functionCall.expression()))
+	if (auto const* memberAccess = dynamic_cast<MemberAccess const*>(&calleeExpr))
 	{
 		if (*memberAccess->annotation().requiredLookup == VirtualLookup::Super)
 		{
@@ -100,7 +103,7 @@ FunctionDefinition const* ASTNode::resolveFunctionCall(FunctionCall const& _func
 		else
 			solAssert(*memberAccess->annotation().requiredLookup == VirtualLookup::Static, "");
 	}
-	else if (auto const* identifier = dynamic_cast<Identifier const*>(&_functionCall.expression()))
+	else if (auto const* identifier = dynamic_cast<Identifier const*>(&calleeExpr))
 	{
 		solAssert(*identifier->annotation().requiredLookup == VirtualLookup::Virtual, "");
 		if (functionDef->virtualSemantics())
