@@ -1,8 +1,8 @@
+# Comment and blank lines are ignored: mlirSemtests.sh matches entries against
+# test names with `grep -F -x`, so only exact test-name lines have any effect.
+
 semanticTests/abiEncoderV2/calldata_struct_array_reencode
 semanticTests/arithmetics/block_inside_unchecked
-semanticTests/array/array_function_pointers
-semanticTests/array/array_storage_push_empty
-semanticTests/array/fixed_bytes_length_access
 semanticTests/array/pop/array_pop_isolated
 semanticTests/array/pop/byte_array_pop_isolated
 semanticTests/array/pop/parenthesized
@@ -62,7 +62,6 @@ semanticTests/userDefinedValueType/conversion_abicoderv1
 semanticTests/various/code_access_content
 semanticTests/various/code_access_padding
 semanticTests/various/code_access_runtime
-semanticTests/various/code_length_contract_member
 semanticTests/various/crazy_elementary_typenames_on_stack
 semanticTests/various/super_alone
 semanticTests/various/super_parentheses
@@ -74,3 +73,18 @@ semanticTests/viaYul/dirty_memory_struct
 semanticTests/viaYul/dirty_memory_uint32
 semanticTests/viaYul/unary_operations
 semanticTests/virtualFunctions/internal_virtual_function_calls_through_dispatch
+
+# Gas-observability divergences: state semantics match legacy/via-ir, but the
+# tests pin out-of-gas outcomes that LLVM-optimized code does not reproduce
+# (LLVM does not model gas, so it removes or folds gas-metered dead operations).
+# Do not re-triage as semantic bugs.
+#
+# array_function_pointers: f() provably reverts on all paths and nothing reads
+# heap memory, so DSE deletes the 58MB zero-fill calldatacopy -> no memory
+# expansion -> Panic(0x51) with returndata instead of OOG (empty returndata).
+#
+# array_storage_push_empty: keccak256 of the constant slot word is folded to a
+# constant and redundant length sloads/bounds checks are eliminated, so
+# pushEmpty(38869) finishes under the 100M gas limit instead of OOG.
+semanticTests/array/array_function_pointers
+semanticTests/array/array_storage_push_empty
