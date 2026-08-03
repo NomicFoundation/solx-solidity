@@ -376,7 +376,7 @@ contract C {
 // CHECK-NEXT:       %6 = sol.load %5 : !sol.ptr<!sol.ext_func_ref<(ui256, ui256) -> ui256>, Memory>, !sol.ext_func_ref<(ui256, ui256) -> ui256> loc(#loc117)
 // CHECK-NEXT:       %7 = sol.gasleft : ui256 loc(#loc117)
 // CHECK-NEXT:       %c0_ui256_0 = sol.constant 0 : ui256 loc(#loc117)
-// CHECK-NEXT:       %8:2 = sol.ext_icall %6(%2, %3) gas %7 value %c0_ui256_0 {static_call} : !sol.ext_func_ref<(ui256, ui256) -> ui256>, (ui256, ui256) -> (i1, ui256) loc(#loc117)
+// CHECK-NEXT:       %8:2 = sol.ext_icall %6(%2, %3) gas %7 value %c0_ui256_0 {static_call} : <(ui256, ui256) -> ui256>, (ui256, ui256) -> (i1, ui256) loc(#loc117)
 // CHECK-NEXT:       sol.return %8#1 : ui256 loc(#loc119)
 // CHECK-NEXT:     } loc(#loc112)
 // CHECK-NEXT:     sol.func @storeMemoryFnPtr_317(%arg0: !sol.array<? x !sol.ext_func_ref<(ui256, ui256) -> ui256>, Memory> loc({{.*}}:82:28), %arg1: !sol.ext_func_ref<(ui256, ui256) -> ui256> loc({{.*}}:83:28)) attributes {id = 317 : i64, orig_fn_type = (!sol.array<? x !sol.ext_func_ref<(ui256, ui256) -> ui256>, Memory>, !sol.ext_func_ref<(ui256, ui256) -> ui256>) -> (), selector = 435044947 : i32, state_mutability = #Pure} {

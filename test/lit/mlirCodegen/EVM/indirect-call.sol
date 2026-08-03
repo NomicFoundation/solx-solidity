@@ -1217,58 +1217,47 @@ contract C {
 // CHECK-NEXT:       return %60 : i256 loc(#loc64)
 // CHECK-NEXT:     } loc(#loc57)
 // CHECK-NEXT:     func.func @m_76(%arg0: i256 loc({{.*}}:14:13)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
+// CHECK-NEXT:       %c51_i256 = arith.constant 51 : i256 loc(#loc)
+// CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc)
+// CHECK-NEXT:       %c1_i256 = arith.constant 1 : i256 loc(#loc)
+// CHECK-NEXT:       %0 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc66)
+// CHECK-NEXT:       llvm.store %arg0, %0 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc66)
+// CHECK-NEXT:       %1 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc67)
+// CHECK-NEXT:       llvm.store %c0_i256, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc67)
+// CHECK-NEXT:       %2 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc68)
+// CHECK-NEXT:       llvm.store %c0_i256, %2 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc68)
+// CHECK-NEXT:       llvm.store %c51_i256, %2 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc69)
+// CHECK-NEXT:       %3 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc70)
+// CHECK-NEXT:       %4 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc71)
+// CHECK-NEXT:       %5 = call @__sol.internal_dispatch.rt.51(%4, %3) : (i256, i256) -> i256 loc(#loc71)
+// CHECK-NEXT:       return %5 : i256 loc(#loc72)
+// CHECK-NEXT:     } loc(#loc65)
+// CHECK-NEXT:     func.func @__sol.internal_dispatch.rt.51(%arg0: i256 loc({{.*}}:17:11), %arg1: i256 loc({{.*}}:17:11)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       %0 = llvm.mlir.undef : i256 loc(#loc)
 // CHECK-NEXT:       %c36_i256 = arith.constant 36 : i256 loc(#loc)
 // CHECK-NEXT:       %c81_i256 = arith.constant 81 : i256 loc(#loc)
 // CHECK-NEXT:       %c4_i256 = arith.constant 4 : i256 loc(#loc)
 // CHECK-NEXT:       %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256 = arith.constant 35408467139433450592217433187231851964531694900788300625387963629091585785856 : i256 loc(#loc)
-// CHECK-NEXT:       %c51_i256 = arith.constant 51 : i256 loc(#loc)
 // CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc)
-// CHECK-NEXT:       %c1_i256 = arith.constant 1 : i256 loc(#loc)
-// CHECK-NEXT:       %1 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc66)
-// CHECK-NEXT:       llvm.store %arg0, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc66)
-// CHECK-NEXT:       %2 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc67)
-// CHECK-NEXT:       llvm.store %c0_i256, %2 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc67)
-// CHECK-NEXT:       %3 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc68)
-// CHECK-NEXT:       llvm.store %c0_i256, %3 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc68)
-// CHECK-NEXT:       llvm.store %c51_i256, %3 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc69)
-// CHECK-NEXT:       %4 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc70)
-// CHECK-NEXT:       %5 = llvm.load %3 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc71)
-// CHECK-NEXT:       cf.switch %5 : i256, [
-// CHECK-NEXT:         default: ^bb6,
-// CHECK-NEXT:         273: ^bb1,
-// CHECK-NEXT:         127: ^bb2,
-// CHECK-NEXT:         102: ^bb3,
-// CHECK-NEXT:         76: ^bb4,
-// CHECK-NEXT:         51: ^bb5
+// CHECK-NEXT:       cf.switch %arg0 : i256, [
+// CHECK-NEXT:         default: ^bb2,
+// CHECK-NEXT:         51: ^bb1
 // CHECK-NEXT:       ] loc(#loc71)
 // CHECK-NEXT:     ^bb1:  // pred: ^bb0
-// CHECK-NEXT:       %6 = call @callNonPure_273(%4) : (i256) -> i256 loc(#loc71)
-// CHECK-NEXT:       cf.br ^bb7(%6 : i256) loc(#loc71)
+// CHECK-NEXT:       %1 = call @f_51(%arg1) : (i256) -> i256 loc(#loc71)
+// CHECK-NEXT:       cf.br ^bb3(%1 : i256) loc(#loc71)
 // CHECK-NEXT:     ^bb2:  // pred: ^bb0
-// CHECK-NEXT:       %7 = call @callGas_127(%4) : (i256) -> i256 loc(#loc71)
-// CHECK-NEXT:       cf.br ^bb7(%7 : i256) loc(#loc71)
-// CHECK-NEXT:     ^bb3:  // pred: ^bb0
-// CHECK-NEXT:       %8 = call @call_102(%4) : (i256) -> i256 loc(#loc71)
-// CHECK-NEXT:       cf.br ^bb7(%8 : i256) loc(#loc71)
-// CHECK-NEXT:     ^bb4:  // pred: ^bb0
-// CHECK-NEXT:       %9 = call @m_76(%4) : (i256) -> i256 loc(#loc71)
-// CHECK-NEXT:       cf.br ^bb7(%9 : i256) loc(#loc71)
-// CHECK-NEXT:     ^bb5:  // pred: ^bb0
-// CHECK-NEXT:       %10 = call @f_51(%4) : (i256) -> i256 loc(#loc71)
-// CHECK-NEXT:       cf.br ^bb7(%10 : i256) loc(#loc71)
-// CHECK-NEXT:     ^bb6:  // pred: ^bb0
-// CHECK-NEXT:       %11 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc71)
-// CHECK-NEXT:       llvm.store %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256, %11 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc71)
-// CHECK-NEXT:       %12 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc71)
-// CHECK-NEXT:       llvm.store %c81_i256, %12 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc71)
-// CHECK-NEXT:       %13 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc71)
-// CHECK-NEXT:       "llvm.intrcall"(%13, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc71)
+// CHECK-NEXT:       %2 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc71)
+// CHECK-NEXT:       llvm.store %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256, %2 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc71)
+// CHECK-NEXT:       %3 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc71)
+// CHECK-NEXT:       llvm.store %c81_i256, %3 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc71)
+// CHECK-NEXT:       %4 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc71)
+// CHECK-NEXT:       "llvm.intrcall"(%4, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc71)
 // CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc71)
-// CHECK-NEXT:       cf.br ^bb7(%0 : i256) loc(#loc71)
-// CHECK-NEXT:     ^bb7(%14: i256 loc({{.*}}:17:11)):  // 6 preds: ^bb1, ^bb2, ^bb3, ^bb4, ^bb5, ^bb6
-// CHECK-NEXT:       return %14 : i256 loc(#loc72)
-// CHECK-NEXT:     } loc(#loc65)
+// CHECK-NEXT:       cf.br ^bb3(%0 : i256) loc(#loc71)
+// CHECK-NEXT:     ^bb3(%5: i256 loc({{.*}}:17:11)):  // 2 preds: ^bb1, ^bb2
+// CHECK-NEXT:       return %5 : i256 loc(#loc71)
+// CHECK-NEXT:     } loc(#loc71)
 // CHECK-NEXT:     func.func @f_51(%arg0: i256 loc({{.*}}:13:13)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       %c36_i256 = arith.constant 36 : i256 loc(#loc)
 // CHECK-NEXT:       %c17_i256 = arith.constant 17 : i256 loc(#loc)

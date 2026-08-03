@@ -2342,8 +2342,8 @@ SolidityToMLIRPass::genExprs(FunctionCall const &call) {
     mlir::CallOpInterface callOp;
     if (!callee)
       callOp = b.create<mlir::sol::ICallOp>(
-          loc, resTys, genRValExpr(call.expression()), args, mlir::ArrayAttr{},
-          mlir::ArrayAttr{});
+          loc, resTys, genRValExpr(call.expression()), args,
+          mlir::DenseI64ArrayAttr{}, mlir::ArrayAttr{}, mlir::ArrayAttr{});
     else
       callOp = b.create<mlir::sol::CallOp>(loc, getMangledName(*callee), resTys,
                                            args);

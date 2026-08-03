@@ -157,7 +157,7 @@ contract C {
 // CHECK-NEXT:       %c0_ui256 = sol.constant 0 : ui256 loc(#loc11)
 // CHECK-NEXT:       sol.store %c0_ui256, %1 : ui256, !sol.ptr<ui256, Stack> loc(#loc11)
 // CHECK-NEXT:       %2 = sol.alloca : !sol.ptr<!sol.func_ref<(ui256) -> ui256>, Stack> loc(#loc12)
-// CHECK-NEXT:       %3 = sol.default_func_constant : !sol.func_ref<() -> ()> loc(#loc12)
+// CHECK-NEXT:       %3 = sol.default_func_constant : <() -> ()> loc(#loc12)
 // CHECK-NEXT:       sol.store %3, %2 : !sol.func_ref<() -> ()>, !sol.ptr<!sol.func_ref<(ui256) -> ui256>, Stack> loc(#loc12)
 // CHECK-NEXT:       %4 = sol.func_constant @f_51 : !sol.func_ref<(ui256) -> ui256> loc(#loc13)
 // CHECK-NEXT:       sol.store %4, %2 : !sol.func_ref<(ui256) -> ui256>, !sol.ptr<!sol.func_ref<(ui256) -> ui256>, Stack> loc(#loc14)
@@ -182,7 +182,7 @@ contract C {
 // CHECK-NEXT:       %8 = sol.load %6 : !sol.ptr<!sol.ext_func_ref<(ui256) -> ui256>, Stack>, !sol.ext_func_ref<(ui256) -> ui256> loc(#loc24)
 // CHECK-NEXT:       %9 = sol.gasleft : ui256 loc(#loc24)
 // CHECK-NEXT:       %c0_ui256_0 = sol.constant 0 : ui256 loc(#loc24)
-// CHECK-NEXT:       %10:2 = sol.ext_icall %8(%7) gas %9 value %c0_ui256_0 {static_call} : !sol.ext_func_ref<(ui256) -> ui256>, (ui256) -> (i1, ui256) loc(#loc24)
+// CHECK-NEXT:       %10:2 = sol.ext_icall %8(%7) gas %9 value %c0_ui256_0 {static_call} : <(ui256) -> ui256>, (ui256) -> (i1, ui256) loc(#loc24)
 // CHECK-NEXT:       sol.return %10#1 : ui256 loc(#loc25)
 // CHECK-NEXT:     } loc(#loc18)
 // CHECK-NEXT:     sol.func @callGas_127(%arg0: ui256 loc({{.*}}:27:19)) -> ui256 attributes {id = 127 : i64, orig_fn_type = (ui256) -> ui256, selector = 1084980789 : i32, state_mutability = #View} {
@@ -202,7 +202,7 @@ contract C {
 // CHECK-NEXT:       %8 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc32)
 // CHECK-NEXT:       %9 = sol.load %6 : !sol.ptr<!sol.ext_func_ref<(ui256) -> ui256>, Stack>, !sol.ext_func_ref<(ui256) -> ui256> loc(#loc33)
 // CHECK-NEXT:       %c0_ui256_0 = sol.constant 0 : ui256 loc(#loc33)
-// CHECK-NEXT:       %10:2 = sol.ext_icall %9(%8) gas %7 value %c0_ui256_0 {static_call} : !sol.ext_func_ref<(ui256) -> ui256>, (ui256) -> (i1, ui256) loc(#loc33)
+// CHECK-NEXT:       %10:2 = sol.ext_icall %9(%8) gas %7 value %c0_ui256_0 {static_call} : <(ui256) -> ui256>, (ui256) -> (i1, ui256) loc(#loc33)
 // CHECK-NEXT:       sol.return %10#1 : ui256 loc(#loc34)
 // CHECK-NEXT:     } loc(#loc26)
 // CHECK-NEXT:     sol.func @tryCall_185(%arg0: ui256 loc({{.*}}:32:19)) -> (i1, ui256) attributes {id = 185 : i64, orig_fn_type = (ui256) -> (i1, ui256), selector = 1065929330 : i32, state_mutability = #NonPayable} {
@@ -230,7 +230,7 @@ contract C {
 // CHECK-NEXT:       %11 = sol.load %7 : !sol.ptr<!sol.ext_func_ref<(ui256) -> ui256>, Stack>, !sol.ext_func_ref<(ui256) -> ui256> loc(#loc44)
 // CHECK-NEXT:       %12 = sol.gasleft : ui256 loc(#loc44)
 // CHECK-NEXT:       %c0_ui256_2 = sol.constant 0 : ui256 loc(#loc44)
-// CHECK-NEXT:       %13:2 = sol.ext_icall %11(%10) gas %12 value %c0_ui256_2 {static_call, try_call} : !sol.ext_func_ref<(ui256) -> ui256>, (ui256) -> (i1, ui256) loc(#loc44)
+// CHECK-NEXT:       %13:2 = sol.ext_icall %11(%10) gas %12 value %c0_ui256_2 {static_call, try_call} : <(ui256) -> ui256>, (ui256) -> (i1, ui256) loc(#loc44)
 // CHECK-NEXT:       sol.try %13#0 {
 // CHECK-NEXT:         %16 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc46)
 // CHECK-NEXT:         sol.store %13#1, %16 : ui256, !sol.ptr<ui256, Stack> loc(#loc46)
@@ -279,7 +279,7 @@ contract C {
 // CHECK-NEXT:       %11 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc66)
 // CHECK-NEXT:       %12 = sol.load %7 : !sol.ptr<!sol.ext_func_ref<(ui256) -> ui256>, Stack>, !sol.ext_func_ref<(ui256) -> ui256> loc(#loc67)
 // CHECK-NEXT:       %c0_ui256_2 = sol.constant 0 : ui256 loc(#loc67)
-// CHECK-NEXT:       %13:2 = sol.ext_icall %12(%11) gas %10 value %c0_ui256_2 {static_call, try_call} : !sol.ext_func_ref<(ui256) -> ui256>, (ui256) -> (i1, ui256) loc(#loc67)
+// CHECK-NEXT:       %13:2 = sol.ext_icall %12(%11) gas %10 value %c0_ui256_2 {static_call, try_call} : <(ui256) -> ui256>, (ui256) -> (i1, ui256) loc(#loc67)
 // CHECK-NEXT:       sol.try %13#0 {
 // CHECK-NEXT:         %16 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc69)
 // CHECK-NEXT:         sol.store %13#1, %16 : ui256, !sol.ptr<ui256, Stack> loc(#loc69)
@@ -320,7 +320,7 @@ contract C {
 // CHECK-NEXT:       %10 = sol.load %8 : !sol.ptr<!sol.ext_func_ref<(ui256) -> ui256>, Stack>, !sol.ext_func_ref<(ui256) -> ui256> loc(#loc87)
 // CHECK-NEXT:       %11 = sol.gasleft : ui256 loc(#loc87)
 // CHECK-NEXT:       %c0_ui256_0 = sol.constant 0 : ui256 loc(#loc87)
-// CHECK-NEXT:       %12:2 = sol.ext_icall %10(%9) gas %11 value %c0_ui256_0 : !sol.ext_func_ref<(ui256) -> ui256>, (ui256) -> (i1, ui256) loc(#loc87)
+// CHECK-NEXT:       %12:2 = sol.ext_icall %10(%9) gas %11 value %c0_ui256_0 : <(ui256) -> ui256>, (ui256) -> (i1, ui256) loc(#loc87)
 // CHECK-NEXT:       sol.return %12#1 : ui256 loc(#loc88)
 // CHECK-NEXT:     } loc(#loc80)
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
