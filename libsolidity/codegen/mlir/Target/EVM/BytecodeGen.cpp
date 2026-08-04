@@ -120,10 +120,10 @@ LLVMMemoryBufferRef BytecodeGen::genAssembledObj(ContractDefinition const *cont,
   // Track the dependency from the ast.
   if (isCreationRequested) {
     deps = cont->annotation().creationCallGraph->get()->bytecodeDependency;
-    numObjs = deps.size() + 2;
+    numObjs = deps.size() * 2 + 2;
   } else {
     deps = cont->annotation().deployedCallGraph->get()->bytecodeDependency;
-    numObjs = deps.size() + 1;
+    numObjs = deps.size() * 2 + 1;
   }
 
   // Populate the first object(s) from `cont`'s unlinked obj.
@@ -143,14 +143,18 @@ LLVMMemoryBufferRef BytecodeGen::genAssembledObj(ContractDefinition const *cont,
     newObjIdx = 1;
   }
 
-  // Populate the unlinked objs from the dependencies.
+  // Populate the unlinked objs from the dependencies. The map holds a single
+  // representative AST node per dependency contract, but a contract can be
+  // referenced by its creation object, its runtime object, or both (e.g.
+  // `type(A).creationCode` and `type(A).runtimeCode` in the same contract).
+  // Supply both flavors; the assembler drops unreferenced ones.
   for (auto dep : deps) {
     auto *depCont = dep.first;
-    auto *depAst = dep.second;
-    objs[newObjIdx] = genAssembledObj(depCont, isCreationDep(depAst));
-    objIds[newObjIdx] = isCreationDep(depAst)
-                            ? unlinkedMap.at(depCont).creationId.data()
-                            : unlinkedMap.at(depCont).runtimeId.data();
+    objs[newObjIdx] = genAssembledObj(depCont, /*isCreationRequested=*/true);
+    objIds[newObjIdx] = unlinkedMap.at(depCont).creationId.data();
+    newObjIdx++;
+    objs[newObjIdx] = genAssembledObj(depCont, /*isCreationRequested=*/false);
+    objIds[newObjIdx] = unlinkedMap.at(depCont).runtimeId.data();
     newObjIdx++;
   }
 
@@ -175,21 +179,3 @@ LLVMMemoryBufferRef BytecodeGen::genAssembledObj(ContractDefinition const *cont,
   return assembled;
 }
 
-bool BytecodeGen::isCreationDep(ASTNode const *ast) {
-  if (auto *memAcc = dynamic_cast<MemberAccess const *>(ast)) {
-    ASTString const &memName = memAcc->memberName();
-    assert(memName == "creationCode" || memName == "runtimeCode");
-    assert(dynamic_cast<MagicType const *>(
-        memAcc->expression().annotation().type));
-    return memName == "creationCode";
-  }
-
-#ifndef NDEBUG
-  auto *newExpr = dynamic_cast<NewExpression const *>(ast);
-  assert(newExpr);
-  assert(dynamic_cast<ContractType const *>(
-      newExpr->typeName().annotation().type));
-#endif
-
-  return true;
-}

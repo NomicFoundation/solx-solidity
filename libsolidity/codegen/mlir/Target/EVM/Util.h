@@ -82,9 +82,6 @@ struct BytecodeGen {
   genAssembledObj(solidity::frontend::ContractDefinition const *cont,
                   bool isCreationRequested);
 
-  /// Return true if the ast node representation is a creation bytecode
-  /// dependency.
-  bool isCreationDep(solidity::frontend::ASTNode const *ast);
 };
 
 } // namespace evm
