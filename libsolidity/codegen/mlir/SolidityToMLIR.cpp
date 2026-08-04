@@ -960,6 +960,11 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
           ContractType(*currContract).isPayable());
       return b.create<mlir::sol::ThisOp>(getLoc(id), thisTy);
     }
+    case Type::Category::TypeType:
+      // `super` is a pure lookup handle with no runtime representation.
+      if (id.name() == "super")
+        return {};
+      break;
     default:
       break;
     }
@@ -977,6 +982,10 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
   }
 
   if (const auto *fn = dynamic_cast<FunctionDefinition const *>(decl)) {
+    // Virtual functions referenced as values resolve against the most-derived
+    // contract, exactly like called references do.
+    if (fn->virtualSemantics() && currContract)
+      fn = &fn->resolveVirtual(*currContract);
     // When a free/library function is referenced as a value (function pointer),
     // the call-site handler never fires. Emit it on demand so
     // FuncConstantOpLowering can resolve the symbol.
@@ -1852,11 +1861,46 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
     // State variable accessed via the contract type (e.g. `A.x`): constants
     // and, in the creation context, immutables. Resolves to the same
     // reference an unqualified identifier would.
-    if (dynamic_cast<ContractType const *>(&actualType)) {
+    if (auto const *contractTy =
+            dynamic_cast<ContractType const *>(&actualType)) {
       if (auto const *var = dynamic_cast<VariableDeclaration const *>(
               memberAcc.annotation().referencedDeclaration)) {
         assert(var->isStateVariable());
         return genLValRef(*var);
+      }
+      // Function referenced as a value via the contract/library type
+      // (e.g. `Utils.sum` passed as a function pointer). Resolves like an
+      // unqualified identifier reference would.
+      if (auto const *fn = dynamic_cast<FunctionDefinition const *>(
+              memberAcc.annotation().referencedDeclaration)) {
+        auto const *refTy =
+            dynamic_cast<FunctionType const *>(memberAcc.annotation().type);
+        // Public library member: the library's link-time address plus the
+        // selector. The callee lives in the separately deployed library.
+        if (refTy && refTy->kind() == FunctionType::Kind::DelegateCall) {
+          auto libAddr = b.create<mlir::sol::LibAddrOp>(
+              loc, mlir::sol::AddressType::get(b.getContext(), false),
+              contractTy->contractDefinition().fullyQualifiedName());
+          uint32_t selector =
+              refTy->externalIdentifier().convert_to<uint32_t>();
+          return b.create<mlir::sol::ExtFuncConstantOp>(
+              loc, getType(refTy), libAddr, b.getI32IntegerAttr(selector));
+        }
+        // External functions named through the contract type (kind
+        // Declaration) are pure handles with no runtime representation.
+        if (refTy && refTy->kind() == FunctionType::Kind::Declaration)
+          return {};
+        // `super.f` references the next override in the most-derived
+        // contract's linearization, not the statically named declaration.
+        if (*memberAcc.annotation().requiredLookup == VirtualLookup::Super) {
+          assert(contractTy->isSuper());
+          fn = &fn->resolveVirtual(
+              *currContract,
+              contractTy->contractDefinition().superContract(*currContract));
+        }
+        lowerFreeOrLibFuncIfAbsent(*fn);
+        return b.create<mlir::sol::FuncConstantOp>(
+            loc, getType(fn->type()), getMangledName(*fn));
       }
     }
     break;
