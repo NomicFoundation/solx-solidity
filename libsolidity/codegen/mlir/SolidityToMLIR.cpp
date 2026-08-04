@@ -3522,7 +3522,9 @@ void SolidityToMLIRPass::lower(Statement const &stmt) {
 }
 
 void SolidityToMLIRPass::lower(Block const &blk) {
-  llvm::SaveAndRestore<bool> g(inUnchecked, blk.unchecked());
+  // Unchecked-ness is lexical: it must survive into nested plain blocks
+  // (the type checker forbids nested `unchecked`, so it can never unset).
+  llvm::SaveAndRestore<bool> g(inUnchecked, inUnchecked || blk.unchecked());
   for (const ASTPointer<Statement> &stmt : blk.statements())
     lower(*stmt);
 }

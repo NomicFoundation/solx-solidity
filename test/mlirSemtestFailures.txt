@@ -1,10 +1,6 @@
 # Comment and blank lines are ignored: mlirSemtests.sh matches entries against
 # test names with `grep -F -x`, so only exact test-name lines have any effect.
 
-semanticTests/abiEncoderV2/calldata_struct_array_reencode
-semanticTests/arithmetics/block_inside_unchecked
-semanticTests/cleanup/cleanup_bytes_types_shortening_newCodeGen
-semanticTests/cleanup/indexed_log_topic_during_explicit_downcast
 semanticTests/constants/assign_type_info
 semanticTests/constants/constant_string_at_file_level
 semanticTests/constants/constants_at_file_level_referencing
@@ -14,40 +10,23 @@ semanticTests/errors/error_selector
 semanticTests/events/event_selector
 semanticTests/events/event_selector_file_level
 semanticTests/events/event_shadowing_file_level
-semanticTests/experimental/stub
-semanticTests/experimental/type_class
 semanticTests/expressions/module_from_ternary_expression
 semanticTests/fallback/fallback_override
 semanticTests/fallback/fallback_override2
 semanticTests/fallback/fallback_override_multi
 semanticTests/functionTypes/call_to_zero_initialized_function_type_legacy
-semanticTests/inheritance/constructor_inheritance_init_order
-semanticTests/inheritance/constructor_inheritance_init_order_3_viaIR
 semanticTests/inheritance/inherited_function_calldata_memory
-semanticTests/inheritance/state_variables_init_order_3
 semanticTests/interfaceID/lisa
 semanticTests/interfaceID/lisa_interfaceId
 semanticTests/libraries/library_address_via_module
-semanticTests/modifiers/function_modifier_loop_viair
-semanticTests/modifiers/function_modifier_multi_invocation_viair
 semanticTests/operators/userDefined/fixed_point_udvt_with_operators
 semanticTests/operators/userDefined/recursive_operator
 semanticTests/structs/lone_struct_array_type
 semanticTests/uninitializedFunctionPointer/uninitialized_internal_storage_function_legacy
-semanticTests/userDefinedValueType/assembly_access_bytes2_abicoder_v1
-semanticTests/userDefinedValueType/cleanup_abicoderv1
-semanticTests/userDefinedValueType/conversion_abicoderv1
 semanticTests/various/code_access_content
 semanticTests/various/code_access_padding
 semanticTests/various/code_access_runtime
 semanticTests/various/crazy_elementary_typenames_on_stack
-semanticTests/viaYul/dirty_calldata_struct
-semanticTests/viaYul/dirty_memory_dynamic_array
-semanticTests/viaYul/dirty_memory_int32
-semanticTests/viaYul/dirty_memory_static_array
-semanticTests/viaYul/dirty_memory_struct
-semanticTests/viaYul/dirty_memory_uint32
-semanticTests/viaYul/unary_operations
 
 # Gas-observability divergences: state semantics match legacy/via-ir, but the
 # tests pin out-of-gas outcomes that LLVM-optimized code does not reproduce
@@ -63,3 +42,29 @@ semanticTests/viaYul/unary_operations
 # pushEmpty(38869) finishes under the 100M gas limit instead of OOG.
 semanticTests/array/array_function_pointers
 semanticTests/array/array_storage_push_empty
+
+# Via-ir-pinned tests (compileViaYul: true): upstream never runs these against
+# the legacy pipeline, and our target is legacy-codegen parity. Mismatches here
+# are expected where the pinned expectation encodes a via-ir/legacy semantic
+# fork; do not treat as actionable without checking which side the expectation
+# pins.
+#
+# Verified by-design (initialization-order fork, docs "IR breaking changes"):
+# legacy runs ALL state-var initializers base->derived before ANY constructor
+# body (ContractCompiler.cpp:155); via-ir interleaves per contract. The three
+# init-order tests pin the via-ir interleaving (e.g. y() -> 42 where legacy
+# and this pipeline correctly yield 0).
+# Experimental Solidity language (pragma experimental solidity) - unsupported.
+# Pin via-ir cleanup/dirty-value semantics that legacy intentionally lacks.
+# Via-ir-pinned; pinned expectation may be codegen-agnostic - not yet triaged
+# whether the failure hides a real bug.
+
+# ABI coder v1 (pragma abicoder v1): not supported by this pipeline, which
+# targets ABI coder v2 only. Unsupported-feature failures, not bugs.
+
+# Stack too deep: the EVM backend aborts with "LLVM ERROR: Total stack size: N
+# is larger than the allocated stack region size: 0". Needs the spill-region
+# protocol (EVMFinalizeStackFrames + -evm-stack-region-offset/-size +
+# memoryguard rewrite retry, as solx does); design documented, not implemented
+# in this pipeline. Scanned 2026-08-04: this is the only baselined test with
+# this signature.
