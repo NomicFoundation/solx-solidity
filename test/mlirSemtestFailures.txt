@@ -1,15 +1,10 @@
 # Comment and blank lines are ignored: mlirSemtests.sh matches entries against
 # test names with `grep -F -x`, so only exact test-name lines have any effect.
 
-semanticTests/constants/constant_string_at_file_level
-semanticTests/constants/constants_at_file_level_referencing
-semanticTests/constants/same_constants_different_files
-semanticTests/deployedCodeExclusion/module_function_deployed
 semanticTests/errors/error_selector
 semanticTests/events/event_selector
 semanticTests/events/event_selector_file_level
 semanticTests/events/event_shadowing_file_level
-semanticTests/expressions/module_from_ternary_expression
 semanticTests/fallback/fallback_override
 semanticTests/fallback/fallback_override2
 semanticTests/fallback/fallback_override_multi
@@ -17,12 +12,8 @@ semanticTests/functionTypes/call_to_zero_initialized_function_type_legacy
 semanticTests/inheritance/inherited_function_calldata_memory
 semanticTests/interfaceID/lisa
 semanticTests/interfaceID/lisa_interfaceId
-semanticTests/libraries/library_address_via_module
-semanticTests/operators/userDefined/fixed_point_udvt_with_operators
 semanticTests/operators/userDefined/recursive_operator
-semanticTests/structs/lone_struct_array_type
 semanticTests/uninitializedFunctionPointer/uninitialized_internal_storage_function_legacy
-semanticTests/various/crazy_elementary_typenames_on_stack
 
 # Gas-observability divergences: state semantics match legacy/via-ir, but the
 # tests pin out-of-gas outcomes that LLVM-optimized code does not reproduce

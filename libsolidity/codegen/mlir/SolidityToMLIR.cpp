@@ -222,6 +222,10 @@ private:
 
   /// Returns the lvalue reference for a variable declaration.
   mlir::Value genLValRef(VariableDeclaration const &var) {
+    // Constants (contract-level and file-level) have no storage or memory
+    // home. Each reference re-evaluates the initializer.
+    if (var.isConstant())
+      return genRValExpr(*var.value(), getType(var.type()));
     if (var.isStateVariable())
       return genStateVarRef(var, inCtor);
     return getLocalVarAddr(var);
@@ -232,11 +236,7 @@ private:
     auto currContr =
         b.getBlock()->getParentOp()->getParentOfType<mlir::sol::ContractOp>();
     assert(currContr);
-
-    if (var.isConstant()) {
-      // TODO: Should we track the state variable name in the sol.constant?
-      return genRValExpr(*var.value(), getType(var.type()));
-    }
+    assert(!var.isConstant() && "Constants are handled in genLValRef");
 
     if (var.immutable()) {
       auto immOp =
@@ -975,11 +975,20 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
     return genLValRef(*var);
 
   if (const auto *contr = dynamic_cast<ContractDefinition const *>(decl)) {
-    assert(contr->isLibrary() && "NYI");
-    return b.create<mlir::sol::LibAddrOp>(
-        getLoc(id), mlir::sol::AddressType::get(b.getContext(), false),
-        contr->fullyQualifiedName());
+    if (contr->isLibrary())
+      return b.create<mlir::sol::LibAddrOp>(
+          getLoc(id), mlir::sol::AddressType::get(b.getContext(), false),
+          contr->fullyQualifiedName());
+    // A bare contract type name is a pure compile-time handle.
+    return {};
   }
+
+  // Type-declaration references (struct, enum and user-defined value type
+  // names) are pure compile-time handles with no runtime representation.
+  if (dynamic_cast<StructDefinition const *>(decl) ||
+      dynamic_cast<EnumDefinition const *>(decl) ||
+      dynamic_cast<UserDefinedValueTypeDefinition const *>(decl))
+    return {};
 
   if (const auto *fn = dynamic_cast<FunctionDefinition const *>(decl)) {
     // Virtual functions referenced as values resolve against the most-derived
@@ -993,6 +1002,10 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
     return b.create<mlir::sol::FuncConstantOp>(getLoc(id), getType(fn->type()),
                                                getMangledName(*fn));
   }
+
+  // Module aliases (`import "..." as M`) have no runtime representation.
+  if (dynamic_cast<ImportDirective const *>(decl))
+    return {};
 
   llvm_unreachable("NYI");
 }
@@ -1454,6 +1467,20 @@ SolidityToMLIRPass::genExprs(Conditional const &cond) {
   mlir::Location loc = getLoc(cond);
   mlir::Value condVal = genRValExpr(cond.condition());
 
+  // Types with no runtime representation (e.g. a module in `(c ? M : M).D`):
+  // evaluate the arms for their side effects only.
+  if (cond.annotation().type->sizeOnStack() == 0) {
+    auto ifOp = b.create<mlir::sol::IfOp>(loc, condVal);
+    mlir::OpBuilder::InsertionGuard guard(b);
+    b.setInsertionPointToStart(&ifOp.getThenRegion().emplaceBlock());
+    genDiscardedExpr(cond.trueExpression());
+    b.create<mlir::sol::YieldOp>(loc);
+    b.setInsertionPointToStart(&ifOp.getElseRegion().emplaceBlock());
+    genDiscardedExpr(cond.falseExpression());
+    b.create<mlir::sol::YieldOp>(loc);
+    return {};
+  }
+
   // Get result types - could be single type or tuple.
   mlir::SmallVector<mlir::Type> resTys;
   if (TupleType const *tupleTy =
@@ -1499,6 +1526,11 @@ SolidityToMLIRPass::genExprs(Conditional const &cond) {
 
 mlir::Value SolidityToMLIRPass::genExpr(IndexAccess const &idxAcc) {
   mlir::Location loc = getLoc(idxAcc);
+
+  // Type expressions like `s[7][]` are pure compile-time handles: array-type
+  // lengths are compile-time constants, so there is nothing to evaluate.
+  if (dynamic_cast<TypeType const *>(idxAcc.annotation().type))
+    return {};
 
   mlir::Value baseExpr = genRValExpr(idxAcc.baseExpression());
   mlir::Value idxExpr = genRValExpr(*idxAcc.indexExpression());
@@ -1921,6 +1953,34 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
       return b.create<mlir::sol::CodeHashOp>(
           loc, genRValExpr(memberAcc.expression(), nonPayableAddrTy));
     }
+    break;
+  }
+  case Type::Category::Module: {
+    // Members accessed through a module alias (`import "..." as M`) resolve
+    // like unqualified identifier references would.
+    Declaration const *decl = memberAcc.annotation().referencedDeclaration;
+    if (auto const *var = dynamic_cast<VariableDeclaration const *>(decl)) {
+      assert(var->isConstant());
+      return genLValRef(*var);
+    }
+    if (auto const *fn = dynamic_cast<FunctionDefinition const *>(decl)) {
+      lowerFreeOrLibFuncIfAbsent(*fn);
+      return b.create<mlir::sol::FuncConstantOp>(loc, getType(fn->type()),
+                                                 getMangledName(*fn));
+    }
+    if (auto const *contr = dynamic_cast<ContractDefinition const *>(decl)) {
+      if (contr->isLibrary())
+        return b.create<mlir::sol::LibAddrOp>(
+            loc, mlir::sol::AddressType::get(b.getContext(), false),
+            contr->fullyQualifiedName());
+    }
+    // Type-valued members (e.g. `M.D` where D is a contract type) have no
+    // runtime representation. The base is still evaluated for side effects.
+    if (dynamic_cast<TypeType const *>(memberAcc.annotation().type)) {
+      genDiscardedExpr(memberAcc.expression());
+      return {};
+    }
+    break;
   }
   }
 
@@ -2967,6 +3027,11 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
   // Literal
   if (const auto *lit = dynamic_cast<Literal const *>(&expr))
     return genExpr(*lit);
+
+  // Elementary type names in expression position (e.g. a stray `uint256;`
+  // statement or the callee of a cast) are pure compile-time handles.
+  if (dynamic_cast<ElementaryTypeNameExpression const *>(&expr))
+    return {};
 
   // Identifier
   if (const auto *ident = dynamic_cast<Identifier const *>(&expr))
