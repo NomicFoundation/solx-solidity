@@ -37,6 +37,7 @@
 #include "libsolidity/interface/CompilerStack.h"
 #include "libsolutil/CommonIO.h"
 #include "libsolutil/FunctionSelector.h"
+#include "libsolutil/Keccak256.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/LLVMIR/LLVMTypes.h"
 #include "mlir/Dialect/Sol/Sol.h"
@@ -1533,11 +1534,18 @@ mlir::Value SolidityToMLIRPass::genExpr(IndexAccess const &idxAcc) {
     return {};
 
   mlir::Value baseExpr = genRValExpr(idxAcc.baseExpression());
-  mlir::Value idxExpr = genRValExpr(*idxAcc.indexExpression());
 
   // Mapping
   if (auto mappingTy =
           mlir::dyn_cast<mlir::sol::MappingType>(baseExpr.getType())) {
+    // Convert the key to the declared key type before hashing, like the old
+    // codegen does (e.g. bytesN keys hash left-aligned, narrow signed keys
+    // sign-extend).
+    auto const *astMappingTy = dynamic_cast<MappingType const *>(
+        idxAcc.baseExpression().annotation().type);
+    assert(astMappingTy);
+    mlir::Value idxExpr = genRValExpr(*idxAcc.indexExpression(),
+                                      getType(astMappingTy->keyType()));
     mlir::Type addrTy;
     if (mlir::sol::isNonPtrRefType(mappingTy.getValType()))
       addrTy = mappingTy.getValType();
@@ -1547,6 +1555,8 @@ mlir::Value SolidityToMLIRPass::genExpr(IndexAccess const &idxAcc) {
                                       mlir::sol::DataLocation::Storage);
     return b.create<mlir::sol::MapOp>(loc, addrTy, baseExpr, idxExpr);
   }
+
+  mlir::Value idxExpr = genRValExpr(*idxAcc.indexExpression());
 
   // Bytes/array indexing
   if (mlir::isa<mlir::sol::ArrayType>(baseExpr.getType()) ||
@@ -1592,11 +1602,14 @@ mlir::Value SolidityToMLIRPass::genCompileTimeFunctionSelector(
     Expression const &fnExpr, FunctionType const &fnTy, mlir::Location loc,
     bool stateVarGetterOnly) {
   auto genExprSideEffects = [&](Expression const &expr) {
-    // Contract type names in expressions like 'C.f' are not runtime values and
-    // should not be lowered.
+    // Contract type names in expressions like 'C.f' as well as error and
+    // event references (e.g. 'E.selector') are pure declaration handles, not
+    // runtime values, and should not be lowered.
     if (auto const *id = dynamic_cast<Identifier const *>(&expr)) {
-      if (dynamic_cast<ContractDefinition const *>(
-              id->annotation().referencedDeclaration))
+      Declaration const *decl = id->annotation().referencedDeclaration;
+      if (dynamic_cast<ContractDefinition const *>(decl) ||
+          dynamic_cast<ErrorDefinition const *>(decl) ||
+          dynamic_cast<EventDefinition const *>(decl))
         return;
       // 'this' has no side effects on its own.
       if (id->name() == "this")
@@ -1626,6 +1639,16 @@ mlir::Value SolidityToMLIRPass::genCompileTimeFunctionSelector(
     genExprSideEffects(fnMember->expression());
   else
     genExprSideEffects(*unwrappedFnExpr);
+
+  // Event selectors are the full 32-byte topic hash, unlike the 4-byte
+  // function/error selector.
+  if (fnTy.kind() == FunctionType::Kind::Event) {
+    u256 topicHash(util::h256::Arith(util::keccak256(fnTy.externalSignature())));
+    auto ui256Ty = b.getIntegerType(256, /*isSigned=*/false);
+    return b.create<mlir::sol::ConstantOp>(
+        loc, b.getIntegerAttr(
+                 ui256Ty, llvm::APInt(256, topicHash.str(), /*radix=*/10)));
+  }
 
   if (fnTy.hasDeclaration()) {
     auto selector = fnTy.externalIdentifier().convert_to<uint32_t>();
@@ -1843,11 +1866,17 @@ mlir::Value SolidityToMLIRPass::genExpr(MemberAccess const &memberAcc) {
   case Type::Category::Function: {
     if (memberName == "selector") {
       auto const &fnTy = dynamic_cast<FunctionType const &>(*memberAccTy);
+      // The selector helpers produce plain integers. Cast to the annotated
+      // fixed-bytes type (bytes4, bytes32 for events) so consumers that do
+      // not convert (e.g. mapping keys) see the correct representation.
+      mlir::Type resTy = getType(memberAcc.annotation().type);
       if (mlir::Value selector =
               genCompileTimeFunctionSelector(memberAcc.expression(), fnTy, loc))
-        return selector;
+        return genCast(selector, resTy);
       if (fnTy.kind() == FunctionType::Kind::External)
-        return genRuntimeFunctionSelector(memberAcc.expression(), fnTy, loc);
+        return genCast(
+            genRuntimeFunctionSelector(memberAcc.expression(), fnTy, loc),
+            resTy);
     }
     if (memberName == "address") {
       Expression const *fnExpr = &memberAcc.expression();
