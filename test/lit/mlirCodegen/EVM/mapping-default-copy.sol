@@ -24,6 +24,9 @@ contract C {
 // CHECK: #Default = #sol<RevertStrings Default>
 // CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: #loc3 = loc({{.*}}:18:18)
+// CHECK-NEXT: #loc11 = loc({{.*}}:11:4)
+// CHECK-NEXT: #loop_unroll = #llvm.loop_unroll<full = true>
+// CHECK-NEXT: #loop_annotation = #llvm.loop_annotation<unroll = #loop_unroll>
 // CHECK-NEXT: module @C_47 attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka, sol.revert_strings = #Default} {
 // CHECK-NEXT:   func.func @".unreachable"() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:     llvm.unreachable loc(#loc1)
@@ -201,9 +204,18 @@ contract C {
 // CHECK-NEXT:       return %1 : i256 loc(#loc7)
 // CHECK-NEXT:     } loc(#loc7)
 // CHECK-NEXT:     func.func @del_21() attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
+// CHECK-NEXT:       %c1_i256 = arith.constant 1 : i256 loc(#loc)
 // CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256 loc(#loc)
-// CHECK-NEXT:       %0 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<5> loc(#loc11)
-// CHECK-NEXT:       llvm.store %c0_i256, %0 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc11)
+// CHECK-NEXT:       cf.br ^bb1(%c0_i256 : i256) loc(#loc11)
+// CHECK-NEXT:     ^bb1(%0: i256 loc({{.*}}:11:4)):  // 2 preds: ^bb0, ^bb2
+// CHECK-NEXT:       %1 = arith.cmpi ult, %0, %c1_i256 : i256 loc(#loc11)
+// CHECK-NEXT:       cf.cond_br %1, ^bb2(%0 : i256), ^bb3 loc(#loc11)
+// CHECK-NEXT:     ^bb2(%2: i256 loc({{.*}}:11:4)):  // pred: ^bb1
+// CHECK-NEXT:       %3 = llvm.inttoptr %2 : i256 to !llvm.ptr<5> loc(#loc11)
+// CHECK-NEXT:       llvm.store %c0_i256, %3 {alignment = 1 : i64} : i256, !llvm.ptr<5> loc(#loc11)
+// CHECK-NEXT:       %4 = arith.addi %2, %c1_i256 : i256 loc(#loc11)
+// CHECK-NEXT:       cf.br ^bb1(%4 : i256) {loop_annotation = #loop_annotation} loc(#loc11)
+// CHECK-NEXT:     ^bb3:  // pred: ^bb1
 // CHECK-NEXT:       return loc(#loc10)
 // CHECK-NEXT:     } loc(#loc10)
 // CHECK-NEXT:   } loc(#loc1)
@@ -218,5 +230,4 @@ contract C {
 // CHECK-NEXT: #loc8 = loc({{.*}}:14:40)
 // CHECK-NEXT: #loc9 = loc({{.*}}:15:4)
 // CHECK-NEXT: #loc10 = loc({{.*}}:10:2)
-// CHECK-NEXT: #loc11 = loc({{.*}}:11:4)
 // CHECK-EMPTY:
