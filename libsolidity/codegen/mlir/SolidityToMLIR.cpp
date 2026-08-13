@@ -4275,7 +4275,9 @@ bool CompilerStack::runMlirPipeline() {
         return false;
       }
 
-      if (m_mlirGenJob.action != Action::GenObj) {
+      // printJob cannot handle linking actions (e.g. print-obj); their
+      // contract-less output is empty anyway.
+      if (!requiresLinking(m_mlirGenJob.action)) {
         std::lock_guard<std::mutex> g(outMtx);
         llvm::outs() << printJob(m_mlirGenJob, mod);
       }
