@@ -22,35 +22,45 @@
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
+#include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/LLVMIR/Transforms/Passes.h"
+#include "mlir/Dialect/Sol/Transforms/Passes.h"
 #include "mlir/Dialect/Sol/Transforms/SolImmutables.h"
+#include "mlir/IR/OwningOpRef.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 #include "mlir/Target/LLVMIR/Export.h"
 #include "mlir/Transforms/Passes.h"
 #include "llvm-c/Core.h"
+#include "llvm-c/ErrorHandling.h"
 #include "llvm-c/Target.h"
 #include "llvm-c/Transforms/PassBuilder.h"
 #include "llvm-c/Types.h"
+#include "llvm/ADT/ScopeExit.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/CodeGen.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/Transforms/Utils/Cloning.h"
 #include <mutex>
+#include <shared_mutex>
 
 void solidity::mlirgen::addConversionPasses(mlir::PassManager &passMgr,
-                                            Target tgt, bool enableDI) {
+                                            Target tgt, bool enableDI,
+                                            bool symbolicMemGuard) {
   passMgr.addPass(mlir::createCanonicalizerPass());
   passMgr.addPass(mlir::sol::createModifierInliningPass());
   passMgr.addPass(mlir::createConvertSolToYulPass());
-  passMgr.addPass(mlir::createConvertYulToStandardPass());
+  passMgr.addPass(mlir::createConvertYulToStandardPass(
+      mlir::ConvertYulToStandardPassOptions{symbolicMemGuard}));
   // Canonicalizer removes unreachable blocks, which is important for getting
   // the translation to llvm-ir working correctly.
   passMgr.addPass(mlir::createCanonicalizerPass());
@@ -147,8 +157,8 @@ static void runLLVMOptPipeline(llvm::Module *mod, char level,
 }
 
 static std::unique_ptr<llvm::Module>
-genLLVMIR(mlir::ModuleOp mod, solidity::mlirgen::Target tgt, char optLevel,
-          llvm::TargetMachine &tgtMach, llvm::LLVMContext &llvmCtx) {
+translateToLLVMIR(mlir::ModuleOp mod, solidity::mlirgen::Target tgt,
+                  llvm::TargetMachine &tgtMach, llvm::LLVMContext &llvmCtx) {
   // Translate the llvm dialect to llvm-ir.
   mlir::registerLLVMDialectTranslation(*mod.getContext());
   mlir::registerBuiltinDialectTranslation(*mod.getContext());
@@ -159,8 +169,15 @@ genLLVMIR(mlir::ModuleOp mod, solidity::mlirgen::Target tgt, char optLevel,
   // Set target specfic info in the llvm module.
   setTgtSpecificInfoInModule(tgt, *llvmMod, tgtMach);
 
-  runLLVMOptPipeline(llvmMod.get(), optLevel, &tgtMach);
+  return llvmMod;
+}
 
+static std::unique_ptr<llvm::Module>
+genLLVMIR(mlir::ModuleOp mod, solidity::mlirgen::Target tgt, char optLevel,
+          llvm::TargetMachine &tgtMach, llvm::LLVMContext &llvmCtx) {
+  std::unique_ptr<llvm::Module> llvmMod =
+      translateToLLVMIR(mod, tgt, tgtMach, llvmCtx);
+  runLLVMOptPipeline(llvmMod.get(), optLevel, &tgtMach);
   return llvmMod;
 }
 
@@ -201,6 +218,75 @@ static LLVMMemoryBufferRef genObj(llvm::Module &mod,
   return obj;
 }
 
+namespace {
+/// Thrown by the EVM stack error handler when the backend needs a spill
+/// region larger than what codegen ran with.
+struct SpillRegionTooSmall {
+  uint64_t size;
+};
+} // namespace
+
+/// Serializes compilation against the process-global stack region size:
+/// spill-free compilation (the option at its default) takes it shared,
+/// compilation with a spill region takes it exclusive.
+static std::shared_mutex stackRegionMtx;
+
+static void setStackRegionSize(uint64_t size) {
+  llvm::cl::Option *sizeOpt =
+      llvm::cl::getRegisteredOptions().lookup("evm-stack-region-size");
+  assert(sizeOpt);
+  sizeOpt->addOccurrence(0, "evm-stack-region-size", std::to_string(size));
+}
+
+static void resetStackRegionSize() {
+  llvm::cl::getRegisteredOptions().lookup("evm-stack-region-size")->reset();
+}
+
+/// Compiles `mod` to an object, recompiling with the spill region [guard,
+/// guard + reported-size) if the backend reports stack-too-deep. Translation
+/// runs once; a retry re-runs only optimization + codegen on a fresh clone of
+/// the unoptimized llvm-ir. EVMFoldMemoryGuard folds the guard at the head of
+/// the optimization pipeline, so the size has to be set around the pipeline
+/// and not just around codegen. The refold only changes the guard constant,
+/// not the stack shape, so the second pass converges.
+static LLVMMemoryBufferRef genObjWithSpillRetry(mlir::ModuleOp mod,
+                                                solidity::mlirgen::Target tgt,
+                                                char optLevel,
+                                                llvm::TargetMachine &tgtMach,
+                                                llvm::LLVMContext &llvmCtx) {
+  static std::once_flag stackErrorHandlerOnceFlag;
+  std::call_once(stackErrorHandlerOnceFlag, [] {
+    // Throwing through LLVM's -fno-exceptions frames is supported here; see
+    // report_evm_stack_error in llvm/Support/ErrorHandling.h.
+    LLVMInstallEVMStackErrorHandler(
+        +[](uint64_t size) { throw SpillRegionTooSmall{size}; });
+  });
+
+  std::unique_ptr<llvm::Module> unoptMod =
+      translateToLLVMIR(mod, tgt, tgtMach, llvmCtx);
+
+  uint64_t spillRegionSize = 0;
+  while (true) {
+    std::unique_ptr<llvm::Module> llvmMod = llvm::CloneModule(*unoptMod);
+    try {
+      if (!spillRegionSize) {
+        std::shared_lock<std::shared_mutex> lock(stackRegionMtx);
+        runLLVMOptPipeline(llvmMod.get(), optLevel, &tgtMach);
+        return genObj(*llvmMod, tgtMach);
+      }
+      std::unique_lock<std::shared_mutex> lock(stackRegionMtx);
+      setStackRegionSize(spillRegionSize);
+      auto resetSize = llvm::make_scope_exit(resetStackRegionSize);
+      runLLVMOptPipeline(llvmMod.get(), optLevel, &tgtMach);
+      return genObj(*llvmMod, tgtMach);
+    } catch (SpillRegionTooSmall const &err) {
+      if (spillRegionSize)
+        llvm_unreachable("Spill region size didn't converge");
+      spillRegionSize = err.size;
+    }
+  }
+}
+
 evm::UnlinkedObj solidity::mlirgen::genEvmObj(mlir::ModuleOp mod, char optLevel,
                                               llvm::TargetMachine &tgtMach) {
   mlir::PassManager passMgr(mod.getContext());
@@ -209,7 +295,8 @@ evm::UnlinkedObj solidity::mlirgen::genEvmObj(mlir::ModuleOp mod, char optLevel,
   // Convert the module's ir to llvm dialect.
   // FIXME: enableDI UNREACHABLE executed at
   // llvm/lib/Target/EVM/MCTargetDesc/EVMAsmBackend.cpp:112!
-  addConversionPasses(passMgr, Target::EVM, /*enableDI=*/false);
+  addConversionPasses(passMgr, Target::EVM, /*enableDI=*/false,
+                      /*symbolicMemGuard=*/true);
   if (mlir::failed(passMgr.run(mod)))
     llvm_unreachable("Conversion to llvm dialect failed");
 
@@ -219,9 +306,8 @@ evm::UnlinkedObj solidity::mlirgen::genEvmObj(mlir::ModuleOp mod, char optLevel,
 
   // Lower runtime object. This is a dependency for lowering the setimmutable
   // ops in the creation object.
-  std::unique_ptr<llvm::Module> runtimeLlvmMod =
-      genLLVMIR(runtimeMod, Target::EVM, optLevel, tgtMach, llvmCtx);
-  LLVMMemoryBufferRef runtimeObj = genObj(*runtimeLlvmMod, tgtMach);
+  LLVMMemoryBufferRef runtimeObj =
+      genObjWithSpillRetry(runtimeMod, Target::EVM, optLevel, tgtMach, llvmCtx);
 
   assert(creationMod.getName() && runtimeMod.getName());
 
@@ -241,9 +327,8 @@ evm::UnlinkedObj solidity::mlirgen::genEvmObj(mlir::ModuleOp mod, char optLevel,
   }
 
   // Lower the creation object.
-  std::unique_ptr<llvm::Module> creationLlvmMod =
-      genLLVMIR(creationMod, Target::EVM, optLevel, tgtMach, llvmCtx);
-  LLVMMemoryBufferRef creationObj = genObj(*creationLlvmMod, tgtMach);
+  LLVMMemoryBufferRef creationObj = genObjWithSpillRetry(
+      creationMod, Target::EVM, optLevel, tgtMach, llvmCtx);
 
   return {creationObj, runtimeObj, creationMod.getName()->str(),
           runtimeMod.getName()->str()};

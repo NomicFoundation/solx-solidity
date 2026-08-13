@@ -40,8 +40,11 @@
 
 namespace solidity::mlirgen {
 
-/// Adds dialect conversion passes for the target.
-void addConversionPasses(mlir::PassManager &, Target tgt, bool enableDI = true);
+/// Adds dialect conversion passes for the target. `symbolicMemGuard` keeps
+/// the memoryguard as the evm.memoryguard intrinsic, which the caller must
+/// fold before optimization.
+void addConversionPasses(mlir::PassManager &, Target tgt, bool enableDI = true,
+                         bool symbolicMemGuard = false);
 
 /// Performs the JobSpec of ir/asm printing.
 std::string printJob(JobSpec const &, mlir::ModuleOp);
