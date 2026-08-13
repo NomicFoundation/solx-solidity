@@ -3827,8 +3827,14 @@ mlir::sol::FuncOp SolidityToMLIRPass::lower(FunctionDefinition const &fn) {
       op.setOrigFnType(fnTy);
     } else {
       assert(currContract && "function lowering outside a contract");
+      // A public library fn emitted on demand into another contract's module
+      // is an internal clone; only its own library's module dispatches it.
+      bool crossLibEmission = fn.annotation().contract &&
+                              fn.annotation().contract->isLibrary() &&
+                              fn.annotation().contract != currContract;
       solAssert(
-          isOverriddenByFunctionInCurrentContract(fn, *currContract) ||
+          crossLibEmission ||
+              isOverriddenByFunctionInCurrentContract(fn, *currContract) ||
               isOverriddenByPublicStateVarGetter(fn, *currContract),
           "missing selector for a non-overridden external interface function");
     }
