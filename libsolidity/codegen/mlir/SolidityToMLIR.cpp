@@ -941,10 +941,11 @@ void SolidityToMLIRPass::lowerFreeOrLibFuncIfAbsent(
     return;
 
   mlir::OpBuilder::InsertionGuard insertGuard(b);
+  // Hoist to the symbol table's direct child: the insertion point can be
+  // inside ops other than sol.func (e.g. a modifier body).
   auto *parentOp = b.getInsertionBlock()->getParentOp();
-  if (!mlir::isa<mlir::sol::FuncOp>(parentOp))
-    parentOp = parentOp->getParentOfType<mlir::sol::FuncOp>();
-  assert(parentOp);
+  while (parentOp->getParentOp() != symTableOp)
+    parentOp = parentOp->getParentOp();
   b.setInsertionPoint(parentOp);
   lower(fn);
 }
