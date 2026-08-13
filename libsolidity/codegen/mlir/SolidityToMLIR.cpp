@@ -3275,8 +3275,15 @@ void SolidityToMLIRPass::lower(Return const &ret) {
     for (ASTPointer<VariableDeclaration> const &retParam :
          ret.annotation().function->returnParameters())
       fnResTys.push_back(getType(retParam->type()));
-    b.create<mlir::sol::ReturnOp>(getLoc(ret),
-                                  genRValExprs(*astExpr, fnResTys));
+    // `return voidCall();` in a function without return values: evaluate for
+    // side effects only.
+    if (fnResTys.empty()) {
+      genLValExprs(*astExpr);
+      b.create<mlir::sol::ReturnOp>(getLoc(ret));
+    } else {
+      b.create<mlir::sol::ReturnOp>(getLoc(ret),
+                                    genRValExprs(*astExpr, fnResTys));
+    }
   } else
     b.create<mlir::sol::ReturnOp>(getLoc(ret));
   b.setInsertionPointToStart(b.createBlock(b.getBlock()->getParent()));
