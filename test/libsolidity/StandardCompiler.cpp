@@ -493,6 +493,81 @@ BOOST_AUTO_TEST_CASE(optimizer_runs_not_an_unsigned_number)
 	BOOST_CHECK(containsError(result, "JSONError", "The \"runs\" setting must be an unsigned number."));
 }
 
+BOOST_AUTO_TEST_CASE(legacy_assembly_as_string_not_boolean)
+{
+	char const* input = R"(
+	{
+		"language": "Solidity",
+		"settings": {
+			"legacyAssemblyAsString": 1
+		},
+		"sources": {
+			"empty": {
+				"content": ""
+			}
+		}
+	}
+	)";
+	Json result = compile(input);
+	BOOST_CHECK(containsError(result, "JSONError", "\"settings.legacyAssemblyAsString\" must be a Boolean."));
+}
+
+BOOST_AUTO_TEST_CASE(legacy_assembly_as_string)
+{
+	char const* inputFlagOff = R"(
+	{
+		"language": "Solidity",
+		"sources": {
+			"fileA": {
+				"content": "interface I { function f() external; } contract A is I { function f() external {} }"
+			}
+		},
+		"settings": {
+			"legacyAssemblyAsString": false,
+			"outputSelection": {
+				"fileA": {
+					"*": [ "evm.legacyAssembly" ]
+				}
+			}
+		}
+	}
+	)";
+	char const* inputFlagOn = R"(
+	{
+		"language": "Solidity",
+		"sources": {
+			"fileA": {
+				"content": "interface I { function f() external; } contract A is I { function f() external {} }"
+			}
+		},
+		"settings": {
+			"legacyAssemblyAsString": true,
+			"outputSelection": {
+				"fileA": {
+					"*": [ "evm.legacyAssembly" ]
+				}
+			}
+		}
+	}
+	)";
+	Json objectResult = compile(inputFlagOff);
+	Json stringResult = compile(inputFlagOn);
+	BOOST_CHECK(containsAtMostWarnings(objectResult));
+	BOOST_CHECK(containsAtMostWarnings(stringResult));
+
+	Json objectAssembly = getContractResult(objectResult, "fileA", "A")["evm"]["legacyAssembly"];
+	Json stringAssembly = getContractResult(stringResult, "fileA", "A")["evm"]["legacyAssembly"];
+	BOOST_REQUIRE(objectAssembly.is_object());
+	BOOST_REQUIRE(stringAssembly.is_string());
+	Json reparsedAssembly;
+	BOOST_REQUIRE(util::jsonParseStrict(stringAssembly.get<std::string>(), reparsedAssembly));
+	BOOST_CHECK(reparsedAssembly == objectAssembly);
+
+	// Contracts without assembly keep emitting a JSON null instead of the string "null".
+	BOOST_CHECK(getContractResult(objectResult, "fileA", "I")["evm"]["legacyAssembly"].is_null());
+	BOOST_CHECK(getContractResult(stringResult, "fileA", "I")["evm"]["legacyAssembly"].is_null());
+}
+
 BOOST_AUTO_TEST_CASE(basic_compilation)
 {
 	char const* input = R"(
