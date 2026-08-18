@@ -89,6 +89,7 @@ private:
 		Json outputSelection;
 		ModelCheckerSettings modelCheckerSettings = ModelCheckerSettings{};
 		bool viaIR = false;
+		bool legacyAssemblyAsString = false;
 	};
 
 	/// Parses the input json (and potentially invokes the read callback) and either returns

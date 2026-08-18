@@ -430,7 +430,7 @@ std::optional<Json> checkAuxiliaryInputKeys(Json const& _input)
 
 std::optional<Json> checkSettingsKeys(Json const& _input)
 {
-	static std::set<std::string> keys{"debug", "evmVersion", "eofVersion", "libraries", "metadata", "modelChecker", "optimizer", "outputSelection", "remappings", "stopAfter", "viaIR"};
+	static std::set<std::string> keys{"debug", "evmVersion", "eofVersion", "legacyAssemblyAsString", "libraries", "metadata", "modelChecker", "optimizer", "outputSelection", "remappings", "stopAfter", "viaIR"};
 	return checkKeys(_input, keys, "settings");
 }
 
@@ -852,6 +852,13 @@ std::variant<StandardCompiler::InputsAndSettings, Json> StandardCompiler::parseI
 		if (!settings["viaIR"].is_boolean())
 			return formatFatalError(Error::Type::JSONError, "\"settings.viaIR\" must be a Boolean.");
 		ret.viaIR = settings["viaIR"].get<bool>();
+	}
+
+	if (settings.contains("legacyAssemblyAsString"))
+	{
+		if (!settings["legacyAssemblyAsString"].is_boolean())
+			return formatFatalError(Error::Type::JSONError, "\"settings.legacyAssemblyAsString\" must be a Boolean.");
+		ret.legacyAssemblyAsString = settings["legacyAssemblyAsString"].get<bool>();
 	}
 
 	if (settings.contains("evmVersion"))
@@ -1583,7 +1590,16 @@ Json StandardCompiler::compileSolidity(StandardCompiler::InputsAndSettings _inpu
 		if (compilationSuccess && isArtifactRequested(_inputsAndSettings.outputSelection, file, name, "evm.assembly", wildcardMatchesExperimental))
 			evmData["assembly"] = compilerStack.assemblyString(contractName, sourceList);
 		if (compilationSuccess && isArtifactRequested(_inputsAndSettings.outputSelection, file, name, "evm.legacyAssembly", wildcardMatchesExperimental))
-			evmData["legacyAssembly"] = compilerStack.assemblyJSON(contractName);
+		{
+			// Keeping every contract's assembly JSON tree in the response object until the final
+			// dump dominates peak memory on large projects; as a string, the tree is dropped here.
+			// Contracts without assembly (e.g. interfaces) keep emitting a JSON null.
+			Json assemblyJson = compilerStack.assemblyJSON(contractName);
+			if (_inputsAndSettings.legacyAssemblyAsString && !assemblyJson.is_null())
+				evmData["legacyAssembly"] = assemblyJson.dump();
+			else
+				evmData["legacyAssembly"] = std::move(assemblyJson);
+		}
 		if (isArtifactRequested(_inputsAndSettings.outputSelection, file, name, "evm.methodIdentifiers", wildcardMatchesExperimental))
 			evmData["methodIdentifiers"] = compilerStack.interfaceSymbols(contractName)["methods"];
 		if (compilationSuccess && isArtifactRequested(_inputsAndSettings.outputSelection, file, name, "evm.gasEstimates", wildcardMatchesExperimental))
