@@ -493,6 +493,39 @@ BOOST_AUTO_TEST_CASE(optimizer_runs_not_an_unsigned_number)
 	BOOST_CHECK(containsError(result, "JSONError", "The \"runs\" setting must be an unsigned number."));
 }
 
+BOOST_AUTO_TEST_CASE(legacy_assembly_emitted_as_string)
+{
+	char const* input = R"(
+	{
+		"language": "Solidity",
+		"sources": {
+			"fileA": {
+				"content": "interface I { function f() external; } contract A is I { function f() external {} }"
+			}
+		},
+		"settings": {
+			"outputSelection": {
+				"fileA": {
+					"*": [ "evm.legacyAssembly" ]
+				}
+			}
+		}
+	}
+	)";
+	Json result = compile(input);
+	BOOST_CHECK(containsAtMostWarnings(result));
+
+	Json stringAssembly = getContractResult(result, "fileA", "A")["evm"]["legacyAssembly"];
+	BOOST_REQUIRE(stringAssembly.is_string());
+	Json reparsedAssembly;
+	BOOST_REQUIRE(util::jsonParseStrict(stringAssembly.get<std::string>(), reparsedAssembly));
+	BOOST_REQUIRE(reparsedAssembly.is_object());
+	BOOST_CHECK(reparsedAssembly[".code"].is_array());
+
+	// Contracts without assembly keep emitting a JSON null instead of the string "null".
+	BOOST_CHECK(getContractResult(result, "fileA", "I")["evm"]["legacyAssembly"].is_null());
+}
+
 BOOST_AUTO_TEST_CASE(basic_compilation)
 {
 	char const* input = R"(
@@ -558,10 +591,14 @@ BOOST_AUTO_TEST_CASE(basic_compilation)
 	);
 	// Lets take the top level `.code` section (the "deployer code"), that should expose most of the features of
 	// the assembly JSON. What we want to check here is Operation, Push, PushTag, PushSub, PushSubSize and Tag.
-	BOOST_CHECK(contract["evm"]["legacyAssembly"].is_object());
-	BOOST_CHECK(contract["evm"]["legacyAssembly"][".code"].is_array());
+	// The assembly is emitted as a pre-serialized string, so it is parsed back first.
+	BOOST_REQUIRE(contract["evm"]["legacyAssembly"].is_string());
+	Json legacyAssembly;
+	BOOST_REQUIRE(util::jsonParseStrict(contract["evm"]["legacyAssembly"].get<std::string>(), legacyAssembly));
+	BOOST_CHECK(legacyAssembly.is_object());
+	BOOST_CHECK(legacyAssembly[".code"].is_array());
 	BOOST_CHECK_EQUAL(
-		util::jsonCompactPrint(contract["evm"]["legacyAssembly"][".code"]),
+		util::jsonCompactPrint(legacyAssembly[".code"]),
 		"[{\"begin\":0,\"end\":14,\"name\":\"PUSH\",\"source\":0,\"value\":\"80\"},"
 		"{\"begin\":0,\"end\":14,\"name\":\"PUSH\",\"source\":0,\"value\":\"40\"},"
 		"{\"begin\":0,\"end\":14,\"name\":\"MSTORE\",\"source\":0},"

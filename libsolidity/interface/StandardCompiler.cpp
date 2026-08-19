@@ -1583,7 +1583,18 @@ Json StandardCompiler::compileSolidity(StandardCompiler::InputsAndSettings _inpu
 		if (compilationSuccess && isArtifactRequested(_inputsAndSettings.outputSelection, file, name, "evm.assembly", wildcardMatchesExperimental))
 			evmData["assembly"] = compilerStack.assemblyString(contractName, sourceList);
 		if (compilationSuccess && isArtifactRequested(_inputsAndSettings.outputSelection, file, name, "evm.legacyAssembly", wildcardMatchesExperimental))
-			evmData["legacyAssembly"] = compilerStack.assemblyJSON(contractName);
+		{
+			// Keeping every contract's assembly JSON tree in the response object until the final
+			// dump dominates peak memory on large projects, so the assembly is emitted as a
+			// pre-serialized compact string and the tree is dropped here. This diverges from
+			// upstream solc output on purpose: solx, the sole consumer, parses it back.
+			// Contracts without assembly (e.g. interfaces) keep emitting a JSON null.
+			Json assemblyJson = compilerStack.assemblyJSON(contractName);
+			if (assemblyJson.is_null())
+				evmData["legacyAssembly"] = std::move(assemblyJson);
+			else
+				evmData["legacyAssembly"] = assemblyJson.dump();
+		}
 		if (isArtifactRequested(_inputsAndSettings.outputSelection, file, name, "evm.methodIdentifiers", wildcardMatchesExperimental))
 			evmData["methodIdentifiers"] = compilerStack.interfaceSymbols(contractName)["methods"];
 		if (compilationSuccess && isArtifactRequested(_inputsAndSettings.outputSelection, file, name, "evm.gasEstimates", wildcardMatchesExperimental))
