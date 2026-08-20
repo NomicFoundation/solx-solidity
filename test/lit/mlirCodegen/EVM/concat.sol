@@ -222,7 +222,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %29 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:     llvm.store %c65_i256, %29 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:     %30 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:     "llvm.intrcall"(%30, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:     "llvm.intrcall"(%30, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc1)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -281,7 +281,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %27 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc17)
 // CHECK-NEXT:     llvm.store %c65_i256, %27 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc17)
 // CHECK-NEXT:     %28 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc17)
-// CHECK-NEXT:     "llvm.intrcall"(%28, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc17)
+// CHECK-NEXT:     "llvm.intrcall"(%28, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc17)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc17)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc17)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -336,7 +336,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %20 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc24)
 // CHECK-NEXT:     llvm.store %c65_i256, %20 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc24)
 // CHECK-NEXT:     %21 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc24)
-// CHECK-NEXT:     "llvm.intrcall"(%21, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc24)
+// CHECK-NEXT:     "llvm.intrcall"(%21, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc24)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc24)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc24)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -385,7 +385,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %18 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc31)
 // CHECK-NEXT:     llvm.store %c34_i256, %18 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc31)
 // CHECK-NEXT:     %19 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc31)
-// CHECK-NEXT:     "llvm.intrcall"(%19, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc31)
+// CHECK-NEXT:     "llvm.intrcall"(%19, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc31)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc31)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc31)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -408,7 +408,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %32 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc31)
 // CHECK-NEXT:     llvm.store %c34_i256, %32 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc31)
 // CHECK-NEXT:     %33 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc31)
-// CHECK-NEXT:     "llvm.intrcall"(%33, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc31)
+// CHECK-NEXT:     "llvm.intrcall"(%33, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc31)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc31)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc31)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -431,7 +431,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %45 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc31)
 // CHECK-NEXT:     llvm.store %c65_i256, %45 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc31)
 // CHECK-NEXT:     %46 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc31)
-// CHECK-NEXT:     "llvm.intrcall"(%46, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc31)
+// CHECK-NEXT:     "llvm.intrcall"(%46, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc31)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc31)
 // CHECK-NEXT:     cf.br ^bb6 loc(#loc31)
 // CHECK-NEXT:   ^bb6:  // 2 preds: ^bb4, ^bb5
@@ -491,7 +491,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %28 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc38)
 // CHECK-NEXT:     llvm.store %c65_i256, %28 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc38)
 // CHECK-NEXT:     %29 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc38)
-// CHECK-NEXT:     "llvm.intrcall"(%29, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc38)
+// CHECK-NEXT:     "llvm.intrcall"(%29, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc38)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc38)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc38)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -551,7 +551,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %26 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc45)
 // CHECK-NEXT:     llvm.store %c65_i256, %26 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc45)
 // CHECK-NEXT:     %27 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc45)
-// CHECK-NEXT:     "llvm.intrcall"(%27, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc45)
+// CHECK-NEXT:     "llvm.intrcall"(%27, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc45)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc45)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc45)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -607,7 +607,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %24 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc52)
 // CHECK-NEXT:     llvm.store %c34_i256, %24 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc52)
 // CHECK-NEXT:     %25 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc52)
-// CHECK-NEXT:     "llvm.intrcall"(%25, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc52)
+// CHECK-NEXT:     "llvm.intrcall"(%25, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc52)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc52)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc52)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -630,7 +630,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %37 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc52)
 // CHECK-NEXT:     llvm.store %c65_i256, %37 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc52)
 // CHECK-NEXT:     %38 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc52)
-// CHECK-NEXT:     "llvm.intrcall"(%38, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc52)
+// CHECK-NEXT:     "llvm.intrcall"(%38, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc52)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc52)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc52)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -690,7 +690,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %28 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc59)
 // CHECK-NEXT:     llvm.store %c65_i256, %28 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc59)
 // CHECK-NEXT:     %29 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc59)
-// CHECK-NEXT:     "llvm.intrcall"(%29, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc59)
+// CHECK-NEXT:     "llvm.intrcall"(%29, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc59)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc59)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc59)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -749,7 +749,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %25 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc66)
 // CHECK-NEXT:     llvm.store %c65_i256, %25 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc66)
 // CHECK-NEXT:     %26 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc66)
-// CHECK-NEXT:     "llvm.intrcall"(%26, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc66)
+// CHECK-NEXT:     "llvm.intrcall"(%26, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc66)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc66)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc66)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -804,7 +804,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %23 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc73)
 // CHECK-NEXT:     llvm.store %c34_i256, %23 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc73)
 // CHECK-NEXT:     %24 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc73)
-// CHECK-NEXT:     "llvm.intrcall"(%24, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc73)
+// CHECK-NEXT:     "llvm.intrcall"(%24, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc73)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc73)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc73)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -827,7 +827,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %36 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc73)
 // CHECK-NEXT:     llvm.store %c65_i256, %36 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc73)
 // CHECK-NEXT:     %37 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc73)
-// CHECK-NEXT:     "llvm.intrcall"(%37, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc73)
+// CHECK-NEXT:     "llvm.intrcall"(%37, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc73)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc73)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc73)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -882,7 +882,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %21 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc80)
 // CHECK-NEXT:     llvm.store %c34_i256, %21 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc80)
 // CHECK-NEXT:     %22 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc80)
-// CHECK-NEXT:     "llvm.intrcall"(%22, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc80)
+// CHECK-NEXT:     "llvm.intrcall"(%22, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc80)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc80)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc80)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -905,7 +905,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %34 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc80)
 // CHECK-NEXT:     llvm.store %c65_i256, %34 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc80)
 // CHECK-NEXT:     %35 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc80)
-// CHECK-NEXT:     "llvm.intrcall"(%35, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc80)
+// CHECK-NEXT:     "llvm.intrcall"(%35, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc80)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc80)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc80)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -954,7 +954,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %18 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc87)
 // CHECK-NEXT:     llvm.store %c34_i256, %18 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc87)
 // CHECK-NEXT:     %19 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc87)
-// CHECK-NEXT:     "llvm.intrcall"(%19, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc87)
+// CHECK-NEXT:     "llvm.intrcall"(%19, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc87)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc87)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc87)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -984,7 +984,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %37 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc87)
 // CHECK-NEXT:     llvm.store %c65_i256, %37 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc87)
 // CHECK-NEXT:     %38 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc87)
-// CHECK-NEXT:     "llvm.intrcall"(%38, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc87)
+// CHECK-NEXT:     "llvm.intrcall"(%38, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc87)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc87)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc87)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -1033,7 +1033,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %18 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc94)
 // CHECK-NEXT:     llvm.store %c34_i256, %18 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc94)
 // CHECK-NEXT:     %19 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc94)
-// CHECK-NEXT:     "llvm.intrcall"(%19, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc94)
+// CHECK-NEXT:     "llvm.intrcall"(%19, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc94)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc94)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc94)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -1062,7 +1062,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %36 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc94)
 // CHECK-NEXT:     llvm.store %c65_i256, %36 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc94)
 // CHECK-NEXT:     %37 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc94)
-// CHECK-NEXT:     "llvm.intrcall"(%37, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc94)
+// CHECK-NEXT:     "llvm.intrcall"(%37, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc94)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc94)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc94)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -1122,7 +1122,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %26 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc101)
 // CHECK-NEXT:     llvm.store %c65_i256, %26 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc101)
 // CHECK-NEXT:     %27 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc101)
-// CHECK-NEXT:     "llvm.intrcall"(%27, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc101)
+// CHECK-NEXT:     "llvm.intrcall"(%27, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc101)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc101)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc101)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -1173,7 +1173,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %18 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc108)
 // CHECK-NEXT:     llvm.store %c34_i256, %18 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc108)
 // CHECK-NEXT:     %19 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc108)
-// CHECK-NEXT:     "llvm.intrcall"(%19, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc108)
+// CHECK-NEXT:     "llvm.intrcall"(%19, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc108)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc108)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc108)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -1200,7 +1200,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %34 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc108)
 // CHECK-NEXT:     llvm.store %c65_i256, %34 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc108)
 // CHECK-NEXT:     %35 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc108)
-// CHECK-NEXT:     "llvm.intrcall"(%35, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc108)
+// CHECK-NEXT:     "llvm.intrcall"(%35, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc108)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc108)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc108)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -1233,7 +1233,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %8 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc111)
 // CHECK-NEXT:     llvm.store %c65_i256, %8 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc111)
 // CHECK-NEXT:     %9 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc111)
-// CHECK-NEXT:     "llvm.intrcall"(%9, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc111)
+// CHECK-NEXT:     "llvm.intrcall"(%9, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc111)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc111)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc111)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -1283,7 +1283,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %20 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc116)
 // CHECK-NEXT:     llvm.store %c65_i256, %20 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc116)
 // CHECK-NEXT:     %21 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc116)
-// CHECK-NEXT:     "llvm.intrcall"(%21, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc116)
+// CHECK-NEXT:     "llvm.intrcall"(%21, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc116)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc116)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc116)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -1332,7 +1332,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %19 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc121)
 // CHECK-NEXT:     llvm.store %c65_i256, %19 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc121)
 // CHECK-NEXT:     %20 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc121)
-// CHECK-NEXT:     "llvm.intrcall"(%20, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc121)
+// CHECK-NEXT:     "llvm.intrcall"(%20, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc121)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc121)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc121)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -1376,7 +1376,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %15 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc126)
 // CHECK-NEXT:     llvm.store %c65_i256, %15 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc126)
 // CHECK-NEXT:     %16 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc126)
-// CHECK-NEXT:     "llvm.intrcall"(%16, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc126)
+// CHECK-NEXT:     "llvm.intrcall"(%16, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc126)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc126)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc126)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -1422,7 +1422,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %16 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc131)
 // CHECK-NEXT:     llvm.store %c34_i256, %16 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc131)
 // CHECK-NEXT:     %17 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc131)
-// CHECK-NEXT:     "llvm.intrcall"(%17, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc131)
+// CHECK-NEXT:     "llvm.intrcall"(%17, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc131)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc131)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc131)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -1444,7 +1444,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %28 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc131)
 // CHECK-NEXT:     llvm.store %c65_i256, %28 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc131)
 // CHECK-NEXT:     %29 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc131)
-// CHECK-NEXT:     "llvm.intrcall"(%29, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc131)
+// CHECK-NEXT:     "llvm.intrcall"(%29, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc131)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc131)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc131)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -1513,7 +1513,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %33 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc140)
 // CHECK-NEXT:     llvm.store %c65_i256, %33 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc140)
 // CHECK-NEXT:     %34 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc140)
-// CHECK-NEXT:     "llvm.intrcall"(%34, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc140)
+// CHECK-NEXT:     "llvm.intrcall"(%34, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc140)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc140)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc140)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -1574,7 +1574,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %29 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc147)
 // CHECK-NEXT:     llvm.store %c65_i256, %29 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc147)
 // CHECK-NEXT:     %30 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc147)
-// CHECK-NEXT:     "llvm.intrcall"(%30, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc147)
+// CHECK-NEXT:     "llvm.intrcall"(%30, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc147)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc147)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc147)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -1633,7 +1633,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %27 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc154)
 // CHECK-NEXT:     llvm.store %c65_i256, %27 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc154)
 // CHECK-NEXT:     %28 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc154)
-// CHECK-NEXT:     "llvm.intrcall"(%28, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc154)
+// CHECK-NEXT:     "llvm.intrcall"(%28, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc154)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc154)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc154)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -1682,7 +1682,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %18 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc161)
 // CHECK-NEXT:     llvm.store %c34_i256, %18 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc161)
 // CHECK-NEXT:     %19 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc161)
-// CHECK-NEXT:     "llvm.intrcall"(%19, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc161)
+// CHECK-NEXT:     "llvm.intrcall"(%19, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc161)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc161)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc161)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -1705,7 +1705,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %32 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc161)
 // CHECK-NEXT:     llvm.store %c34_i256, %32 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc161)
 // CHECK-NEXT:     %33 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc161)
-// CHECK-NEXT:     "llvm.intrcall"(%33, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc161)
+// CHECK-NEXT:     "llvm.intrcall"(%33, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc161)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc161)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc161)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -1728,7 +1728,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %45 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc161)
 // CHECK-NEXT:     llvm.store %c65_i256, %45 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc161)
 // CHECK-NEXT:     %46 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc161)
-// CHECK-NEXT:     "llvm.intrcall"(%46, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc161)
+// CHECK-NEXT:     "llvm.intrcall"(%46, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc161)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc161)
 // CHECK-NEXT:     cf.br ^bb6 loc(#loc161)
 // CHECK-NEXT:   ^bb6:  // 2 preds: ^bb4, ^bb5
@@ -1788,7 +1788,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %28 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc168)
 // CHECK-NEXT:     llvm.store %c65_i256, %28 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc168)
 // CHECK-NEXT:     %29 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc168)
-// CHECK-NEXT:     "llvm.intrcall"(%29, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc168)
+// CHECK-NEXT:     "llvm.intrcall"(%29, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc168)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc168)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc168)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -1809,7 +1809,7 @@ function fstr_ab(string memory a, string calldata b) {
 // CHECK-NEXT:     %2 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc31)
 // CHECK-NEXT:     llvm.store %arg0, %2 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc31)
 // CHECK-NEXT:     %3 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc31)
-// CHECK-NEXT:     %4 = "llvm.intrcall"(%3, %c32_i256) <{id = 4085 : i32, name = "evm.sha3"}> : (!llvm.ptr<1>, i256) -> i256 loc(#loc31)
+// CHECK-NEXT:     %4 = "llvm.intrcall"(%3, %c32_i256) <{id = 4086 : i32, name = "evm.sha3"}> : (!llvm.ptr<1>, i256) -> i256 loc(#loc31)
 // CHECK-NEXT:     cf.br ^bb2(%c0_i256 : i256) loc(#loc31)
 // CHECK-NEXT:   ^bb2(%5: i256 loc({{.*}}:19:12)):  // 2 preds: ^bb1, ^bb3
 // CHECK-NEXT:     %6 = arith.cmpi ult, %5, %arg2 : i256 loc(#loc31)

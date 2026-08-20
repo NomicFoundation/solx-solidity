@@ -62,7 +62,7 @@ function cd_dyn_member(DynS calldata s) returns (uint16) {
 // CHECK-NEXT:     %15 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:     llvm.store %c17_i256, %15 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:     %16 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:     "llvm.intrcall"(%16, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:     "llvm.intrcall"(%16, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc1)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -93,7 +93,7 @@ function cd_dyn_member(DynS calldata s) returns (uint16) {
 // CHECK-NEXT:     %8 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc8)
 // CHECK-NEXT:     llvm.store %c65_i256, %8 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc8)
 // CHECK-NEXT:     %9 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc8)
-// CHECK-NEXT:     "llvm.intrcall"(%9, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc8)
+// CHECK-NEXT:     "llvm.intrcall"(%9, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc8)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc8)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc8)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -115,7 +115,7 @@ function cd_dyn_member(DynS calldata s) returns (uint16) {
 // CHECK-NEXT:     %20 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc8)
 // CHECK-NEXT:     llvm.store %c65_i256, %20 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc8)
 // CHECK-NEXT:     %21 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc8)
-// CHECK-NEXT:     "llvm.intrcall"(%21, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc8)
+// CHECK-NEXT:     "llvm.intrcall"(%21, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc8)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc8)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc8)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -155,7 +155,7 @@ function cd_dyn_member(DynS calldata s) returns (uint16) {
 // CHECK-NEXT:     cf.cond_br %8, ^bb1, ^bb2 loc(#loc12)
 // CHECK-NEXT:   ^bb1:  // pred: ^bb0
 // CHECK-NEXT:     %9 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc12)
-// CHECK-NEXT:     "llvm.intrcall"(%9, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc12)
+// CHECK-NEXT:     "llvm.intrcall"(%9, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc12)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc12)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc12)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -167,7 +167,7 @@ function cd_dyn_member(DynS calldata s) returns (uint16) {
 // CHECK-NEXT:     cf.cond_br %14, ^bb3, ^bb4 loc(#loc12)
 // CHECK-NEXT:   ^bb3:  // pred: ^bb2
 // CHECK-NEXT:     %15 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc12)
-// CHECK-NEXT:     "llvm.intrcall"(%15, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc12)
+// CHECK-NEXT:     "llvm.intrcall"(%15, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc12)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc12)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc12)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -177,7 +177,7 @@ function cd_dyn_member(DynS calldata s) returns (uint16) {
 // CHECK-NEXT:     cf.cond_br %18, ^bb5, ^bb6 loc(#loc12)
 // CHECK-NEXT:   ^bb5:  // pred: ^bb4
 // CHECK-NEXT:     %19 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc12)
-// CHECK-NEXT:     "llvm.intrcall"(%19, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc12)
+// CHECK-NEXT:     "llvm.intrcall"(%19, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc12)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc12)
 // CHECK-NEXT:     cf.br ^bb6 loc(#loc12)
 // CHECK-NEXT:   ^bb6:  // 2 preds: ^bb4, ^bb5
@@ -189,7 +189,7 @@ function cd_dyn_member(DynS calldata s) returns (uint16) {
 // CHECK-NEXT:     %22 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc12)
 // CHECK-NEXT:     llvm.store %c50_i256, %22 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc12)
 // CHECK-NEXT:     %23 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc12)
-// CHECK-NEXT:     "llvm.intrcall"(%23, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc12)
+// CHECK-NEXT:     "llvm.intrcall"(%23, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc12)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc12)
 // CHECK-NEXT:     cf.br ^bb8 loc(#loc12)
 // CHECK-NEXT:   ^bb8:  // 2 preds: ^bb6, ^bb7
@@ -200,7 +200,7 @@ function cd_dyn_member(DynS calldata s) returns (uint16) {
 // CHECK-NEXT:     cf.cond_br %27, ^bb9, ^bb10 loc(#loc12)
 // CHECK-NEXT:   ^bb9:  // pred: ^bb8
 // CHECK-NEXT:     %28 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc12)
-// CHECK-NEXT:     "llvm.intrcall"(%28, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc12)
+// CHECK-NEXT:     "llvm.intrcall"(%28, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc12)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc12)
 // CHECK-NEXT:     cf.br ^bb10 loc(#loc12)
 // CHECK-NEXT:   ^bb10:  // 2 preds: ^bb8, ^bb9
