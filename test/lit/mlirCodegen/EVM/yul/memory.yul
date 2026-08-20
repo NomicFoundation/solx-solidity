@@ -29,7 +29,7 @@ object "Test" {
 // CHECK-NEXT:     "llvm.intr.memmove"(%4, %5, %c5_i256) <{isVolatile = false}> : (!llvm.ptr<1>, !llvm.ptr<1>, i256) -> () loc(#loc4)
 // CHECK-NEXT:     %6 = "llvm.intrcall"(%c0_i256, %c255_i256) <{id = 4034 : i32, name = "evm.byte"}> : (i256, i256) -> i256 loc(#loc5)
 // CHECK-NEXT:     %7 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc6)
-// CHECK-NEXT:     "llvm.intrcall"(%7, %6) <{id = 4072 : i32, name = "evm.mstore8"}> : (!llvm.ptr<1>, i256) -> () loc(#loc6)
+// CHECK-NEXT:     "llvm.intrcall"(%7, %6) <{id = 4073 : i32, name = "evm.mstore8"}> : (!llvm.ptr<1>, i256) -> () loc(#loc6)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)
 // CHECK-NEXT:   } loc(#loc)
 // CHECK-NEXT: } loc(#loc)

@@ -51,7 +51,7 @@ function toUint(E x) returns (uint) {
 // CHECK-NEXT:     %8 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:     llvm.store %c33_i256, %8 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:     %9 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:     "llvm.intrcall"(%9, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:     "llvm.intrcall"(%9, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc1)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -63,7 +63,7 @@ function toUint(E x) returns (uint) {
 // CHECK-NEXT:     %12 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:     llvm.store %c33_i256, %12 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:     %13 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:     "llvm.intrcall"(%13, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:     "llvm.intrcall"(%13, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc1)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -79,7 +79,7 @@ function toUint(E x) returns (uint) {
 // CHECK-NEXT:     %20 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc8)
 // CHECK-NEXT:     llvm.store %c33_i256, %20 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc8)
 // CHECK-NEXT:     %21 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc8)
-// CHECK-NEXT:     "llvm.intrcall"(%21, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc8)
+// CHECK-NEXT:     "llvm.intrcall"(%21, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc8)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc8)
 // CHECK-NEXT:     cf.br ^bb6 loc(#loc8)
 // CHECK-NEXT:   ^bb6:  // 2 preds: ^bb4, ^bb5
@@ -91,7 +91,7 @@ function toUint(E x) returns (uint) {
 // CHECK-NEXT:     %24 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc8)
 // CHECK-NEXT:     llvm.store %c33_i256, %24 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc8)
 // CHECK-NEXT:     %25 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc8)
-// CHECK-NEXT:     "llvm.intrcall"(%25, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc8)
+// CHECK-NEXT:     "llvm.intrcall"(%25, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc8)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc8)
 // CHECK-NEXT:     cf.br ^bb8 loc(#loc8)
 // CHECK-NEXT:   ^bb8:  // 2 preds: ^bb6, ^bb7
@@ -120,7 +120,7 @@ function toUint(E x) returns (uint) {
 // CHECK-NEXT:     %5 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc14)
 // CHECK-NEXT:     llvm.store %c33_i256, %5 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc14)
 // CHECK-NEXT:     %6 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc14)
-// CHECK-NEXT:     "llvm.intrcall"(%6, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc14)
+// CHECK-NEXT:     "llvm.intrcall"(%6, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc14)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc14)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc14)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -147,7 +147,7 @@ function toUint(E x) returns (uint) {
 // CHECK-NEXT:     %5 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc19)
 // CHECK-NEXT:     llvm.store %c33_i256, %5 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc19)
 // CHECK-NEXT:     %6 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc19)
-// CHECK-NEXT:     "llvm.intrcall"(%6, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc19)
+// CHECK-NEXT:     "llvm.intrcall"(%6, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc19)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc19)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc19)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1

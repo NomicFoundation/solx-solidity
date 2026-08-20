@@ -108,7 +108,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %7 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:     llvm.store %c50_i256, %7 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc1)
 // CHECK-NEXT:     %8 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:     "llvm.intrcall"(%8, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:     "llvm.intrcall"(%8, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc1)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -143,7 +143,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %7 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc12)
 // CHECK-NEXT:     llvm.store %c50_i256, %7 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc12)
 // CHECK-NEXT:     %8 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc12)
-// CHECK-NEXT:     "llvm.intrcall"(%8, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc12)
+// CHECK-NEXT:     "llvm.intrcall"(%8, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc12)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc12)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc12)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -160,7 +160,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %16 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc12)
 // CHECK-NEXT:     llvm.store %c50_i256, %16 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc12)
 // CHECK-NEXT:     %17 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc12)
-// CHECK-NEXT:     "llvm.intrcall"(%17, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc12)
+// CHECK-NEXT:     "llvm.intrcall"(%17, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc12)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc12)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc12)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -194,7 +194,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %6 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc19)
 // CHECK-NEXT:     llvm.store %c50_i256, %6 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc19)
 // CHECK-NEXT:     %7 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc19)
-// CHECK-NEXT:     "llvm.intrcall"(%7, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc19)
+// CHECK-NEXT:     "llvm.intrcall"(%7, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc19)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc19)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc19)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -232,7 +232,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %8 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc23)
 // CHECK-NEXT:     llvm.store %c65_i256, %8 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc23)
 // CHECK-NEXT:     %9 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc23)
-// CHECK-NEXT:     "llvm.intrcall"(%9, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc23)
+// CHECK-NEXT:     "llvm.intrcall"(%9, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc23)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc23)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc23)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -271,7 +271,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %8 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc25)
 // CHECK-NEXT:     llvm.store %c65_i256, %8 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc25)
 // CHECK-NEXT:     %9 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc25)
-// CHECK-NEXT:     "llvm.intrcall"(%9, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc25)
+// CHECK-NEXT:     "llvm.intrcall"(%9, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc25)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc25)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc25)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -296,7 +296,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %22 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc25)
 // CHECK-NEXT:     llvm.store %c65_i256, %22 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc25)
 // CHECK-NEXT:     %23 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc25)
-// CHECK-NEXT:     "llvm.intrcall"(%23, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc25)
+// CHECK-NEXT:     "llvm.intrcall"(%23, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc25)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc25)
 // CHECK-NEXT:     cf.br ^bb6 loc(#loc25)
 // CHECK-NEXT:   ^bb6:  // 2 preds: ^bb4, ^bb5
@@ -346,7 +346,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %9 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc29)
 // CHECK-NEXT:     llvm.store %c65_i256, %9 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc29)
 // CHECK-NEXT:     %10 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc29)
-// CHECK-NEXT:     "llvm.intrcall"(%10, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc29)
+// CHECK-NEXT:     "llvm.intrcall"(%10, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc29)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc29)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc29)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -371,7 +371,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %22 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc31)
 // CHECK-NEXT:     llvm.store %c50_i256, %22 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc31)
 // CHECK-NEXT:     %23 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc31)
-// CHECK-NEXT:     "llvm.intrcall"(%23, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc31)
+// CHECK-NEXT:     "llvm.intrcall"(%23, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc31)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc31)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc31)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -389,7 +389,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %31 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc32)
 // CHECK-NEXT:     llvm.store %c50_i256, %31 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc32)
 // CHECK-NEXT:     %32 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc32)
-// CHECK-NEXT:     "llvm.intrcall"(%32, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc32)
+// CHECK-NEXT:     "llvm.intrcall"(%32, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc32)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc32)
 // CHECK-NEXT:     cf.br ^bb6 loc(#loc32)
 // CHECK-NEXT:   ^bb6:  // 2 preds: ^bb4, ^bb5
@@ -428,7 +428,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %9 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc37)
 // CHECK-NEXT:     llvm.store %c65_i256, %9 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc37)
 // CHECK-NEXT:     %10 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc37)
-// CHECK-NEXT:     "llvm.intrcall"(%10, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc37)
+// CHECK-NEXT:     "llvm.intrcall"(%10, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc37)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc37)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc37)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -462,7 +462,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %27 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc39)
 // CHECK-NEXT:     llvm.store %c65_i256, %27 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc39)
 // CHECK-NEXT:     %28 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc39)
-// CHECK-NEXT:     "llvm.intrcall"(%28, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc39)
+// CHECK-NEXT:     "llvm.intrcall"(%28, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc39)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc39)
 // CHECK-NEXT:     cf.br ^bb7 loc(#loc39)
 // CHECK-NEXT:   ^bb7:  // 2 preds: ^bb5, ^bb6
@@ -486,7 +486,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %40 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc40)
 // CHECK-NEXT:     llvm.store %c50_i256, %40 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc40)
 // CHECK-NEXT:     %41 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc40)
-// CHECK-NEXT:     "llvm.intrcall"(%41, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc40)
+// CHECK-NEXT:     "llvm.intrcall"(%41, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc40)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc40)
 // CHECK-NEXT:     cf.br ^bb9 loc(#loc40)
 // CHECK-NEXT:   ^bb9:  // 2 preds: ^bb7, ^bb8
@@ -506,7 +506,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %51 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc41)
 // CHECK-NEXT:     llvm.store %c65_i256, %51 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc41)
 // CHECK-NEXT:     %52 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc41)
-// CHECK-NEXT:     "llvm.intrcall"(%52, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc41)
+// CHECK-NEXT:     "llvm.intrcall"(%52, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc41)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc41)
 // CHECK-NEXT:     cf.br ^bb11 loc(#loc41)
 // CHECK-NEXT:   ^bb11:  // 2 preds: ^bb9, ^bb10
@@ -530,7 +530,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %64 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc42)
 // CHECK-NEXT:     llvm.store %c50_i256, %64 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc42)
 // CHECK-NEXT:     %65 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc42)
-// CHECK-NEXT:     "llvm.intrcall"(%65, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc42)
+// CHECK-NEXT:     "llvm.intrcall"(%65, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc42)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc42)
 // CHECK-NEXT:     cf.br ^bb13 loc(#loc42)
 // CHECK-NEXT:   ^bb13:  // 2 preds: ^bb11, ^bb12
@@ -548,7 +548,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %73 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc43)
 // CHECK-NEXT:     llvm.store %c50_i256, %73 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc43)
 // CHECK-NEXT:     %74 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc43)
-// CHECK-NEXT:     "llvm.intrcall"(%74, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc43)
+// CHECK-NEXT:     "llvm.intrcall"(%74, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc43)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc43)
 // CHECK-NEXT:     cf.br ^bb15 loc(#loc43)
 // CHECK-NEXT:   ^bb15:  // 2 preds: ^bb13, ^bb14
@@ -565,7 +565,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %82 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc43)
 // CHECK-NEXT:     llvm.store %c50_i256, %82 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc43)
 // CHECK-NEXT:     %83 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc43)
-// CHECK-NEXT:     "llvm.intrcall"(%83, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc43)
+// CHECK-NEXT:     "llvm.intrcall"(%83, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc43)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc43)
 // CHECK-NEXT:     cf.br ^bb17 loc(#loc43)
 // CHECK-NEXT:   ^bb17:  // 2 preds: ^bb15, ^bb16
@@ -583,7 +583,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %91 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc44)
 // CHECK-NEXT:     llvm.store %c50_i256, %91 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc44)
 // CHECK-NEXT:     %92 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc44)
-// CHECK-NEXT:     "llvm.intrcall"(%92, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc44)
+// CHECK-NEXT:     "llvm.intrcall"(%92, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc44)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc44)
 // CHECK-NEXT:     cf.br ^bb19 loc(#loc44)
 // CHECK-NEXT:   ^bb19:  // 2 preds: ^bb17, ^bb18
@@ -600,7 +600,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %100 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc44)
 // CHECK-NEXT:     llvm.store %c50_i256, %100 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc44)
 // CHECK-NEXT:     %101 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc44)
-// CHECK-NEXT:     "llvm.intrcall"(%101, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc44)
+// CHECK-NEXT:     "llvm.intrcall"(%101, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc44)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc44)
 // CHECK-NEXT:     cf.br ^bb21 loc(#loc44)
 // CHECK-NEXT:   ^bb21:  // 2 preds: ^bb19, ^bb20
@@ -641,7 +641,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %10 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc50)
 // CHECK-NEXT:     llvm.store %c65_i256, %10 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc50)
 // CHECK-NEXT:     %11 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc50)
-// CHECK-NEXT:     "llvm.intrcall"(%11, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc50)
+// CHECK-NEXT:     "llvm.intrcall"(%11, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc50)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc50)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc50)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -669,7 +669,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %26 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc52)
 // CHECK-NEXT:     llvm.store %c65_i256, %26 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc52)
 // CHECK-NEXT:     %27 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc52)
-// CHECK-NEXT:     "llvm.intrcall"(%27, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc52)
+// CHECK-NEXT:     "llvm.intrcall"(%27, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc52)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc52)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc52)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -710,7 +710,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %8 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc56)
 // CHECK-NEXT:     llvm.store %c65_i256, %8 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc56)
 // CHECK-NEXT:     %9 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc56)
-// CHECK-NEXT:     "llvm.intrcall"(%9, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc56)
+// CHECK-NEXT:     "llvm.intrcall"(%9, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc56)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc56)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc56)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -737,7 +737,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %23 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc59)
 // CHECK-NEXT:     llvm.store %c65_i256, %23 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc59)
 // CHECK-NEXT:     %24 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc59)
-// CHECK-NEXT:     "llvm.intrcall"(%24, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc59)
+// CHECK-NEXT:     "llvm.intrcall"(%24, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc59)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc59)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc59)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -780,7 +780,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %7 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc66)
 // CHECK-NEXT:     llvm.store %c65_i256, %7 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc66)
 // CHECK-NEXT:     %8 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc66)
-// CHECK-NEXT:     "llvm.intrcall"(%8, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc66)
+// CHECK-NEXT:     "llvm.intrcall"(%8, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc66)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc66)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc66)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -804,7 +804,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %20 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc67)
 // CHECK-NEXT:     llvm.store %c65_i256, %20 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc67)
 // CHECK-NEXT:     %21 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc67)
-// CHECK-NEXT:     "llvm.intrcall"(%21, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc67)
+// CHECK-NEXT:     "llvm.intrcall"(%21, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc67)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc67)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc67)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -828,7 +828,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %33 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc68)
 // CHECK-NEXT:     llvm.store %c65_i256, %33 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc68)
 // CHECK-NEXT:     %34 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc68)
-// CHECK-NEXT:     "llvm.intrcall"(%34, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc68)
+// CHECK-NEXT:     "llvm.intrcall"(%34, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc68)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc68)
 // CHECK-NEXT:     cf.br ^bb6 loc(#loc68)
 // CHECK-NEXT:   ^bb6:  // 2 preds: ^bb4, ^bb5
@@ -868,7 +868,7 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %9 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc75)
 // CHECK-NEXT:     llvm.store %c50_i256, %9 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc75)
 // CHECK-NEXT:     %10 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc75)
-// CHECK-NEXT:     "llvm.intrcall"(%10, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc75)
+// CHECK-NEXT:     "llvm.intrcall"(%10, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc75)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc75)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc75)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -937,14 +937,14 @@ function stg_arr(uint[] storage a) returns (uint, uint) {
 // CHECK-NEXT:     %11 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc93)
 // CHECK-NEXT:     llvm.store %c50_i256, %11 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc93)
 // CHECK-NEXT:     %12 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc93)
-// CHECK-NEXT:     "llvm.intrcall"(%12, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc93)
+// CHECK-NEXT:     "llvm.intrcall"(%12, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc93)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc93)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc93)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
 // CHECK-NEXT:     %13 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc93)
 // CHECK-NEXT:     llvm.store %6, %13 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc93)
 // CHECK-NEXT:     %14 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc93)
-// CHECK-NEXT:     %15 = "llvm.intrcall"(%14, %c32_i256) <{id = 4085 : i32, name = "evm.sha3"}> : (!llvm.ptr<1>, i256) -> i256 loc(#loc93)
+// CHECK-NEXT:     %15 = "llvm.intrcall"(%14, %c32_i256) <{id = 4086 : i32, name = "evm.sha3"}> : (!llvm.ptr<1>, i256) -> i256 loc(#loc93)
 // CHECK-NEXT:     %16 = llvm.inttoptr %15 : i256 to !llvm.ptr<5> loc(#loc94)
 // CHECK-NEXT:     %17 = llvm.load %16 {alignment = 1 : i64} : !llvm.ptr<5> -> i256 loc(#loc94)
 // CHECK-NEXT:     return %5, %17 : i256, i256 loc(#loc95)
