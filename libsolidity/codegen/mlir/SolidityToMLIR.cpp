@@ -771,6 +771,14 @@ mlir::Type SolidityToMLIRPass::getType(
     const auto *intTy = static_cast<IntegerType const *>(ty);
     return b.getIntegerType(intTy->numBits(), intTy->isSigned());
   }
+  case Type::Category::FixedPoint: {
+    const auto *fixedTy = static_cast<FixedPointType const *>(ty);
+    // Fixed-point values support no operations yet (the analysis rejects
+    // arithmetic, assignments and conversions), so only the storage layout
+    // and the zero default are observable. An integer of the same width and
+    // signedness reproduces both. The decimal scale has no codegen effect.
+    return b.getIntegerType(fixedTy->numBits(), fixedTy->isSigned());
+  }
   case Type::Category::Enum: {
     const auto *enumTy = static_cast<EnumType const *>(ty);
     return mlir::sol::EnumType::get(b.getContext(), enumTy->maxValue());
