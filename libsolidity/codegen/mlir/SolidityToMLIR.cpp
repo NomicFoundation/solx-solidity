@@ -771,6 +771,14 @@ mlir::Type SolidityToMLIRPass::getType(
     const auto *intTy = static_cast<IntegerType const *>(ty);
     return b.getIntegerType(intTy->numBits(), intTy->isSigned());
   }
+  case Type::Category::FixedPoint: {
+    const auto *fixedTy = static_cast<FixedPointType const *>(ty);
+    // Fixed-point values support no operations yet (the analysis rejects
+    // arithmetic, assignments and conversions), so only the storage layout
+    // and the zero default are observable. An integer of the same width and
+    // signedness reproduces both. The decimal scale has no codegen effect.
+    return b.getIntegerType(fixedTy->numBits(), fixedTy->isSigned());
+  }
   case Type::Category::Enum: {
     const auto *enumTy = static_cast<EnumType const *>(ty);
     return mlir::sol::EnumType::get(b.getContext(), enumTy->maxValue());
@@ -988,10 +996,14 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
   }
 
   // Type-declaration references (struct, enum and user-defined value type
-  // names) are pure compile-time handles with no runtime representation.
+  // names) and error/event references are pure compile-time handles with no
+  // runtime representation. Errors and events are only used through calls and
+  // .selector, which are handled at their use sites.
   if (dynamic_cast<StructDefinition const *>(decl) ||
       dynamic_cast<EnumDefinition const *>(decl) ||
-      dynamic_cast<UserDefinedValueTypeDefinition const *>(decl))
+      dynamic_cast<UserDefinedValueTypeDefinition const *>(decl) ||
+      dynamic_cast<ErrorDefinition const *>(decl) ||
+      dynamic_cast<EventDefinition const *>(decl))
     return {};
 
   if (const auto *fn = dynamic_cast<FunctionDefinition const *>(decl)) {
@@ -3065,6 +3077,13 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
   if (dynamic_cast<ElementaryTypeNameExpression const *>(&expr))
     return {};
 
+  // A bare creation reference (`new C` not called) is a pure compile-time
+  // handle: creation functions are only usable as callees, and the called
+  // forms are lowered from their FunctionCall wrappers. The old codegen's
+  // visit(NewExpression) is the same no-op.
+  if (dynamic_cast<NewExpression const *>(&expr))
+    return {};
+
   // Identifier
   if (const auto *ident = dynamic_cast<Identifier const *>(&expr))
     return genExpr(*ident);
@@ -3346,10 +3365,8 @@ void SolidityToMLIRPass::lower(ForStatement const &forStmt) {
 
   // Lower loop expression.
   b.setInsertionPointToStart(&forOp.getStep().emplaceBlock());
-  if (forStmt.loopExpression()) {
-    llvm::SaveAndRestore<bool> g(inUnchecked, true);
+  if (forStmt.loopExpression())
     lower(*forStmt.loopExpression());
-  }
   b.create<mlir::sol::YieldOp>(forOp.getLoc());
 }
 

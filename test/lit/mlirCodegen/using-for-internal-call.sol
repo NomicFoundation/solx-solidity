@@ -100,7 +100,7 @@ contract C {
 // CHECK-NEXT:       } step {
 // CHECK-NEXT:         %5 = sol.load %2 : !sol.ptr<ui256, Stack>, ui256 loc(#loc17)
 // CHECK-NEXT:         %c1_ui256 = sol.constant 1 : ui256 loc(#loc24)
-// CHECK-NEXT:         %6 = sol.add %5, %c1_ui256 : ui256 loc(#loc24)
+// CHECK-NEXT:         %6 = sol.cadd %5, %c1_ui256 : ui256 loc(#loc24)
 // CHECK-NEXT:         sol.store %6, %2 : ui256, !sol.ptr<ui256, Stack> loc(#loc24)
 // CHECK-NEXT:         sol.yield loc(#loc18)
 // CHECK-NEXT:       } loc(#loc18)
@@ -220,7 +220,7 @@ contract C {
 // CHECK-NEXT:       } step {
 // CHECK-NEXT:         %5 = sol.load %2 : !sol.ptr<ui256, Stack>, ui256 loc(#loc27)
 // CHECK-NEXT:         %c1_ui256 = sol.constant 1 : ui256 loc(#loc34)
-// CHECK-NEXT:         %6 = sol.add %5, %c1_ui256 : ui256 loc(#loc34)
+// CHECK-NEXT:         %6 = sol.cadd %5, %c1_ui256 : ui256 loc(#loc34)
 // CHECK-NEXT:         sol.store %6, %2 : ui256, !sol.ptr<ui256, Stack> loc(#loc34)
 // CHECK-NEXT:         sol.yield loc(#loc28)
 // CHECK-NEXT:       } loc(#loc28)

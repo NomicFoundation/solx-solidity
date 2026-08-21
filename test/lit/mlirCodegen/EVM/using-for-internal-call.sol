@@ -107,13 +107,13 @@ contract C {
 // CHECK-NEXT:       %2 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc5)
 // CHECK-NEXT:       llvm.store %c0_i256, %2 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc5)
 // CHECK-NEXT:       cf.br ^bb1 loc(#loc6)
-// CHECK-NEXT:     ^bb1:  // 2 preds: ^bb0, ^bb6
+// CHECK-NEXT:     ^bb1:  // 2 preds: ^bb0, ^bb8
 // CHECK-NEXT:       %3 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc7)
 // CHECK-NEXT:       %4 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc8)
 // CHECK-NEXT:       %5 = llvm.inttoptr %4 : i256 to !llvm.ptr<1> loc(#loc8)
 // CHECK-NEXT:       %6 = llvm.load %5 {alignment = 1 : i64} : !llvm.ptr<1> -> i256 loc(#loc8)
 // CHECK-NEXT:       %7 = arith.cmpi ult, %3, %6 : i256 loc(#loc7)
-// CHECK-NEXT:       cf.cond_br %7, ^bb2, ^bb7 loc(#loc7)
+// CHECK-NEXT:       cf.cond_br %7, ^bb2, ^bb9 loc(#loc7)
 // CHECK-NEXT:     ^bb2:  // pred: ^bb1
 // CHECK-NEXT:       %8 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc9)
 // CHECK-NEXT:       %9 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc10)
@@ -153,11 +153,23 @@ contract C {
 // CHECK-NEXT:       llvm.store %22, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc11)
 // CHECK-NEXT:       %27 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc5)
 // CHECK-NEXT:       %28 = arith.addi %27, %c1_i256 : i256 loc(#loc12)
+// CHECK-NEXT:       %29 = arith.cmpi ugt, %27, %28 : i256 loc(#loc12)
+// CHECK-NEXT:       cf.cond_br %29, ^bb7, ^bb8 loc(#loc12)
+// CHECK-NEXT:     ^bb7:  // pred: ^bb6
+// CHECK-NEXT:       %30 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc12)
+// CHECK-NEXT:       llvm.store %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256, %30 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc12)
+// CHECK-NEXT:       %31 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc12)
+// CHECK-NEXT:       llvm.store %c17_i256, %31 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc12)
+// CHECK-NEXT:       %32 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc12)
+// CHECK-NEXT:       "llvm.intrcall"(%32, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc12)
+// CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc12)
+// CHECK-NEXT:       cf.br ^bb8 loc(#loc12)
+// CHECK-NEXT:     ^bb8:  // 2 preds: ^bb6, ^bb7
 // CHECK-NEXT:       llvm.store %28, %2 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc12)
 // CHECK-NEXT:       cf.br ^bb1 loc(#loc6)
-// CHECK-NEXT:     ^bb7:  // pred: ^bb1
-// CHECK-NEXT:       %29 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc2)
-// CHECK-NEXT:       return %29 : i256 loc(#loc2)
+// CHECK-NEXT:     ^bb9:  // pred: ^bb1
+// CHECK-NEXT:       %33 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc2)
+// CHECK-NEXT:       return %33 : i256 loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
 // CHECK-NEXT:     func.func @twice_30(%arg0: i256 loc({{.*}}:11:17)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       %c36_i256 = arith.constant 36 : i256 loc(#loc)
@@ -523,13 +535,13 @@ contract C {
 // CHECK-NEXT:       %2 = llvm.alloca %c1_i256 x i256 : (i256) -> !llvm.ptr loc(#loc10)
 // CHECK-NEXT:       llvm.store %c0_i256, %2 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc10)
 // CHECK-NEXT:       cf.br ^bb1 loc(#loc11)
-// CHECK-NEXT:     ^bb1:  // 2 preds: ^bb0, ^bb6
+// CHECK-NEXT:     ^bb1:  // 2 preds: ^bb0, ^bb8
 // CHECK-NEXT:       %3 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc12)
 // CHECK-NEXT:       %4 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc13)
 // CHECK-NEXT:       %5 = llvm.inttoptr %4 : i256 to !llvm.ptr<1> loc(#loc13)
 // CHECK-NEXT:       %6 = llvm.load %5 {alignment = 1 : i64} : !llvm.ptr<1> -> i256 loc(#loc13)
 // CHECK-NEXT:       %7 = arith.cmpi ult, %3, %6 : i256 loc(#loc12)
-// CHECK-NEXT:       cf.cond_br %7, ^bb2, ^bb7 loc(#loc12)
+// CHECK-NEXT:       cf.cond_br %7, ^bb2, ^bb9 loc(#loc12)
 // CHECK-NEXT:     ^bb2:  // pred: ^bb1
 // CHECK-NEXT:       %8 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc14)
 // CHECK-NEXT:       %9 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc15)
@@ -569,11 +581,23 @@ contract C {
 // CHECK-NEXT:       llvm.store %22, %1 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc16)
 // CHECK-NEXT:       %27 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc10)
 // CHECK-NEXT:       %28 = arith.addi %27, %c1_i256 : i256 loc(#loc17)
+// CHECK-NEXT:       %29 = arith.cmpi ugt, %27, %28 : i256 loc(#loc17)
+// CHECK-NEXT:       cf.cond_br %29, ^bb7, ^bb8 loc(#loc17)
+// CHECK-NEXT:     ^bb7:  // pred: ^bb6
+// CHECK-NEXT:       %30 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc17)
+// CHECK-NEXT:       llvm.store %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256, %30 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc17)
+// CHECK-NEXT:       %31 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1> loc(#loc17)
+// CHECK-NEXT:       llvm.store %c17_i256, %31 {alignment = 1 : i64} : i256, !llvm.ptr<1> loc(#loc17)
+// CHECK-NEXT:       %32 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc17)
+// CHECK-NEXT:       "llvm.intrcall"(%32, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc17)
+// CHECK-NEXT:       call @".unreachable"() : () -> () loc(#loc17)
+// CHECK-NEXT:       cf.br ^bb8 loc(#loc17)
+// CHECK-NEXT:     ^bb8:  // 2 preds: ^bb6, ^bb7
 // CHECK-NEXT:       llvm.store %28, %2 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc17)
 // CHECK-NEXT:       cf.br ^bb1 loc(#loc11)
-// CHECK-NEXT:     ^bb7:  // pred: ^bb1
-// CHECK-NEXT:       %29 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc7)
-// CHECK-NEXT:       return %29 : i256 loc(#loc7)
+// CHECK-NEXT:     ^bb9:  // pred: ^bb1
+// CHECK-NEXT:       %33 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc7)
+// CHECK-NEXT:       return %33 : i256 loc(#loc7)
 // CHECK-NEXT:     } loc(#loc7)
 // CHECK-NEXT:     func.func @f_89(%arg0: i256 loc({{.*}}:26:13)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
 // CHECK-NEXT:       %c2_i256 = arith.constant 2 : i256 loc(#loc)
