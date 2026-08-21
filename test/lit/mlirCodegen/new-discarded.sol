@@ -28,7 +28,7 @@ contract Child {
 // CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
 // CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
 // CHECK-NEXT: #Pure = #sol<StateMutability Pure>
-// CHECK-NEXT: #loc6 = loc({{.*}}:12:32)
+// CHECK-NEXT: #loc6 = loc({{.*}}:7:32)
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka, sol.revert_strings = #Default} {
 // CHECK-NEXT:   sol.contract @C_31 {
 // CHECK-NEXT:     sol.func @C_31() attributes {kind = #Constructor, orig_fn_type = () -> (), state_mutability = #NonPayable} {
@@ -41,7 +41,7 @@ contract Child {
 // CHECK-NEXT:       %1 = sol.new "Child_44" value = %c0_ui256 ctor(%0 : ui256) : !sol.contract<"Child_44"> loc(#loc4)
 // CHECK-NEXT:       sol.return loc(#loc2)
 // CHECK-NEXT:     } loc(#loc2)
-// CHECK-NEXT:     sol.func @discarded_allocation_22(%arg0: ui256 loc({{.*}}:12:32)) attributes {id = 22 : i64, orig_fn_type = (ui256) -> (), selector = -460330111 : i32, state_mutability = #Pure} {
+// CHECK-NEXT:     sol.func @discarded_allocation_22(%arg0: ui256 loc({{.*}}:7:32)) attributes {id = 22 : i64, orig_fn_type = (ui256) -> (), selector = -460330111 : i32, state_mutability = #Pure} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc6)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc6)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc7)
@@ -54,24 +54,24 @@ contract Child {
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
-// CHECK-NEXT: #loc1 = loc({{.*}}:7:0)
-// CHECK-NEXT: #loc2 = loc({{.*}}:8:2)
-// CHECK-NEXT: #loc3 = loc({{.*}}:9:14)
-// CHECK-NEXT: #loc4 = loc({{.*}}:9:4)
-// CHECK-NEXT: #loc5 = loc({{.*}}:12:2)
-// CHECK-NEXT: #loc7 = loc({{.*}}:13:18)
-// CHECK-NEXT: #loc8 = loc({{.*}}:13:4)
-// CHECK-NEXT: #loc9 = loc({{.*}}:16:2)
+// CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
+// CHECK-NEXT: #loc2 = loc({{.*}}:3:2)
+// CHECK-NEXT: #loc3 = loc({{.*}}:4:14)
+// CHECK-NEXT: #loc4 = loc({{.*}}:4:4)
+// CHECK-NEXT: #loc5 = loc({{.*}}:7:2)
+// CHECK-NEXT: #loc7 = loc({{.*}}:8:18)
+// CHECK-NEXT: #loc8 = loc({{.*}}:8:4)
+// CHECK-NEXT: #loc9 = loc({{.*}}:11:2)
 // CHECK-NEXT: #Constructor = #sol<FunctionKind Constructor>
 // CHECK-NEXT: #Contract = #sol<ContractKind Contract>
 // CHECK-NEXT: #Default = #sol<RevertStrings Default>
 // CHECK-NEXT: #NonPayable = #sol<StateMutability NonPayable>
 // CHECK-NEXT: #Osaka = #sol<EvmVersion Osaka>
-// CHECK-NEXT: #loc4 = loc({{.*}}:24:14)
+// CHECK-NEXT: #loc4 = loc({{.*}}:19:14)
 // CHECK-NEXT: module attributes {llvm.data_layout = "E-p:256:256-i256:256:256-S256-a:256:256", llvm.target_triple = "evm-unknown-unknown", sol.evm_version = #Osaka, sol.revert_strings = #Default} {
 // CHECK-NEXT:   sol.contract @Child_44 {
 // CHECK-NEXT:     sol.state_var @stored_33 slot 0 offset 0 : ui256 loc(#loc2)
-// CHECK-NEXT:     sol.func @_43(%arg0: ui256 loc({{.*}}:24:14)) attributes {id = 43 : i64, kind = #Constructor, orig_fn_type = (ui256) -> (), state_mutability = #NonPayable} {
+// CHECK-NEXT:     sol.func @_43(%arg0: ui256 loc({{.*}}:19:14)) attributes {id = 43 : i64, kind = #Constructor, orig_fn_type = (ui256) -> (), state_mutability = #NonPayable} {
 // CHECK-NEXT:       %0 = sol.alloca : !sol.ptr<ui256, Stack> loc(#loc4)
 // CHECK-NEXT:       sol.store %arg0, %0 : ui256, !sol.ptr<ui256, Stack> loc(#loc4)
 // CHECK-NEXT:       %1 = sol.load %0 : !sol.ptr<ui256, Stack>, ui256 loc(#loc5)
@@ -82,9 +82,9 @@ contract Child {
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
-// CHECK-NEXT: #loc1 = loc({{.*}}:21:0)
-// CHECK-NEXT: #loc2 = loc({{.*}}:22:2)
-// CHECK-NEXT: #loc3 = loc({{.*}}:24:2)
-// CHECK-NEXT: #loc5 = loc({{.*}}:25:13)
-// CHECK-NEXT: #loc6 = loc({{.*}}:25:4)
+// CHECK-NEXT: #loc1 = loc({{.*}}:16:0)
+// CHECK-NEXT: #loc2 = loc({{.*}}:17:2)
+// CHECK-NEXT: #loc3 = loc({{.*}}:19:2)
+// CHECK-NEXT: #loc5 = loc({{.*}}:20:13)
+// CHECK-NEXT: #loc6 = loc({{.*}}:20:4)
 // CHECK-EMPTY:

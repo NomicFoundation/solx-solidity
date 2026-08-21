@@ -56,8 +56,8 @@ contract C {
 // CHECK-NEXT:   } {kind = #Contract} loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
-// CHECK-NEXT: #loc1 = loc({{.*}}:13:0)
-// CHECK-NEXT: #loc2 = loc({{.*}}:22:2)
-// CHECK-NEXT: #loc3 = loc({{.*}}:27:2)
-// CHECK-NEXT: #loc4 = loc({{.*}}:32:2)
+// CHECK-NEXT: #loc1 = loc({{.*}}:10:0)
+// CHECK-NEXT: #loc2 = loc({{.*}}:19:2)
+// CHECK-NEXT: #loc3 = loc({{.*}}:24:2)
+// CHECK-NEXT: #loc4 = loc({{.*}}:29:2)
 // CHECK-EMPTY:
