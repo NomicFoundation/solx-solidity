@@ -95,5 +95,5 @@ contract C {
 // CHECK-NEXT:   } loc(#loc1)
 // CHECK-NEXT: } loc(#loc)
 // CHECK-NEXT: #loc = loc(unknown)
-// CHECK-NEXT: #loc1 = loc({{.*}}:6:0)
+// CHECK-NEXT: #loc1 = loc({{.*}}:2:0)
 // CHECK-EMPTY:

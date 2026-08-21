@@ -53,7 +53,7 @@ function f(uint n) {
 // CHECK-NEXT:       %c1_ui8 = sol.constant 1 : ui8 loc(#loc16)
 // CHECK-NEXT:       %3 = sol.load %1 : !sol.ptr<ui256, Stack>, ui256 loc(#loc17)
 // CHECK-NEXT:       %4 = sol.cast %c1_ui8 : ui8 to ui256 loc(#loc16)
-// CHECK-NEXT:       %5 = sol.add %3, %4 : ui256 loc(#loc17)
+// CHECK-NEXT:       %5 = sol.cadd %3, %4 : ui256 loc(#loc17)
 // CHECK-NEXT:       sol.store %5, %1 : ui256, !sol.ptr<ui256, Stack> loc(#loc17)
 // CHECK-NEXT:       sol.yield loc(#loc5)
 // CHECK-NEXT:     } loc(#loc5)
