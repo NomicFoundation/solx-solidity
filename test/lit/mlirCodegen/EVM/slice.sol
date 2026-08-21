@@ -69,7 +69,7 @@ function slice_len(uint[] calldata a, uint start, uint end)
 // CHECK-NEXT:     cf.cond_br %13, ^bb1, ^bb2 loc(#loc1)
 // CHECK-NEXT:   ^bb1:  // pred: ^bb0
 // CHECK-NEXT:     %14 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:     "llvm.intrcall"(%14, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:     "llvm.intrcall"(%14, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc1)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -77,7 +77,7 @@ function slice_len(uint[] calldata a, uint start, uint end)
 // CHECK-NEXT:     cf.cond_br %15, ^bb3, ^bb4 loc(#loc1)
 // CHECK-NEXT:   ^bb3:  // pred: ^bb2
 // CHECK-NEXT:     %16 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc1)
-// CHECK-NEXT:     "llvm.intrcall"(%16, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
+// CHECK-NEXT:     "llvm.intrcall"(%16, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc1)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc1)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc1)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -109,7 +109,7 @@ function slice_len(uint[] calldata a, uint start, uint end)
 // CHECK-NEXT:     cf.cond_br %11, ^bb1, ^bb2 loc(#loc14)
 // CHECK-NEXT:   ^bb1:  // pred: ^bb0
 // CHECK-NEXT:     %12 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc14)
-// CHECK-NEXT:     "llvm.intrcall"(%12, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc14)
+// CHECK-NEXT:     "llvm.intrcall"(%12, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc14)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc14)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc14)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -117,7 +117,7 @@ function slice_len(uint[] calldata a, uint start, uint end)
 // CHECK-NEXT:     cf.cond_br %13, ^bb3, ^bb4 loc(#loc14)
 // CHECK-NEXT:   ^bb3:  // pred: ^bb2
 // CHECK-NEXT:     %14 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc14)
-// CHECK-NEXT:     "llvm.intrcall"(%14, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc14)
+// CHECK-NEXT:     "llvm.intrcall"(%14, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc14)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc14)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc14)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -148,7 +148,7 @@ function slice_len(uint[] calldata a, uint start, uint end)
 // CHECK-NEXT:     cf.cond_br %12, ^bb1, ^bb2 loc(#loc21)
 // CHECK-NEXT:   ^bb1:  // pred: ^bb0
 // CHECK-NEXT:     %13 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc21)
-// CHECK-NEXT:     "llvm.intrcall"(%13, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc21)
+// CHECK-NEXT:     "llvm.intrcall"(%13, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc21)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc21)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc21)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -156,7 +156,7 @@ function slice_len(uint[] calldata a, uint start, uint end)
 // CHECK-NEXT:     cf.cond_br %14, ^bb3, ^bb4 loc(#loc21)
 // CHECK-NEXT:   ^bb3:  // pred: ^bb2
 // CHECK-NEXT:     %15 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc21)
-// CHECK-NEXT:     "llvm.intrcall"(%15, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc21)
+// CHECK-NEXT:     "llvm.intrcall"(%15, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc21)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc21)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc21)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -186,7 +186,7 @@ function slice_len(uint[] calldata a, uint start, uint end)
 // CHECK-NEXT:     cf.cond_br %10, ^bb1, ^bb2 loc(#loc27)
 // CHECK-NEXT:   ^bb1:  // pred: ^bb0
 // CHECK-NEXT:     %11 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc27)
-// CHECK-NEXT:     "llvm.intrcall"(%11, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc27)
+// CHECK-NEXT:     "llvm.intrcall"(%11, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc27)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc27)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc27)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -194,7 +194,7 @@ function slice_len(uint[] calldata a, uint start, uint end)
 // CHECK-NEXT:     cf.cond_br %12, ^bb3, ^bb4 loc(#loc27)
 // CHECK-NEXT:   ^bb3:  // pred: ^bb2
 // CHECK-NEXT:     %13 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc27)
-// CHECK-NEXT:     "llvm.intrcall"(%13, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc27)
+// CHECK-NEXT:     "llvm.intrcall"(%13, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc27)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc27)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc27)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
@@ -224,7 +224,7 @@ function slice_len(uint[] calldata a, uint start, uint end)
 // CHECK-NEXT:     cf.cond_br %10, ^bb1, ^bb2 loc(#loc34)
 // CHECK-NEXT:   ^bb1:  // pred: ^bb0
 // CHECK-NEXT:     %11 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc34)
-// CHECK-NEXT:     "llvm.intrcall"(%11, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc34)
+// CHECK-NEXT:     "llvm.intrcall"(%11, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc34)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc34)
 // CHECK-NEXT:     cf.br ^bb2 loc(#loc34)
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
@@ -232,7 +232,7 @@ function slice_len(uint[] calldata a, uint start, uint end)
 // CHECK-NEXT:     cf.cond_br %12, ^bb3, ^bb4 loc(#loc34)
 // CHECK-NEXT:   ^bb3:  // pred: ^bb2
 // CHECK-NEXT:     %13 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1> loc(#loc34)
-// CHECK-NEXT:     "llvm.intrcall"(%13, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc34)
+// CHECK-NEXT:     "llvm.intrcall"(%13, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> () loc(#loc34)
 // CHECK-NEXT:     call @".unreachable"() : () -> () loc(#loc34)
 // CHECK-NEXT:     cf.br ^bb4 loc(#loc34)
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
