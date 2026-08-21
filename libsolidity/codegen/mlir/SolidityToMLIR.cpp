@@ -3365,10 +3365,8 @@ void SolidityToMLIRPass::lower(ForStatement const &forStmt) {
 
   // Lower loop expression.
   b.setInsertionPointToStart(&forOp.getStep().emplaceBlock());
-  if (forStmt.loopExpression()) {
-    llvm::SaveAndRestore<bool> g(inUnchecked, true);
+  if (forStmt.loopExpression())
     lower(*forStmt.loopExpression());
-  }
   b.create<mlir::sol::YieldOp>(forOp.getLoc());
 }
 
