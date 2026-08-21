@@ -988,10 +988,14 @@ mlir::Value SolidityToMLIRPass::genExpr(Identifier const &id) {
   }
 
   // Type-declaration references (struct, enum and user-defined value type
-  // names) are pure compile-time handles with no runtime representation.
+  // names) and error/event references are pure compile-time handles with no
+  // runtime representation. Errors and events are only used through calls and
+  // .selector, which are handled at their use sites.
   if (dynamic_cast<StructDefinition const *>(decl) ||
       dynamic_cast<EnumDefinition const *>(decl) ||
-      dynamic_cast<UserDefinedValueTypeDefinition const *>(decl))
+      dynamic_cast<UserDefinedValueTypeDefinition const *>(decl) ||
+      dynamic_cast<ErrorDefinition const *>(decl) ||
+      dynamic_cast<EventDefinition const *>(decl))
     return {};
 
   if (const auto *fn = dynamic_cast<FunctionDefinition const *>(decl)) {
@@ -3063,6 +3067,13 @@ mlir::Value SolidityToMLIRPass::genLValExpr(Expression const &expr) {
   // Elementary type names in expression position (e.g. a stray `uint256;`
   // statement or the callee of a cast) are pure compile-time handles.
   if (dynamic_cast<ElementaryTypeNameExpression const *>(&expr))
+    return {};
+
+  // A bare creation reference (`new C` not called) is a pure compile-time
+  // handle: creation functions are only usable as callees, and the called
+  // forms are lowered from their FunctionCall wrappers. The old codegen's
+  // visit(NewExpression) is the same no-op.
+  if (dynamic_cast<NewExpression const *>(&expr))
     return {};
 
   // Identifier
