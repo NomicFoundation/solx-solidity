@@ -31,56 +31,56 @@ contract Test {
 // CHECK-NEXT:     %c-32_i256 = arith.constant -32 : i256
 // CHECK-NEXT:     %c31_i256 = arith.constant 31 : i256
 // CHECK-NEXT:     %c0_i256 = arith.constant 0 : i256
-// CHECK-NEXT:     %c128_i256 = arith.constant 128 : i256
 // CHECK-NEXT:     %c64_i256 = arith.constant 64 : i256
-// CHECK-NEXT:     %0 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     llvm.store %c128_i256, %0 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:     %1 = "llvm.intrcall"() <{id = 4040 : i32, name = "evm.callvalue"}> : () -> i256
-// CHECK-NEXT:     %2 = arith.cmpi ne, %1, %c0_i256 : i256
-// CHECK-NEXT:     cf.cond_br %2, ^bb1, ^bb2
+// CHECK-NEXT:     %0 = "llvm.intrcall"() <{id = 4070 : i32, name = "evm.memoryguard"}> : () -> i256
+// CHECK-NEXT:     %1 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     llvm.store %0, %1 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:     %2 = "llvm.intrcall"() <{id = 4040 : i32, name = "evm.callvalue"}> : () -> i256
+// CHECK-NEXT:     %3 = arith.cmpi ne, %2, %c0_i256 : i256
+// CHECK-NEXT:     cf.cond_br %3, ^bb1, ^bb2
 // CHECK-NEXT:   ^bb1:  // pred: ^bb0
-// CHECK-NEXT:     %3 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     "llvm.intrcall"(%3, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> ()
+// CHECK-NEXT:     %4 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     "llvm.intrcall"(%4, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> ()
 // CHECK-NEXT:     call @".unreachable"() : () -> ()
 // CHECK-NEXT:     cf.br ^bb2
 // CHECK-NEXT:   ^bb2:  // 2 preds: ^bb0, ^bb1
-// CHECK-NEXT:     %4 = "llvm.intrcall"() <{id = 4047 : i32, metadata = ["Test_38"], name = "evm.datasize"}> : () -> i256
-// CHECK-NEXT:     %5 = "llvm.intrcall"() <{id = 4042 : i32, name = "evm.codesize"}> : () -> i256
-// CHECK-NEXT:     %6 = arith.subi %5, %4 : i256
-// CHECK-NEXT:     %7 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     %8 = llvm.load %7 {alignment = 1 : i64} : !llvm.ptr<1> -> i256
-// CHECK-NEXT:     %9 = arith.addi %6, %c31_i256 : i256
-// CHECK-NEXT:     %10 = arith.andi %9, %c-32_i256 : i256
-// CHECK-NEXT:     %11 = arith.addi %8, %10 : i256
-// CHECK-NEXT:     %12 = arith.cmpi ugt, %11, %c18446744073709551615_i256 : i256
-// CHECK-NEXT:     %13 = arith.cmpi ult, %11, %8 : i256
-// CHECK-NEXT:     %14 = arith.ori %12, %13 : i1
-// CHECK-NEXT:     cf.cond_br %14, ^bb3, ^bb4
+// CHECK-NEXT:     %5 = "llvm.intrcall"() <{id = 4047 : i32, metadata = ["Test_38"], name = "evm.datasize"}> : () -> i256
+// CHECK-NEXT:     %6 = "llvm.intrcall"() <{id = 4042 : i32, name = "evm.codesize"}> : () -> i256
+// CHECK-NEXT:     %7 = arith.subi %6, %5 : i256
+// CHECK-NEXT:     %8 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %9 = llvm.load %8 {alignment = 1 : i64} : !llvm.ptr<1> -> i256
+// CHECK-NEXT:     %10 = arith.addi %7, %c31_i256 : i256
+// CHECK-NEXT:     %11 = arith.andi %10, %c-32_i256 : i256
+// CHECK-NEXT:     %12 = arith.addi %9, %11 : i256
+// CHECK-NEXT:     %13 = arith.cmpi ugt, %12, %c18446744073709551615_i256 : i256
+// CHECK-NEXT:     %14 = arith.cmpi ult, %12, %9 : i256
+// CHECK-NEXT:     %15 = arith.ori %13, %14 : i1
+// CHECK-NEXT:     cf.cond_br %15, ^bb3, ^bb4
 // CHECK-NEXT:   ^bb3:  // pred: ^bb2
-// CHECK-NEXT:     %15 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     llvm.store %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256, %15 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:     %16 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     llvm.store %c65_i256, %16 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:     %17 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     "llvm.intrcall"(%17, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> ()
+// CHECK-NEXT:     %16 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     llvm.store %c35408467139433450592217433187231851964531694900788300625387963629091585785856_i256, %16 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:     %17 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     llvm.store %c65_i256, %17 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:     %18 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     "llvm.intrcall"(%18, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> ()
 // CHECK-NEXT:     call @".unreachable"() : () -> ()
 // CHECK-NEXT:     cf.br ^bb4
 // CHECK-NEXT:   ^bb4:  // 2 preds: ^bb2, ^bb3
-// CHECK-NEXT:     %18 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     llvm.store %11, %18 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:     %19 = llvm.inttoptr %8 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     %20 = llvm.inttoptr %4 : i256 to !llvm.ptr<4>
-// CHECK-NEXT:     "llvm.intr.memcpy"(%19, %20, %6) <{isVolatile = false}> : (!llvm.ptr<1>, !llvm.ptr<4>, i256) -> ()
+// CHECK-NEXT:     %19 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     llvm.store %12, %19 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:     %20 = llvm.inttoptr %9 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %21 = llvm.inttoptr %5 : i256 to !llvm.ptr<4>
+// CHECK-NEXT:     "llvm.intr.memcpy"(%20, %21, %7) <{isVolatile = false}> : (!llvm.ptr<1>, !llvm.ptr<4>, i256) -> ()
 // CHECK-NEXT:     call @Test_38() : () -> ()
-// CHECK-NEXT:     %21 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     %22 = llvm.load %21 {alignment = 1 : i64} : !llvm.ptr<1> -> i256
-// CHECK-NEXT:     %23 = "llvm.intrcall"() <{id = 4046 : i32, metadata = ["Test_38_deployed"], name = "evm.dataoffset"}> : () -> i256
-// CHECK-NEXT:     %24 = "llvm.intrcall"() <{id = 4047 : i32, metadata = ["Test_38_deployed"], name = "evm.datasize"}> : () -> i256
-// CHECK-NEXT:     %25 = llvm.inttoptr %22 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     %26 = llvm.inttoptr %23 : i256 to !llvm.ptr<4>
-// CHECK-NEXT:     "llvm.intr.memcpy"(%25, %26, %24) <{isVolatile = false}> : (!llvm.ptr<1>, !llvm.ptr<4>, i256) -> ()
-// CHECK-NEXT:     %27 = llvm.inttoptr %22 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:     "llvm.intrcall"(%27, %24) <{id = 4078 : i32, name = "evm.return"}> : (!llvm.ptr<1>, i256) -> ()
+// CHECK-NEXT:     %22 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %23 = llvm.load %22 {alignment = 1 : i64} : !llvm.ptr<1> -> i256
+// CHECK-NEXT:     %24 = "llvm.intrcall"() <{id = 4046 : i32, metadata = ["Test_38_deployed"], name = "evm.dataoffset"}> : () -> i256
+// CHECK-NEXT:     %25 = "llvm.intrcall"() <{id = 4047 : i32, metadata = ["Test_38_deployed"], name = "evm.datasize"}> : () -> i256
+// CHECK-NEXT:     %26 = llvm.inttoptr %23 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     %27 = llvm.inttoptr %24 : i256 to !llvm.ptr<4>
+// CHECK-NEXT:     "llvm.intr.memcpy"(%26, %27, %25) <{isVolatile = false}> : (!llvm.ptr<1>, !llvm.ptr<4>, i256) -> ()
+// CHECK-NEXT:     %28 = llvm.inttoptr %23 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:     "llvm.intrcall"(%28, %25) <{id = 4079 : i32, name = "evm.return"}> : (!llvm.ptr<1>, i256) -> ()
 // CHECK-NEXT:     call @".unreachable"() : () -> ()
 // CHECK-NEXT:     llvm.unreachable
 // CHECK-NEXT:   }
@@ -96,63 +96,63 @@ contract Test {
 // CHECK-NEXT:       %c224_i256 = arith.constant 224 : i256
 // CHECK-NEXT:       %c0_i256 = arith.constant 0 : i256
 // CHECK-NEXT:       %c4_i256 = arith.constant 4 : i256
-// CHECK-NEXT:       %c128_i256 = arith.constant 128 : i256
 // CHECK-NEXT:       %c64_i256 = arith.constant 64 : i256
-// CHECK-NEXT:       %0 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       llvm.store %c128_i256, %0 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:       %1 = "llvm.intrcall"() <{id = 4038 : i32, name = "evm.calldatasize"}> : () -> i256
-// CHECK-NEXT:       %2 = arith.cmpi uge, %1, %c4_i256 : i256
-// CHECK-NEXT:       cf.cond_br %2, ^bb1, ^bb8
+// CHECK-NEXT:       %0 = "llvm.intrcall"() <{id = 4070 : i32, name = "evm.memoryguard"}> : () -> i256
+// CHECK-NEXT:       %1 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       llvm.store %0, %1 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:       %2 = "llvm.intrcall"() <{id = 4038 : i32, name = "evm.calldatasize"}> : () -> i256
+// CHECK-NEXT:       %3 = arith.cmpi uge, %2, %c4_i256 : i256
+// CHECK-NEXT:       cf.cond_br %3, ^bb1, ^bb8
 // CHECK-NEXT:     ^bb1:  // pred: ^bb0
-// CHECK-NEXT:       %3 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<2>
-// CHECK-NEXT:       %4 = llvm.load %3 {alignment = 1 : i64} : !llvm.ptr<2> -> i256
-// CHECK-NEXT:       %5 = arith.shrui %4, %c224_i256 : i256
-// CHECK-NEXT:       cf.switch %5 : i256, [
+// CHECK-NEXT:       %4 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<2>
+// CHECK-NEXT:       %5 = llvm.load %4 {alignment = 1 : i64} : !llvm.ptr<2> -> i256
+// CHECK-NEXT:       %6 = arith.shrui %5, %c224_i256 : i256
+// CHECK-NEXT:       cf.switch %6 : i256, [
 // CHECK-NEXT:         default: ^bb8,
 // CHECK-NEXT:         3616524459: ^bb2,
 // CHECK-NEXT:         3423257005: ^bb5
 // CHECK-NEXT:       ]
 // CHECK-NEXT:     ^bb2:  // pred: ^bb1
-// CHECK-NEXT:       %6 = "llvm.intrcall"() <{id = 4040 : i32, name = "evm.callvalue"}> : () -> i256
-// CHECK-NEXT:       %7 = arith.cmpi ne, %6, %c0_i256 : i256
-// CHECK-NEXT:       cf.cond_br %7, ^bb3, ^bb4
+// CHECK-NEXT:       %7 = "llvm.intrcall"() <{id = 4040 : i32, name = "evm.callvalue"}> : () -> i256
+// CHECK-NEXT:       %8 = arith.cmpi ne, %7, %c0_i256 : i256
+// CHECK-NEXT:       cf.cond_br %8, ^bb3, ^bb4
 // CHECK-NEXT:     ^bb3:  // pred: ^bb2
-// CHECK-NEXT:       %8 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       "llvm.intrcall"(%8, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> ()
+// CHECK-NEXT:       %9 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       "llvm.intrcall"(%9, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> ()
 // CHECK-NEXT:       call @".unreachable"() : () -> ()
 // CHECK-NEXT:       cf.br ^bb4
 // CHECK-NEXT:     ^bb4:  // 2 preds: ^bb2, ^bb3
-// CHECK-NEXT:       %9 = call @computeA_26() : () -> i256
-// CHECK-NEXT:       %10 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       %11 = llvm.load %10 {alignment = 1 : i64} : !llvm.ptr<1> -> i256
-// CHECK-NEXT:       %12 = llvm.inttoptr %11 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       llvm.store %9, %12 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:       %13 = llvm.inttoptr %11 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       "llvm.intrcall"(%13, %c32_i256) <{id = 4078 : i32, name = "evm.return"}> : (!llvm.ptr<1>, i256) -> ()
+// CHECK-NEXT:       %10 = call @computeA_26() : () -> i256
+// CHECK-NEXT:       %11 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       %12 = llvm.load %11 {alignment = 1 : i64} : !llvm.ptr<1> -> i256
+// CHECK-NEXT:       %13 = llvm.inttoptr %12 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       llvm.store %10, %13 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:       %14 = llvm.inttoptr %12 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       "llvm.intrcall"(%14, %c32_i256) <{id = 4079 : i32, name = "evm.return"}> : (!llvm.ptr<1>, i256) -> ()
 // CHECK-NEXT:       call @".unreachable"() : () -> ()
 // CHECK-NEXT:       cf.br ^bb8
 // CHECK-NEXT:     ^bb5:  // pred: ^bb1
-// CHECK-NEXT:       %14 = "llvm.intrcall"() <{id = 4040 : i32, name = "evm.callvalue"}> : () -> i256
-// CHECK-NEXT:       %15 = arith.cmpi ne, %14, %c0_i256 : i256
-// CHECK-NEXT:       cf.cond_br %15, ^bb6, ^bb7
+// CHECK-NEXT:       %15 = "llvm.intrcall"() <{id = 4040 : i32, name = "evm.callvalue"}> : () -> i256
+// CHECK-NEXT:       %16 = arith.cmpi ne, %15, %c0_i256 : i256
+// CHECK-NEXT:       cf.cond_br %16, ^bb6, ^bb7
 // CHECK-NEXT:     ^bb6:  // pred: ^bb5
-// CHECK-NEXT:       %16 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       "llvm.intrcall"(%16, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> ()
+// CHECK-NEXT:       %17 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       "llvm.intrcall"(%17, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> ()
 // CHECK-NEXT:       call @".unreachable"() : () -> ()
 // CHECK-NEXT:       cf.br ^bb7
 // CHECK-NEXT:     ^bb7:  // 2 preds: ^bb5, ^bb6
-// CHECK-NEXT:       %17 = call @computeB_37() : () -> i256
-// CHECK-NEXT:       %18 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       %19 = llvm.load %18 {alignment = 1 : i64} : !llvm.ptr<1> -> i256
-// CHECK-NEXT:       %20 = llvm.inttoptr %19 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       llvm.store %17, %20 {alignment = 1 : i64} : i256, !llvm.ptr<1>
-// CHECK-NEXT:       %21 = llvm.inttoptr %19 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       "llvm.intrcall"(%21, %c32_i256) <{id = 4078 : i32, name = "evm.return"}> : (!llvm.ptr<1>, i256) -> ()
+// CHECK-NEXT:       %18 = call @computeB_37() : () -> i256
+// CHECK-NEXT:       %19 = llvm.inttoptr %c64_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       %20 = llvm.load %19 {alignment = 1 : i64} : !llvm.ptr<1> -> i256
+// CHECK-NEXT:       %21 = llvm.inttoptr %20 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       llvm.store %18, %21 {alignment = 1 : i64} : i256, !llvm.ptr<1>
+// CHECK-NEXT:       %22 = llvm.inttoptr %20 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       "llvm.intrcall"(%22, %c32_i256) <{id = 4079 : i32, name = "evm.return"}> : (!llvm.ptr<1>, i256) -> ()
 // CHECK-NEXT:       call @".unreachable"() : () -> ()
 // CHECK-NEXT:       cf.br ^bb8
 // CHECK-NEXT:     ^bb8:  // 4 preds: ^bb0, ^bb1, ^bb4, ^bb7
-// CHECK-NEXT:       %22 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       "llvm.intrcall"(%22, %c0_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> ()
+// CHECK-NEXT:       %23 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
+// CHECK-NEXT:       "llvm.intrcall"(%23, %c0_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> ()
 // CHECK-NEXT:       call @".unreachable"() : () -> ()
 // CHECK-NEXT:       llvm.unreachable
 // CHECK-NEXT:     }
@@ -200,12 +200,14 @@ contract Test {
 // CHECK-NEXT:       %8 = llvm.inttoptr %c4_i256 : i256 to !llvm.ptr<1>
 // CHECK-NEXT:       llvm.store %c17_i256, %8 {alignment = 1 : i64} : i256, !llvm.ptr<1>
 // CHECK-NEXT:       %9 = llvm.inttoptr %c0_i256 : i256 to !llvm.ptr<1>
-// CHECK-NEXT:       "llvm.intrcall"(%9, %c36_i256) <{id = 4080 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> ()
+// CHECK-NEXT:       "llvm.intrcall"(%9, %c36_i256) <{id = 4081 : i32, name = "evm.revert"}> : (!llvm.ptr<1>, i256) -> ()
 // CHECK-NEXT:       call @".unreachable"() : () -> ()
 // CHECK-NEXT:       cf.br ^bb2
 // CHECK-NEXT:     ^bb2:  // 2 preds: ^bb0, ^bb1
 // CHECK-NEXT:       return %5 : i256
 // CHECK-NEXT:     }
+// CHECK-NEXT:     llvm.module_flags [#llvm.mlir.module_flag<error, "evm-memory-guard", 128 : i64>, #llvm.mlir.module_flag<error, "evm-stack-region-size", 0 : i64>]
 // CHECK-NEXT:   }
+// CHECK-NEXT:   llvm.module_flags [#llvm.mlir.module_flag<error, "evm-memory-guard", 128 : i64>, #llvm.mlir.module_flag<error, "evm-stack-region-size", 0 : i64>]
 // CHECK-NEXT: }
 // CHECK-EMPTY:

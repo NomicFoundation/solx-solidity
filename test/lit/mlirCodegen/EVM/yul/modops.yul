@@ -32,7 +32,7 @@ object "Test" {
 // CHECK-NEXT:     %8 = llvm.load %0 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc14)
 // CHECK-NEXT:     %9 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc15)
 // CHECK-NEXT:     %10 = llvm.load %2 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc16)
-// CHECK-NEXT:     %11 = "llvm.intrcall"(%8, %9, %10) <{id = 4073 : i32, name = "evm.mulmod"}> : (i256, i256, i256) -> i256 loc(#loc17)
+// CHECK-NEXT:     %11 = "llvm.intrcall"(%8, %9, %10) <{id = 4074 : i32, name = "evm.mulmod"}> : (i256, i256, i256) -> i256 loc(#loc17)
 // CHECK-NEXT:     %12 = llvm.alloca %c1_i256 x i256 {alignment = 32 : i64} : (i256) -> !llvm.ptr loc(#loc18)
 // CHECK-NEXT:     llvm.store %11, %12 {alignment = 32 : i64} : i256, !llvm.ptr loc(#loc19)
 // CHECK-NEXT:     llvm.unreachable loc(#loc)

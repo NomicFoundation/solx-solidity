@@ -231,7 +231,7 @@ function lt_diff(bytes3 a, bytes8 b)   returns (bool)   { return a < b; }
 // CHECK-NEXT:     %4 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc75)
 // CHECK-NEXT:     %5 = arith.andi %3, %c-26959946667150639794667015087019630673637144422540572481103610249216_i256 : i256 loc(#loc74)
 // CHECK-NEXT:     %6 = arith.andi %4, %c255_i256 : i256 loc(#loc74)
-// CHECK-NEXT:     %7 = "llvm.intrcall"(%6, %5) <{id = 4086 : i32, name = "evm.shl"}> : (i256, i256) -> i256 loc(#loc74)
+// CHECK-NEXT:     %7 = "llvm.intrcall"(%6, %5) <{id = 4087 : i32, name = "evm.shl"}> : (i256, i256) -> i256 loc(#loc74)
 // CHECK-NEXT:     return %7 : i256 loc(#loc76)
 // CHECK-NEXT:   } loc(#loc70)
 // CHECK-NEXT:   func.func @shr_165(%arg0: i256 loc({{.*}}:15:13), %arg1: i256 loc({{.*}}:15:23)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
@@ -249,7 +249,7 @@ function lt_diff(bytes3 a, bytes8 b)   returns (bool)   { return a < b; }
 // CHECK-NEXT:     %4 = llvm.load %1 {alignment = 32 : i64} : !llvm.ptr -> i256 loc(#loc82)
 // CHECK-NEXT:     %5 = arith.andi %3, %c-26959946667150639794667015087019630673637144422540572481103610249216_i256 : i256 loc(#loc81)
 // CHECK-NEXT:     %6 = arith.andi %4, %c255_i256 : i256 loc(#loc81)
-// CHECK-NEXT:     %7 = "llvm.intrcall"(%6, %5) <{id = 4087 : i32, name = "evm.shr"}> : (i256, i256) -> i256 loc(#loc81)
+// CHECK-NEXT:     %7 = "llvm.intrcall"(%6, %5) <{id = 4088 : i32, name = "evm.shr"}> : (i256, i256) -> i256 loc(#loc81)
 // CHECK-NEXT:     return %7 : i256 loc(#loc83)
 // CHECK-NEXT:   } loc(#loc77)
 // CHECK-NEXT:   func.func @band_diff_179(%arg0: i256 loc({{.*}}:17:19), %arg1: i256 loc({{.*}}:17:29)) -> i256 attributes {llvm.linkage = #llvm.linkage<private>, passthrough = ["nofree", "null_pointer_is_valid"]} {
